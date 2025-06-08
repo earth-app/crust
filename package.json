@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "bunx nuxi dev --host",
     "build": "nuxt build",
-    "dev": "nuxt dev",
     "generate": "nuxt generate",
-    "preview": "nuxt preview",
+    "preview": "bunx serve .output/public",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
