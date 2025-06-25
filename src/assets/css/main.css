@@ -1,1 +1,12 @@
-@import "tailwindcss"
+@import 'tailwindcss';
+@import '@nuxt/ui';
+@plugin "tailwindcss-motion";
+
+@theme {
+	--color-primary: #43b54d;
+	--color-secondary: #174f96;
+	--color-accent: #f8f9fb;
+	--color-accent-secondary: #532e1f;
+
+	--font-title: 'Noto Sans', sans-serif;
+}

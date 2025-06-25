@@ -6,6 +6,7 @@
 .cache
 dist
 package-lock.json
+.wrangler
 
 # Node dependencies
 node_modules

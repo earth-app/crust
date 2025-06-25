@@ -1,0 +1,6 @@
+name = "earthapp-crust"
+compatibility_date = "2025-06-20"
+main = ".output/server/index.mjs"
+routes = [
+    { pattern = "app.earth-app.com", custom_domain = true }
+]
