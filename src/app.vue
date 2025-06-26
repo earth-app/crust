@@ -7,18 +7,22 @@
 </template>
 
 <script setup>
-import { SITE_DESCRIPTION, SITE_NAME } from './compostables/useConstants';
+import { SITE_DESCRIPTION, SITE_NAME, THEME_COLOR } from './compostables/useConstants';
+import { useAuth } from './compostables/useCurrentUser';
 
 useHead({
 	meta: [
 		{ name: 'viewport', content: 'width=device-width, initial-scale=1' },
-		{ name: 'description', content: 'Meet Real People' },
+		{ name: 'application-name', content: SITE_NAME },
+		{ name: 'description', content: SITE_DESCRIPTION },
 		{ name: 'keywords', content: 'Earth, App, Explore' },
 		{ name: 'author', content: 'Gregory Mitchell' },
-	],
-	link: [
-		{ rel: 'icon', type: 'image/png', href: '/favicon.png' },
-		{ rel: 'apple-touch-icon', href: '/favicon.png' },
+		{ name: 'theme-color', content: THEME_COLOR },
+		{ name: 'apple-mobile-web-app-capable', content: 'yes' },
+		{ name: 'apple-mobile-web-app-status-bar-style', content: 'black' },
+		{ name: 'mobile-web-app-capable', content: 'yes' },
+		{ name: 'msapplication-TileColor', content: THEME_COLOR },
+		{ name: 'msapplication-TileImage', content: '/favicon.png' },
 	],
 });
 
@@ -27,8 +31,21 @@ useSeoMeta({
 	description: SITE_DESCRIPTION,
 	ogTitle: SITE_NAME,
 	ogDescription: SITE_DESCRIPTION,
-	ogLocale: 'en_US',
 	ogImage: 'https://cdn.earth-app.com/earth-app.png',
+	ogLocale: 'en_US',
+	ogType: 'website',
+	ogSiteName: SITE_NAME,
+	ogUrl: 'https://earth-app.com',
+	twitterTitle: SITE_NAME,
+	twitterDescription: SITE_DESCRIPTION,
 	twitterCard: 'summary_large_image',
+	twitterCreator: '@theearthapp',
+});
+
+// Global Variables
+
+const { fetchUser } = useAuth();
+onMounted(() => {
+	fetchUser();
 });
 </script>
