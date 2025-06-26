@@ -9,7 +9,7 @@ export default defineNuxtConfig({
 		},
 	},
 	ssr: true,
-	compatibilityDate: '2024-11-01',
+	compatibilityDate: '2025-06-20',
 	devtools: { enabled: true },
 	srcDir: 'src',
 	css: ['~/assets/css/main.css'],
