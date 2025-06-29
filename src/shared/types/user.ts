@@ -7,6 +7,8 @@ export type User = {
 	account: {
 		type: string;
 		id: string;
+		firstName?: string;
+		lastName?: string;
 		username: string;
 		email?: string;
 		address?: string | null;
