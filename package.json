@@ -12,17 +12,17 @@
     "deploy": "bunx wrangler deploy"
   },
   "dependencies": {
-    "@nuxt/icon": "^1.14.0",
+    "@nuxt/icon": "^1.15.0",
     "@nuxt/ui": "^3.2.0",
     "@nuxtjs/google-fonts": "^3.2.0",
-    "@tailwindcss/vite": "^4.1.10",
+    "@tailwindcss/vite": "^4.1.11",
     "nuxt": "^3.17.5",
-    "tailwindcss": "^4.1.10",
+    "tailwindcss": "^4.1.11",
     "tailwindcss-motion": "^1.1.1",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
-    "wrangler": "^4.21.2"
+    "wrangler": "^4.22.0"
   }
 }
