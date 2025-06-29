@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { useAuth } from '~/compostables/useCurrentUser';
+import { useAuth } from '~/compostables/useUser';
 import LoginPopup from './LoginPopup.vue';
 
 const { user } = useAuth();

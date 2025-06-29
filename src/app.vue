@@ -8,7 +8,7 @@
 
 <script setup>
 import { SITE_DESCRIPTION, SITE_NAME, THEME_COLOR } from './compostables/useConstants';
-import { useAuth } from './compostables/useCurrentUser';
+import { useAuth } from './compostables/useUser';
 
 useHead({
 	meta: [
