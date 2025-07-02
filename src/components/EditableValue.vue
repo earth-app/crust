@@ -7,6 +7,10 @@
 			<span :class="['text-gray-800 dark:text-white', props.class]">
 				{{ props.modelValue || props.placeholder || '—' }}
 			</span>
+			<UIcon
+				name="mdi:pencil-outline"
+				size="16"
+			/>
 		</template>
 		<template v-else>
 			<UInput
@@ -34,12 +38,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick, type InputTypeHTMLAttribute } from 'vue';
 import { UInput, UAlert } from '#components';
 
 const props = defineProps<{
 	modelValue: string | number;
-	type?: 'text' | 'number' | 'email' | 'password';
+	type?: InputTypeHTMLAttribute;
 	placeholder?: string;
 	disabled?: boolean;
 	autofocus?: boolean;

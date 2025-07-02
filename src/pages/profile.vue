@@ -27,6 +27,20 @@
 				size="xl"
 				:onFinish="updateUser"
 			/>
+			<div class="mt-12 border-t-4 border-black dark:border-white w-2/5">
+				<div
+					v-for="prop in props"
+					class="mt-4 flex flex-row w-full justify-between"
+				>
+					<h2 class="text-xl">{{ prop.name }}</h2>
+					<EditableValue
+						v-model="prop.computed.value"
+						class="text-lg mt-2"
+						size="lg"
+						:type="prop.type"
+					/>
+				</div>
+			</div>
 		</div>
 	</div>
 	<div
@@ -41,6 +55,7 @@
 import EditableValue from '~/components/EditableValue.vue';
 import { useAuth, updateAccount } from '~/compostables/useUser';
 import { useTitleSuffix } from '~/compostables/useTitleSuffix';
+import type { InputTypeHTMLAttribute } from 'vue';
 
 const { user } = useAuth();
 const changed = ref(false);
@@ -68,8 +83,29 @@ const accountProps = computed(() => {
 const firstName = computed(() => accountProps.value.firstName);
 const lastName = computed(() => accountProps.value.lastName);
 const username = computed(() => accountProps.value.username);
+
 const email = computed(() => accountProps.value.email);
+const address = computed(() => accountProps.value.address);
+const phoneNumber = computed(() => accountProps.value.phoneNumber);
 const id = computed(() => accountProps.value.id);
+
+const props: { name: string; type: InputTypeHTMLAttribute; computed: globalThis.Ref<string | number> }[] = [
+	{
+		name: 'Email Address',
+		type: 'email',
+		computed: email,
+	},
+	{
+		name: 'Address',
+		type: 'text',
+		computed: address,
+	},
+	{
+		name: 'Phone Number',
+		type: 'tel',
+		computed: phoneNumber,
+	},
+];
 
 async function updateUser() {
 	if (user.value) {
