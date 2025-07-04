@@ -79,3 +79,26 @@ export async function updateAccount(user: User['account']) {
 
 	return { success: false, message: 'Failed to update user' };
 }
+
+export async function getUsers(): Promise<User[]> {
+	const config = useRuntimeConfig();
+	const token = useCookie('session_token').value;
+	try {
+		let headers: Record<string, string> = {};
+
+		if (token) headers['Authorization'] = `Bearer ${token}`;
+		headers['Content-Type'] = 'application/json';
+
+		const { data, error } = await useFetch<{ items: User[] }>(`${config.public.apiBaseUrl}/v1/users`, {});
+
+		if (error.value) {
+			console.error('Error fetching users:', error.value);
+			return [];
+		}
+
+		return data.value?.items || [];
+	} catch (error) {
+		console.error('Failed to fetch users:', error);
+		return [];
+	}
+}
