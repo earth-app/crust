@@ -20,8 +20,8 @@ export async function useCurrentUser() {
 	try {
 		return await $fetch<User>(`${config.public.apiBaseUrl}/v1/users/current`, {
 			headers: {
-				Authorization: `Bearer ${token}`,
-			},
+				Authorization: `Bearer ${token}`
+			}
 		});
 	} catch (error) {
 		console.error('Failed to fetch current user:', error);
@@ -39,7 +39,7 @@ export const useAuth = () => {
 
 	return {
 		user,
-		fetchUser,
+		fetchUser
 	};
 };
 
@@ -56,9 +56,9 @@ export async function updateAccount(user: User['account']) {
 			method: 'PATCH',
 			headers: {
 				Authorization: `Bearer ${token}`,
-				'Content-Type': 'application/json',
+				'Content-Type': 'application/json'
 			},
-			body: user,
+			body: user
 		});
 
 		if (error.value) {
@@ -89,7 +89,10 @@ export async function getUsers(): Promise<User[]> {
 		if (token) headers['Authorization'] = `Bearer ${token}`;
 		headers['Content-Type'] = 'application/json';
 
-		const { data, error } = await useFetch<{ items: User[] }>(`${config.public.apiBaseUrl}/v1/users`, {});
+		const { data, error } = await useFetch<{ items: User[] }>(
+			`${config.public.apiBaseUrl}/v1/users`,
+			{}
+		);
 
 		if (error.value) {
 			console.error('Error fetching users:', error.value);

@@ -15,9 +15,9 @@ export const useTitleSuffix = () => {
 					name: 'og:title',
 					content: () => {
 						return suffix.value ? `${suffix.value} | ${SITE_NAME}` : SITE_NAME;
-					},
-				},
-			],
+					}
+				}
+			]
 		});
 	};
 

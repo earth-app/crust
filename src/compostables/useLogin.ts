@@ -5,13 +5,16 @@ export function useLogin() {
 		const auth = btoa(`${username}:${password}`);
 
 		try {
-			const response = await $fetch<{ session_token: string }>(`${config.public.apiBaseUrl}/v1/users/login`, {
-				method: 'POST',
-				headers: {
-					Authorization: `Basic ${auth}`,
-					'Content-Type': 'application/json',
-				},
-			});
+			const response = await $fetch<{ session_token: string }>(
+				`${config.public.apiBaseUrl}/v1/users/login`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: `Basic ${auth}`,
+						'Content-Type': 'application/json'
+					}
+				}
+			);
 
 			const sessionCookie = useCookie('session_token');
 			sessionCookie.value = response.session_token;
