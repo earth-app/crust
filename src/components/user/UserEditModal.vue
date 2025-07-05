@@ -5,7 +5,7 @@
 		:close="{
 			color: 'primary',
 			variant: 'solid',
-			icon: 'i-heroicons-x-mark-solid',
+			icon: 'i-heroicons-x-mark-solid'
 		}"
 		:ui="{ content: content || 'min-w-1/3' }"
 	>

@@ -34,18 +34,18 @@ let adminItems: DropdownMenuItem[] = [
 	{
 		label: 'Edit Profile',
 		icon: 'flowbite:edit-solid',
-		onSelect: () => (editUserOpen.value = true),
-	},
+		onSelect: () => (editUserOpen.value = true)
+	}
 ];
 
 const items = ref<DropdownMenuItem[][]>([
 	[
 		{
 			label: user.fullName || user.username,
-			icon: 'flowbite:profile-card-solid',
-		},
+			icon: 'flowbite:profile-card-solid'
+		}
 	],
-	[],
+	[]
 ]);
 
 if (props.admin) {

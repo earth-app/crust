@@ -22,8 +22,8 @@ useHead({
 		{ name: 'apple-mobile-web-app-status-bar-style', content: 'black' },
 		{ name: 'mobile-web-app-capable', content: 'yes' },
 		{ name: 'msapplication-TileColor', content: THEME_COLOR },
-		{ name: 'msapplication-TileImage', content: '/favicon.png' },
-	],
+		{ name: 'msapplication-TileImage', content: '/favicon.png' }
+	]
 });
 
 useSeoMeta({
@@ -39,7 +39,7 @@ useSeoMeta({
 	twitterTitle: SITE_NAME,
 	twitterDescription: SITE_DESCRIPTION,
 	twitterCard: 'summary_large_image',
-	twitterCreator: '@theearthapp',
+	twitterCreator: '@theearthapp'
 });
 
 // Global Variables

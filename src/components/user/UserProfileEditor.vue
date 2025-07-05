@@ -56,18 +56,21 @@ const changed = ref(false);
 const accountProps = computed(() => {
 	if (!user.value?.account) return {};
 
-	return Object.keys(user.value.account).reduce((acc, key) => {
-		acc[key] = computed({
-			get: () => (user.value?.account as any)?.[key] ?? '',
-			set: (value) => {
-				if (user.value?.account) {
-					(user.value.account as any)[key] = value;
-					changed.value = true;
+	return Object.keys(user.value.account).reduce(
+		(acc, key) => {
+			acc[key] = computed({
+				get: () => (user.value?.account as any)?.[key] ?? '',
+				set: (value) => {
+					if (user.value?.account) {
+						(user.value.account as any)[key] = value;
+						changed.value = true;
+					}
 				}
-			},
-		});
-		return acc;
-	}, {} as Record<string, any>);
+			});
+			return acc;
+		},
+		{} as Record<string, any>
+	);
 });
 
 const firstName = computed(() => accountProps.value.firstName);
@@ -79,22 +82,26 @@ const address = computed(() => accountProps.value.address);
 const phoneNumber = computed(() => accountProps.value.phoneNumber);
 const id = computed(() => accountProps.value.id);
 
-const props: { name: string; type: InputTypeHTMLAttribute; computed: globalThis.Ref<string | number> }[] = [
+const props: {
+	name: string;
+	type: InputTypeHTMLAttribute;
+	computed: globalThis.Ref<string | number>;
+}[] = [
 	{
 		name: 'Email Address',
 		type: 'email',
-		computed: email,
+		computed: email
 	},
 	{
 		name: 'Address',
 		type: 'text',
-		computed: address,
+		computed: address
 	},
 	{
 		name: 'Phone Number',
 		type: 'tel',
-		computed: phoneNumber,
-	},
+		computed: phoneNumber
+	}
 ];
 
 async function updateUser() {

@@ -27,7 +27,7 @@ const icons = [
 	{ name: 'solar:rocket-bold-duotone', speed: 4, offset: 60, radius: 75 },
 	{ name: 'mdi:space-station', speed: 5, offset: 120 },
 	{ name: 'mdi:satellite-variant', speed: 7, offset: 240, radius: 65 },
-	{ name: 'solar:ufo-bold', speed: 4, offset: 300, radius: 80 },
+	{ name: 'solar:ufo-bold', speed: 4, offset: 300, radius: 80 }
 ];
 
 const angles = icons.map(() => ref(0));
@@ -57,7 +57,7 @@ function iconStyle(idx: number, offset: number = 360 / icons.length, radius: num
 	return {
 		top: `${y}%`,
 		left: `${x}%`,
-		transform: 'translate(-50%, -50%)',
+		transform: 'translate(-50%, -50%)'
 	};
 }
 

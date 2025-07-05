@@ -22,7 +22,9 @@
 					name="material-symbols:account-box"
 					class="text-white text-4xl"
 				/>
-				<span class="font-title text-xl text-shadow-2xs text-shadow-black">{{ user.username }}</span>
+				<span class="font-title text-xl text-shadow-2xs text-shadow-black">{{
+					user.username
+				}}</span>
 			</div>
 			<LoginPopup v-else />
 		</div>
