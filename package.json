@@ -9,7 +9,8 @@
     "prettier": "bunx prettier --write .",
     "prettier:check": "bunx prettier --check .",
     "wrangler:dev": "bunx wrangler dev .output/server/index.mjs --site .output/public --port 3000",
-    "deploy": "bunx wrangler deploy"
+    "deploy": "bunx wrangler deploy",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@earth-app/ocean": "^1.0.0-081b31b",
@@ -25,6 +26,12 @@
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.54",
+    "husky": "^9.1.7",
+	"lint-staged": "^16.1.2",
+    "prettier": "^3.6.2",
     "wrangler": "^4.22.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,json,yml,vue}": "prettier --write"
   }
 }
