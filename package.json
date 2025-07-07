@@ -26,8 +26,9 @@
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.54",
+    "@iconify-json/mdi": "^1.2.3",
     "husky": "^9.1.7",
-	"lint-staged": "^16.1.2",
+    "lint-staged": "^16.1.2",
     "prettier": "^3.6.2",
     "wrangler": "^4.22.0"
   },
