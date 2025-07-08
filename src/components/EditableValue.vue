@@ -17,13 +17,13 @@
 				v-model="localValue"
 				:type="props.type"
 				:size="props.size"
-				:autofocus="props.autofocus"
+				autofocus
 				ref="inputRef"
 				:class="props.inputClass"
 				:loading="loading"
 				@blur="finishEditing"
 				@keyup.enter="finishEditing"
-				@keyup.esc="editing = false"
+				@keyup.esc="cancelEditing"
 			/>
 			<UAlert
 				v-if="error"
@@ -41,17 +41,21 @@
 import { ref, watch, nextTick, type InputTypeHTMLAttribute } from 'vue';
 import { UInput, UAlert } from '#components';
 
-const props = defineProps<{
-	modelValue: string | number;
-	type?: InputTypeHTMLAttribute;
-	placeholder?: string;
-	disabled?: boolean;
-	autofocus?: boolean;
-	size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-	class?: string;
-	inputClass?: string;
-	onFinish?: (value: string | number) => boolean | string | Promise<string | boolean>;
-}>();
+const props = withDefaults(
+	defineProps<{
+		modelValue: string | number;
+		type?: InputTypeHTMLAttribute;
+		placeholder?: string;
+		disabled?: boolean;
+		size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+		class?: string;
+		inputClass?: string;
+		onFinish?: (value: string | number) => boolean | string | Promise<string | boolean>;
+	}>(),
+	{
+		modelValue: ''
+	}
+);
 
 const emit = defineEmits<{
 	(e: 'update:modelValue', value: string | number): void;
@@ -77,14 +81,12 @@ function startEditing() {
 	editing.value = true;
 	error.value = null;
 	emit('edit-start');
-	nextTick(() => {
-		inputRef.value?.focus();
-	});
 }
 
 async function finishEditing() {
+	emit('update:modelValue', localValue.value);
+
 	if (props.onFinish) {
-		emit('update:modelValue', localValue.value);
 		loading.value = true;
 		const result = await props.onFinish(localValue.value);
 		loading.value = false;
@@ -93,10 +95,17 @@ async function finishEditing() {
 			error.value = typeof result === 'string' ? result : 'Invalid input.';
 			return;
 		}
-
-		editing.value = false;
-		error.value = null;
-		emit('edit-end');
 	}
+
+	editing.value = false;
+	error.value = null;
+	emit('edit-end');
+}
+
+function cancelEditing() {
+	localValue.value = props.modelValue;
+	editing.value = false;
+	error.value = null;
+	emit('edit-end');
 }
 </script>
