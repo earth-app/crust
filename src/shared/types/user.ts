@@ -8,7 +8,7 @@ export type User = {
 	updated_at?: Date;
 	last_login?: Date;
 	account: {
-		type: string;
+		type: 'com.earthapp.account.Account';
 		id: string;
 		firstName?: string;
 		lastName?: string;
@@ -17,11 +17,14 @@ export type User = {
 		email?: string;
 		address?: string;
 		country?: string;
-		phoneNumber?: number;
-		visibility: {
+		phone_number?: number;
+		visibility: typeof com.earthapp.Visibility.prototype.name;
+		field_privacy: {
 			account: typeof com.earthapp.Visibility.prototype.name;
 			name: typeof com.earthapp.account.Privacy.prototype.name;
 			bio: typeof com.earthapp.account.Privacy.prototype.name;
+			phone_number: typeof com.earthapp.account.Privacy.prototype.name;
+			country: typeof com.earthapp.account.Privacy.prototype.name;
 			email: typeof com.earthapp.account.Privacy.prototype.name;
 			address: typeof com.earthapp.account.Privacy.prototype.name;
 			activities: typeof com.earthapp.account.Privacy.prototype.name;
@@ -30,10 +33,12 @@ export type User = {
 			last_login: typeof com.earthapp.account.Privacy.prototype.name;
 			account_type: typeof com.earthapp.account.Privacy.prototype.name;
 		};
+		activities: {
+			type: 'com.earthapp.activity.Activity';
+			id: string;
+			name: string;
+			description?: string;
+			activity_types: (typeof com.earthapp.activity.ActivityType.prototype.name)[];
+		}[];
 	};
-	activities?: {
-		id: string;
-		name: string;
-		types: (typeof com.earthapp.activity.ActivityType.prototype.name)[];
-	}[];
 };
