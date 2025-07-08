@@ -80,6 +80,46 @@ export async function updateAccount(user: User['account']) {
 	return { success: false, message: 'Failed to update user' };
 }
 
+export async function updateFieldPrivacy(privacy: Partial<User['account']['field_privacy']>) {
+	const config = useRuntimeConfig();
+	const token = useCookie('session_token').value;
+
+	if (!token) {
+		return { success: false, message: 'No session token found' };
+	}
+
+	try {
+		const { data, error } = await useFetch<User>(
+			`${config.public.apiBaseUrl}/v1/users/current/field_privacy`,
+			{
+				method: 'PATCH',
+				headers: {
+					Authorization: `Bearer ${token}`,
+					'Content-Type': 'application/json'
+				},
+				body: privacy
+			}
+		);
+
+		if (error.value) {
+			console.error('Error updating field privacy:', error.value);
+			return { success: false, message: error.value.message };
+		}
+
+		if (data.value) {
+			const auth = useAuth();
+			auth.user.value = data.value;
+
+			return { success: true, user: data.value };
+		}
+	} catch (error) {
+		console.error('Failed to update field privacy:', error);
+		throw error;
+	}
+
+	return { success: false, message: 'Failed to update field privacy' };
+}
+
 export async function getUsers(): Promise<User[]> {
 	const config = useRuntimeConfig();
 	const token = useCookie('session_token').value;
