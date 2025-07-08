@@ -1,9 +1,9 @@
 <template>
 	<div
 		v-if="user"
-		class="flex flex-row items-center justify-between"
+		class="flex flex-row items-center justify-between w-full"
 	>
-		<UserProfile :user="user" />
+		<UserProfileEditor :user="user" />
 	</div>
 	<div
 		v-else
