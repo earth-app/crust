@@ -74,6 +74,7 @@ const createAccountProp = (key: string) =>
 const firstName = createAccountProp('firstName');
 const lastName = createAccountProp('lastName');
 const username = createAccountProp('username');
+
 const email = createAccountProp('email');
 const address = createAccountProp('address');
 const phoneNumber = createAccountProp('phone_number');

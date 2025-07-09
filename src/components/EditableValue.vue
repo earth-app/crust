@@ -86,6 +86,13 @@ function startEditing() {
 async function finishEditing() {
 	emit('update:modelValue', localValue.value);
 
+	if (localValue.value === props.modelValue) {
+		editing.value = false;
+		error.value = null;
+		emit('edit-end');
+		return;
+	}
+
 	if (props.onFinish) {
 		loading.value = true;
 		const result = await props.onFinish(localValue.value);
