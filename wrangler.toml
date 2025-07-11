@@ -4,6 +4,7 @@ main = ".output/server/index.mjs"
 routes = [
     { pattern = "app.earth-app.com", custom_domain = true }
 ]
+send_metrics = false
 
 [observability]
 enabled = true
