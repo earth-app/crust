@@ -13,24 +13,25 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@earth-app/ocean": "^1.0.0-ed3512a",
+    "@earth-app/ocean": "^1.0.0-dd6961d",
     "@nuxt/icon": "^1.15.0",
     "@nuxt/ui": "^3.2.0",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@tailwindcss/vite": "^4.1.11",
-    "nuxt": "^3.17.6",
+    "nuxt": "^3.17.7",
     "tailwindcss": "^4.1.11",
     "tailwindcss-motion": "^1.1.1",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "^1.2.56",
+    "@iconify-json/lucide": "^1.2.57",
+    "@iconify-json/material-symbols-light": "^1.2.29",
     "@iconify-json/mdi": "^1.2.3",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
     "prettier": "^3.6.2",
-    "wrangler": "^4.24.0"
+    "wrangler": "^4.24.3"
   },
   "lint-staged": {
     "*.{js,ts,json,yml,vue}": "prettier --write"
