@@ -1,32 +1,20 @@
-import { useRequestHeaders, useCookie, useRuntimeConfig } from '#imports';
+import { makeAPIRequest as makeAPIRequest, paginatedAPIRequest } from '~/shared/util';
 import type { User } from '~/shared/types/user';
+import { getSessionToken } from './useLogin';
 
 export async function useCurrentUser() {
-	const config = useRuntimeConfig();
+	return await makeAPIRequest<User>('user-current', '/v1/users/current', getSessionToken());
+}
 
-	let token: string | null | undefined;
-
-	if (import.meta.server) {
-		const headers = useRequestHeaders(['cookie']);
-		const cookieHeader = headers.cookie || '';
-		const match = cookieHeader.match(/session_token=([^;]+)/);
-		token = match?.[1];
-	} else {
-		token = useCookie('session_token').value;
-	}
-
-	if (!token) return null;
-
-	try {
-		return await $fetch<User>(`${config.public.apiBaseUrl}/v1/users/current`, {
-			headers: {
-				Authorization: `Bearer ${token}`
-			}
-		});
-	} catch (error) {
-		console.error('Failed to fetch current user:', error);
-		return null;
-	}
+export async function useCurrentAvatar() {
+	return await makeAPIRequest<Blob>(
+		'avatar-current',
+		'/v1/users/current/profile_photo',
+		getSessionToken(),
+		{
+			responseType: 'blob'
+		}
+	);
 }
 
 export const useAuth = () => {
@@ -34,8 +22,15 @@ export const useAuth = () => {
 
 	const fetchUser = async () => {
 		const res = await useCurrentUser();
-		user.value = res;
+		if (res.success && res.data) {
+			user.value = res.data;
+		}
 	};
+
+	// If user is not loaded, fetch it
+	if (!user.value) {
+		fetchUser();
+	}
 
 	return {
 		user,
@@ -43,105 +38,51 @@ export const useAuth = () => {
 	};
 };
 
-export async function updateAccount(user: User['account']) {
-	const config = useRuntimeConfig();
-	const token = useCookie('session_token').value;
-
-	if (!token) {
-		return { success: false, message: 'No session token found' };
-	}
-
-	try {
-		const { data, error } = await useFetch<User>(`${config.public.apiBaseUrl}/v1/users/current`, {
-			method: 'PATCH',
-			headers: {
-				Authorization: `Bearer ${token}`,
-				'Content-Type': 'application/json'
-			},
-			body: user
-		});
-
-		if (error.value) {
-			console.error('Error updating user:', error.value);
-			return { success: false, message: error.value.message };
-		}
-
-		if (data.value) {
-			const auth = useAuth();
-			auth.user.value = data.value;
-
-			return { success: true, user: data.value };
-		}
-	} catch (error) {
-		console.error('Failed to update user:', error);
-		throw error;
-	}
-
-	return { success: false, message: 'Failed to update user' };
+export async function updateAccount(user: Partial<User['account']>) {
+	return await makeAPIRequest<User>(null, '/v1/users/current/account', getSessionToken(), {
+		method: 'PATCH',
+		body: user
+	});
 }
 
 export async function updateFieldPrivacy(privacy: Partial<User['account']['field_privacy']>) {
-	const config = useRuntimeConfig();
-	const token = useCookie('session_token').value;
-
-	if (!token) {
-		return { success: false, message: 'No session token found' };
-	}
-
-	try {
-		const { data, error } = await useFetch<User>(
-			`${config.public.apiBaseUrl}/v1/users/current/field_privacy`,
-			{
-				method: 'PATCH',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'Content-Type': 'application/json'
-				},
-				body: privacy
-			}
-		);
-
-		if (error.value) {
-			console.error('Error updating field privacy:', error.value);
-			return { success: false, message: error.value.message };
-		}
-
-		if (data.value) {
-			const auth = useAuth();
-			auth.user.value = data.value;
-
-			return { success: true, user: data.value };
-		}
-	} catch (error) {
-		console.error('Failed to update field privacy:', error);
-		throw error;
-	}
-
-	return { success: false, message: 'Failed to update field privacy' };
+	return await makeAPIRequest<User>(null, '/v1/users/current/field_privacy', getSessionToken(), {
+		method: 'PATCH',
+		body: privacy
+	});
 }
 
-export async function getUsers(): Promise<User[]> {
-	const config = useRuntimeConfig();
-	const token = useCookie('session_token').value;
-	try {
-		let headers: Record<string, string> = {};
+export async function regenerateAvatar() {
+	return await makeAPIRequest<Blob>(null, '/v1/users/current/profile_photo', getSessionToken(), {
+		method: 'PUT',
+		responseType: 'blob'
+	});
+}
 
-		if (token) headers['Authorization'] = `Bearer ${token}`;
-		headers['Content-Type'] = 'application/json';
+// Other Users
 
-		const { data, error } = await useFetch<{ items: User[] }>(
-			`${config.public.apiBaseUrl}/v1/users`,
-			{}
-		);
+export async function getUsers(limit: number = 25, search: string = '') {
+	return await paginatedAPIRequest<User>(
+		`users-${search}-${limit}`,
+		`/v1/users`,
+		getSessionToken(),
+		{},
+		limit,
+		search
+	);
+}
 
-		if (error.value) {
-			console.error('Error fetching users:', error.value);
-			return [];
+export async function getUser(identifier: string) {
+	return await makeAPIRequest<User>(`user-${identifier}`, `/v1/users/${identifier}`);
+}
+
+export async function getUserAvatar(identifier: string) {
+	return await makeAPIRequest<Blob>(
+		`avatar-${identifier}`,
+		`/v1/users/${identifier}/profile_photo`,
+		getSessionToken(),
+		{
+			responseType: 'blob'
 		}
-
-		return data.value?.items || [];
-	} catch (error) {
-		console.error('Failed to fetch users:', error);
-		return [];
-	}
+	);
 }

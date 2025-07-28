@@ -26,3 +26,8 @@ export function useLogin() {
 		}
 	};
 }
+
+export function getSessionToken() {
+	const sessionCookie = useCookie('session_token');
+	return sessionCookie.value || null;
+}
