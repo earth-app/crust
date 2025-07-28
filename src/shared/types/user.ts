@@ -9,6 +9,7 @@ export type User = {
 	last_login?: Date;
 	account: {
 		type: 'com.earthapp.account.Account';
+		account_type: typeof com.earthapp.account.AccountType.prototype.name;
 		id: string;
 		firstName?: string;
 		lastName?: string;
