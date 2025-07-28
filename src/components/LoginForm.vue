@@ -45,6 +45,7 @@
 
 <script setup lang="ts">
 import { useLogin } from '~/compostables/useLogin';
+import { useAuth } from '~/compostables/useUser';
 
 const username = ref('');
 const password = ref('');
@@ -52,6 +53,11 @@ const loading = ref(false);
 const error = ref('');
 
 const login = useLogin();
+const { fetchUser } = useAuth();
+
+const emit = defineEmits<{
+	loginSuccess: [];
+}>();
 
 async function handleLogin() {
 	loading.value = true;
@@ -60,7 +66,9 @@ async function handleLogin() {
 	const result = await login(username.value, password.value);
 
 	if (result.success) {
-		await navigateTo('/');
+		// Fetch user data to update the auth state
+		await fetchUser();
+		emit('loginSuccess');
 	} else {
 		error.value = 'Invalid credentials';
 	}

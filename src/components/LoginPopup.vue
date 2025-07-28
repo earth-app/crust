@@ -13,7 +13,7 @@
 		</UButton>
 
 		<template #content>
-			<LoginForm />
+			<LoginForm @login-success="handleLoginSuccess" />
 		</template>
 	</UPopover>
 </template>
@@ -23,4 +23,8 @@ import { ref } from 'vue';
 import LoginForm from '~/components/LoginForm.vue';
 
 const isOpen = ref(false);
+
+function handleLoginSuccess() {
+	isOpen.value = false; // Close the popup after successful login
+}
 </script>
