@@ -18,9 +18,9 @@
 				class="flex items-center justify-center space-x-1 cursor-pointer hover:opacity-80 transition-opacity duration-250"
 				@click="$router.push('/profile')"
 			>
-				<Icon
-					name="material-symbols:account-box"
-					class="text-white text-4xl"
+				<UAvatar
+					:src="avatarUrl"
+					class="w-12 h-12 rounded-full shadow-lg shadow-black/50"
 				/>
 				<span class="font-title text-xl text-shadow-2xs text-shadow-black">{{
 					user.username
@@ -32,8 +32,25 @@
 </template>
 
 <script setup lang="ts">
-import { useAuth } from '~/compostables/useUser';
+import { useAuth, useCurrentAvatar } from '~/compostables/useUser';
 import LoginPopup from './LoginPopup.vue';
+
+const avatarUrl = ref<string | undefined>(undefined);
+let objectUrl: string | undefined = undefined;
+
+onMounted(async () => {
+	const res = await useCurrentAvatar();
+	if (res.success && res.data) {
+		if (objectUrl) URL.revokeObjectURL(objectUrl);
+
+		objectUrl = URL.createObjectURL(res.data);
+		avatarUrl.value = objectUrl;
+	}
+});
+
+onBeforeUnmount(() => {
+	if (objectUrl) URL.revokeObjectURL(objectUrl);
+});
 
 const { user } = useAuth();
 </script>
