@@ -9,10 +9,8 @@
 	"tailwindCSS.experimental.classRegex": [["ui:\\s*{([^)]*)\\s*}", "(?:'|\"|`)([^']*)(?:'|\"|`)"]],
 	"editor.formatOnSave": true,
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
-	"[vue]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
 	"prettier.useTabs": true,
 	"prettier.tabWidth": 4,
-	"prettier.printWidth": 100
+	"prettier.printWidth": 100,
+	"npm.packageManager": "bun"
 }
