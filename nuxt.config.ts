@@ -4,14 +4,19 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineNuxtConfig({
 	runtimeConfig: {
+		adminApiKey: process.env.NUXT_ADMIN_API_KEY || '',
+		baseUrl: process.env.NUXT_BASE_URL || 'http://app.earth-app.com',
 		public: {
-			apiBaseUrl: 'https://api.earth-app.com'
+			baseUrl: process.env.NUXT_PUBLIC_BASE_URL || 'http://app.earth-app.com',
+			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://api.earth-app.com',
+			cloudBaseUrl: process.env.NUXT_PUBLIC_CLOUD_BASE_URL || 'http://cloud.earth-app.com'
 		}
 	},
 	ssr: true,
 	compatibilityDate: '2025-06-20',
 	devtools: { enabled: true },
 	srcDir: 'src',
+	serverDir: 'src/server',
 	css: ['~/assets/css/main.css'],
 	vite: {
 		plugins: [tailwindcss()]
