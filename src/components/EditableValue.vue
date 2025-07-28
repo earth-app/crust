@@ -25,21 +25,13 @@
 				@keyup.enter="finishEditing"
 				@keyup.esc="cancelEditing"
 			/>
-			<UAlert
-				v-if="error"
-				color="error"
-				variant="subtle"
-				icon="i-heroicons-exclamation-triangle"
-				:title="error"
-				class="text-sm"
-			/>
 		</template>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, type InputTypeHTMLAttribute } from 'vue';
-import { UInput, UAlert } from '#components';
+import { ref, watch, type InputTypeHTMLAttribute } from 'vue';
+import { UInput } from '#components';
 
 const props = withDefaults(
 	defineProps<{
@@ -65,7 +57,6 @@ const emit = defineEmits<{
 
 const editing = ref(false);
 const localValue = ref(props.modelValue);
-const error = ref<string | null>(null);
 const loading = ref(false);
 const inputRef = ref<HTMLInputElement>();
 
@@ -79,7 +70,6 @@ watch(
 function startEditing() {
 	if (props.disabled) return;
 	editing.value = true;
-	error.value = null;
 	emit('edit-start');
 }
 
@@ -88,31 +78,48 @@ async function finishEditing() {
 
 	if (localValue.value === props.modelValue) {
 		editing.value = false;
-		error.value = null;
 		emit('edit-end');
 		return;
 	}
 
 	if (props.onFinish) {
-		loading.value = true;
-		const result = await props.onFinish(localValue.value);
-		loading.value = false;
+		try {
+			loading.value = true;
+			const result = await props.onFinish(localValue.value);
+			loading.value = false;
 
-		if (result !== true) {
-			error.value = typeof result === 'string' ? result : 'Invalid input.';
-			return;
+			if (result !== true) {
+				const toast = useToast();
+				toast.add({
+					title: 'Error',
+					description: 'Invalid value provided.',
+					color: 'error',
+					icon: 'mdi:alert-circle',
+					duration: 3000
+				});
+			}
+		} catch (err) {
+			loading.value = false;
+			console.error('Error updating value:', err);
+
+			const toast = useToast();
+			toast.add({
+				title: 'Error',
+				description: err instanceof Error ? err.message : 'An unexpected error occurred.',
+				color: 'error',
+				icon: 'mdi:alert-circle',
+				duration: 3000
+			});
 		}
 	}
 
 	editing.value = false;
-	error.value = null;
 	emit('edit-end');
 }
 
 function cancelEditing() {
 	localValue.value = props.modelValue;
 	editing.value = false;
-	error.value = null;
 	emit('edit-end');
 }
 </script>
