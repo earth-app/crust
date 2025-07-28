@@ -9,29 +9,35 @@
     "prettier": "bunx prettier --write .",
     "prettier:check": "bunx prettier --check .",
     "wrangler:dev": "bunx wrangler dev .output/server/index.mjs --site .output/public --port 3000",
-    "deploy": "bunx wrangler deploy",
+    "deploy": "bunx wrangler deploy --minify",
     "prepare": "husky install"
   },
   "dependencies": {
-    "@earth-app/ocean": "^1.0.0-dd6961d",
+    "@earth-app/ocean": "1.0.0-76c2cf6",
     "@nuxt/icon": "^1.15.0",
-    "@nuxt/ui": "^3.2.0",
+    "@nuxt/kit": "^4.0.1",
+    "@nuxt/ui": "^3.3.0",
+    "@nuxtjs/color-mode": "^3.5.2",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@tailwindcss/vite": "^4.1.11",
-    "nuxt": "^3.17.7",
+    "nuxt": "^4.0.1",
     "tailwindcss": "^4.1.11",
     "tailwindcss-motion": "^1.1.1",
-    "vue": "^3.5.17",
+    "vue": "^3.5.18",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "^1.2.57",
-    "@iconify-json/material-symbols-light": "^1.2.29",
+    "@iconify-json/carbon": "^1.2.11",
+    "@iconify-json/circum": "^1.2.2",
+    "@iconify-json/lucide": "^1.2.58",
+    "@iconify-json/material-symbols": "^1.2.30",
+    "@iconify-json/material-symbols-light": "^1.2.30",
     "@iconify-json/mdi": "^1.2.3",
+    "@iconify-json/solar": "^1.2.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
     "prettier": "^3.6.2",
-    "wrangler": "^4.24.3"
+    "wrangler": "^4.26.0"
   },
   "lint-staged": {
     "*.{js,ts,json,yml,vue}": "prettier --write"
