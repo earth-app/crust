@@ -19,11 +19,22 @@
 				{{ props.user.account.bio }}
 			</span>
 		</div>
+		<div class="flex items-center space-x-2">
+			<UBadge
+				v-for="(activity, i) in props.user.account.activities"
+				:label="activity.name"
+				:color="i <= 2 ? 'primary' : 'secondary'"
+				:icon="activityIcons[activity.id as keyof typeof activityIcons]"
+				variant="outline"
+				size="xl"
+			/>
+		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
+import { activityIcons } from '~/compostables/useActivity';
 import { getUserAvatar } from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 
