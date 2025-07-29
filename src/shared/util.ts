@@ -156,3 +156,10 @@ export async function paginatedAPIRequest<T>(
 
 	return { success: true, data: allItems.slice(0, limit) };
 }
+
+export function capitalizeFully(str: string): string {
+	if (!str) return '';
+
+	const parts = str.split(' ');
+	return parts.map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join(' ');
+}
