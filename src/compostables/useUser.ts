@@ -1,16 +1,21 @@
 import { makeAPIRequest as makeAPIRequest, paginatedAPIRequest } from '~/shared/util';
 import type { User } from '~/shared/types/user';
-import { getSessionToken } from './useLogin';
+import { useCurrentSessionToken } from './useLogin';
 
 export async function useCurrentUser() {
-	return await makeAPIRequest<User>('user-current', '/v1/users/current', getSessionToken());
+	const token = useCurrentSessionToken();
+	if (!token) {
+		return { success: false, message: 'Unauthenticated. Please log in to continue.' };
+	}
+
+	return await makeAPIRequest<User>('user-current', '/v1/users/current', token);
 }
 
 export async function useCurrentAvatar() {
 	return await makeAPIRequest<Blob>(
 		'avatar-current',
 		'/v1/users/current/profile_photo',
-		getSessionToken(),
+		useCurrentSessionToken(),
 		{
 			responseType: 'blob'
 		}
@@ -39,24 +44,46 @@ export const useAuth = () => {
 };
 
 export async function updateAccount(user: Partial<User['account']>) {
-	return await makeAPIRequest<User>(null, '/v1/users/current/account', getSessionToken(), {
+	return await makeAPIRequest<User>(null, '/v1/users/current/account', useCurrentSessionToken(), {
 		method: 'PATCH',
 		body: user
 	});
 }
 
 export async function updateFieldPrivacy(privacy: Partial<User['account']['field_privacy']>) {
-	return await makeAPIRequest<User>(null, '/v1/users/current/field_privacy', getSessionToken(), {
-		method: 'PATCH',
-		body: privacy
-	});
+	return await makeAPIRequest<User>(
+		null,
+		'/v1/users/current/field_privacy',
+		useCurrentSessionToken(),
+		{
+			method: 'PATCH',
+			body: privacy
+		}
+	);
 }
 
 export async function regenerateAvatar() {
-	return await makeAPIRequest<Blob>(null, '/v1/users/current/profile_photo', getSessionToken(), {
-		method: 'PUT',
-		responseType: 'blob'
-	});
+	return await makeAPIRequest<Blob>(
+		null,
+		'/v1/users/current/profile_photo',
+		useCurrentSessionToken(),
+		{
+			method: 'PUT',
+			responseType: 'blob'
+		}
+	);
+}
+
+export async function setUserActivities(activities: string[]) {
+	return await makeAPIRequest<User>(
+		null,
+		'/v1/users/current/activities/set',
+		useCurrentSessionToken(),
+		{
+			method: 'PATCH',
+			body: activities
+		}
+	);
 }
 
 // Other Users
@@ -65,7 +92,7 @@ export async function getUsers(limit: number = 25, search: string = '') {
 	return await paginatedAPIRequest<User>(
 		`users-${search}-${limit}`,
 		`/v1/users`,
-		getSessionToken(),
+		useCurrentSessionToken(),
 		{},
 		limit,
 		search
@@ -73,14 +100,18 @@ export async function getUsers(limit: number = 25, search: string = '') {
 }
 
 export async function getUser(identifier: string) {
-	return await makeAPIRequest<User>(`user-${identifier}`, `/v1/users/${identifier}`);
+	return await makeAPIRequest<User>(
+		`user-${identifier}`,
+		`/v1/users/${identifier}`,
+		useCurrentSessionToken()
+	);
 }
 
 export async function getUserAvatar(identifier: string) {
 	return await makeAPIRequest<Blob>(
 		`avatar-${identifier}`,
 		`/v1/users/${identifier}/profile_photo`,
-		getSessionToken(),
+		useCurrentSessionToken(),
 		{
 			responseType: 'blob'
 		}
