@@ -54,5 +54,8 @@ export async function editActivity(activity: Activity) {
 // Activity Icons
 
 export const activityIcons = {
-	coding: 'material-symbols:code'
+	coding: 'material-symbols:code',
+	track: 'healthicons:running',
+	cross_country: 'material-symbols:3k-plus',
+	writing: 'material-symbols:ink-pen-rounded'
 };
