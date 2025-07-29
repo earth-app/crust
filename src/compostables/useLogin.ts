@@ -27,7 +27,14 @@ export function useLogin() {
 	};
 }
 
-export function getSessionToken() {
-	const sessionCookie = useCookie('session_token');
-	return sessionCookie.value || null;
+export function useCurrentSessionToken() {
+	if (import.meta.server) {
+		const headers = useRequestHeaders(['cookie']);
+		const cookieHeader = headers.cookie || '';
+		const match = cookieHeader.match(/session_token=([^;]+)/);
+		return match?.[1] || null;
+	} else {
+		const sessionCookie = useCookie('session_token');
+		return sessionCookie.value || null;
+	}
 }
