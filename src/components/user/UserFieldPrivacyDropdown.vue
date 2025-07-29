@@ -111,6 +111,14 @@ async function updatePrivacy(item: DropdownMenuItem) {
 	user.account.field_privacy[props.field] = item.value as any;
 	selected.value = item.value;
 
+	const toast = useToast();
+	toast.add({
+		title: 'Success',
+		description: `Privacy for ${props.field} updated to ${item.label}.`,
+		color: 'success',
+		duration: 3000
+	});
+
 	loading.value = false;
 }
 </script>
