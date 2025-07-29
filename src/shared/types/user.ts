@@ -21,7 +21,6 @@ export type User = {
 		phone_number?: number;
 		visibility: typeof com.earthapp.Visibility.prototype.name;
 		field_privacy: {
-			account: typeof com.earthapp.Visibility.prototype.name;
 			name: typeof com.earthapp.account.Privacy.prototype.name;
 			bio: typeof com.earthapp.account.Privacy.prototype.name;
 			phone_number: typeof com.earthapp.account.Privacy.prototype.name;
