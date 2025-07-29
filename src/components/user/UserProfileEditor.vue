@@ -293,6 +293,8 @@ onBeforeUnmount(() => {
 });
 
 async function regenerateProfilePhoto() {
+	if (!confirm('Are you sure? You cannot revert this action.')) return;
+
 	avatarLoading.value = true;
 
 	const res = await useUser.regenerateAvatar();
