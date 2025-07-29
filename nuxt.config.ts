@@ -22,7 +22,22 @@ export default defineNuxtConfig({
 		plugins: [tailwindcss()]
 	},
 	nitro: {
-		preset: 'cloudflare'
+		preset: 'cloudflare_module',
+		cloudflare: {
+			deployConfig: true,
+			nodeCompat: true
+		}
+	},
+	hub: {
+		cache: true,
+		bindings: {
+			compatibilityDate: '2025-06-20',
+			observability: {
+				logs: {
+					head_sampling_rate: 0.1
+				}
+			}
+		}
 	},
 	routeRules: {
 		'/': { prerender: true },
@@ -30,6 +45,7 @@ export default defineNuxtConfig({
 	},
 
 	modules: [
+		'@nuxthub/core',
 		'@nuxt/ui',
 		[
 			'@nuxtjs/google-fonts',
