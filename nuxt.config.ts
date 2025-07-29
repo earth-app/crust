@@ -29,6 +29,7 @@ export default defineNuxtConfig({
 		}
 	},
 	hub: {
+		projectKey: 'earthapp-crust-tdti',
 		cache: true,
 		bindings: {
 			compatibilityDate: '2025-06-20',
