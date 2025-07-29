@@ -28,9 +28,8 @@ jobs:
         run: bun install --frozen-lockfile
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build Project
-        run: bun run build
       - name: Deploy to NuxtHub
-        uses: nuxt-hub/action@v2
-        with:
-          project-key: ${{ vars.NUXT_HUB_PROJECT_KEY }}
+        run: bunx nuxthub deploy
+        env:
+          NUXT_HUB_PROJECT_KEY: ${{ vars.NUXT_HUB_PROJECT_KEY }}
+          NUXT_HUB_USER_TOKEN: ${{ secrets.NUXT_HUB_USER_TOKEN }}
