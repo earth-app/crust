@@ -41,15 +41,67 @@
 			:onFinish="updateUser"
 		/>
 
-		<h3 class="text-md text-gray-600 italic mt-8">Bio</h3>
+		<h3 class="text-2xl text-gray-600 italic mt-8 underline">Bio</h3>
 		<EditableValue
 			v-model="bio"
 			class="text-lg mt-2 w-3/4"
-			size="lg"
+			size="xl"
 			placeholder="Tell us about yourself..."
 			:onFinish="updateUser"
 		/>
-		<div class="mt-12 border-t-4 border-black dark:border-white w-2/5 min-w-144">
+
+		<h3 class="text-2xl text-gray-600 italic mt-8 underline">Activities</h3>
+		<UInputMenu
+			placeholder="Select your activities..."
+			v-model="currentActivities"
+			:items="allActivities"
+			size="xl"
+			class="w-2/7 mt-2"
+			multiple
+			deleteIcon="i-lucide-trash"
+			@update:modelValue="updateActivities"
+		/>
+
+		<h3 class="text-2xl text-gray-600 italic mt-10 underline">Settings</h3>
+		<div class="mt-2 border-t-4 border-black dark:border-white w-2/5 min-w-144">
+			<div class="mt-4 w-full grid grid-cols-3 gap-x-4">
+				<h2 class="text-xl">Account Visibility</h2>
+				<UDropdownMenu
+					title="Visibility Settings"
+					:items="accountVisibilityOptions"
+					:ui="{ content: 'w-48' }"
+				>
+					<UButton
+						:icon="'mdi:eye'"
+						:label="
+							accountVisibilityOptions.find((opt) => opt.value === accountVisibility)?.label ||
+							'Select Visibility'
+						"
+						color="neutral"
+						variant="outline"
+					/>
+					<template #item="{ item }">
+						<button
+							class="flex items-center w-full px-2 py-1.5 gap-2 text-left"
+							@click="updateAccountVisibility(item.value)"
+						>
+							<div class="flex flex-col">
+								<div class="flex flex-row items-center gap-1">
+									<UIcon :name="item.icon || 'mdi:lock'" />
+									<span class="font-medium text-sm">
+										{{ item.label }}
+									</span>
+								</div>
+								<span
+									v-if="item.description"
+									class="text-xs text-gray-500"
+									>{{ item.description }}</span
+								>
+							</div>
+						</button>
+					</template>
+				</UDropdownMenu>
+			</div>
 			<div
 				v-for="prop in props"
 				class="mt-4 w-full grid grid-cols-3 gap-x-4"
@@ -61,7 +113,7 @@
 					:field="prop.id"
 				/>
 				<EditableValue
-					v-if="prop.type !== 'dropdown'"
+					v-if="prop.type !== 'dropdown' && prop.computed"
 					v-model="prop.computed.value"
 					class="text-lg mt-2"
 					size="lg"
@@ -69,10 +121,10 @@
 					:onFinish="updateUser"
 				/>
 				<UDropdownMenu
-					v-if="prop.type === 'dropdown'"
+					v-if="prop.type === 'dropdown' && prop.computed"
 					:items="prop.dropdownItems"
 					:value="prop.computed.value"
-					@update:value="(value: string) => (prop.computed.value = value)"
+					@update:value="(value: string) => (prop.computed!.value = value)"
 					:ui="{
 						content: 'h-48 overflow-y-auto'
 					}"
@@ -100,10 +152,12 @@
 
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
-import { regenerateAvatar, updateAccount, useCurrentAvatar } from '~/compostables/useUser';
+import * as useUser from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 import type { InputTypeHTMLAttribute } from 'vue';
 import { UButton } from '#components';
+import { activityIcons, getActivities } from '~/compostables/useActivity';
+import { capitalizeFully } from '~/shared/util';
 
 const componentProps = defineProps<{
 	user: User;
@@ -138,9 +192,9 @@ const country = createAccountProp('country');
 const props: {
 	name: string;
 	id: keyof User['account']['field_privacy'];
-	type: InputTypeHTMLAttribute | 'dropdown';
+	type?: InputTypeHTMLAttribute | 'dropdown';
 	dropdownItems?: { label: string; value: string }[];
-	computed: globalThis.Ref<string | number>;
+	computed?: globalThis.Ref<string | number>;
 }[] = [
 	{
 		name: 'Email Address',
@@ -169,6 +223,10 @@ const props: {
 			value: country.code
 		})),
 		computed: country
+	},
+	{
+		name: 'Activities',
+		id: 'activities'
 	}
 ];
 
@@ -189,7 +247,7 @@ async function updateUser() {
 	if (user.value) {
 		if (!changed.value) return true;
 
-		const res = await updateAccount(sanitize(user.value.account));
+		const res = await useUser.updateAccount(sanitize(user.value.account));
 		if (!res.success) {
 			return res.message || 'Failed to update profile.';
 		}
@@ -211,7 +269,7 @@ async function updateUser() {
 
 function getLabel(key: keyof User['account']['field_privacy']): string {
 	const enumeration = user.value.account.field_privacy[key] ?? 'PRIVATE';
-	return enumeration.charAt(0).toUpperCase() + enumeration.slice(1).toLowerCase();
+	return capitalizeFully(enumeration);
 }
 
 // Profile Photo
@@ -221,7 +279,7 @@ let objectUrl: string | undefined = undefined;
 const avatarLoading = ref(false);
 
 onMounted(async () => {
-	const res = await useCurrentAvatar();
+	const res = await useUser.useCurrentAvatar();
 	if (res.success && res.data) {
 		if (objectUrl) URL.revokeObjectURL(objectUrl);
 
@@ -237,7 +295,7 @@ onBeforeUnmount(() => {
 async function regenerateProfilePhoto() {
 	avatarLoading.value = true;
 
-	const res = await regenerateAvatar();
+	const res = await useUser.regenerateAvatar();
 	if (res.data) {
 		if (objectUrl) URL.revokeObjectURL(objectUrl);
 		objectUrl = URL.createObjectURL(res.data);
@@ -260,6 +318,150 @@ async function regenerateProfilePhoto() {
 		toast.add({
 			title: 'Error',
 			description: res.message || 'Failed to regenerate profile photo.',
+			color: 'error',
+			duration: 5000
+		});
+	}
+}
+
+// Activities
+
+const allActivities = ref<{ label: string; value: string; icon: string }[]>([]);
+const currentActivities = ref<{ label: string; value: string; icon: string }[]>([]);
+
+onMounted(async () => {
+	const res = await getActivities();
+	if (res.success) {
+		const activities =
+			res.data?.map((activity) => {
+				return {
+					label: activity.name,
+					value: activity.id,
+					icon:
+						activityIcons[activity.id as keyof typeof activityIcons] ||
+						'material-symbols:activity-zone'
+				};
+			}) || [];
+		allActivities.value = activities;
+
+		// Initialize current activities from user data
+		if (user.value?.account?.activities) {
+			currentActivities.value = user.value.account.activities
+				.map((userActivity) => {
+					return {
+						label: userActivity.name,
+						value: userActivity.id,
+						icon:
+							activityIcons[userActivity.id as keyof typeof activityIcons] ||
+							'material-symbols:activity-zone'
+					};
+				})
+				.filter(Boolean);
+		}
+	} else {
+		console.error(res.message || 'Failed to fetch activities.');
+	}
+});
+
+watch(
+	() => user.value?.account?.activities,
+	(newActivities) => {
+		if (newActivities && allActivities.value.length > 0) {
+			currentActivities.value = newActivities.map((activity) => {
+				return {
+					label: activity.name,
+					value: activity.id,
+					icon:
+						activityIcons[activity.id as keyof typeof activityIcons] ||
+						'material-symbols:activity-zone'
+				};
+			});
+		}
+	},
+	{ deep: true }
+);
+
+async function updateActivities() {
+	if (!user.value) return;
+
+	if (currentActivities.value.length === 0) return;
+	if (currentActivities.value.length >= 10) {
+		const toast = useToast();
+		toast.add({
+			title: 'Too Many Activities',
+			description: 'You can only select up to 10 activities.',
+			color: 'warning',
+			duration: 5000
+		});
+		return;
+	}
+
+	const res = await useUser.setUserActivities(
+		currentActivities.value.map((activity) => activity.value as string)
+	);
+	if (res.success && res.data) {
+		user.value.account.activities = res.data.account.activities;
+
+		const toast = useToast();
+		toast.add({
+			title: 'Activities Updated',
+			description: 'Your activities have been successfully updated.',
+			color: 'success',
+			icon: 'mdi:check-circle',
+			duration: 3000
+		});
+	} else {
+		console.error(res.message || 'Failed to update activities.');
+		const toast = useToast();
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to update activities.',
+			color: 'error',
+			duration: 5000
+		});
+	}
+}
+
+// Account Privacy
+const accountVisibility = computed({
+	get: () => user.value.account.visibility,
+	set: (value) => {
+		user.value.account.visibility = value;
+	}
+});
+
+const accountVisibilityOptions = com.earthapp.Visibility.values().map((value) => ({
+	label: capitalizeFully(value.name),
+	value: value.name,
+	icon: ['mdi:lock', 'mdi:account-box', 'mdi:office-building'][value.ordinal],
+	description: [
+		'Only you and friends can see',
+		'Invisible to search and anonymous users',
+		'Everyone can see'
+	][value.ordinal]
+}));
+
+async function updateAccountVisibility(value: User['account']['visibility']) {
+	if (value === accountVisibility.value) return;
+
+	const res = await useUser.updateAccount(user.value);
+	if (res.success) {
+		accountVisibility.value = value;
+
+		const toast = useToast();
+		toast.add({
+			title: 'Privacy Updated',
+			description: 'Your account privacy has been successfully updated.',
+			color: 'success',
+			icon: 'mdi:check-circle',
+			duration: 3000
+		});
+	} else {
+		console.error(res.message || 'Failed to update account privacy.');
+		const toast = useToast();
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to update account privacy.',
 			color: 'error',
 			duration: 5000
 		});
