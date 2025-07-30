@@ -1,4 +1,4 @@
-import { makeAPIRequest, makeServerRequest, paginatedAPIRequest } from '~/shared/util';
+import * as util from '~/shared/util';
 import { type Activity } from '~/shared/types/activity';
 import { useCurrentSessionToken } from './useLogin';
 
@@ -6,8 +6,8 @@ import { useCurrentSessionToken } from './useLogin';
 // cloud - /v1/activity
 
 export async function getActivities(limit: number = 25, search: string = '') {
-	return await paginatedAPIRequest<Activity>(
-		`activities-${search}-${limit}`,
+	return await util.paginatedAPIRequest<Activity>(
+		null,
 		'/v1/activities',
 		useCurrentSessionToken(),
 		{},
@@ -17,7 +17,7 @@ export async function getActivities(limit: number = 25, search: string = '') {
 }
 
 export async function getActivity(id: string) {
-	return await makeAPIRequest<Activity>(
+	return await util.makeAPIRequest<Activity>(
 		`activity-${id}`,
 		`/v1/activities/${id}`,
 		useCurrentSessionToken()
@@ -25,7 +25,7 @@ export async function getActivity(id: string) {
 }
 
 export async function draftActivity(id: string) {
-	return await makeServerRequest<Activity>(
+	return await util.makeServerRequest<Activity>(
 		`draft-activity-${id}`,
 		`/api/admin/draftActivity?id=${id}`,
 		useCurrentSessionToken()
@@ -33,15 +33,18 @@ export async function draftActivity(id: string) {
 }
 
 export async function newActivity(activity: Activity) {
-	return await makeAPIRequest<Activity>(null, '/v1/activities/create', useCurrentSessionToken(), {
-		method: 'POST',
-		body: activity
-	});
+	return await util.makeClientAPIRequest<Activity>(
+		'/v1/activities/create',
+		useCurrentSessionToken(),
+		{
+			method: 'POST',
+			body: activity
+		}
+	);
 }
 
 export async function editActivity(activity: Activity) {
-	return await makeAPIRequest<Activity>(
-		null,
+	return await util.makeClientAPIRequest<Activity>(
 		`/v1/activities/${activity.id}`,
 		useCurrentSessionToken(),
 		{

@@ -1,52 +1,64 @@
 <template>
-	<UDropdownMenu
-		title="Privacy Settings"
-		:items="items"
-		:ui="{ content: 'w-48' }"
-	>
-		<UButton
-			:icon="loading ? 'eos-icons:loading' : icons[selectedIndex]"
-			:label="label"
-			color="neutral"
-			variant="outline"
-		/>
-		<template #item="{ item }">
-			<button
-				class="flex items-center w-full px-2 py-1.5 gap-2 text-left"
-				@click="updatePrivacy(item)"
-			>
-				<div class="flex flex-col">
-					<div class="flex flex-row items-center gap-1">
-						<UIcon
-							name="i-heroicons-check"
-							class="w-4 h-4 text-primary"
-							v-show="selected === item.value"
-						/>
-						<UIcon
-							:name="item.icon || 'mdi:lock'"
-							class="w-4 h-4 text-gray-600"
-							v-show="selected !== item.value"
-						/>
-						<span class="font-medium text-sm">
-							{{ item.label }}
-							<span
-								v-if="
-									com.earthapp.account.Account.isNeverPublic(props.field) && item.value === 'PUBLIC'
-								"
-							>
-								(Disabled)</span
-							>
-						</span>
+	<ClientOnly>
+		<UDropdownMenu
+			title="Privacy Settings"
+			:items="items"
+			:ui="{ content: 'w-48' }"
+		>
+			<UButton
+				:icon="loading ? 'eos-icons:loading' : icons[selectedIndex]"
+				:label="label"
+				color="neutral"
+				variant="outline"
+			/>
+			<template #item="{ item }">
+				<button
+					class="flex items-center w-full px-2 py-1.5 gap-2 text-left"
+					@click="updatePrivacy(item)"
+				>
+					<div class="flex flex-col">
+						<div class="flex flex-row items-center gap-1">
+							<UIcon
+								name="i-heroicons-check"
+								class="w-4 h-4 text-primary"
+								v-show="selected === item.value"
+							/>
+							<UIcon
+								:name="item.icon || 'mdi:lock'"
+								class="w-4 h-4 text-gray-600"
+								v-show="selected !== item.value"
+							/>
+							<span class="font-medium text-sm">
+								{{ item.label }}
+								<span
+									v-if="
+										com.earthapp.account.Account.isNeverPublic(props.field) &&
+										item.value === 'PUBLIC'
+									"
+								>
+									(Disabled)</span
+								>
+							</span>
+						</div>
+						<span
+							v-if="item.description"
+							class="text-xs text-gray-500"
+							>{{ item.description }}</span
+						>
 					</div>
-					<span
-						v-if="item.description"
-						class="text-xs text-gray-500"
-						>{{ item.description }}</span
-					>
-				</div>
-			</button>
+				</button>
+			</template>
+		</UDropdownMenu>
+		<template #fallback>
+			<UButton
+				:icon="loading ? 'eos-icons:loading' : icons[selectedIndex]"
+				:label="label"
+				color="neutral"
+				variant="outline"
+				disabled
+			/>
 		</template>
-	</UDropdownMenu>
+	</ClientOnly>
 </template>
 
 <script setup lang="ts">

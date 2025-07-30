@@ -1,18 +1,23 @@
 <template>
-	<UDropdownMenu
-		:items="items"
-		:admin="admin"
-		:ui="{ content: content || 'w-48' }"
-	>
-		<slot />
+	<ClientOnly>
+		<UDropdownMenu
+			:items="items"
+			:admin="admin"
+			:ui="{ content: content || 'w-48' }"
+		>
+			<slot />
 
-		<UserEditModal
-			v-if="admin"
-			v-model:open="editUserOpen"
-			:user="user"
-			content="min-w-1/2"
-		/>
-	</UDropdownMenu>
+			<UserEditModal
+				v-if="admin"
+				v-model:open="editUserOpen"
+				:user="user"
+				content="min-w-1/2"
+			/>
+		</UDropdownMenu>
+		<template #fallback>
+			<slot />
+		</template>
+	</ClientOnly>
 </template>
 
 <script setup lang="ts">

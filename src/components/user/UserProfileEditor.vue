@@ -51,56 +51,75 @@
 		/>
 
 		<h3 class="text-2xl text-gray-600 italic mt-8 underline">Activities</h3>
-		<UInputMenu
-			placeholder="Select your activities..."
-			v-model="currentActivities"
-			:items="allActivities"
-			size="xl"
-			class="w-2/7 mt-2"
-			multiple
-			deleteIcon="i-lucide-trash"
-			@update:modelValue="updateActivities"
-		/>
+		<ClientOnly>
+			<UInputMenu
+				placeholder="Select your activities..."
+				v-model="currentActivities"
+				:items="allActivities"
+				size="xl"
+				class="w-2/7 mt-2"
+				multiple
+				deleteIcon="i-lucide-trash"
+				@update:modelValue="updateActivities"
+			/>
+			<template #fallback>
+				<div class="w-2/7 mt-2 p-2 border rounded-md text-gray-500">Loading activities...</div>
+			</template>
+		</ClientOnly>
 
 		<h3 class="text-2xl text-gray-600 italic mt-10 underline">Settings</h3>
 		<div class="mt-2 border-t-4 border-black dark:border-white w-2/5 min-w-144">
 			<div class="mt-4 w-full grid grid-cols-3 gap-x-4">
 				<h2 class="text-xl">Account Visibility</h2>
-				<UDropdownMenu
-					title="Visibility Settings"
-					:items="accountVisibilityOptions"
-					:ui="{ content: 'w-48' }"
-				>
-					<UButton
-						:icon="'mdi:eye'"
-						:label="
-							accountVisibilityOptions.find((opt) => opt.value === accountVisibility)?.label ||
-							'Select Visibility'
-						"
-						color="neutral"
-						variant="outline"
-					/>
-					<template #item="{ item }">
-						<button
-							class="flex items-center w-full px-2 py-1.5 gap-2 text-left"
-							@click="updateAccountVisibility(item.value)"
-						>
-							<div class="flex flex-col">
-								<div class="flex flex-row items-center gap-1">
-									<UIcon :name="item.icon || 'mdi:lock'" />
-									<span class="font-medium text-sm">
-										{{ item.label }}
-									</span>
+				<ClientOnly>
+					<UDropdownMenu
+						title="Visibility Settings"
+						:items="accountVisibilityOptions"
+						:ui="{ content: 'w-48' }"
+					>
+						<UButton
+							:icon="'mdi:eye'"
+							:label="
+								accountVisibilityOptions.find((opt: any) => opt.value === accountVisibility)
+									?.label || 'Select Visibility'
+							"
+							color="neutral"
+							variant="outline"
+						/>
+						<template #item="{ item }">
+							<button
+								class="flex items-center w-full px-2 py-1.5 gap-2 text-left"
+								@click="updateAccountVisibility(item.value)"
+							>
+								<div class="flex flex-col">
+									<div class="flex flex-row items-center gap-1">
+										<UIcon :name="item.icon || 'mdi:lock'" />
+										<span class="font-medium text-sm">
+											{{ item.label }}
+										</span>
+									</div>
+									<span
+										v-if="item.description"
+										class="text-xs text-gray-500"
+										>{{ item.description }}</span
+									>
 								</div>
-								<span
-									v-if="item.description"
-									class="text-xs text-gray-500"
-									>{{ item.description }}</span
-								>
-							</div>
-						</button>
+							</button>
+						</template>
+					</UDropdownMenu>
+					<template #fallback>
+						<UButton
+							:icon="'mdi:eye'"
+							:label="
+								accountVisibilityOptions.find((opt: any) => opt.value === accountVisibility)
+									?.label || 'Select Visibility'
+							"
+							color="neutral"
+							variant="outline"
+							disabled
+						/>
 					</template>
-				</UDropdownMenu>
+				</ClientOnly>
 			</div>
 			<div
 				v-for="prop in props"
@@ -120,31 +139,44 @@
 					:type="prop.type"
 					:onFinish="updateUser"
 				/>
-				<UDropdownMenu
-					v-if="prop.type === 'dropdown' && prop.computed"
-					:items="prop.dropdownItems"
-					:value="prop.computed.value"
-					@update:value="(value: string) => (prop.computed!.value = value)"
-					:ui="{
-						content: 'h-48 overflow-y-auto'
-					}"
-				>
-					<UButton
-						class="w-full text-left"
-						:icon="prop.computed.value ? 'mdi:building' : 'mdi:chevron-down'"
-						:label="prop.computed.value?.toString() || prop.name"
-						color="primary"
-						variant="outline"
-					/>
-					<template #item="{ item }">
+				<ClientOnly>
+					<UDropdownMenu
+						v-if="prop.type === 'dropdown' && prop.computed"
+						:items="prop.dropdownItems"
+						:value="prop.computed.value"
+						@update:value="(value: string) => (prop.computed!.value = value)"
+						:ui="{
+							content: 'h-48 overflow-y-auto'
+						}"
+					>
 						<UButton
-							:label="item.label"
-							class="w-full text-left font-bold"
-							color="secondary"
-							@click="prop.computed.value = item.value"
+							class="w-full text-left"
+							:icon="prop.computed.value ? 'mdi:building' : 'mdi:chevron-down'"
+							:label="prop.computed.value?.toString() || prop.name"
+							color="primary"
+							variant="outline"
+						/>
+						<template #item="{ item }">
+							<UButton
+								:label="item.label"
+								class="w-full text-left font-bold"
+								color="secondary"
+								@click="prop.computed.value = item.value"
+							/>
+						</template>
+					</UDropdownMenu>
+					<template #fallback>
+						<UButton
+							v-if="prop.type === 'dropdown' && prop.computed"
+							class="w-full text-left"
+							:icon="prop.computed.value ? 'mdi:building' : 'mdi:chevron-down'"
+							:label="prop.computed.value?.toString() || prop.name"
+							color="primary"
+							variant="outline"
+							disabled
 						/>
 					</template>
-				</UDropdownMenu>
+				</ClientOnly>
 			</div>
 		</div>
 	</div>

@@ -61,7 +61,7 @@ export async function makeRequest<T>(
 		if (!data.value) {
 			return {
 				success: false,
-				message: 'No data found.'
+				message: `No data found for ${key} at ${url}`
 			};
 		}
 
@@ -86,6 +86,15 @@ export async function makeAPIRequest<T>(
 ): Promise<{ success: boolean; data?: T; message?: string }> {
 	const config = useRuntimeConfig();
 	return await makeRequest<T>(key, `${config.public.apiBaseUrl}${url}`, token, options);
+}
+
+export async function makeClientAPIRequest<T>(
+	url: string,
+	token: string | null | undefined = null,
+	options: any = {}
+): Promise<{ success: boolean; data?: T; message?: string }> {
+	const config = useRuntimeConfig();
+	return await makeRequest<T>(null, `${config.public.apiBaseUrl}${url}`, token, options);
 }
 
 export async function makeServerRequest<T>(
@@ -133,12 +142,18 @@ export async function paginatedAPIRequest<T>(
 	let currentPage = 1;
 
 	while (true) {
-		const res = await makeAPIRequest<{ items: T[]; total: number }>(
-			key,
-			`${url}?page=${currentPage}&limit=100&search=${search}`,
-			token,
-			options
-		);
+		const res = key
+			? await makeAPIRequest<{ items: T[]; total: number }>(
+					`${key}-page-${currentPage}`,
+					`${url}?page=${currentPage}&limit=100&search=${search}`,
+					token,
+					options
+				)
+			: await makeClientAPIRequest<{ items: T[]; total: number }>(
+					`${url}?page=${currentPage}&limit=100&search=${search}`,
+					token,
+					options
+				);
 
 		if (!res.success || !res.data) {
 			console.error(`Failed to fetch page ${currentPage}:`, res.message);
