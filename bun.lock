@@ -3,7 +3,7 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "@earth-app/ocean": "1.0.0-76c2cf6",
+        "@earth-app/ocean": "1.0.0-b402a04",
         "@nuxt/icon": "^1.15.0",
         "@nuxt/kit": "^4.0.2",
         "@nuxt/ui": "^3.3.0",
@@ -20,6 +20,7 @@
       "devDependencies": {
         "@iconify-json/carbon": "^1.2.11",
         "@iconify-json/circum": "^1.2.2",
+        "@iconify-json/eos-icons": "^1.2.2",
         "@iconify-json/healthicons": "^1.2.10",
         "@iconify-json/lucide": "^1.2.58",
         "@iconify-json/material-symbols": "^1.2.30",
@@ -122,7 +123,7 @@
 
     "@dependents/detective-less": ["@dependents/detective-less@5.0.1", "", { "dependencies": { "gonzales-pe": "^4.3.0", "node-source-walk": "^7.0.1" } }, "sha512-Y6+WUMsTFWE5jb20IFP4YGa5IrGY/+a/FbOSjDF/wz9gepU2hwCYSXRHP/vPwBvwcY3SVMASt4yXxbXNXigmZQ=="],
 
-    "@earth-app/ocean": ["@earth-app/ocean@1.0.0-76c2cf6", "https://npm.pkg.github.com/download/@earth-app/ocean/1.0.0-76c2cf6/b43659116c318b9a3f07cf9fabc8ec81ad30af98", { "dependencies": { "rss-parser": "^3.13.0", "ws": "8.18.0" } }, "sha512-5bu5W+y7BlB+oPGE9X3k7gDW51UJdrfNwP6SP2PDDW0Cz95pdwaSxy1DTgwbvJbgoQNO6ErQatsG3kSQeJcJJg=="],
+    "@earth-app/ocean": ["@earth-app/ocean@1.0.0-b402a04", "https://npm.pkg.github.com/download/@earth-app/ocean/1.0.0-b402a04/ef0844363d71c186243b962fdae7639cce68aeab", { "dependencies": { "rss-parser": "^3.13.0", "ws": "8.18.0" } }, "sha512-IlUScX056Z/nKtxiJSBsPf2DlxhkjFmX3qDd1ui8vYsayY0Rw8438l6U/jIVLls2c7VLToX5SY9zDpWZHPkIKw=="],
 
     "@emnapi/core": ["@emnapi/core@1.4.5", "", { "dependencies": { "@emnapi/wasi-threads": "1.0.4", "tslib": "^2.4.0" } }, "sha512-XsLw1dEOpkSX/WucdqUhPWP7hDxSvZiY+fsUC14h+FtQ2Ifni4znbBt8punRX+Uj2JG/uDb8nEHVKvrVlvdZ5Q=="],
 
@@ -195,6 +196,8 @@
     "@iconify-json/carbon": ["@iconify-json/carbon@1.2.11", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-fWcoR0V4dLGLsgUvgjioBcTmj+l8NlMMEP/aMMUwR9PWAr5mCBg52rsTe/bvOnL1zj9PUCNxaj2M4H27GrnO3g=="],
 
     "@iconify-json/circum": ["@iconify-json/circum@1.2.2", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-lIC4xg4p62SValfSiUnrcuLKYf2rpgDydlGu9V3PwO7rVfNB4P1gMgt/Hqs7M0ttDEBC6hSxxMlXDfQGNXmVqA=="],
+
+    "@iconify-json/eos-icons": ["@iconify-json/eos-icons@1.2.2", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-kYfV1WfgiHDbWdG9JEbV1K77MvksRmo9KIM4VjtYFMnF8pKqTv4MoLIOdCD2lbRlhBZspxr1GKde5Z/LYqz3Qw=="],
 
     "@iconify-json/healthicons": ["@iconify-json/healthicons@1.2.10", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-/63BjqQW3v7VatZoijWp9MPGsywtVGQ2caEN1TpLCsj8EhsOOgWZQAKVaGLboChkGR78A1QPsncfSObJoDJClg=="],
 
