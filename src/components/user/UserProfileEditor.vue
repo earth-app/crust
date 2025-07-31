@@ -259,6 +259,10 @@ const props: {
 	{
 		name: 'Activities',
 		id: 'activities'
+	},
+	{
+		name: 'Biography',
+		id: 'bio'
 	}
 ];
 

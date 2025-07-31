@@ -126,7 +126,7 @@ async function updatePrivacy(item: DropdownMenuItem) {
 	const toast = useToast();
 	toast.add({
 		title: 'Success',
-		description: `Privacy for ${props.field} updated to ${item.label}.`,
+		description: `Privacy updated to ${item.label}.`,
 		color: 'success',
 		duration: 3000
 	});
