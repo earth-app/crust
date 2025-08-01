@@ -31,7 +31,6 @@ if (route.params.id) {
 	} else {
 		currentUser.value = null;
 		setTitleSuffix('User Profile');
-		console.error('Failed to fetch user:', res.message);
 	}
 }
 </script>
