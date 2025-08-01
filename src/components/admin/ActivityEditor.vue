@@ -61,6 +61,58 @@
 					(event: Event) => (activityAliases = (event.target as HTMLInputElement).value)
 				"
 			/>
+			<h1>Activity Fields</h1>
+			<div class="flex flex-col items-center max-h-44 overflow-y-auto justify-around gap-y-2">
+				<div
+					v-for="(value, key) in activityFields"
+					:key="key"
+					class="flex items-center gap-2"
+				>
+					<UInput
+						:model-value="key"
+						placeholder="Field name"
+						label="Field Name"
+						@update:model-value="(newKey: string) => updateFieldKey(key, newKey)"
+						@keyup.enter="
+							(event: Event) => updateFieldKey(key, (event.target as HTMLInputElement).value)
+						"
+					/>
+					<UInput
+						v-model="activityFields[key]"
+						:placeholder="`Value for ${key}`"
+						:label="`Field Value`"
+						@keyup.enter="
+							(event: Event) => (activityFields[key] = (event.target as HTMLInputElement).value)
+						"
+					/>
+					<UIcon
+						name="material-symbols:delete-outline"
+						class="size-6 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
+						@click="deleteField(key)"
+					/>
+				</div>
+				<div class="flex items-center gap-2 mt-2">
+					<UInput
+						v-model="newFieldKey"
+						placeholder="Field name"
+						label="New Field Name"
+						@keyup.enter="addField"
+					/>
+					<UInput
+						v-model="newFieldValue"
+						placeholder="Field value"
+						label="New Field Value"
+						@keyup.enter="addField"
+					/>
+					<UButton
+						color="secondary"
+						@click="addField"
+						:disabled="!newFieldKey.trim()"
+					>
+						Add Field
+					</UButton>
+				</div>
+			</div>
 		</div>
 		<UButton
 			color="primary"
@@ -112,6 +164,11 @@ const activityType5 = ref<typeof com.earthapp.activity.ActivityType.prototype.na
 	props.activity?.types?.at(4)
 );
 const activityAliases = ref<string>(props.activity?.aliases?.join(',') || '');
+const activityFields = ref<Record<string, string>>(props.activity?.fields || {});
+
+// New field management
+const newFieldKey = ref<string>('');
+const newFieldValue = ref<string>('');
 
 const typeItems = com.earthapp.activity.ActivityType.values().map((type) => type.name.toString());
 
@@ -128,6 +185,9 @@ watch(
 			activityType4.value = newActivity.types?.[3];
 			activityType5.value = newActivity.types?.[4];
 			activityAliases.value = newActivity.aliases?.join(',')?.replace(/\s+/g, '_') || '';
+			activityFields.value = newActivity.fields || {};
+			newFieldKey.value = '';
+			newFieldValue.value = '';
 		} else {
 			// Reset form when no activity is selected
 			activity.value = null;
@@ -139,10 +199,70 @@ watch(
 			activityType4.value = undefined;
 			activityType5.value = undefined;
 			activityAliases.value = '';
+			activityFields.value = {};
+			newFieldKey.value = '';
+			newFieldValue.value = '';
 		}
 	},
 	{ immediate: true }
 );
+
+// Field management functions
+function addField() {
+	const trimmedKey = newFieldKey.value.trim();
+
+	if (!trimmedKey) {
+		toast.add({
+			title: 'Error',
+			description: 'Field name cannot be empty.',
+			color: 'error',
+			duration: 3000
+		});
+		return;
+	}
+
+	if (activityFields.value.hasOwnProperty(trimmedKey)) {
+		toast.add({
+			title: 'Error',
+			description: `Field "${trimmedKey}" already exists.`,
+			color: 'error',
+			duration: 3000
+		});
+		return;
+	}
+
+	activityFields.value[trimmedKey] = newFieldValue.value.trim();
+	newFieldKey.value = '';
+	newFieldValue.value = '';
+}
+
+function deleteField(key: string) {
+	delete activityFields.value[key];
+}
+
+function updateFieldKey(oldKey: string, newKey: string) {
+	const trimmedNewKey = newKey.trim();
+
+	// Don't update if the key is empty or hasn't changed
+	if (!trimmedNewKey || trimmedNewKey === oldKey) {
+		return;
+	}
+
+	// Check if the new key already exists
+	if (activityFields.value.hasOwnProperty(trimmedNewKey)) {
+		toast.add({
+			title: 'Error',
+			description: `Field "${trimmedNewKey}" already exists.`,
+			color: 'error',
+			duration: 3000
+		});
+		return;
+	}
+
+	const value = activityFields.value[oldKey] || '';
+	delete activityFields.value[oldKey];
+	activityFields.value[trimmedNewKey] = value;
+}
 
 const generating = ref(false);
 async function generateActivity() {
@@ -172,6 +292,8 @@ async function generateActivity() {
 		activityAliases.value = res.data.aliases.join(',');
 
 		generating.value = false;
+		newFieldKey.value = '';
+		newFieldValue.value = '';
 		toast.add({
 			title: 'Activity Generated',
 			description: `Activity "${activityName.value}" has been generated successfully.`,
@@ -207,7 +329,8 @@ async function createActivity() {
 		aliases: activityAliases.value
 			.split(',')
 			.map((alias) => alias.trim().replace(/\s+/g, '_'))
-			.filter(Boolean)
+			.filter(Boolean),
+		fields: activityFields.value
 	});
 
 	if (res.success && res.data) {
@@ -266,7 +389,8 @@ async function updateActivity() {
 				.map((alias) => alias.trim().replace(/\s+/g, '_'))
 				.filter(Boolean) ||
 			activity.value.aliases ||
-			[]
+			[],
+		fields: activityFields.value || activity.value.fields || {}
 	});
 
 	loading.value = false;
