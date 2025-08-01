@@ -30,13 +30,15 @@ export async function makeRequest<T>(
 
 		// Handle regular JSON requests
 		const { data, error } = key
-			? await useAsyncData<T>(key, () =>
-					$fetch<T>(url, {
-						headers: {
-							Authorization: `Bearer ${token}`
-						},
-						...options
-					})
+			? await useAsyncData<T>(
+					key,
+					() =>
+						$fetch<T>(url, {
+							headers: {
+								Authorization: `Bearer ${token}`
+							},
+							...options
+						}) as Promise<T>
 				)
 			: {
 					data: {
@@ -49,6 +51,21 @@ export async function makeRequest<T>(
 					},
 					error: { value: undefined }
 				};
+
+		if (error.value?.statusCode === 404) {
+			return {
+				success: false,
+				message: `Resource not found at ${url}`
+			};
+		}
+
+		if (error.value?.statusCode === 400) {
+			console.error(`Bad request to ${url}:`, error.value.data);
+			return {
+				success: false,
+				message: `Bad request to ${url}: ${error.value.statusMessage || 'Invalid parameters'}`
+			};
+		}
 
 		if (error.value) {
 			console.error(`Error fetching ${key}:`, error.value);
@@ -177,4 +194,10 @@ export function capitalizeFully(str: string): string {
 
 	const parts = str.split(' ');
 	return parts.map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join(' ');
+}
+
+export function trimString(str: string, maxLength: number): string {
+	if (!str || str.length <= maxLength) return str;
+
+	return str.slice(0, maxLength - 3) + '...';
 }

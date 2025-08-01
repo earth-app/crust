@@ -1,5 +1,5 @@
 import * as util from '~/shared/util';
-import { type Activity } from '~/shared/types/activity';
+import { type Activity, type WikipediaSummary, type YouTubeVideo } from '~/shared/types/activity';
 import { useCurrentSessionToken } from './useLogin';
 
 // mantle - /v1/activities
@@ -19,7 +19,7 @@ export async function getActivities(limit: number = 25, search: string = '') {
 export async function getActivity(id: string) {
 	return await util.makeAPIRequest<Activity>(
 		`activity-${id}`,
-		`/v1/activities/${id}`,
+		`/v1/activities/${id}?includeAliases=true`,
 		useCurrentSessionToken()
 	);
 }
@@ -51,6 +51,24 @@ export async function editActivity(activity: Activity) {
 			method: 'PATCH',
 			body: activity
 		}
+	);
+}
+
+// Activity Information Extensions
+
+export async function getActivityWikipediaSummary(title: string) {
+	return await util.makeServerRequest<WikipediaSummary>(
+		`wikipedia-summary-${title}`,
+		`/api/activity/wikipedia?title=${encodeURIComponent(title)}`,
+		useCurrentSessionToken()
+	);
+}
+
+export async function getActivityYouTubeSearch(query: string) {
+	return await util.makeServerRequest<YouTubeVideo[]>(
+		`youtube-search-${query}`,
+		`/api/activity/youtubeSearch?query=${encodeURIComponent(query)}`,
+		useCurrentSessionToken()
 	);
 }
 
