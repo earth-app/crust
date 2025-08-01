@@ -23,7 +23,8 @@
     "tailwindcss": "^4.1.11",
     "tailwindcss-motion": "^1.1.1",
     "vue": "^3.5.18",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "youtube-sr": "^4.3.12"
   },
   "devDependencies": {
     "@iconify-json/carbon": "^1.2.11",
