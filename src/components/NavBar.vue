@@ -43,7 +43,6 @@
 
 <script setup lang="ts">
 import { useAuth, useCurrentAvatar } from '~/compostables/useUser';
-import LoginPopup from './LoginPopup.vue';
 
 const avatarUrl = ref<string | undefined>(undefined);
 let objectUrl: string | undefined = undefined;
