@@ -23,10 +23,43 @@
 			/>
 		</div>
 		<h3 class="text-xl w-3/5 mt-8">{{ activity.description }}</h3>
+		<!-- Icon Islands -->
+		<UIcon
+			v-for="island in islands"
+			:key="island.name"
+			:name="island.icon"
+			class="absolute hidden md:inline-block md:size-8 lg:size-12 z-10 shadow-2xl shadow-gray-950 duration-300 motion-preset-fade-lg"
+			:style="{ transform: `translate(${island.x}vw, ${island.y}vh)` }"
+		/>
 		<div class="grid grid-cols-1 xl:grid-cols-2 items-start w-2/3 mt-6 px-4 gap-y-8">
+			<!-- Skeleton Loading Cards -->
+			<div
+				v-if="!dataLoaded"
+				v-for="n in 6"
+				:key="`skeleton-${n}`"
+				class="min-w-100 w-11/12 p-4 shadow-lg rounded-lg"
+			>
+				<div class="flex items-center space-x-4">
+					<div class="flex flex-col w-full">
+						<div class="flex items-center mb-2">
+							<USkeleton
+								class="h-8 w-8 mr-2"
+								:ui="{ rounded: 'rounded-full' }"
+							/>
+							<USkeleton class="h-6 w-48" />
+						</div>
+						<USkeleton class="h-4 w-32 mb-4" />
+						<USkeleton class="h-px w-11/12 mb-4" />
+						<USkeleton class="h-48 w-full rounded-lg mb-2" />
+						<USkeleton class="h-4 w-full mb-1" />
+						<USkeleton class="h-4 w-3/4 mb-1" />
+						<USkeleton class="h-4 w-1/2" />
+					</div>
+				</div>
+			</div>
 			<!-- First Wikipedia Entry -->
 			<ActivityInfoCard
-				v-if="wikipediaEntries[0]"
+				v-if="wikipediaEntries[0] && dataLoaded"
 				icon="mdi:wikipedia"
 				:link="`https://en.wikipedia.org/wiki/${wikipediaEntries[0].titles.canonical}`"
 				:title="capitalizeFully(wikipediaEntries[0].title)"
@@ -37,6 +70,7 @@
 			<!-- First Two YouTube Videos -->
 			<ActivityInfoCard
 				v-for="video in youtubeVideos.slice(0, 2)"
+				v-if="dataLoaded"
 				:key="video.id"
 				icon="mdi:youtube"
 				:youtube-id="video.id"
@@ -46,6 +80,7 @@
 			<!-- Rest -->
 			<ActivityInfoCard
 				v-for="wikipedia in wikipediaEntries.slice(1)"
+				v-if="dataLoaded"
 				:key="wikipedia.titles.canonical"
 				icon="mdi:wikipedia"
 				:link="`https://en.wikipedia.org/wiki/${wikipedia.titles.canonical}`"
@@ -56,6 +91,7 @@
 			/>
 			<ActivityInfoCard
 				v-for="video in youtubeVideos.slice(2)"
+				v-if="dataLoaded"
 				:key="video.id"
 				icon="mdi:youtube"
 				:youtube-id="video.id"
@@ -82,27 +118,69 @@ const props = defineProps<{
 }>();
 
 const editing = ref(false);
+const dataLoaded = ref(false);
 
 const { user } = useAuth();
 
+const islands = computed(() => {
+	if (props.activity.fields['island_icons']) {
+		const icons = props.activity.fields['island_icons'].split(',');
+		const size = icons.length;
+		return Array.from({ length: size }, (_, i) => {
+			const id = icons[i] ?? '';
+			if (!id) return null;
+
+			return {
+				name: capitalizeFully(id),
+				icon: `cib:${id.toLowerCase()}`,
+				x: i % 2 == 0 ? Math.random() * 5 + 33 : Math.random() * -5 - 37,
+				y: i * 6 - 60
+			};
+		}).filter((island) => island !== null);
+	}
+
+	return [];
+});
+
 const wikipediaEntries = ref<WikipediaSummary[]>([]);
 const youtubeVideos = ref<YouTubeVideo[]>([]);
+
+let wikipediaLoaded = false;
+let youtubeLoaded = false;
+
+const checkDataLoaded = () => {
+	if (wikipediaLoaded && youtubeLoaded) {
+		dataLoaded.value = true;
+	}
+};
+
 onMounted(() => {
 	if (props.activity.fields['wikipedia_id']) {
 		const ids = props.activity.fields['wikipedia_id'].split(',');
+		let wikipediaPromises = [];
 		for (const id of ids) {
-			getActivityWikipediaSummary(id).then((res) => {
+			const promise = getActivityWikipediaSummary(id).then((res) => {
 				if (res.success && res.data) {
 					wikipediaEntries.value.push(res.data);
 				}
 			});
+			wikipediaPromises.push(promise);
 		}
+		Promise.all(wikipediaPromises).then(() => {
+			wikipediaLoaded = true;
+			checkDataLoaded();
+		});
+	} else {
+		wikipediaLoaded = true;
+		checkDataLoaded();
 	}
 
 	getActivityYouTubeSearch(`what is ${props.activity.name}`).then((res) => {
 		if (res.success && res.data) {
 			youtubeVideos.value = res.data;
 		}
+		youtubeLoaded = true;
+		checkDataLoaded();
 	});
 });
 </script>
