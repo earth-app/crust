@@ -26,8 +26,13 @@
 						{{ title }}
 					</h4>
 				</div>
-				<p class="text-gray-600">{{ description }}</p>
-				<hr
+				<p
+					v-if="description"
+					class="text-gray-600"
+				>
+					{{ description }}
+				</p>
+				<USeparator
 					v-if="content || image || youtubeId"
 					class="border-gray-500 my-2 w-11/12"
 				/>
@@ -55,7 +60,7 @@
 <script setup lang="ts">
 defineProps<{
 	title: string;
-	description: string;
+	description?: string;
 	content?: string;
 	link?: string;
 	icon?: string;

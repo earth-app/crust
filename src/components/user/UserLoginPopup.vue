@@ -13,14 +13,13 @@
 		</UButton>
 
 		<template #content>
-			<LoginForm @login-success="handleLoginSuccess" />
+			<UserLoginForm @login-success="handleLoginSuccess" />
 		</template>
 	</UPopover>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import LoginForm from '~/components/LoginForm.vue';
 
 const isOpen = ref(false);
 

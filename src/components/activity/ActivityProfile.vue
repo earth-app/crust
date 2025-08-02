@@ -33,32 +33,13 @@
 		/>
 		<div class="grid grid-cols-1 xl:grid-cols-2 items-start w-2/3 mt-6 px-4 gap-y-8">
 			<!-- Skeleton Loading Cards -->
-			<div
+			<InfoCardSkeleton
 				v-if="!dataLoaded"
 				v-for="n in 6"
 				:key="`skeleton-${n}`"
-				class="min-w-100 w-11/12 p-4 shadow-lg rounded-lg"
-			>
-				<div class="flex items-center space-x-4">
-					<div class="flex flex-col w-full">
-						<div class="flex items-center mb-2">
-							<USkeleton
-								class="h-8 w-8 mr-2"
-								:ui="{ rounded: 'rounded-full' }"
-							/>
-							<USkeleton class="h-6 w-48" />
-						</div>
-						<USkeleton class="h-4 w-32 mb-4" />
-						<USkeleton class="h-px w-11/12 mb-4" />
-						<USkeleton class="h-48 w-full rounded-lg mb-2" />
-						<USkeleton class="h-4 w-full mb-1" />
-						<USkeleton class="h-4 w-3/4 mb-1" />
-						<USkeleton class="h-4 w-1/2" />
-					</div>
-				</div>
-			</div>
+			/>
 			<!-- First Wikipedia Entry -->
-			<ActivityInfoCard
+			<InfoCard
 				v-if="wikipediaEntries[0] && dataLoaded"
 				icon="mdi:wikipedia"
 				:link="`https://en.wikipedia.org/wiki/${wikipediaEntries[0].titles.canonical}`"
@@ -68,7 +49,7 @@
 				:image="wikipediaEntries[0].originalimage?.source"
 			/>
 			<!-- First Two YouTube Videos -->
-			<ActivityInfoCard
+			<InfoCard
 				v-for="video in youtubeVideos.slice(0, 2)"
 				v-if="dataLoaded"
 				:key="video.id"
@@ -78,7 +59,7 @@
 				:description="trimString(video.uploaded_at, 25)"
 			/>
 			<!-- Rest -->
-			<ActivityInfoCard
+			<InfoCard
 				v-for="wikipedia in wikipediaEntries.slice(1)"
 				v-if="dataLoaded"
 				:key="wikipedia.titles.canonical"
@@ -89,7 +70,7 @@
 				:content="wikipedia.extract"
 				:image="wikipedia.originalimage?.source"
 			/>
-			<ActivityInfoCard
+			<InfoCard
 				v-for="video in youtubeVideos.slice(2)"
 				v-if="dataLoaded"
 				:key="video.id"
