@@ -11,25 +11,58 @@ export async function ensureAdministrator(event: H3Event) {
 		});
 	}
 
-	if (token === config.adminApiKey) return; // If the token matches the admin API key, skip user check
+	try {
+		const user = await $fetch<User>(`${config.public.apiBaseUrl}/v1/users/current`, {
+			headers: {
+				Authorization: `Bearer ${token}`
+			}
+		});
 
-	const user = await $fetch<User>(`${config.public.apiBaseUrl}/v1/users/current`, {
-		headers: {
-			Authorization: `Bearer ${token}`
+		if (!user.id) {
+			throw createError({
+				statusCode: 401,
+				statusMessage: 'Unauthorized'
+			});
 		}
-	});
 
-	if (!user.id) {
+		if (!user || user.account.account_type !== 'ADMINISTRATOR') {
+			throw createError({
+				statusCode: 403,
+				statusMessage: 'Forbidden: You must be an administrator to access this resource'
+			});
+		}
+
+		return user;
+	} catch (error) {
+		throw createError({
+			statusCode: 401,
+			statusMessage: 'Unauthorized'
+		});
+	}
+}
+
+export async function ensureLoggedIn(event: H3Event) {
+	const config = useRuntimeConfig();
+	const token = getRequestHeader(event, 'Authorization')?.replace('Bearer ', '');
+	if (!token) {
 		throw createError({
 			statusCode: 401,
 			statusMessage: 'Unauthorized'
 		});
 	}
 
-	if (!user || user.account.account_type !== 'ADMINISTRATOR') {
+	try {
+		const user = await $fetch<User>(`${config.public.apiBaseUrl}/v1/users/current`, {
+			headers: {
+				Authorization: `Bearer ${token}`
+			}
+		});
+
+		return user;
+	} catch (error) {
 		throw createError({
-			statusCode: 403,
-			statusMessage: 'Forbidden: You must be an administrator to access this resource'
+			statusCode: 401,
+			statusMessage: 'Unauthorized'
 		});
 	}
 }
