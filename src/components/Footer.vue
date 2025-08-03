@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex items-center justify-between w-full mt-8 min-h-32 bg-gray-950 border-t-2 border-gray-800 text-gray-700 text-left px-12"
+		class="flex items-center justify-between w-full mt-8 min-h-32 bg-gray-950 border-t-2 border-gray-800 text-gray-700 text-left px-12 text-xs sm:text-sm md:text-md"
 	>
 		<div class="flex flex-col items-start">
 			<span>Copyright © 2025 The Earth App. All Rights Reserved.</span>
