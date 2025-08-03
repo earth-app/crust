@@ -11,7 +11,20 @@
 				</div>
 				<USkeleton class="h-4 w-32 mb-4" />
 				<USkeleton class="h-px w-11/12 mb-4" />
-				<USkeleton class="h-48 w-full rounded-lg mb-2" />
+
+				<USkeleton
+					v-if="contentSize === 'small'"
+					class="h-24 w-full rounded-lg mb-2"
+				/>
+				<USkeleton
+					v-if="contentSize === 'medium'"
+					class="h-48 w-full rounded-lg mb-2"
+				/>
+				<USkeleton
+					v-if="contentSize === 'large'"
+					class="h-64 w-full rounded-lg mb-2"
+				/>
+
 				<USkeleton class="h-4 w-full mb-1" />
 				<USkeleton class="h-4 w-3/4 mb-1" />
 				<USkeleton class="h-4 w-1/2" />
@@ -19,3 +32,14 @@
 		</div>
 	</div>
 </template>
+
+<script setup lang="ts">
+withDefaults(
+	defineProps<{
+		contentSize?: 'small' | 'medium' | 'large';
+	}>(),
+	{
+		contentSize: 'medium'
+	}
+);
+</script>
