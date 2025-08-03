@@ -5,7 +5,7 @@ import { useCurrentSessionToken } from './useLogin';
 // mantle - /v1/activities
 // cloud - /v1/activity
 
-export async function getActivities(limit: number = 25, search: string = '') {
+export async function getAllActivities(limit: number = 25, search: string = '') {
 	return await util.paginatedAPIRequest<Activity>(
 		null,
 		'/v1/activities',
@@ -13,6 +13,14 @@ export async function getActivities(limit: number = 25, search: string = '') {
 		{},
 		limit,
 		search
+	);
+}
+
+export async function getActivities(page: number = 1, limit: number = 25, search: string = '') {
+	return await util.makeAPIRequest<{ items: Activity[]; total: number }>(
+		null,
+		`/v1/activities?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
+		useCurrentSessionToken()
 	);
 }
 

@@ -188,7 +188,7 @@ import * as useUser from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 import type { InputTypeHTMLAttribute } from 'vue';
 import { UButton } from '#components';
-import { activityIcons, getActivities } from '~/compostables/useActivity';
+import { activityIcons, getAllActivities } from '~/compostables/useActivity';
 import { capitalizeFully } from '~/shared/util';
 
 const componentProps = defineProps<{
@@ -368,7 +368,7 @@ const allActivities = ref<{ label: string; value: string; icon: string }[]>([]);
 const currentActivities = ref<{ label: string; value: string; icon: string }[]>([]);
 
 onMounted(async () => {
-	const res = await getActivities();
+	const res = await getAllActivities();
 	if (res.success) {
 		const activities =
 			res.data?.map((activity) => {

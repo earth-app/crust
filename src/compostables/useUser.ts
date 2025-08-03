@@ -1,6 +1,7 @@
 import { makeAPIRequest as makeAPIRequest, paginatedAPIRequest } from '~/shared/util';
 import type { User } from '~/shared/types/user';
 import { useCurrentSessionToken } from './useLogin';
+import type { Activity } from '~/shared/types/activity';
 
 export async function useCurrentUser() {
 	const token = useCurrentSessionToken();
@@ -83,6 +84,17 @@ export async function setUserActivities(activities: string[]) {
 			method: 'PATCH',
 			body: activities
 		}
+	);
+}
+
+// Ocean
+
+export async function getRecommendedActivities(poolLimit: number = 25) {
+	return await makeAPIRequest<Activity[]>(
+		null,
+		`/v1/users/current/activities/recommend?poolLimit=${poolLimit}`,
+		useCurrentSessionToken(),
+		{}
 	);
 }
 

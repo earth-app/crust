@@ -104,7 +104,7 @@
 
 <script setup lang="ts">
 import { useTitleSuffix } from '~/compostables/useTitleSuffix';
-import { activityIcons, getActivities } from '~/compostables/useActivity';
+import { activityIcons, getAllActivities } from '~/compostables/useActivity';
 import type { Activity } from '~/shared/types/activity';
 import { getUsers } from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
@@ -130,7 +130,7 @@ const loadingActivities = ref(false);
 
 async function fetchActivities() {
 	loadingActivities.value = true;
-	const res = await getActivities();
+	const res = await getAllActivities();
 	if (res.data) {
 		activities.value = res.data;
 		activityCount.value = res.data.length;
