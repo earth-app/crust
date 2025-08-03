@@ -1,6 +1,6 @@
 <template>
 	<NavBar />
-	<main>
+	<main class="min-h-[90vh] w-full">
 		<slot />
 	</main>
 	<Footer />
