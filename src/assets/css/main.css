@@ -10,3 +10,11 @@
 
 	--font-title: 'Noto Sans', sans-serif;
 }
+
+.scrollbar-hide {
+	scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}
