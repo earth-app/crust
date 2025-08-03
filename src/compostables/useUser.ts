@@ -1,4 +1,4 @@
-import { makeAPIRequest as makeAPIRequest, paginatedAPIRequest } from '~/shared/util';
+import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/util';
 import type { User } from '~/shared/types/user';
 import { useCurrentSessionToken } from './useLogin';
 import type { Activity } from '~/shared/types/activity';
@@ -45,15 +45,14 @@ export const useAuth = () => {
 };
 
 export async function updateAccount(user: Partial<User['account']>) {
-	return await makeAPIRequest<User>(null, '/v1/users/current/account', useCurrentSessionToken(), {
+	return await makeClientAPIRequest<User>('/v1/users/current/account', useCurrentSessionToken(), {
 		method: 'PATCH',
 		body: user
 	});
 }
 
 export async function updateFieldPrivacy(privacy: Partial<User['account']['field_privacy']>) {
-	return await makeAPIRequest<User>(
-		null,
+	return await makeClientAPIRequest<User>(
 		'/v1/users/current/field_privacy',
 		useCurrentSessionToken(),
 		{
