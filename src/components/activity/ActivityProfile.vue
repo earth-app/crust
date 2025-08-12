@@ -91,8 +91,8 @@ import {
 } from '~/compostables/useActivity';
 import { useAuth } from '~/compostables/useUser';
 import type { Activity, WikipediaSummary, YouTubeVideo } from '~/shared/types/activity';
-import ActivityEditorModal from '../admin/ActivityEditorModal.vue';
 import { capitalizeFully, trimString } from '~/shared/util';
+import ActivityEditorModal from '../admin/ActivityEditorModal.vue';
 
 const props = defineProps<{
 	activity: Activity;

@@ -30,8 +30,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, type InputTypeHTMLAttribute } from 'vue';
 import { UInput } from '#components';
+import { ref, watch, type InputTypeHTMLAttribute } from 'vue';
 
 const props = withDefaults(
 	defineProps<{

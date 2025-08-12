@@ -1,7 +1,7 @@
-import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/util';
-import type { User } from '~/shared/types/user';
-import { useCurrentSessionToken } from './useLogin';
 import type { Activity } from '~/shared/types/activity';
+import type { User } from '~/shared/types/user';
+import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/util';
+import { useCurrentSessionToken } from './useLogin';
 
 export async function useCurrentUser() {
 	const token = useCurrentSessionToken();
@@ -25,6 +25,7 @@ export async function useCurrentAvatar() {
 
 export const useAuth = () => {
 	const user = useState<User | null>('user', () => null);
+	const photo = ref<Blob | null>(null);
 
 	const fetchUser = async () => {
 		const res = await useCurrentUser();
@@ -38,14 +39,28 @@ export const useAuth = () => {
 		fetchUser();
 	}
 
+	const fetchPhoto = async () => {
+		const res = await useCurrentAvatar();
+		if (res.success && res.data) {
+			photo.value = res.data;
+		}
+	};
+
+	// If photo is not loaded, fetch it
+	if (!photo.value) {
+		fetchPhoto();
+	}
+
 	return {
 		user,
-		fetchUser
+		fetchUser,
+		photo,
+		fetchPhoto
 	};
 };
 
 export async function updateAccount(user: Partial<User['account']>) {
-	return await makeClientAPIRequest<User>('/v1/users/current/account', useCurrentSessionToken(), {
+	return await makeClientAPIRequest<User>('/v1/users/current', useCurrentSessionToken(), {
 		method: 'PATCH',
 		body: user
 	});

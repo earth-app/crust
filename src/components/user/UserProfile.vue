@@ -33,7 +33,6 @@
 </template>
 
 <script setup lang="ts">
-import { com } from '@earth-app/ocean';
 import { activityIcons } from '~/compostables/useActivity';
 import { getUserAvatar } from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';

@@ -1,5 +1,5 @@
-import * as util from '~/shared/util';
 import { type Activity, type WikipediaSummary, type YouTubeVideo } from '~/shared/types/activity';
+import * as util from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 // mantle - /v1/activities

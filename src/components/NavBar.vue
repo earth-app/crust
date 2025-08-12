@@ -50,24 +50,29 @@
 </template>
 
 <script setup lang="ts">
-import { useAuth, useCurrentAvatar } from '~/compostables/useUser';
+import { useAuth } from '~/compostables/useUser';
 
-const avatarUrl = ref<string | undefined>(undefined);
+const { user, photo } = useAuth();
+const avatarUrl = ref<string>('/favicon.png');
 let objectUrl: string | undefined = undefined;
 
-onMounted(async () => {
-	const res = await useCurrentAvatar();
-	if (res.success && res.data) {
-		if (objectUrl) URL.revokeObjectURL(objectUrl);
+watch(
+	photo,
+	(newPhoto) => {
+		if (objectUrl) {
+			URL.revokeObjectURL(objectUrl);
+			objectUrl = undefined;
+		}
 
-		objectUrl = URL.createObjectURL(res.data);
-		avatarUrl.value = objectUrl;
-	}
-});
+		if (newPhoto) {
+			objectUrl = URL.createObjectURL(newPhoto);
+			avatarUrl.value = objectUrl;
+		}
+	},
+	{ immediate: true }
+);
 
 onBeforeUnmount(() => {
 	if (objectUrl) URL.revokeObjectURL(objectUrl);
 });
-
-const { user } = useAuth();
 </script>

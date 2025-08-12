@@ -85,6 +85,7 @@
 							"
 							color="neutral"
 							variant="outline"
+							:loading="visibilityLoading"
 						/>
 						<template #item="{ item }">
 							<button
@@ -183,12 +184,12 @@
 </template>
 
 <script setup lang="ts">
+import { UButton } from '#components';
 import { com } from '@earth-app/ocean';
+import type { InputTypeHTMLAttribute } from 'vue';
+import { activityIcons, getAllActivities } from '~/compostables/useActivity';
 import * as useUser from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
-import type { InputTypeHTMLAttribute } from 'vue';
-import { UButton } from '#components';
-import { activityIcons, getAllActivities } from '~/compostables/useActivity';
 import { capitalizeFully } from '~/shared/util';
 
 const componentProps = defineProps<{
@@ -275,7 +276,8 @@ function sanitize(obj: User['account']): Partial<User['account']> {
 		email: obj.email?.trim() || '',
 		address: obj.address?.trim() || '',
 		country: obj.country?.trim() || '',
-		phone_number: obj.phone_number
+		phone_number: obj.phone_number,
+		visibility: obj.visibility
 	};
 }
 
@@ -310,12 +312,12 @@ function getLabel(key: keyof User['account']['field_privacy']): string {
 
 // Profile Photo
 
-const avatar = ref<string | undefined>(undefined);
+const avatar = ref<string>('/favicon.png');
 let objectUrl: string | undefined = undefined;
 const avatarLoading = ref(false);
 
 onMounted(async () => {
-	const res = await useUser.useCurrentAvatar();
+	const res = await useUser.getUserAvatar(user.value.id);
 	if (res.success && res.data) {
 		if (objectUrl) URL.revokeObjectURL(objectUrl);
 
@@ -479,13 +481,18 @@ const accountVisibilityOptions = com.earthapp.Visibility.values().map((value) =>
 	][value.ordinal]
 }));
 
+const visibilityLoading = ref(false);
+
 async function updateAccountVisibility(value: User['account']['visibility']) {
 	if (value === accountVisibility.value) return;
 
-	const res = await useUser.updateAccount(user.value);
-	if (res.success) {
-		accountVisibility.value = value;
+	accountVisibility.value = value;
 
+	visibilityLoading.value = true;
+	const res = await useUser.updateAccount(sanitize(user.value.account));
+	visibilityLoading.value = false;
+
+	if (res.success) {
 		const toast = useToast();
 		toast.add({
 			title: 'Privacy Updated',
@@ -504,5 +511,7 @@ async function updateAccountVisibility(value: User['account']['visibility']) {
 			duration: 5000
 		});
 	}
+
+	visibilityLoading.value = false;
 }
 </script>

@@ -103,10 +103,10 @@
 </template>
 
 <script setup lang="ts">
-import { useTitleSuffix } from '~/compostables/useTitleSuffix';
 import { activityIcons, getAllActivities } from '~/compostables/useActivity';
-import type { Activity } from '~/shared/types/activity';
+import { useTitleSuffix } from '~/compostables/useTitleSuffix';
 import { getUsers } from '~/compostables/useUser';
+import type { Activity } from '~/shared/types/activity';
 import type { User } from '~/shared/types/user';
 
 const { setTitleSuffix } = useTitleSuffix();

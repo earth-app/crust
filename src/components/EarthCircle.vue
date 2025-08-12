@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 const icons = [
 	{ name: 'carbon:satellite', speed: 6, radius: 65, offset: 0 },

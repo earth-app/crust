@@ -1,11 +1,11 @@
 <template>
-	<UCard>
+	<UCard class="size-full">
 		<UForm
 			:state="{ username, password }"
 			@submit.prevent="handleLogin"
-			class="space-x-4"
+			class="space-x-6 *:mb-4"
 		>
-			<UFormGroup
+			<UFormField
 				label="Username"
 				name="username"
 				:required="true"
@@ -13,10 +13,11 @@
 				<UInput
 					v-model="username"
 					placeholder="Username"
+					class="w-2/5 max-w-120"
 				/>
-			</UFormGroup>
+			</UFormField>
 
-			<UFormGroup
+			<UFormField
 				label="Password"
 				name="password"
 				:required="true"
@@ -25,12 +26,14 @@
 					v-model="password"
 					placeholder="Password"
 					type="password"
+					class="w-2/5 max-w-120"
 				/>
-			</UFormGroup>
+			</UFormField>
 
 			<UButton
 				type="submit"
 				:loading="loading"
+				class="w-3/5 max-w-60"
 				>Login</UButton
 			>
 			<div

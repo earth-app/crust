@@ -56,14 +56,16 @@
 				</a>
 			</div>
 		</div>
-		<div class="flex flex-col items-start p-4">
-			<span v-if="user">
-				Logged in as {{ user.username }} {{ user.account.email ? `(${user.account.email})` : '' }}
-			</span>
-			<span v-if="user"> Account ID: {{ user.id }}</span>
-			<span v-if="user"> Last Login: {{ user.last_login ? user.last_login : 'N/A' }}</span>
-			<span v-else> Not Logged In </span>
-		</div>
+		<ClientOnly>
+			<div class="flex flex-col items-start p-4">
+				<span v-if="user">
+					Logged in as {{ user.username }} {{ user.account.email ? `(${user.account.email})` : '' }}
+				</span>
+				<span v-if="user"> Account ID: {{ user.id }}</span>
+				<span v-if="user"> Last Login: {{ user.last_login ? user.last_login : 'N/A' }}</span>
+				<span v-else> Not Logged In </span>
+			</div>
+		</ClientOnly>
 	</div>
 </template>
 

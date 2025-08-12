@@ -57,10 +57,10 @@
 	></div>
 </template>
 <script setup lang="ts">
-import { getRecommendedActivities, useAuth } from '~/compostables/useUser';
-import { useTitleSuffix } from '~/compostables/useTitleSuffix';
-import type { Activity } from '~/shared/types/activity';
 import { activityIcons, getActivities } from '~/compostables/useActivity';
+import { useTitleSuffix } from '~/compostables/useTitleSuffix';
+import { getRecommendedActivities, useAuth } from '~/compostables/useUser';
+import type { Activity } from '~/shared/types/activity';
 import { trimString } from '~/shared/util';
 
 const { setTitleSuffix } = useTitleSuffix();
