@@ -20,7 +20,7 @@
 					API
 				</a>
 				<a
-					href="https://docs.earth-app.com"
+					href="https://deepwiki.com/earth-app/mantle"
 					target="_blank"
 				>
 					Documentation

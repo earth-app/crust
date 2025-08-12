@@ -13,7 +13,7 @@
 				<UInput
 					v-model="username"
 					placeholder="Username"
-					class="w-2/5 max-w-120"
+					class="min-w-60 w-2/5 max-w-120"
 				/>
 			</UFormField>
 
@@ -26,7 +26,7 @@
 					v-model="password"
 					placeholder="Password"
 					type="password"
-					class="w-2/5 max-w-120"
+					class="min-w-60 w-2/5 max-w-120"
 				/>
 			</UFormField>
 

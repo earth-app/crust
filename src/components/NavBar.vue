@@ -29,14 +29,17 @@
 					class="flex items-center justify-center space-x-1 cursor-pointer hover:opacity-80 transition-opacity duration-250"
 					@click="$router.push(`/profile/@${user.username}`)"
 				>
-					<UAvatar
-						:src="avatarUrl"
-						class="size-6 md:size-8 lg:size-12 rounded-full shadow-lg shadow-black/50"
-					/>
-					<span
-						class="font-title text-md sm:text-lg md:text-xl text-shadow-2xs text-shadow-black"
-						>{{ user.username }}</span
-					>
+					<ClientOnly>
+						<UAvatar
+							:src="avatarUrl"
+							class="size-6 md:size-8 lg:size-12 rounded-full shadow-lg shadow-black/50"
+						/>
+
+						<span
+							class="font-title text-md sm:text-lg md:text-xl text-shadow-2xs text-shadow-black"
+							>{{ user.username }}</span
+						>
+					</ClientOnly>
 				</div>
 				<UIcon
 					name="material-symbols:settings-rounded"
