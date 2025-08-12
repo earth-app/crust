@@ -5,11 +5,12 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineNuxtConfig({
 	runtimeConfig: {
 		adminApiKey: process.env.NUXT_ADMIN_API_KEY || '',
-		baseUrl: process.env.NUXT_BASE_URL || 'http://app.earth-app.com',
+		baseUrl: process.env.NUXT_BASE_URL || 'https://app.earth-app.com',
 		public: {
-			baseUrl: process.env.NUXT_PUBLIC_BASE_URL || 'http://app.earth-app.com',
-			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://api.earth-app.com',
-			cloudBaseUrl: process.env.NUXT_PUBLIC_CLOUD_BASE_URL || 'http://cloud.earth-app.com'
+			baseUrl: process.env.NUXT_PUBLIC_BASE_URL || 'https://app.earth-app.com',
+			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'https://api.earth-app.com',
+			cloudBaseUrl: process.env.NUXT_PUBLIC_CLOUD_BASE_URL || 'https://cloud.earth-app.com',
+			v3SiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_V3_SITE_KEY || ''
 		}
 	},
 	ssr: true,
