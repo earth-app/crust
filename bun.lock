@@ -24,6 +24,7 @@
         "@iconify-json/circum": "^1.2.2",
         "@iconify-json/eos-icons": "^1.2.2",
         "@iconify-json/healthicons": "^1.2.10",
+        "@iconify-json/heroicons": "^1.2.2",
         "@iconify-json/lucide": "^1.2.58",
         "@iconify-json/material-symbols": "^1.2.30",
         "@iconify-json/material-symbols-light": "^1.2.30",
@@ -207,6 +208,8 @@
     "@iconify-json/eos-icons": ["@iconify-json/eos-icons@1.2.2", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-kYfV1WfgiHDbWdG9JEbV1K77MvksRmo9KIM4VjtYFMnF8pKqTv4MoLIOdCD2lbRlhBZspxr1GKde5Z/LYqz3Qw=="],
 
     "@iconify-json/healthicons": ["@iconify-json/healthicons@1.2.10", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-/63BjqQW3v7VatZoijWp9MPGsywtVGQ2caEN1TpLCsj8EhsOOgWZQAKVaGLboChkGR78A1QPsncfSObJoDJClg=="],
+
+    "@iconify-json/heroicons": ["@iconify-json/heroicons@1.2.2", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-qoW4pXr5kTTL6juEjgTs83OJIwpePu7q1tdtKVEdj+i0zyyVHgg/dd9grsXJQnpTpBt6/VwNjrXBvFjRsKPENg=="],
 
     "@iconify-json/lucide": ["@iconify-json/lucide@1.2.58", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-4ONe3ONaauEaf7wEQIvlWz2xHaMXUXuQeJVRBMu4PmsBrMEfdnc2vRZRyAudmcQo8yWmEsLu6WM7/5qWUdDJHQ=="],
 
