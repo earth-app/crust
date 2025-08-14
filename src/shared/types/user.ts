@@ -39,6 +39,8 @@ export type User = {
 			name: string;
 			description?: string;
 			activity_types: (typeof com.earthapp.activity.ActivityType.prototype.name)[];
+			aliases: string[];
+			fields: Record<string, string>;
 		}[];
 	};
 };
