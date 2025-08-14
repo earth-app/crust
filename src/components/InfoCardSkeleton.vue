@@ -25,9 +25,18 @@
 					class="h-64 w-full rounded-lg mb-2"
 				/>
 
-				<USkeleton class="h-4 w-full mb-1" />
-				<USkeleton class="h-4 w-3/4 mb-1" />
-				<USkeleton class="h-4 w-1/2" />
+				<USkeleton
+					v-if="contentSize !== 'xs'"
+					class="h-4 w-full mb-1"
+				/>
+				<USkeleton
+					v-if="contentSize !== 'xs'"
+					class="h-4 w-3/4 mb-1"
+				/>
+				<USkeleton
+					v-if="contentSize !== 'xs'"
+					class="h-4 w-1/2"
+				/>
 			</div>
 		</div>
 	</div>
@@ -36,7 +45,7 @@
 <script setup lang="ts">
 withDefaults(
 	defineProps<{
-		contentSize?: 'small' | 'medium' | 'large';
+		contentSize?: 'xs' | 'small' | 'medium' | 'large';
 	}>(),
 	{
 		contentSize: 'medium'
