@@ -60,6 +60,8 @@
 				class="w-2/7 mt-2"
 				multiple
 				deleteIcon="i-lucide-trash"
+				:disabled="activitiesLoading"
+				:loading="activitiesLoading"
 				@update:modelValue="updateActivities"
 			/>
 			<template #fallback>
@@ -187,7 +189,7 @@
 import { UButton } from '#components';
 import { com } from '@earth-app/ocean';
 import type { InputTypeHTMLAttribute } from 'vue';
-import { activityIcons, getAllActivities } from '~/compostables/useActivity';
+import { getAllActivities } from '~/compostables/useActivity';
 import * as useUser from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 import { capitalizeFully } from '~/shared/util';
@@ -377,9 +379,7 @@ onMounted(async () => {
 				return {
 					label: activity.name,
 					value: activity.id,
-					icon:
-						activityIcons[activity.id as keyof typeof activityIcons] ||
-						'material-symbols:activity-zone'
+					icon: activity.fields['icon'] || 'material-symbols:activity-zone'
 				};
 			}) || [];
 		allActivities.value = activities;
@@ -391,9 +391,7 @@ onMounted(async () => {
 					return {
 						label: userActivity.name,
 						value: userActivity.id,
-						icon:
-							activityIcons[userActivity.id as keyof typeof activityIcons] ||
-							'material-symbols:activity-zone'
+						icon: userActivity.fields['icon'] || 'material-symbols:activity-zone'
 					};
 				})
 				.filter(Boolean);
@@ -411,9 +409,7 @@ watch(
 				return {
 					label: activity.name,
 					value: activity.id,
-					icon:
-						activityIcons[activity.id as keyof typeof activityIcons] ||
-						'material-symbols:activity-zone'
+					icon: activity.fields['icon'] || 'material-symbols:activity-zone'
 				};
 			});
 		}
@@ -421,6 +417,7 @@ watch(
 	{ deep: true }
 );
 
+const activitiesLoading = ref(false);
 async function updateActivities() {
 	if (!user.value) return;
 
@@ -436,9 +433,11 @@ async function updateActivities() {
 		return;
 	}
 
+	activitiesLoading.value = true;
 	const res = await useUser.setUserActivities(
 		currentActivities.value.map((activity) => activity.value as string)
 	);
+	activitiesLoading.value = false;
 	if (res.success && res.data) {
 		user.value.account.activities = res.data.account.activities;
 
@@ -460,6 +459,8 @@ async function updateActivities() {
 			duration: 5000
 		});
 	}
+
+	activitiesLoading.value = false;
 }
 
 // Account Privacy

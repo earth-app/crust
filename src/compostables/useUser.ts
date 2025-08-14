@@ -13,14 +13,14 @@ export async function useCurrentUser() {
 }
 
 export async function useCurrentAvatar() {
-	return await makeAPIRequest<Blob>(
-		'avatar-current',
-		'/v1/users/current/profile_photo',
-		useCurrentSessionToken(),
-		{
-			responseType: 'blob'
-		}
-	);
+	const token = useCurrentSessionToken();
+	if (!token) {
+		return { success: false, message: 'Unauthenticated. Please log in to continue.' };
+	}
+
+	return await makeAPIRequest<Blob>('avatar-current', '/v1/users/current/profile_photo', token, {
+		responseType: 'blob'
+	});
 }
 
 export const useAuth = () => {

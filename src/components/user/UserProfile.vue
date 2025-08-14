@@ -6,7 +6,9 @@
 				class="w-32 h-32 rounded-full shadow-lg shadow-black/50 mb-4 hover:scale-110 transition-transform duration-300"
 			/>
 			<div class="flex">
-				<h1 class="text-3xl font-semibold">{{ props.user.fullName }}</h1>
+				<h1 class="text-3xl font-semibold">
+					{{ props.user.fullName || `@${props.user.username}` }}
+				</h1>
 				<UserTypeBadge
 					:user="props.user"
 					class="ml-3"
@@ -24,7 +26,7 @@
 				v-for="(activity, i) in props.user.account.activities"
 				:label="activity.name"
 				:color="i <= 2 ? 'primary' : 'secondary'"
-				:icon="activityIcons[activity.id as keyof typeof activityIcons]"
+				:icon="activity.fields['icon']"
 				variant="outline"
 				size="xl"
 			/>
@@ -33,7 +35,6 @@
 </template>
 
 <script setup lang="ts">
-import { activityIcons } from '~/compostables/useActivity';
 import { getUserAvatar } from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 
