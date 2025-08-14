@@ -11,6 +11,26 @@
 						:size="iconSize || '2rem'"
 						class="mr-1"
 					/>
+					<UChip
+						v-if="avatarChip"
+						inset
+						:color="avatarChipColor || 'primary'"
+						:size="avatarChipSize || 'md'"
+						class="mr-2"
+					>
+						<UAvatar
+							v-if="avatar"
+							:src="avatar"
+							:size="avatarSize || 'md'"
+							class="mr-2"
+						/>
+					</UChip>
+					<UAvatar
+						v-else-if="avatar"
+						:src="avatar"
+						:size="avatarSize || 'md'"
+						class="mr-2"
+					/>
 					<a
 						v-if="link"
 						:href="`${link}?utm_source=earth-app&utm_medium=referral&utm_campaign=activity-info-card`"
@@ -52,6 +72,16 @@
 					class="text-gray-300"
 					>{{ content }}</span
 				>
+				<USeparator
+					v-if="footer"
+					class="border-gray-500 my-2 w-11/12"
+				/>
+				<p
+					v-if="footer"
+					class="text-gray-500 text-sm"
+				>
+					{{ footer }}
+				</p>
 			</div>
 		</div>
 	</UCard>
@@ -65,7 +95,13 @@ defineProps<{
 	link?: string;
 	icon?: string;
 	iconSize?: string;
+	avatar?: string;
+	avatarSize?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
+	avatarChip?: boolean;
+	avatarChipColor?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
+	avatarChipSize?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
 	image?: string;
 	youtubeId?: string;
+	footer?: string;
 }>();
 </script>
