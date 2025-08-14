@@ -67,6 +67,13 @@ export async function makeRequest<T>(
 			};
 		}
 
+		if (error.value?.statusCode === 429) {
+			return {
+				success: false,
+				message: `Rate limit exceeded. Please try again later.`
+			};
+		}
+
 		if (error.value) {
 			console.error(`Error fetching ${key}:`, error.value);
 			return {
