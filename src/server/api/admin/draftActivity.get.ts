@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
 	} catch (error) {
 		throw createError({
 			statusCode: 500,
-			statusMessage: 'Failed to fetch activity draft'
+			statusMessage: `Failed to get activity draft: ${error instanceof Error ? error.message : 'Unknown error'}`
 		});
 	}
 });
