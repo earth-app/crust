@@ -3,7 +3,7 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "@earth-app/ocean": "1.0.0-3f0c7fa",
+        "@earth-app/ocean": "1.0.0-ab998d7",
         "@nuxt/icon": "^2.0.0",
         "@nuxt/kit": "^4.0.2",
         "@nuxt/ui": "^3.3.0",
@@ -23,12 +23,15 @@
         "@iconify-json/cib": "^1.2.2",
         "@iconify-json/circum": "^1.2.2",
         "@iconify-json/eos-icons": "^1.2.2",
+        "@iconify-json/game-icons": "^1.2.3",
         "@iconify-json/healthicons": "^1.2.10",
         "@iconify-json/heroicons": "^1.2.2",
         "@iconify-json/lucide": "^1.2.58",
         "@iconify-json/material-symbols": "^1.2.30",
         "@iconify-json/material-symbols-light": "^1.2.30",
         "@iconify-json/mdi": "^1.2.3",
+        "@iconify-json/nimbus": "^1.2.1",
+        "@iconify-json/ph": "^1.2.2",
         "@iconify-json/solar": "^1.2.2",
         "husky": "^9.1.7",
         "lint-staged": "^16.1.2",
@@ -129,7 +132,7 @@
 
     "@dependents/detective-less": ["@dependents/detective-less@5.0.1", "", { "dependencies": { "gonzales-pe": "^4.3.0", "node-source-walk": "^7.0.1" } }, "sha512-Y6+WUMsTFWE5jb20IFP4YGa5IrGY/+a/FbOSjDF/wz9gepU2hwCYSXRHP/vPwBvwcY3SVMASt4yXxbXNXigmZQ=="],
 
-    "@earth-app/ocean": ["@earth-app/ocean@1.0.0-3f0c7fa", "https://npm.pkg.github.com/download/@earth-app/ocean/1.0.0-3f0c7fa/205a33f51b6cfb3f8c0751242ea3255c6f9f97d9", { "dependencies": { "rss-parser": "^3.13.0", "ws": "8.18.0" } }, "sha512-C/FlRAnbqT1wkFT+9SrUilzGvGK3ukXSFKmeZ+NcxLRoZvrn7e1SFBgnc6m6RSiYc3hYCwiAIITMHN91idcNxQ=="],
+    "@earth-app/ocean": ["@earth-app/ocean@1.0.0-ab998d7", "https://npm.pkg.github.com/download/@earth-app/ocean/1.0.0-ab998d7/381fc7035833356edcb32e61b7f90924fcd2e9a7", { "dependencies": { "rss-parser": "^3.13.0", "ws": "8.18.0" } }, "sha512-uJxJhqdtYu9lec51ldQZWQqrgSHi0F02j1LKkEKB7I8kn0Jyc0QzXew8u4W919cWN/Vdn0i6r0L/Jy2LBXbQ9Q=="],
 
     "@emnapi/core": ["@emnapi/core@1.4.5", "", { "dependencies": { "@emnapi/wasi-threads": "1.0.4", "tslib": "^2.4.0" } }, "sha512-XsLw1dEOpkSX/WucdqUhPWP7hDxSvZiY+fsUC14h+FtQ2Ifni4znbBt8punRX+Uj2JG/uDb8nEHVKvrVlvdZ5Q=="],
 
@@ -207,6 +210,8 @@
 
     "@iconify-json/eos-icons": ["@iconify-json/eos-icons@1.2.2", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-kYfV1WfgiHDbWdG9JEbV1K77MvksRmo9KIM4VjtYFMnF8pKqTv4MoLIOdCD2lbRlhBZspxr1GKde5Z/LYqz3Qw=="],
 
+    "@iconify-json/game-icons": ["@iconify-json/game-icons@1.2.3", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-JnrHQjNI/2nJxlnEAPlU4ta6S44XTX7RJnBUyBV27GbVhJhfwpY9kqzkTqmPs4nyAJaGUjZwOcnBUQ9Dc21nlA=="],
+
     "@iconify-json/healthicons": ["@iconify-json/healthicons@1.2.10", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-/63BjqQW3v7VatZoijWp9MPGsywtVGQ2caEN1TpLCsj8EhsOOgWZQAKVaGLboChkGR78A1QPsncfSObJoDJClg=="],
 
     "@iconify-json/heroicons": ["@iconify-json/heroicons@1.2.2", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-qoW4pXr5kTTL6juEjgTs83OJIwpePu7q1tdtKVEdj+i0zyyVHgg/dd9grsXJQnpTpBt6/VwNjrXBvFjRsKPENg=="],
@@ -218,6 +223,10 @@
     "@iconify-json/material-symbols-light": ["@iconify-json/material-symbols-light@1.2.30", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-a0tM3+hxM3a8sd5nAG/cSSMgXsPdnq4iaS3227Ejqb640JCjKH+xbnqU+WdqhvLDwOV0/ZC6SZJWoN5R8xb2ww=="],
 
     "@iconify-json/mdi": ["@iconify-json/mdi@1.2.3", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-O3cLwbDOK7NNDf2ihaQOH5F9JglnulNDFV7WprU2dSoZu3h3cWH//h74uQAB87brHmvFVxIOkuBX2sZSzYhScg=="],
+
+    "@iconify-json/nimbus": ["@iconify-json/nimbus@1.2.1", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-6xycGRZiXCLZ5f14f4MFN7DPAzWEWDSqdZW+v0AsDmQRgjNGtTu7VsI7SlpAWdPREk36ecM7s5/IS3UawqMdsQ=="],
+
+    "@iconify-json/ph": ["@iconify-json/ph@1.2.2", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-PgkEZNtqa8hBGjHXQa4pMwZa93hmfu8FUSjs/nv4oUU6yLsgv+gh9nu28Kqi8Fz9CCVu4hj1MZs9/60J57IzFw=="],
 
     "@iconify-json/solar": ["@iconify-json/solar@1.2.2", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-lcTb6DWL4HZObiY1W3fHfuxxuQHUc6CFHFeywKEx7Ry0k+dU6POZCMC7oVLr0F8vuf+KgaQ3oOoGO/yFzOwrNg=="],
 
@@ -2144,8 +2153,6 @@
     "@vue/compiler-sfc/estree-walker": ["estree-walker@2.0.2", "", {}, "sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w=="],
 
     "@vue/devtools-core/nanoid": ["nanoid@5.1.5", "", { "bin": { "nanoid": "bin/nanoid.js" } }, "sha512-Ir/+ZpE9fDsNH0hQ3C68uyThDXzYcim2EqcZ8zn8Chtt1iylPT9xXJB0kPCnqzgcEGikO9RxSrh63MsmVCU7Fw=="],
-
-    "@vue/language-core/picomatch": ["picomatch@4.0.3", "", {}, "sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q=="],
 
     "@whatwg-node/fetch/urlpattern-polyfill": ["urlpattern-polyfill@10.0.0", "", {}, "sha512-H/A06tKD7sS1O1X2SshBVeA5FLycRpjqiBeqGKmBwBDBy28EnRjORxTNe269KSSr5un5qyWi1iL61wLxpd+ZOg=="],
 
