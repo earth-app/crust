@@ -1,8 +1,8 @@
 <template>
 	<div class="flex flex-col w-full items-center justify-center mt-4">
 		<UIcon
-			v-if="activityIcons[activity.id as keyof typeof activityIcons]"
-			:name="activityIcons[activity.id as keyof typeof activityIcons]"
+			v-if="activity.fields['icon']"
+			:name="activity.fields['icon']"
 			size="6rem"
 			class="my-2"
 		/>
@@ -84,11 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-	activityIcons,
-	getActivityWikipediaSummary,
-	getActivityYouTubeSearch
-} from '~/compostables/useActivity';
+import { getActivityWikipediaSummary, getActivityYouTubeSearch } from '~/compostables/useActivity';
 import { useAuth } from '~/compostables/useUser';
 import type { Activity, WikipediaSummary, YouTubeVideo } from '~/shared/types/activity';
 import { capitalizeFully, trimString } from '~/shared/util';
@@ -113,7 +109,7 @@ const islands = computed(() => {
 
 			return {
 				name: capitalizeFully(id),
-				icon: `cib:${id.toLowerCase()}`,
+				icon: id.includes(':') ? id.toLowerCase() : `cib:${id.toLowerCase()}`,
 				x: i % 2 == 0 ? Math.random() * 5 + 33 : Math.random() * -5 - 37,
 				y: i * 6 - 60
 			};
