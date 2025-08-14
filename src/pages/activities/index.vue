@@ -15,7 +15,7 @@
 			<InfoCard
 				v-for="activity in recommendedActivities"
 				:key="activity.id"
-				:icon="activityIcons[activity.id as keyof typeof activityIcons] || 'mdi:earth'"
+				:icon="activity.fields['icon'] || 'mdi:earth'"
 				:title="activity.name"
 				:content="trimString(activity.description, 200)"
 				:link="`/activities/${activity.id}`"
@@ -36,7 +36,7 @@
 			<InfoCard
 				v-for="activity in allActivities"
 				:key="activity.id"
-				:icon="activityIcons[activity.id as keyof typeof activityIcons] || 'mdi:earth'"
+				:icon="activity.fields['icon'] || 'mdi:earth'"
 				:title="activity.name"
 				:content="trimString(activity.description, 200)"
 				:link="`/activities/${activity.id}`"
@@ -57,7 +57,7 @@
 	></div>
 </template>
 <script setup lang="ts">
-import { activityIcons, getActivities } from '~/compostables/useActivity';
+import { getActivities } from '~/compostables/useActivity';
 import { useTitleSuffix } from '~/compostables/useTitleSuffix';
 import { getRecommendedActivities, useAuth } from '~/compostables/useUser';
 import type { Activity } from '~/shared/types/activity';
