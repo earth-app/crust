@@ -18,6 +18,11 @@
 					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 mx-6"
 					>Activities</a
 				>
+				<a
+					href="/prompts"
+					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 mx-6"
+					>Prompts</a
+				>
 			</div>
 		</div>
 		<div class="ml-auto">
