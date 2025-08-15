@@ -19,3 +19,5 @@ logs
 .DS_Store
 .fleet
 .idea
+
+.env.local
