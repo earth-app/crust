@@ -42,6 +42,12 @@
 			>
 				{{ error }}
 			</div>
+			<div
+				v-if="message"
+				class="text-green-500 mt-2"
+			>
+				{{ message }}
+			</div>
 		</UForm>
 	</UCard>
 </template>
@@ -53,10 +59,12 @@ import { useAuth } from '~/compostables/useUser';
 const username = ref('');
 const password = ref('');
 const loading = ref(false);
+
 const error = ref('');
+const message = ref('');
 
 const login = useLogin();
-const { fetchUser } = useAuth();
+const { fetchUser, fetchPhoto } = useAuth();
 
 const emit = defineEmits<{
 	loginSuccess: [];
@@ -71,7 +79,9 @@ async function handleLogin() {
 	if (result.success) {
 		// Fetch user data to update the auth state
 		await fetchUser();
+		await fetchPhoto();
 		emit('loginSuccess');
+		message.value = 'Welcome!';
 	} else {
 		error.value = 'Invalid credentials';
 	}

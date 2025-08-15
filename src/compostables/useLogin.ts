@@ -18,7 +18,6 @@ export function useLogin() {
 
 			const sessionCookie = useCookie('session_token', {
 				maxAge: 60 * 60 * 24 * 14,
-				httpOnly: true,
 				secure: true,
 				sameSite: 'strict'
 			});
@@ -37,11 +36,30 @@ export function useCurrentSessionToken() {
 		const headers = useRequestHeaders(['cookie']);
 		const cookieHeader = headers.cookie || '';
 		const match = cookieHeader.match(/session_token=([^;]+)/);
-		return match?.[1] || null;
+		const token = match?.[1] || null;
+
+		if (token) {
+			const sessionCookie = useCookie('session_token', {
+				maxAge: 60 * 60 * 24 * 14,
+				secure: true,
+				sameSite: 'strict'
+			});
+			sessionCookie.value = token;
+		}
+
+		return token;
 	} else {
 		const sessionCookie = useCookie('session_token', {
-			maxAge: 60 * 60 * 24 * 14
+			maxAge: 60 * 60 * 24 * 14,
+			secure: true,
+			sameSite: 'strict'
 		});
-		return sessionCookie.value || null;
+		const token = sessionCookie.value || null;
+
+		if (token) {
+			sessionCookie.value = token;
+		}
+
+		return token;
 	}
 }

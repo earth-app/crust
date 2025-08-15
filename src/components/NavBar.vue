@@ -8,7 +8,7 @@
 				<img
 					src="/favicon.png"
 					alt="Earth App Logo"
-					class="min-h-8 min-w-8 size-8 xl:size-12 inline-block mr-2 shadow-lg shadow-black/50 rounded-full hover:scale-105 transition-transform duration-300"
+					class="min-w-8 w-8 h-auto xl:w-12 inline-block mr-2 shadow-lg shadow-black/50 rounded-full hover:scale-105 transition-transform duration-300"
 				/>
 			</a>
 			<Discover class="mx-2 sm:ml-4 md:ml-8 lg:ml-12" />
