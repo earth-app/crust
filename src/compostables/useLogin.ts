@@ -16,7 +16,12 @@ export function useLogin() {
 				}
 			);
 
-			const sessionCookie = useCookie('session_token');
+			const sessionCookie = useCookie('session_token', {
+				maxAge: 60 * 60 * 24 * 14,
+				httpOnly: true,
+				secure: true,
+				sameSite: 'strict'
+			});
 			sessionCookie.value = response.session_token;
 
 			return { success: true, message: 'Login successful' };
@@ -34,7 +39,9 @@ export function useCurrentSessionToken() {
 		const match = cookieHeader.match(/session_token=([^;]+)/);
 		return match?.[1] || null;
 	} else {
-		const sessionCookie = useCookie('session_token');
+		const sessionCookie = useCookie('session_token', {
+			maxAge: 60 * 60 * 24 * 14
+		});
 		return sessionCookie.value || null;
 	}
 }
