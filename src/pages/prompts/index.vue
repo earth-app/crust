@@ -19,7 +19,7 @@
 				content-size="xs"
 				class="mb-4"
 			/>
-			<PromptProfile
+			<PromptCard
 				v-for="prompt in prompts"
 				:key="prompt.id"
 				:prompt="prompt"
