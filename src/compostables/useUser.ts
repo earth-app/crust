@@ -78,8 +78,7 @@ export async function updateFieldPrivacy(privacy: Partial<User['account']['field
 }
 
 export async function regenerateAvatar() {
-	return await makeAPIRequest<Blob>(
-		null,
+	return await makeClientAPIRequest<Blob>(
 		'/v1/users/current/profile_photo',
 		useCurrentSessionToken(),
 		{
@@ -90,8 +89,7 @@ export async function regenerateAvatar() {
 }
 
 export async function setUserActivities(activities: string[]) {
-	return await makeAPIRequest<User>(
-		null,
+	return await makeClientAPIRequest<User>(
 		'/v1/users/current/activities/set',
 		useCurrentSessionToken(),
 		{

@@ -1,3 +1,36 @@
+export function useSignup() {
+	const config = useRuntimeConfig();
+
+	return async function signup(username: string, password: string) {
+		try {
+			const response = await $fetch<{ session_token: string }>(
+				`${config.public.apiBaseUrl}/v1/users/create`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: {
+						username,
+						password
+					}
+				}
+			);
+
+			const sessionCookie = useCookie('session_token', {
+				maxAge: 60 * 60 * 24 * 14,
+				secure: true,
+				sameSite: 'strict'
+			});
+			sessionCookie.value = response.session_token;
+
+			return { success: true, message: 'Signup successful' };
+		} catch (error) {
+			return { success: false, message: `${error}` || 'Signup failed. Please try again.' };
+		}
+	};
+}
+
 export function useLogin() {
 	const config = useRuntimeConfig();
 
@@ -27,6 +60,33 @@ export function useLogin() {
 		} catch (error) {
 			console.error('Login failed:', error);
 			return { success: false, message: 'Login failed. Please check your credentials.' };
+		}
+	};
+}
+
+export function useLogout() {
+	const config = useRuntimeConfig();
+
+	const sessionCookie = useCookie('session_token', {
+		maxAge: 60 * 60 * 24 * 14,
+		secure: true,
+		sameSite: 'strict'
+	});
+
+	return async function logout() {
+		try {
+			await $fetch(`${config.public.apiBaseUrl}/v1/users/logout`, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${sessionCookie.value}`
+				}
+			});
+
+			sessionCookie.value = null; // Clear the session cookie
+			return { success: true, message: 'Logout successful' };
+		} catch (error) {
+			console.error('Logout failed:', error);
+			return { success: false, message: 'Logout failed. Please try again.' };
 		}
 	};
 }
