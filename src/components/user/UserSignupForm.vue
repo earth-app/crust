@@ -2,7 +2,7 @@
 	<UCard class="size-full">
 		<UForm
 			:state="{ username, password }"
-			@submit="handleLogin"
+			@submit="handleSignup"
 			class="space-x-6 *:mb-4"
 			:schema="z.object({ username: usernameSchema, password: passwordSchema })"
 		>
@@ -35,7 +35,7 @@
 				type="submit"
 				:loading="loading"
 				class="w-3/5 max-w-60"
-				>Login</UButton
+				>Sign Up</UButton
 			>
 			<div
 				v-if="error"
@@ -55,7 +55,7 @@
 
 <script setup lang="ts">
 import z from 'zod';
-import { useLogin } from '~/compostables/useLogin';
+import { useSignup } from '~/compostables/useLogin';
 import { useAuth } from '~/compostables/useUser';
 import { passwordSchema, usernameSchema } from '~/shared/schemas';
 
@@ -66,34 +66,36 @@ const loading = ref(false);
 const error = ref('');
 const message = ref('');
 
-const login = useLogin();
+const signup = useSignup();
 const { fetchUser, fetchPhoto } = useAuth();
 
 const emit = defineEmits<{
-	loginSuccess: [];
+	signupSuccess: [];
 }>();
 
-async function handleLogin() {
+async function handleSignup() {
 	loading.value = true;
 	error.value = '';
 
-	const result = await login(username.value, password.value);
+	const result = await signup(username.value, password.value);
 
 	if (result.success) {
 		// Fetch user data to update the auth state
 		await fetchUser();
 		await fetchPhoto();
-		emit('loginSuccess');
+		emit('signupSuccess');
 		message.value = 'Welcome!';
 	} else {
-		if (result.message.includes('401')) {
+		if (result.message.includes('409')) {
+			error.value = 'Username already exists. Please choose another.';
+		} else if (result.message.includes('400')) {
 			error.value = 'Invalid username or password.';
 		} else if (result.message.includes('429')) {
-			error.value = 'Too many login attempts. Please try again later.';
+			error.value = 'Too many signup attempts. Please try again later.';
 		} else if (result.message.includes('500')) {
-			error.value = 'Internal server error. Please try again later.';
+			error.value = 'Server error. Please try again later.';
 		} else {
-			error.value = 'An unexpected error occurred. Please try again.';
+			error.value = result.message || 'Signup failed. Please try again.';
 		}
 	}
 

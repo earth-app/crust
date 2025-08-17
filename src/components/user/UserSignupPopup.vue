@@ -9,11 +9,11 @@
 			variant="link"
 			class="text-xl font-semibold hover:text-gray-300 mx-6 cursor-pointer"
 		>
-			Login
+			Sign Up
 		</UButton>
 
 		<template #content>
-			<UserLoginForm @login-success="handleLoginSuccess" />
+			<UserSignupForm @login-success="handleSignupSuccess" />
 		</template>
 	</UPopover>
 </template>
@@ -22,12 +22,12 @@
 const isOpen = ref(false);
 const toast = useToast();
 
-function handleLoginSuccess() {
+function handleSignupSuccess() {
 	isOpen.value = false; // Close the popup after successful login
 	toast.add({
-		title: 'Login Successful',
-		description: 'You have successfully logged in.',
-		icon: 'mdi:login',
+		title: 'Signup Successful',
+		description: 'You have successfully signed up. Welcome!',
+		icon: 'mdi:account-plus',
 		color: 'success',
 		duration: 3000
 	});

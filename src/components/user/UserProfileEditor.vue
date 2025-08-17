@@ -125,7 +125,7 @@
 				</ClientOnly>
 			</div>
 			<div
-				v-for="prop in props"
+				v-for="prop in props.filter((p) => p.disabled !== true)"
 				class="mt-4 w-full grid grid-cols-3 gap-x-4"
 			>
 				<h2 class="text-xl">{{ prop.name }}</h2>
@@ -141,6 +141,7 @@
 					size="lg"
 					:type="prop.type"
 					:onFinish="updateUser"
+					:disabled="prop.disabled"
 				/>
 				<ClientOnly>
 					<UDropdownMenu
@@ -230,12 +231,14 @@ const props: {
 	type?: InputTypeHTMLAttribute | 'dropdown';
 	dropdownItems?: { label: string; value: string }[];
 	computed?: globalThis.Ref<string | number>;
+	disabled?: boolean;
 }[] = [
 	{
 		name: 'Email Address',
 		id: 'email',
 		type: 'email',
-		computed: email
+		computed: email,
+		disabled: true // TODO Implement email verification
 	},
 	{
 		name: 'Address',
@@ -247,7 +250,8 @@ const props: {
 		name: 'Phone Number',
 		id: 'phone_number',
 		type: 'tel',
-		computed: phoneNumber
+		computed: phoneNumber,
+		disabled: true // TODO Implement phone number verification
 	},
 	{
 		name: 'Country',
@@ -271,14 +275,14 @@ const props: {
 
 function sanitize(obj: User['account']): Partial<User['account']> {
 	return {
-		firstName: obj.firstName?.trim() || '',
-		lastName: obj.lastName?.trim() || '',
-		username: obj.username?.trim() || '',
-		bio: obj.bio?.trim() || '',
-		email: obj.email?.trim() || '',
-		address: obj.address?.trim() || '',
-		country: obj.country?.trim() || '',
-		phone_number: obj.phone_number,
+		firstName: obj.firstName ? obj.firstName?.trim() || '' : undefined,
+		lastName: obj.lastName ? obj.lastName?.trim() || '' : undefined,
+		username: obj.username ? obj.username?.trim() || '' : undefined,
+		bio: obj.bio ? obj.bio?.trim() || '' : undefined,
+		email: obj.email ? obj.email?.trim() || '' : undefined,
+		address: obj.address ? obj.address?.trim() || '' : undefined,
+		country: obj.country ? obj.country?.trim() || '' : undefined,
+		phone_number: obj.phone_number ? obj.phone_number : undefined,
 		visibility: obj.visibility
 	};
 }

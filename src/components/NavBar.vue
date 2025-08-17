@@ -4,24 +4,24 @@
 		class="bg-secondary-800 border-b-primary-500 border-b-8 text-white p-4 flex items-center"
 	>
 		<div class="flex items-center w-2/3">
-			<a href="/">
+			<NuxtLink to="/">
 				<img
 					src="/favicon.png"
 					alt="Earth App Logo"
 					class="min-w-8 w-8 h-auto xl:w-12 inline-block mr-2 shadow-lg shadow-black/50 rounded-full hover:scale-105 transition-transform duration-300"
 				/>
-			</a>
+			</NuxtLink>
 			<Discover class="mx-2 sm:ml-4 md:ml-8 lg:ml-12" />
 			<div class="hidden sm:flex items-center mr-12 space-x-4">
-				<a
-					href="/activities"
+				<NuxtLink
+					to="/activities"
 					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 mx-6"
-					>Activities</a
+					>Activities</NuxtLink
 				>
-				<a
-					href="/prompts"
+				<NuxtLink
+					to="/prompts"
 					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 mx-6"
-					>Prompts</a
+					>Prompts</NuxtLink
 				>
 			</div>
 		</div>
@@ -46,22 +46,43 @@
 						>
 					</ClientOnly>
 				</div>
-				<UIcon
-					name="material-symbols:settings-rounded"
-					class="size-4 lg:size-8 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
-					@click="$router.push('/profile')"
-				/>
+				<div class="flex space-x-4 items-center justify-center">
+					<NuxtLink
+						class="size-4 lg:size-8"
+						to="/profile"
+					>
+						<UIcon
+							name="material-symbols:settings-rounded"
+							class="size-4 lg:size-8 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
+						/>
+					</NuxtLink>
+					<NuxtLink
+						class="size-4 lg:size-8"
+						to="/"
+					>
+						<UIcon
+							name="material-symbols:logout-rounded"
+							class="size-4 lg:size-8 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
+							@click="logoutUser"
+						/>
+					</NuxtLink>
+				</div>
 			</div>
-			<UserLoginPopup v-else />
+			<div v-else>
+				<UserSignupPopup />
+				<UserLoginPopup />
+			</div>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
+import { useLogout } from '~/compostables/useLogin';
 import { useAuth } from '~/compostables/useUser';
 
 const { user, photo } = useAuth();
-const avatarUrl = ref<string>('/favicon.png');
+const logout = useLogout();
+const avatarUrl = useState<string>('current-avatar', () => '/favicon.png');
 let objectUrl: string | undefined = undefined;
 
 watch(
@@ -79,6 +100,27 @@ watch(
 	},
 	{ immediate: true }
 );
+
+const toast = useToast();
+async function logoutUser() {
+	await logout();
+
+	if (objectUrl) {
+		URL.revokeObjectURL(objectUrl);
+		objectUrl = undefined;
+	}
+	avatarUrl.value = '/favicon.png';
+	user.value = null;
+	photo.value = null;
+
+	toast.add({
+		title: 'Logged out',
+		description: 'You have successfully logged out.',
+		icon: 'mdi:logout',
+		color: 'success',
+		duration: 3000
+	});
+}
 
 onBeforeUnmount(() => {
 	if (objectUrl) URL.revokeObjectURL(objectUrl);

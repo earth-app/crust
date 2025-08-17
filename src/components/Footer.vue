@@ -7,53 +7,53 @@
 			<div
 				class="flex space-x-4 text-gray-500 *:hover:text-gray-300 *:transition-colors *:duration-200"
 			>
-				<a
-					href="https://earth-app.com"
+				<NuxtLink
+					to="https://earth-app.com"
 					target="_blank"
 				>
 					Earth App
-				</a>
-				<a
-					href="https://api.earth-app.com"
+				</NuxtLink>
+				<NuxtLink
+					to="https://api.earth-app.com"
 					target="_blank"
 				>
 					API
-				</a>
-				<a
-					href="https://deepwiki.com/earth-app/mantle"
+				</NuxtLink>
+				<NuxtLink
+					to="https://deepwiki.com/earth-app/mantle"
 					target="_blank"
 				>
 					Documentation
-				</a>
+				</NuxtLink>
 			</div>
 			<div class="flex space-x-3 mt-2 *:hover:opacity-70 *:transition-opacity *:duration-200">
-				<a
-					href="https://github.com/earth-app"
+				<NuxtLink
+					to="https://github.com/earth-app"
 					target="_blank"
 				>
 					<UIcon
 						name="cib:github"
 						size="1.5rem"
 					/>
-				</a>
-				<a
-					href="https://instagram.com/theearthapp"
+				</NuxtLink>
+				<NuxtLink
+					to="https://instagram.com/theearthapp"
 					target="_blank"
 				>
 					<UIcon
 						name="cib:instagram"
 						size="1.5rem"
 					/>
-				</a>
-				<a
-					href="https://x.com/the_earth_app"
+				</NuxtLink>
+				<NuxtLink
+					to="https://x.com/the_earth_app"
 					target="_blank"
 				>
 					<UIcon
 						name="cib:twitter"
 						size="1.5rem"
 					/>
-				</a>
+				</NuxtLink>
 			</div>
 		</div>
 		<ClientOnly>
