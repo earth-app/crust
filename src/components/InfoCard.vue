@@ -1,8 +1,9 @@
 <template>
 	<UCard
-		class="min-w-100 w-11/12 p-4 shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-4 transition-all duration-600 motion-preset-fade motion-duration-1000"
+		:variant="variant || 'outline'"
+		class="min-w-100 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-4 transition-all duration-600 motion-preset-fade motion-duration-1000"
 	>
-		<div class="flex items-center space-x-4">
+		<div class="flex items-center space-x-4 h-full">
 			<div class="flex flex-col">
 				<div class="flex items-center">
 					<UIcon
@@ -31,13 +32,19 @@
 						:size="avatarSize || 'md'"
 						class="mr-2"
 					/>
-					<a
-						v-if="link"
-						:href="`${link}?utm_source=earth-app&utm_medium=referral&utm_campaign=activity-info-card`"
+					<NuxtLink
+						v-if="link && external"
+						:to="`${link}?utm_source=earth-app&utm_medium=referral&utm_campaign=activity-info-card`"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="text-lg font-semibold text-blue-500 hover:underline"
-						>{{ title }}</a
+						>{{ title }}</NuxtLink
+					>
+					<NuxtLink
+						v-else-if="link"
+						:to="link"
+						class="text-lg font-semibold text-blue-500 hover:underline"
+						>{{ title }}</NuxtLink
 					>
 					<h4
 						v-else
@@ -76,11 +83,28 @@
 					v-if="footer"
 					class="border-gray-500 my-2 w-11/12"
 				/>
+				<UTooltip
+					v-if="footerTooltip"
+					:text="footerTooltip"
+				>
+					<p
+						v-if="footer"
+						class="text-gray-500 text-sm"
+					>
+						{{ footer }}
+					</p>
+				</UTooltip>
 				<p
-					v-if="footer"
+					v-else-if="footer"
 					class="text-gray-500 text-sm"
 				>
 					{{ footer }}
+				</p>
+				<p
+					v-if="secondaryFooter"
+					class="mt-2 text-gray-600 text-xs"
+				>
+					{{ secondaryFooter }}
 				</p>
 			</div>
 		</div>
@@ -89,6 +113,8 @@
 
 <script setup lang="ts">
 defineProps<{
+	external?: boolean;
+	variant?: 'outline' | 'subtle' | 'solid' | 'soft';
 	title: string;
 	description?: string;
 	content?: string;
@@ -103,5 +129,7 @@ defineProps<{
 	image?: string;
 	youtubeId?: string;
 	footer?: string;
+	footerTooltip?: string;
+	secondaryFooter?: string;
 }>();
 </script>

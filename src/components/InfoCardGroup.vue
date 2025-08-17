@@ -1,6 +1,6 @@
 <template>
 	<UCard
-		class="ml-8 mt-6 shadow-xl rounded-lg max-w-11/12"
+		class="ml-8 mt-6 shadow-xl rounded-lg min-w-300 max-w-11/12"
 		variant="soft"
 	>
 		<div class="flex space-x-1 items-start mb-4">
@@ -33,7 +33,7 @@
 		>
 			<div
 				ref="scrollContainer"
-				class="flex items-start space-x-8 py-6 px-4 *:w-1/4 *:z-10 overflow-x-auto scrollbar-hide *:cursor-grab *:active:cursor-grabbing"
+				class="flex items-stretch flex-nowrap py-6 px-4 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing *:mx-4 *:h-1/2 *:w-1/4 *:z-10 *:shrink-0"
 				@mousedown="startDrag"
 				@mousemove="onDrag"
 				@mouseup="endDrag"
@@ -46,8 +46,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-
 defineProps<{
 	title: string;
 	description?: string;
