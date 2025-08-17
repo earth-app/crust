@@ -12,34 +12,27 @@
 				:key="n"
 				content-size="small"
 			/>
-			<InfoCard
+			<ActivityCard
 				v-for="activity in recommendedActivities"
 				:key="activity.id"
-				:icon="activity.fields['icon'] || 'mdi:earth'"
-				:title="activity.name"
-				:content="trimString(activity.description, 200)"
-				:link="`/activities/${activity.id}`"
+				:activity="activity"
 			/>
 		</InfoCardGroup>
 	</div>
 	<h2 class="text-center text-2xl font-semibold my-4">All Activities</h2>
-	<div class="flex flex-col w-full justify-center items-center">
+	<div class="flex flex-col w-full justify-between items-center">
 		<div
-			class="grid grid-cols-1 place-items-center w-4/5 px-4 gap-x-4 gap-y-12 *:mx-2 *:max-w-100 lg:grid-cols-2 *:lg:w-1/2 xl:grid-cols-3 *:xl:w-1/3"
+			class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 place-items-center w-9/10 px-4 gap-x-4 gap-y-12 *:mx-2 *:max-w-100 *:lg:w-1/2 *:xl:w-1/3"
 		>
 			<InfoCardSkeleton
 				v-if="allActivities.length === 0"
-				v-for="n in 8"
+				v-for="n in 12"
 				:key="n"
 				content-size="small"
 			/>
-			<InfoCard
+			<ActivityCard
 				v-for="activity in allActivities"
-				:key="activity.id"
-				:icon="activity.fields['icon'] || 'mdi:earth'"
-				:title="activity.name"
-				:content="trimString(activity.description, 200)"
-				:link="`/activities/${activity.id}`"
+				:activity="activity"
 			/>
 		</div>
 	</div>
@@ -61,7 +54,6 @@ import { getActivities } from '~/compostables/useActivity';
 import { useTitleSuffix } from '~/compostables/useTitleSuffix';
 import { getRecommendedActivities, useAuth } from '~/compostables/useUser';
 import type { Activity } from '~/shared/types/activity';
-import { trimString } from '~/shared/util';
 
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Activities');
@@ -95,7 +87,7 @@ async function loadActivities() {
 
 	const res = await getActivities(page.value, 100);
 	if (res.success && res.data) {
-		allActivities.value.push(...res.data.items);
+		allActivities.value.push(...res.data.items.sort(() => Math.random() - 0.5)); // Shuffle the activities
 		hasMore.value = allActivities.value.length < res.data.total;
 		page.value++;
 	} else {
