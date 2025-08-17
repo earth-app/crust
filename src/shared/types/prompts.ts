@@ -5,8 +5,8 @@ export type Prompt = {
 	owner_id: string;
 	prompt: string;
 	visibility: typeof com.earthapp.account.Privacy.prototype.name;
-	created_at: Date;
-	updated_at?: Date;
+	created_at: string;
+	updated_at?: string;
 };
 
 export type PromptResponse = {
@@ -14,6 +14,6 @@ export type PromptResponse = {
 	prompt_id: string;
 	owner_id?: string;
 	response: string;
-	created_at: Date;
-	updated_at?: Date;
+	created_at: string;
+	updated_at?: string;
 };
