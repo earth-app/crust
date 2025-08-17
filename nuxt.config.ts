@@ -48,6 +48,7 @@ export default defineNuxtConfig({
 	modules: [
 		'@nuxthub/core',
 		'@nuxt/ui',
+		'@nuxtjs/i18n',
 		[
 			'@nuxtjs/google-fonts',
 			{
@@ -66,5 +67,8 @@ export default defineNuxtConfig({
 				}
 			}
 		]
-	]
+	],
+	i18n: {
+		defaultLocale: 'en'
+	}
 });
