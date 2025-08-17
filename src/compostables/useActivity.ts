@@ -17,9 +17,15 @@ export async function getAllActivities(limit: number = 25, search: string = '') 
 }
 
 export async function getActivities(page: number = 1, limit: number = 25, search: string = '') {
-	return await util.makeAPIRequest<{ items: Activity[]; total: number }>(
-		null,
+	return await util.makeClientAPIRequest<{ items: Activity[]; total: number }>(
 		`/v1/activities?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
+		useCurrentSessionToken()
+	);
+}
+
+export async function getRandomActivities(limit: number = 10) {
+	return await util.makeClientAPIRequest<Activity[]>(
+		`/v1/activities/random?limit=${limit}`,
 		useCurrentSessionToken()
 	);
 }
