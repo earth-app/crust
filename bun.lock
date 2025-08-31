@@ -4,7 +4,7 @@
     "": {
       "name": "crust",
       "dependencies": {
-        "@earth-app/ocean": "1.0.0-ab998d7",
+        "@earth-app/ocean": "1.0.0-c755216",
         "@nuxt/icon": "^2.0.0",
         "@nuxt/kit": "^4.0.3",
         "@nuxt/ui": "^3.3.2",
@@ -12,11 +12,11 @@
         "@nuxtjs/color-mode": "^3.5.2",
         "@nuxtjs/google-fonts": "^3.2.0",
         "@nuxtjs/i18n": "^10.0.5",
-        "@tailwindcss/vite": "^4.1.11",
+        "@tailwindcss/vite": "^4.1.12",
         "@types/luxon": "^3.7.1",
         "luxon": "^3.7.1",
-        "nuxt": "^4.0.2",
-        "tailwindcss": "^4.1.11",
+        "nuxt": "^4.0.3",
+        "tailwindcss": "^4.1.12",
         "tailwindcss-motion": "^1.1.1",
         "vue": "^3.5.18",
         "vue-router": "^4.5.1",
@@ -41,10 +41,10 @@
         "husky": "^9.1.7",
         "lint-staged": "^16.1.5",
         "prettier": "^3.6.2",
-        "prettier-plugin-organize-imports": "4.1.0",
+        "prettier-plugin-organize-imports": "4.2.0",
         "prettier-plugin-tailwindcss": "^0.6.14",
         "vue-tsc": "^3.0.5",
-        "wrangler": "^4.30.0",
+        "wrangler": "^4.31.0",
       },
     },
   },
@@ -137,7 +137,7 @@
 
     "@dependents/detective-less": ["@dependents/detective-less@5.0.1", "", { "dependencies": { "gonzales-pe": "^4.3.0", "node-source-walk": "^7.0.1" } }, "sha512-Y6+WUMsTFWE5jb20IFP4YGa5IrGY/+a/FbOSjDF/wz9gepU2hwCYSXRHP/vPwBvwcY3SVMASt4yXxbXNXigmZQ=="],
 
-    "@earth-app/ocean": ["@earth-app/ocean@1.0.0-ab998d7", "https://npm.pkg.github.com/download/@earth-app/ocean/1.0.0-ab998d7/381fc7035833356edcb32e61b7f90924fcd2e9a7", { "dependencies": { "rss-parser": "^3.13.0", "ws": "8.18.0" } }, "sha512-uJxJhqdtYu9lec51ldQZWQqrgSHi0F02j1LKkEKB7I8kn0Jyc0QzXew8u4W919cWN/Vdn0i6r0L/Jy2LBXbQ9Q=="],
+    "@earth-app/ocean": ["@earth-app/ocean@1.0.0-c755216", "https://npm.pkg.github.com/download/@earth-app/ocean/1.0.0-c755216/3b71b4583622f1ddc616a5f2880ae6c93b25d9b4", { "dependencies": { "rss-parser": "^3.13.0", "ws": "8.18.0" } }, "sha512-6+RkWsR/dU8IeQlQLnbhPaENcoO+ahS5svD4abx9pLTE/7l0RBMC3ypyzA8JHo42yLk8wKWWtNerDarM+MNwmw=="],
 
     "@emnapi/core": ["@emnapi/core@1.4.5", "", { "dependencies": { "@emnapi/wasi-threads": "1.0.4", "tslib": "^2.4.0" } }, "sha512-XsLw1dEOpkSX/WucdqUhPWP7hDxSvZiY+fsUC14h+FtQ2Ifni4znbBt8punRX+Uj2JG/uDb8nEHVKvrVlvdZ5Q=="],
 
@@ -1689,7 +1689,7 @@
 
     "prettier": ["prettier@3.6.2", "", { "bin": { "prettier": "bin/prettier.cjs" } }, "sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ=="],
 
-    "prettier-plugin-organize-imports": ["prettier-plugin-organize-imports@4.1.0", "", { "peerDependencies": { "prettier": ">=2.0", "typescript": ">=2.9", "vue-tsc": "^2.1.0" }, "optionalPeers": ["vue-tsc"] }, "sha512-5aWRdCgv645xaa58X8lOxzZoiHAldAPChljr/MT0crXVOWTZ+Svl4hIWlz+niYSlO6ikE5UXkN1JrRvIP2ut0A=="],
+    "prettier-plugin-organize-imports": ["prettier-plugin-organize-imports@4.2.0", "", { "peerDependencies": { "prettier": ">=2.0", "typescript": ">=2.9", "vue-tsc": "^2.1.0 || 3" }, "optionalPeers": ["vue-tsc"] }, "sha512-Zdy27UhlmyvATZi67BTnLcKTo8fm6Oik59Sz6H64PgZJVs6NJpPD1mT240mmJn62c98/QaL+r3kx9Q3gRpDajg=="],
 
     "prettier-plugin-tailwindcss": ["prettier-plugin-tailwindcss@0.6.14", "", { "peerDependencies": { "@ianvs/prettier-plugin-sort-imports": "*", "@prettier/plugin-hermes": "*", "@prettier/plugin-oxc": "*", "@prettier/plugin-pug": "*", "@shopify/prettier-plugin-liquid": "*", "@trivago/prettier-plugin-sort-imports": "*", "@zackad/prettier-plugin-twig": "*", "prettier": "^3.0", "prettier-plugin-astro": "*", "prettier-plugin-css-order": "*", "prettier-plugin-import-sort": "*", "prettier-plugin-jsdoc": "*", "prettier-plugin-marko": "*", "prettier-plugin-multiline-arrays": "*", "prettier-plugin-organize-attributes": "*", "prettier-plugin-organize-imports": "*", "prettier-plugin-sort-imports": "*", "prettier-plugin-style-order": "*", "prettier-plugin-svelte": "*" }, "optionalPeers": ["@ianvs/prettier-plugin-sort-imports", "@prettier/plugin-hermes", "@prettier/plugin-oxc", "@prettier/plugin-pug", "@shopify/prettier-plugin-liquid", "@trivago/prettier-plugin-sort-imports", "@zackad/prettier-plugin-twig", "prettier-plugin-astro", "prettier-plugin-css-order", "prettier-plugin-import-sort", "prettier-plugin-jsdoc", "prettier-plugin-marko", "prettier-plugin-multiline-arrays", "prettier-plugin-organize-attributes", "prettier-plugin-organize-imports", "prettier-plugin-sort-imports", "prettier-plugin-style-order", "prettier-plugin-svelte"] }, "sha512-pi2e/+ZygeIqntN+vC573BcW5Cve8zUB0SSAGxqpB4f96boZF4M3phPVoOFCeypwkpRYdi7+jQ5YJJUwrkGUAg=="],
 
