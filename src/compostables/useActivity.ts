@@ -33,7 +33,7 @@ export async function getRandomActivities(limit: number = 10) {
 export async function getActivity(id: string) {
 	return await util.makeAPIRequest<Activity>(
 		`activity-${id}`,
-		`/v2/activities/${id}?includeAliases=true`,
+		`/v2/activities/${id}?include_aliases=true`,
 		useCurrentSessionToken()
 	);
 }
@@ -47,14 +47,10 @@ export async function draftActivity(id: string) {
 }
 
 export async function newActivity(activity: Activity) {
-	return await util.makeClientAPIRequest<Activity>(
-		'/v2/activities/create',
-		useCurrentSessionToken(),
-		{
-			method: 'POST',
-			body: activity
-		}
-	);
+	return await util.makeClientAPIRequest<Activity>('/v2/activities', useCurrentSessionToken(), {
+		method: 'POST',
+		body: activity
+	});
 }
 
 export async function editActivity(activity: Activity) {
