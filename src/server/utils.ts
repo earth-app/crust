@@ -12,7 +12,7 @@ export async function ensureAdministrator(event: H3Event) {
 	}
 
 	try {
-		const user = await $fetch<User>(`${config.public.apiBaseUrl}/v1/users/current`, {
+		const user = await $fetch<User>(`${config.public.apiBaseUrl}/v2/users/current`, {
 			headers: {
 				Authorization: `Bearer ${token}`
 			}
@@ -52,7 +52,7 @@ export async function ensureLoggedIn(event: H3Event) {
 	}
 
 	try {
-		const user = await $fetch<User>(`${config.public.apiBaseUrl}/v1/users/current`, {
+		const user = await $fetch<User>(`${config.public.apiBaseUrl}/v2/users/current`, {
 			headers: {
 				Authorization: `Bearer ${token}`
 			}

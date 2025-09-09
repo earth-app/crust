@@ -9,7 +9,7 @@ export async function useCurrentUser() {
 		return { success: false, message: 'Unauthenticated. Please log in to continue.' };
 	}
 
-	return await makeAPIRequest<User>('user-current', '/v1/users/current', token);
+	return await makeAPIRequest<User>('user-current', '/v2/users/current', token);
 }
 
 export async function useCurrentAvatar() {
@@ -18,7 +18,7 @@ export async function useCurrentAvatar() {
 		return { success: false, message: 'Unauthenticated. Please log in to continue.' };
 	}
 
-	return await makeAPIRequest<Blob>('avatar-current', '/v1/users/current/profile_photo', token, {
+	return await makeAPIRequest<Blob>('avatar-current', '/v2/users/current/profile_photo', token, {
 		responseType: 'blob'
 	});
 }
@@ -60,7 +60,7 @@ export const useAuth = () => {
 };
 
 export async function updateAccount(user: Partial<User['account']>) {
-	return await makeClientAPIRequest<User>('/v1/users/current', useCurrentSessionToken(), {
+	return await makeClientAPIRequest<User>('/v2/users/current', useCurrentSessionToken(), {
 		method: 'PATCH',
 		body: user
 	});
@@ -68,7 +68,7 @@ export async function updateAccount(user: Partial<User['account']>) {
 
 export async function updateFieldPrivacy(privacy: Partial<User['account']['field_privacy']>) {
 	return await makeClientAPIRequest<User>(
-		'/v1/users/current/field_privacy',
+		'/v2/users/current/field_privacy',
 		useCurrentSessionToken(),
 		{
 			method: 'PATCH',
@@ -79,7 +79,7 @@ export async function updateFieldPrivacy(privacy: Partial<User['account']['field
 
 export async function regenerateAvatar() {
 	return await makeClientAPIRequest<Blob>(
-		'/v1/users/current/profile_photo',
+		'/v2/users/current/profile_photo',
 		useCurrentSessionToken(),
 		{
 			method: 'PUT',
@@ -90,7 +90,7 @@ export async function regenerateAvatar() {
 
 export async function setUserActivities(activities: string[]) {
 	return await makeClientAPIRequest<User>(
-		'/v1/users/current/activities/set',
+		'/v2/users/current/activities/set',
 		useCurrentSessionToken(),
 		{
 			method: 'PATCH',
@@ -104,7 +104,7 @@ export async function setUserActivities(activities: string[]) {
 export async function getRecommendedActivities(poolLimit: number = 25) {
 	return await makeAPIRequest<Activity[]>(
 		null,
-		`/v1/users/current/activities/recommend?poolLimit=${poolLimit}`,
+		`/v2/users/current/activities/recommend?poolLimit=${poolLimit}`,
 		useCurrentSessionToken(),
 		{}
 	);
@@ -115,7 +115,7 @@ export async function getRecommendedActivities(poolLimit: number = 25) {
 export async function getUsers(limit: number = 25, search: string = '') {
 	return await paginatedAPIRequest<User>(
 		`users-${search}-${limit}`,
-		`/v1/users`,
+		`/v2/users`,
 		useCurrentSessionToken(),
 		{},
 		limit,
@@ -126,7 +126,7 @@ export async function getUsers(limit: number = 25, search: string = '') {
 export async function getUser(identifier: string) {
 	return await makeAPIRequest<User>(
 		`user-${identifier}`,
-		`/v1/users/${identifier}`,
+		`/v2/users/${identifier}`,
 		useCurrentSessionToken()
 	);
 }
@@ -134,7 +134,7 @@ export async function getUser(identifier: string) {
 export async function getUserAvatar(identifier: string) {
 	return await makeAPIRequest<Blob>(
 		`avatar-${identifier}`,
-		`/v1/users/${identifier}/profile_photo`,
+		`/v2/users/${identifier}/profile_photo`,
 		useCurrentSessionToken(),
 		{
 			responseType: 'blob'

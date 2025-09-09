@@ -4,7 +4,7 @@ export function useSignup() {
 	return async function signup(username: string, password: string) {
 		try {
 			const response = await $fetch<{ session_token: string }>(
-				`${config.public.apiBaseUrl}/v1/users/create`,
+				`${config.public.apiBaseUrl}/v2/users/create`,
 				{
 					method: 'POST',
 					headers: {
@@ -39,7 +39,7 @@ export function useLogin() {
 
 		try {
 			const response = await $fetch<{ session_token: string }>(
-				`${config.public.apiBaseUrl}/v1/users/login`,
+				`${config.public.apiBaseUrl}/v2/users/login`,
 				{
 					method: 'POST',
 					headers: {
@@ -75,7 +75,7 @@ export function useLogout() {
 
 	return async function logout() {
 		try {
-			await $fetch(`${config.public.apiBaseUrl}/v1/users/logout`, {
+			await $fetch(`${config.public.apiBaseUrl}/v2/users/logout`, {
 				method: 'POST',
 				headers: {
 					Authorization: `Bearer ${sessionCookie.value}`

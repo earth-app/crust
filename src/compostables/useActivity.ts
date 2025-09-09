@@ -2,13 +2,13 @@ import { type Activity, type WikipediaSummary, type YouTubeVideo } from '~/share
 import * as util from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
-// mantle - /v1/activities
+// mantle - /v2/activities
 // cloud - /v1/activity
 
 export async function getAllActivities(limit: number = 25, search: string = '') {
 	return await util.paginatedAPIRequest<Activity>(
 		null,
-		'/v1/activities',
+		'/v2/activities',
 		useCurrentSessionToken(),
 		{},
 		limit,
@@ -18,14 +18,14 @@ export async function getAllActivities(limit: number = 25, search: string = '') 
 
 export async function getActivities(page: number = 1, limit: number = 25, search: string = '') {
 	return await util.makeClientAPIRequest<{ items: Activity[]; total: number }>(
-		`/v1/activities?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
+		`/v2/activities?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
 		useCurrentSessionToken()
 	);
 }
 
 export async function getRandomActivities(limit: number = 10) {
 	return await util.makeClientAPIRequest<Activity[]>(
-		`/v1/activities/random?limit=${limit}`,
+		`/v2/activities/random?limit=${limit}`,
 		useCurrentSessionToken()
 	);
 }
@@ -33,7 +33,7 @@ export async function getRandomActivities(limit: number = 10) {
 export async function getActivity(id: string) {
 	return await util.makeAPIRequest<Activity>(
 		`activity-${id}`,
-		`/v1/activities/${id}?includeAliases=true`,
+		`/v2/activities/${id}?includeAliases=true`,
 		useCurrentSessionToken()
 	);
 }
@@ -48,7 +48,7 @@ export async function draftActivity(id: string) {
 
 export async function newActivity(activity: Activity) {
 	return await util.makeClientAPIRequest<Activity>(
-		'/v1/activities/create',
+		'/v2/activities/create',
 		useCurrentSessionToken(),
 		{
 			method: 'POST',
@@ -59,7 +59,7 @@ export async function newActivity(activity: Activity) {
 
 export async function editActivity(activity: Activity) {
 	return await util.makeClientAPIRequest<Activity>(
-		`/v1/activities/${activity.id}`,
+		`/v2/activities/${activity.id}`,
 		useCurrentSessionToken(),
 		{
 			method: 'PATCH',
