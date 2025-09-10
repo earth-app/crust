@@ -12,7 +12,7 @@ export type User = {
 		account_type: typeof com.earthapp.account.AccountType.prototype.name;
 		id: string;
 		first_name?: string;
-		lastName?: string;
+		last_name?: string;
 		username: string;
 		bio?: string;
 		email?: string;

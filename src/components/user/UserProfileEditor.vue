@@ -27,7 +27,7 @@
 				:onFinish="updateUser"
 			/>
 			<EditableValue
-				v-model="lastName"
+				v-model="last_name"
 				class="text-3xl w-32"
 				size="xl"
 				placeholder="Doe"
@@ -216,7 +216,7 @@ const createAccountProp = (key: string) =>
 
 // Create the computed refs directly
 const first_name = createAccountProp('first_name');
-const lastName = createAccountProp('lastName');
+const last_name = createAccountProp('last_name');
 const username = createAccountProp('username');
 const bio = createAccountProp('bio');
 
@@ -276,7 +276,7 @@ const props: {
 function sanitize(obj: User['account']): Partial<User['account']> {
 	return {
 		first_name: obj.first_name ? obj.first_name?.trim() || '' : undefined,
-		lastName: obj.lastName ? obj.lastName?.trim() || '' : undefined,
+		last_name: obj.last_name ? obj.last_name?.trim() || '' : undefined,
 		username: obj.username ? obj.username?.trim() || '' : undefined,
 		bio: obj.bio ? obj.bio?.trim() || '' : undefined,
 		email: obj.email ? obj.email?.trim() || '' : undefined,
