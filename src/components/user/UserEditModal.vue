@@ -1,6 +1,6 @@
 <template>
 	<UModal
-		:title="title || `Edit ${user.fullName || user.username}'s Profile`"
+		:title="title || `Edit ${user.full_name || user.username}'s Profile`"
 		:description="description"
 		:close="{
 			color: 'primary',

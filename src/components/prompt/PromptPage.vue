@@ -12,7 +12,7 @@
 						user
 							? {
 									src: avatarUrl,
-									alt: user?.fullName || `@${user?.username || 'anonymous'}`
+									alt: user?.full_name || `@${user?.username || 'anonymous'}`
 								}
 							: undefined
 					"

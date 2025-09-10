@@ -20,7 +20,7 @@
 		<h1 class="text-8xl font-bold mb-2">Profile</h1>
 		<div class="flex flex-row items-center space-x-1.5 mb-4">
 			<EditableValue
-				v-model="firstName"
+				v-model="first_name"
 				class="text-3xl w-32"
 				size="xl"
 				placeholder="John"
@@ -215,7 +215,7 @@ const createAccountProp = (key: string) =>
 	});
 
 // Create the computed refs directly
-const firstName = createAccountProp('firstName');
+const first_name = createAccountProp('first_name');
 const lastName = createAccountProp('lastName');
 const username = createAccountProp('username');
 const bio = createAccountProp('bio');
@@ -275,7 +275,7 @@ const props: {
 
 function sanitize(obj: User['account']): Partial<User['account']> {
 	return {
-		firstName: obj.firstName ? obj.firstName?.trim() || '' : undefined,
+		first_name: obj.first_name ? obj.first_name?.trim() || '' : undefined,
 		lastName: obj.lastName ? obj.lastName?.trim() || '' : undefined,
 		username: obj.username ? obj.username?.trim() || '' : undefined,
 		bio: obj.bio ? obj.bio?.trim() || '' : undefined,

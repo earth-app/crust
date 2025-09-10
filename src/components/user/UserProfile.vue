@@ -7,7 +7,7 @@
 			/>
 			<div class="flex">
 				<h1 class="text-3xl font-semibold">
-					{{ props.user.fullName || `@${props.user.username}` }}
+					{{ props.user.full_name || `@${props.user.username}` }}
 				</h1>
 				<UserTypeBadge
 					:user="props.user"

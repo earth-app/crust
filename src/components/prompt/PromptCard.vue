@@ -3,7 +3,7 @@
 		<div class="w-full flex items-center justify-center my-8">
 			<InfoCard
 				:title="prompt.prompt"
-				:description="author?.fullName"
+				:description="author?.full_name"
 				:avatar="authorAvatar || 'https://cdn.earth-app.com/earth-app.png'"
 				avatar-size="xl"
 				:avatar-chip="authorAvatarChipColor ? true : false"

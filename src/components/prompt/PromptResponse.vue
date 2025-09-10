@@ -39,7 +39,7 @@ const props = defineProps<{
 const i18n = useI18n();
 const user = ref<User | null>(null);
 const identifier = computed(
-	() => user.value?.fullName || `@${user.value?.username || 'anonymous'}`
+	() => user.value?.full_name || `@${user.value?.username || 'anonymous'}`
 );
 const userAvatar = ref<string | null>(null);
 

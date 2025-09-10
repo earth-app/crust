@@ -3,7 +3,7 @@ import { com } from '@earth-app/ocean';
 export type User = {
 	id: string;
 	username: string;
-	fullName?: string;
+	full_name?: string;
 	created_at: Date;
 	updated_at?: Date;
 	last_login?: Date;
@@ -11,7 +11,7 @@ export type User = {
 		type: 'com.earthapp.account.Account';
 		account_type: typeof com.earthapp.account.AccountType.prototype.name;
 		id: string;
-		firstName?: string;
+		first_name?: string;
 		lastName?: string;
 		username: string;
 		bio?: string;

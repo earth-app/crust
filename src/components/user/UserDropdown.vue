@@ -46,7 +46,7 @@ let adminItems: DropdownMenuItem[] = [
 const items = ref<DropdownMenuItem[][]>([
 	[
 		{
-			label: user.fullName || user.username,
+			label: user.full_name || user.username,
 			icon: 'flowbite:profile-card-solid'
 		}
 	],
