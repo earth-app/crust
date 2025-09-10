@@ -52,28 +52,6 @@ export async function makeRequest<T>(
 					error: { value: undefined }
 				};
 
-		if (error.value?.statusCode === 404) {
-			return {
-				success: false,
-				message: `Resource not found at ${url}`
-			};
-		}
-
-		if (error.value?.statusCode === 400) {
-			console.error(`Bad request to ${url}:`, error.value.data);
-			return {
-				success: false,
-				message: `Bad request to ${url}: ${error.value.statusMessage || 'Invalid parameters'}`
-			};
-		}
-
-		if (error.value?.statusCode === 429) {
-			return {
-				success: false,
-				message: `Rate limit exceeded. Please try again later.`
-			};
-		}
-
 		if (error.value) {
 			console.error(`Error fetching ${key}:`, error.value);
 			return {
@@ -93,7 +71,30 @@ export async function makeRequest<T>(
 			success: true,
 			data: data.value as T
 		};
-	} catch (error) {
+	} catch (error: any) {
+		const value: string = error.toString();
+		if (value.includes('404')) {
+			return {
+				success: false,
+				message: `Resource not found at ${url}`
+			};
+		}
+
+		if (value.includes('400')) {
+			console.error(`Bad request to ${url}:`, error.value.data);
+			return {
+				success: false,
+				message: `Bad request to ${url}: ${error.value.statusMessage || 'Invalid parameters'}`
+			};
+		}
+
+		if (value.includes('429')) {
+			return {
+				success: false,
+				message: `Rate limit exceeded. Please try again later.`
+			};
+		}
+
 		console.error(`Failed to fetch ${key}:`, error);
 		return {
 			success: false,

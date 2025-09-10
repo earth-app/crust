@@ -104,7 +104,7 @@ export async function setUserActivities(activities: string[]) {
 export async function getRecommendedActivities(poolLimit: number = 25) {
 	return await makeAPIRequest<Activity[]>(
 		null,
-		`/v2/users/current/activities/recommend?poolLimit=${poolLimit}`,
+		`/v2/users/current/activities/recommend?pool_limit=${poolLimit}`,
 		useCurrentSessionToken(),
 		{}
 	);
