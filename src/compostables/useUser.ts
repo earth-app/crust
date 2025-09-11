@@ -90,7 +90,7 @@ export async function regenerateAvatar() {
 
 export async function setUserActivities(activities: string[]) {
 	return await makeClientAPIRequest<User>(
-		'/v2/users/current/activities/set',
+		'/v2/users/current/activities',
 		useCurrentSessionToken(),
 		{
 			method: 'PATCH',
