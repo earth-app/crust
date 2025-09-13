@@ -23,7 +23,7 @@
 		</div>
 		<div class="flex items-center space-x-2">
 			<UBadge
-				v-for="(activity, i) in props.user.account.activities"
+				v-for="(activity, i) in props.user.activities"
 				:label="activity.name"
 				:color="i <= 2 ? 'primary' : 'secondary'"
 				:icon="activity.fields['icon']"

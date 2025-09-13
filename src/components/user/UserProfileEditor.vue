@@ -389,8 +389,8 @@ onMounted(async () => {
 		allActivities.value = activities;
 
 		// Initialize current activities from user data
-		if (user.value?.account?.activities) {
-			currentActivities.value = user.value.account.activities
+		if (user.value?.activities) {
+			currentActivities.value = user.value.activities
 				.map((userActivity) => {
 					return {
 						label: userActivity.name,
@@ -406,7 +406,7 @@ onMounted(async () => {
 });
 
 watch(
-	() => user.value?.account?.activities,
+	() => user.value?.activities,
 	(newActivities) => {
 		if (newActivities && allActivities.value.length > 0) {
 			currentActivities.value = newActivities.map((activity) => {
@@ -443,7 +443,7 @@ async function updateActivities() {
 	);
 	activitiesLoading.value = false;
 	if (res.success && res.data) {
-		user.value.account.activities = res.data.account.activities;
+		user.value.activities = res.data.activities;
 
 		const toast = useToast();
 		toast.add({

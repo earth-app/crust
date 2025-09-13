@@ -8,7 +8,6 @@ export type User = {
 	updated_at?: Date;
 	last_login?: Date;
 	account: {
-		type: 'com.earthapp.account.Account';
 		account_type: typeof com.earthapp.account.AccountType.prototype.name;
 		id: string;
 		first_name?: string;
@@ -33,14 +32,14 @@ export type User = {
 			last_login: typeof com.earthapp.account.Privacy.prototype.name;
 			account_type: typeof com.earthapp.account.Privacy.prototype.name;
 		};
-		activities: {
-			type: 'com.earthapp.activity.Activity';
-			id: string;
-			name: string;
-			description?: string;
-			activity_types: (typeof com.earthapp.activity.ActivityType.prototype.name)[];
-			aliases: string[];
-			fields: Record<string, string>;
-		}[];
 	};
+	activities?: {
+		id: string;
+		name: string;
+		description?: string;
+		types: (typeof com.earthapp.activity.ActivityType.prototype.name)[];
+		aliases: string[];
+		fields: Record<string, string>;
+	}[];
+	friends?: string[];
 };
