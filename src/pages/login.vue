@@ -12,7 +12,11 @@ import { useAuth } from '~/compostables/useUser';
 
 const { user } = useAuth();
 
-if (user.value) {
-	useRouter().push('/');
+function handleLoginSuccess() {
+	if (user.value) {
+		// Redirect to home page or dashboard after successful login
+		window.location.href = '/';
+		refreshNuxtData(['user-current', 'avatar-current']); // Refresh user data
+	}
 }
 </script>
