@@ -99,6 +99,16 @@ export async function setUserActivities(activities: string[]) {
 	);
 }
 
+export async function setAccountType(id: string, type: User['account']['account_type']) {
+	return await makeClientAPIRequest<User>(
+		`/v2/users/${id}/account_type?type=${type.toLowerCase()}`,
+		useCurrentSessionToken(),
+		{
+			method: 'PUT'
+		}
+	);
+}
+
 // Ocean
 
 export async function getRecommendedActivities(poolLimit: number = 25) {

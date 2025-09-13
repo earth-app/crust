@@ -95,6 +95,13 @@ export async function makeRequest<T>(
 			};
 		}
 
+		if (value.includes('401') || value.includes('403')) {
+			return {
+				success: false,
+				message: `Not authorized. Please check your credentials.`
+			};
+		}
+
 		console.error(`Failed to fetch ${key}:`, error);
 		return {
 			success: false,

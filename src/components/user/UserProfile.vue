@@ -11,6 +11,7 @@
 				</h1>
 				<UserTypeBadge
 					:user="props.user"
+					:editor="user?.account.account_type === 'ADMINISTRATOR'"
 					class="ml-3"
 				/>
 			</div>
@@ -35,13 +36,15 @@
 </template>
 
 <script setup lang="ts">
-import { getUserAvatar } from '~/compostables/useUser';
+import { getUserAvatar, useAuth } from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 
 const props = defineProps<{
 	user: User;
 	title?: string;
 }>();
+
+const { user } = useAuth();
 
 const avatar = ref<string | undefined>(undefined);
 let objectUrl: string | undefined = undefined;
