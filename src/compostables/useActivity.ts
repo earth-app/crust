@@ -64,6 +64,12 @@ export async function editActivity(activity: Activity) {
 	);
 }
 
+export async function deleteActivity(id: string) {
+	return await util.makeClientAPIRequest<void>(`/v2/activities/${id}`, useCurrentSessionToken(), {
+		method: 'DELETE'
+	});
+}
+
 // Activity Information Extensions
 
 export async function getActivityWikipediaSummary(title: string) {

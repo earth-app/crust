@@ -128,12 +128,26 @@
 		>
 			{{ props.activity ? 'Update Activity' : 'Create Activity' }}
 		</UButton>
+		<UButton
+			v-if="props.activity"
+			color="error"
+			class="ml-4"
+			@click="removeActivity"
+			:disabled="loading"
+		>
+			Delete Activity
+		</UButton>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
-import { draftActivity, editActivity, newActivity } from '~/compostables/useActivity';
+import {
+	deleteActivity,
+	draftActivity,
+	editActivity,
+	newActivity
+} from '~/compostables/useActivity';
 import type { Activity } from '~/shared/types/activity';
 
 const props = defineProps<{
@@ -164,7 +178,12 @@ const activityType5 = ref<typeof com.earthapp.activity.ActivityType.prototype.na
 	props.activity?.types?.at(4)
 );
 const activityAliases = ref<string>(props.activity?.aliases?.join(',') || '');
+
 const activityFields = ref<Record<string, string>>(props.activity?.fields || {});
+if (Array.isArray(activity.value?.fields)) {
+	activityFields.value = {};
+	activity.value.fields = {};
+}
 
 // New field management
 const newFieldKey = ref<string>('');
@@ -221,10 +240,15 @@ function addField() {
 		return;
 	}
 
+	if (Array.isArray(activityFields.value)) {
+		activityFields.value = {};
+	}
+
 	if (activityFields.value.hasOwnProperty(trimmedKey)) {
 		toast.add({
 			title: 'Error',
 			description: `Field "${trimmedKey}" already exists.`,
+			icon: 'mdi:alert-circle',
 			color: 'error',
 			duration: 3000
 		});
@@ -404,12 +428,18 @@ async function updateActivity() {
 		activityType4.value = res.data.types?.[3];
 		activityType5.value = res.data.types?.[4];
 		activityAliases.value = res.data.aliases.join(',');
+		activityFields.value = res.data.fields || {};
+
+		if (Array.isArray(activityFields.value)) {
+			activityFields.value = {};
+		}
 
 		refreshNuxtData('activities'); // Refresh activities list if needed
 
 		toast.add({
 			title: 'Activity Updated',
 			description: `Activity "${activity.value.name}" has been updated successfully.`,
+			icon: activityFields.value['icon'] || 'mdi:earth',
 			color: 'success',
 			duration: 3000
 		});
@@ -421,5 +451,51 @@ async function updateActivity() {
 			duration: 3000
 		});
 	}
+}
+
+async function removeActivity() {
+	loading.value = true;
+	if (!activity.value?.id) {
+		toast.add({
+			title: 'Error',
+			description: 'No activity ID found for deletion.',
+			color: 'error',
+			duration: 3000
+		});
+		loading.value = false;
+		return;
+	}
+
+	const res = await deleteActivity(activity.value.id!);
+	loading.value = false;
+	if (res.success) {
+		activity.value = null;
+		activityName.value = '';
+		activityDescription.value = '';
+		activityType1.value = undefined;
+		activityType2.value = undefined;
+		activityType3.value = undefined;
+		activityType4.value = undefined;
+		activityType5.value = undefined;
+		activityAliases.value = '';
+		activityFields.value = {};
+
+		toast.add({
+			title: 'Activity Deleted',
+			description: 'The activity has been deleted successfully.',
+			icon: 'material-symbols:delete-outline',
+			color: 'success',
+			duration: 3000
+		});
+	} else {
+		toast.add({
+			title: 'Error',
+			description: 'Failed to delete activity. Please try again.',
+			color: 'error',
+			duration: 3000
+		});
+	}
+
+	loading.value = false;
 }
 </script>
