@@ -23,9 +23,9 @@ export async function getActivities(page: number = 1, limit: number = 25, search
 	);
 }
 
-export async function getRandomActivities(limit: number = 10) {
+export async function getRandomActivities(count: number = 3) {
 	return await util.makeClientAPIRequest<Activity[]>(
-		`/v2/activities/random?limit=${limit}`,
+		`/v2/activities/random?count=${count}`,
 		useCurrentSessionToken()
 	);
 }

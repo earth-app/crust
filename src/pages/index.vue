@@ -6,23 +6,23 @@
 	</div>
 	<div class="w-full flex flex-col items-center justify-center">
 		<h1 class="text-3xl">The Earth App</h1>
-		<p
-			v-if="!user"
-			class="text-lg mt-3 motion-preset-fade-lg"
-		>
-			Meet New People, Try New Things, Discover the World
-		</p>
-		<div
-			v-else
-			class="flex justify-center mt-3 motion-preset-fade-lg"
-		>
-			<UAvatar
-				:src="avatarUrl"
-				class="size-8 min-w-4 h-auto mr-2"
-			/>
-			<p class="text-lg font-semibold">Welcome Back, @{{ user.username }}</p>
-		</div>
 		<ClientOnly>
+			<p
+				v-if="!user"
+				class="text-lg mt-3 motion-preset-fade-lg"
+			>
+				Meet New People, Try New Things, Discover the World
+			</p>
+			<div
+				v-else
+				class="flex justify-center mt-3 motion-preset-fade-lg"
+			>
+				<UAvatar
+					:src="avatarUrl"
+					class="size-8 min-w-4 h-auto mr-2"
+				/>
+				<p class="text-lg font-semibold">Welcome Back, @{{ user.username }}</p>
+			</div>
 			<div class="flex items-center justify-center w-full motion-opacity-in-0 motion-duration-1500">
 				<InfoCardGroup
 					:title="user ? `Today's Content` : 'Discover Content'"
