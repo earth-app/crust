@@ -44,7 +44,7 @@ const identifier = computed(
 const userAvatar = ref<string | null>(null);
 
 const time = computed(() => {
-	const created = DateTime.fromFormat(props.response.created_at, 'yyyy-MM-dd HH:mm:ss', {
+	const created = DateTime.fromISO(props.response.created_at, {
 		zone: 'utc'
 	});
 
@@ -53,7 +53,7 @@ const time = computed(() => {
 		round: true
 	});
 	if (props.response.updated_at && props.response.created_at !== props.response.updated_at) {
-		const updated = DateTime.fromFormat(props.response.updated_at, 'yyyy-MM-dd HH:mm:ss', {
+		const updated = DateTime.fromISO(props.response.updated_at, {
 			zone: 'utc'
 		});
 		str += ` (edited ${updated.toRelative({ locale: i18n.locale.value, round: true }) || 'at some point'})`;

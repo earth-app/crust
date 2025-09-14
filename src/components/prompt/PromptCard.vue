@@ -18,6 +18,7 @@
 </template>
 
 <script setup lang="ts">
+import { DateTime } from 'luxon';
 import { getPromptResponsesCount } from '~/compostables/usePrompt';
 import { getUser, getUserAvatar } from '~/compostables/useUser';
 import type { Prompt } from '~/shared/types/prompts';
@@ -36,6 +37,16 @@ const authorAvatar = ref<string | null>(null);
 const authorAvatarChipColor = ref<any | null>(null);
 const responsesCount = ref<number | null>(null);
 
+const i18n = useI18n();
+const time = computed(() => {
+	if (!props.prompt.created_at) return 'sometime';
+	const created = DateTime.fromISO(props.prompt.created_at, {
+		zone: Intl.DateTimeFormat().resolvedOptions().timeZone
+	});
+
+	return created.setLocale(i18n.locale.value).toLocaleString(DateTime.DATETIME_SHORT);
+});
+
 onMounted(async () => {
 	secondaryFooter.value = props.prompt.id;
 
@@ -51,7 +62,7 @@ onMounted(async () => {
 					authorAvatarChipColor.value = 'error';
 					break;
 			}
-			footer.value = `@${author.value.username} - ${props.prompt.created_at}`;
+			footer.value = `@${author.value.username} - ${time.value}`;
 
 			const avatar = await getUserAvatar(author.value.id);
 			if (avatar.success && avatar.data) {
@@ -60,14 +71,14 @@ onMounted(async () => {
 			}
 		} else {
 			author.value = null;
-			footer.value = `Unknown User - ${props.prompt.created_at}`;
+			footer.value = `Unknown User - ${time.value}`;
 			secondaryFooter.value = props.prompt.id;
 		}
 	}
 
 	const resCount = await getPromptResponsesCount(props.prompt.id);
 	if (resCount.success && resCount.data) {
-		responsesCount.value = resCount.data;
+		responsesCount.value = resCount.data.count;
 	}
 });
 

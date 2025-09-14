@@ -2,8 +2,8 @@ import type { Prompt, PromptResponse } from '~/shared/types/prompts';
 import * as util from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
-export async function getRandomPrompts(limit: number = 10) {
-	return await util.makeClientAPIRequest<Prompt[]>(`/v2/prompts/random?limit=${limit}`);
+export async function getRandomPrompts(count: number = 10) {
+	return await util.makeClientAPIRequest<Prompt[]>(`/v2/prompts/random?count=${count}`);
 }
 
 export async function getPrompt(id: string) {
@@ -17,7 +17,7 @@ export async function getPromptResponses(id: string, page: number = 1, limit: nu
 }
 
 export async function getPromptResponsesCount(id: string) {
-	return await util.makeAPIRequest<number>(
+	return await util.makeAPIRequest<{ count: number; prompt: Prompt }>(
 		`responses-count-${id}`,
 		`/v2/prompts/${id}/responses/count`
 	);
