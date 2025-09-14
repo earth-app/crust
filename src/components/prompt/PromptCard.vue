@@ -47,8 +47,19 @@ const time = computed(() => {
 	return created.setLocale(i18n.locale.value).toLocaleString(DateTime.DATETIME_SHORT);
 });
 
+const updatedTime = computed(() => {
+	if (!props.prompt.updated_at) return 'sometime';
+	const updated = DateTime.fromISO(props.prompt.updated_at, {
+		zone: Intl.DateTimeFormat().resolvedOptions().timeZone
+	});
+
+	return updated.toRelative({ locale: i18n.locale.value }) || 'sometime';
+});
+
 onMounted(async () => {
-	secondaryFooter.value = props.prompt.id;
+	if (props.prompt.created_at !== props.prompt.updated_at) {
+		secondaryFooter.value = `Updated ${updatedTime.value}`;
+	}
 
 	if (props.prompt.owner_id) {
 		const res = await getUser(props.prompt.owner_id);
@@ -72,7 +83,6 @@ onMounted(async () => {
 		} else {
 			author.value = null;
 			footer.value = `Unknown User - ${time.value}`;
-			secondaryFooter.value = props.prompt.id;
 		}
 	}
 

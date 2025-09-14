@@ -54,6 +54,15 @@
 						size="1.5rem"
 					/>
 				</NuxtLink>
+				<NuxtLink
+					to="https://patreon.com/theearthapp"
+					target="_blank"
+				>
+					<UIcon
+						name="cib:patreon"
+						size="1.5rem"
+					/>
+				</NuxtLink>
 			</div>
 		</div>
 		<ClientOnly>

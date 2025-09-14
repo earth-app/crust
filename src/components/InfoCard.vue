@@ -55,7 +55,7 @@
 				</div>
 				<p
 					v-if="description"
-					class="text-gray-600"
+					class="text-gray-600 hover:cursor-text"
 				>
 					{{ description }}
 				</p>
@@ -76,9 +76,22 @@
 				></iframe>
 				<span
 					v-if="content"
-					class="text-gray-300"
+					class="text-gray-300 hover:cursor-text"
 					>{{ content }}</span
 				>
+				<div
+					class="flex items-center space-x-2 mt-2"
+					v-if="badges"
+				>
+					<UBadge
+						v-for="(badge, index) in badges"
+						:key="`badge-${index}`"
+						:color="badge.color || 'primary'"
+						:size="badge.size || 'md'"
+						class="text-xs hover:scale-105 transition-all duration-300 hover:cursor-text"
+						>{{ badge.text }}</UBadge
+					>
+				</div>
 				<USeparator
 					v-if="footer"
 					class="border-gray-500 my-2 w-11/12"
@@ -115,6 +128,11 @@
 defineProps<{
 	external?: boolean;
 	variant?: 'outline' | 'subtle' | 'solid' | 'soft';
+	badges?: {
+		text: string;
+		color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
+		size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
+	}[];
 	title: string;
 	description?: string;
 	content?: string;
