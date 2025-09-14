@@ -12,6 +12,7 @@ export type Activity = {
 };
 
 export type WikipediaSummary = {
+	type: string;
 	title: string;
 	description: string;
 	extract: string;
@@ -23,6 +24,8 @@ export type WikipediaSummary = {
 	titles: {
 		canonical: string;
 	};
+	pageid: number;
+	summarySnippet?: string;
 };
 
 export type YouTubeVideo = {

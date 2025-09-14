@@ -87,3 +87,86 @@ export async function getActivityYouTubeSearch(query: string) {
 		useCurrentSessionToken()
 	);
 }
+
+export async function getActivityWikipediaSearches(queries: string[]) {
+	const results: Record<string, WikipediaSummary> = {};
+	const responses = await Promise.all(
+		queries.map(async (query) => {
+			return await util
+				.makeServerRequest<{
+					query: { search: { title: string; snippet: string }[] };
+				}>(
+					`wikipedia-search-${query}`,
+					`/api/activity/wikipediaSearch?search=${encodeURIComponent(query)}`,
+					useCurrentSessionToken()
+				)
+				.then((res) => {
+					if (res.success) {
+						return res.data?.query.search || [];
+					}
+
+					return [];
+				});
+		})
+	)
+		.then((res) => res.flat())
+		.then((responses) => responses.filter((r) => r.title?.trim() !== ''));
+
+	for (const r of responses) {
+		if (r.title && !results[r.title]) {
+			try {
+				const res = await getActivityWikipediaSummary(r.title);
+				if (res.success && res.data) {
+					if (res.data.type === 'disambiguation') continue; // Skip disambiguation pages
+
+					res.data.summarySnippet =
+						'...' +
+						r.snippet
+							.replace(/<\/?span[^>]*>/g, '') // Remove any <span> tags from snippet
+							.replace(/&quot;/g, '"') // Decode HTML entities
+							.replace(/&amp;/g, '&')
+							.replace(/&lt;/g, '<')
+							.replace(/&gt;/g, '>')
+							.replace(/&#39;/g, "'")
+							.replace(/&#039;s/g, "'s")
+							.replace(/&#039;/g, "'")
+							.trim() +
+						'...';
+
+					results[r.title] = res.data;
+				}
+			} catch (error) {
+				// Ignore errors for individual summaries
+			}
+		}
+	}
+
+	return results;
+}
+
+export async function getActivityIconSearches(queries: string[]) {
+	const results: Record<string, string[]> = {};
+	await Promise.all(
+		queries.map(async (query) => {
+			if (results[query]) return; // Already fetched
+
+			try {
+				const res = await util.makeServerRequest<{ icons: string[]; total: number }>(
+					`icon-search-${query}`,
+					`/api/activity/iconSearch?search=${encodeURIComponent(query)}`,
+					useCurrentSessionToken()
+				);
+
+				if (res.success && res.data) {
+					results[query] = res.data.icons;
+				} else {
+					results[query] = [];
+				}
+			} catch (error) {
+				results[query] = [];
+			}
+		})
+	);
+
+	return results;
+}

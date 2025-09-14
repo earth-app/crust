@@ -28,140 +28,183 @@
 			v-for="island in islands"
 			:key="island.name"
 			:name="island.icon"
-			class="absolute hidden md:inline-block md:size-8 lg:size-12 z-10 shadow-2xl shadow-gray-950 duration-300 motion-preset-fade-lg"
+			class="relative hidden md:inline-block md:size-8 lg:size-12 z-10 shadow-2xl shadow-gray-950 duration-300 motion-preset-fade-lg"
 			:style="{ transform: `translate(${island.x}vw, ${island.y}vh)` }"
 		/>
 		<div class="grid grid-cols-1 xl:grid-cols-2 items-start w-2/3 mt-6 px-4 gap-y-8">
 			<!-- Skeleton Loading Cards -->
 			<InfoCardSkeleton
-				v-if="!dataLoaded"
+				v-if="cards.length === 0"
 				v-for="n in 6"
 				:key="`skeleton-${n}`"
 			/>
-			<!-- First Wikipedia Entry -->
+
+			<!-- Card Data Entries -->
 			<InfoCard
-				v-if="wikipediaEntries[0] && dataLoaded"
-				icon="mdi:wikipedia"
+				v-for="(card, index) in cards"
+				:key="`card-${index}`"
+				:icon="card.icon"
 				:external="true"
-				:link="`https://en.wikipedia.org/wiki/${wikipediaEntries[0].titles.canonical}`"
-				:title="capitalizeFully(wikipediaEntries[0].title)"
-				:description="trimString(wikipediaEntries[0].description, 50)"
-				:content="wikipediaEntries[0].extract"
-				:image="wikipediaEntries[0].originalimage?.source"
-			/>
-			<!-- First Two YouTube Videos -->
-			<InfoCard
-				v-for="video in youtubeVideos.slice(0, 2)"
-				v-if="dataLoaded"
-				:key="video.id"
-				icon="mdi:youtube"
-				:external="true"
-				:youtube-id="video.id"
-				:title="`YT: ${trimString(video.title, 35)}`"
-				:description="trimString(video.uploaded_at, 25)"
-			/>
-			<!-- Rest -->
-			<InfoCard
-				v-for="wikipedia in wikipediaEntries.slice(1)"
-				v-if="dataLoaded"
-				:key="wikipedia.titles.canonical"
-				icon="mdi:wikipedia"
-				:external="true"
-				:link="`https://en.wikipedia.org/wiki/${wikipedia.titles.canonical}`"
-				:title="capitalizeFully(wikipedia.title)"
-				:description="trimString(wikipedia.description, 50)"
-				:content="wikipedia.extract"
-				:image="wikipedia.originalimage?.source"
-			/>
-			<InfoCard
-				v-for="video in youtubeVideos.slice(2)"
-				v-if="dataLoaded"
-				:key="video.id"
-				icon="mdi:youtube"
-				:external="true"
-				:youtube-id="video.id"
-				:title="`YT: ${trimString(video.title, 35)}`"
-				:description="trimString(video.uploaded_at, 25)"
+				:title="card.title"
+				:description="card.description"
+				:content="card.content"
+				:link="card.link"
+				:image="card.image"
+				:youtube-id="card.youtubeId"
+				:footer="card.footer"
 			/>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { getActivityWikipediaSummary, getActivityYouTubeSearch } from '~/compostables/useActivity';
+import {
+	getActivityIconSearches,
+	getActivityWikipediaSearches,
+	getActivityYouTubeSearch
+} from '~/compostables/useActivity';
 import { useAuth } from '~/compostables/useUser';
-import type { Activity, WikipediaSummary, YouTubeVideo } from '~/shared/types/activity';
-import { capitalizeFully, trimString } from '~/shared/util';
+import type { Activity } from '~/shared/types/activity';
+import { capitalizeFully } from '~/shared/util';
 import ActivityEditorModal from '../admin/ActivityEditorModal.vue';
 
 const props = defineProps<{
 	activity: Activity;
 }>();
 
-const editing = ref(false);
-const dataLoaded = ref(false);
-
 const { user } = useAuth();
 
-const islands = computed(() => {
-	if (props.activity.fields['island_icons']) {
-		const icons = props.activity.fields['island_icons'].split(',');
+const islands = ref<{ name: string; icon: string; x: number; y: number }[]>([]);
+
+async function loadIslandsForActivity(activity: Activity) {
+	if (activity.fields['island_icons']) {
+		const icons = activity.fields['island_icons'].split(',');
 		const size = icons.length;
-		return Array.from({ length: size }, (_, i) => {
-			const id = icons[i] ?? '';
-			if (!id) return null;
+		islands.value.push(
+			...Array.from({ length: size }, (_, i) => {
+				const id = icons[i] ?? '';
+				if (!id) return null;
 
-			return {
-				name: capitalizeFully(id),
-				icon: id.includes(':') ? id.toLowerCase() : `cib:${id.toLowerCase()}`,
+				return {
+					name: capitalizeFully(id),
+					icon: id.includes(':') ? id.toLowerCase() : `cib:${id.toLowerCase()}`,
+					x: i % 2 == 0 ? Math.random() * 5 + 33 : Math.random() * -5 - 37,
+					y: i * 6
+				};
+			}).filter((island) => island !== null)
+		);
+	}
+
+	getActivityIconSearches([activity.name, ...(activity.aliases || [])]).then((icons) => {
+		let i = 0;
+		for (const icon of Object.values(icons).flat()) {
+			islands.value.push({
+				name: capitalizeFully(icon),
+				icon: icon,
 				x: i % 2 == 0 ? Math.random() * 5 + 33 : Math.random() * -5 - 37,
-				y: i * 6 - 60
-			};
-		}).filter((island) => island !== null);
-	}
-
-	return [];
-});
-
-const wikipediaEntries = ref<WikipediaSummary[]>([]);
-const youtubeVideos = ref<YouTubeVideo[]>([]);
-
-let wikipediaLoaded = false;
-let youtubeLoaded = false;
-
-const checkDataLoaded = () => {
-	if (wikipediaLoaded && youtubeLoaded) {
-		dataLoaded.value = true;
-	}
-};
-
-onMounted(() => {
-	if (props.activity.fields['wikipedia_id']) {
-		const ids = props.activity.fields['wikipedia_id'].split(',');
-		let wikipediaPromises = [];
-		for (const id of ids) {
-			const promise = getActivityWikipediaSummary(id).then((res) => {
-				if (res.success && res.data) {
-					wikipediaEntries.value.push(res.data);
-				}
+				y: i * 6
 			});
-			wikipediaPromises.push(promise);
+			i++;
 		}
-		Promise.all(wikipediaPromises).then(() => {
-			wikipediaLoaded = true;
-			checkDataLoaded();
-		});
-	} else {
-		wikipediaLoaded = true;
-		checkDataLoaded();
-	}
-
-	getActivityYouTubeSearch(`what is ${props.activity.name}`).then((res) => {
-		if (res.success && res.data) {
-			youtubeVideos.value = res.data;
-		}
-		youtubeLoaded = true;
-		checkDataLoaded();
 	});
-});
+}
+
+const editing = ref(false);
+const cards = ref<
+	{
+		title: string;
+		icon: string;
+		description?: string;
+		content?: string;
+		link?: string;
+		image?: string;
+		youtubeId?: string;
+		footer?: string;
+	}[]
+>([]);
+
+const loadRequestId = ref(0);
+async function loadCardsForActivity(activity: Activity) {
+	if (!activity) return;
+
+	// Create a new request token; used to ignore late async responses
+	const reqId = ++loadRequestId.value;
+	cards.value = [];
+
+	// Track unique items across sources
+	const seen = new Set<string>();
+
+	const safePush = (items: (typeof cards.value)[number] | (typeof cards.value)[number][]) => {
+		if (loadRequestId.value !== reqId) return; // stale load, ignore
+		const arr = Array.isArray(items) ? items : [items];
+		for (const item of arr) {
+			const key = item.youtubeId
+				? `yt:${item.youtubeId}`
+				: item.link
+					? `link:${item.link}`
+					: `t:${item.title}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+
+			const lower = Math.min(4, cards.value.length);
+			const upper = cards.value.length;
+			const randomPlace = lower + Math.floor(Math.random() * (upper - lower + 1));
+			cards.value.splice(randomPlace, 0, item);
+		}
+	};
+
+	const ytQueries = [`what is ${activity.name}`, `how to ${activity.name}`];
+	const ytPromises = ytQueries.map((q) =>
+		getActivityYouTubeSearch(q)
+			.then((res) => {
+				if (res.success && res.data) {
+					safePush(
+						res.data.map((video) => ({
+							title: video.title,
+							icon: 'cib:youtube',
+							description: video.uploaded_at,
+							link: `https://www.youtube.com/watch?v=${video.id}`,
+							youtubeId: video.id
+						}))
+					);
+				}
+			})
+			.catch(() => {
+				// ignore individual source failures
+			})
+	);
+	await Promise.allSettled(ytPromises);
+
+	// Wikipedia searches (name + aliases)
+	try {
+		const terms = [activity.name, ...(activity.aliases || [])];
+		const res = await getActivityWikipediaSearches(terms);
+		for (const entry of Object.values(res)) {
+			const key = `wp:${entry.pageid}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			safePush({
+				title: entry.title,
+				icon: 'cib:wikipedia',
+				description: entry.description,
+				content: entry.extract,
+				link: `https://en.wikipedia.org/wiki/${entry.titles.canonical}`,
+				image: entry.originalimage?.source,
+				footer: entry.summarySnippet
+			});
+		}
+	} catch (e) {
+		// ignore
+	}
+}
+
+// Reload when the activity changes (name or aliases)
+watch(
+	() => [props.activity?.name, JSON.stringify(props.activity?.aliases || [])],
+	() => {
+		loadCardsForActivity(props.activity);
+		loadIslandsForActivity(props.activity);
+	},
+	{ immediate: true }
+);
 </script>
