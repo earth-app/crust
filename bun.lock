@@ -31,6 +31,7 @@
         "@iconify-json/game-icons": "^1.2.3",
         "@iconify-json/healthicons": "^1.2.12",
         "@iconify-json/heroicons": "^1.2.2",
+        "@iconify-json/icon-park-outline": "^1.2.4",
         "@iconify-json/lucide": "^1.2.67",
         "@iconify-json/material-symbols": "^1.2.34",
         "@iconify-json/material-symbols-light": "^1.2.34",
@@ -240,6 +241,8 @@
     "@iconify-json/healthicons": ["@iconify-json/healthicons@1.2.12", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-0ohosj8zla9Bf+OT0wPYASVp1OvLzkdBof/B03lzGWmC5FzkvtFeAa4TtzLMCOVaeToIpT6JPs9kSfp7dJifdA=="],
 
     "@iconify-json/heroicons": ["@iconify-json/heroicons@1.2.2", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-qoW4pXr5kTTL6juEjgTs83OJIwpePu7q1tdtKVEdj+i0zyyVHgg/dd9grsXJQnpTpBt6/VwNjrXBvFjRsKPENg=="],
+
+    "@iconify-json/icon-park-outline": ["@iconify-json/icon-park-outline@1.2.4", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-NyZxXe2gD2TbTOyoRRMdtEJhr6i2KQCdDlYYoOn5oZLndQjwpIhw79hzeFhXvP38/o40D3gQ+l+IaSJgbB+0TQ=="],
 
     "@iconify-json/lucide": ["@iconify-json/lucide@1.2.67", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-YVLDYbFbX0cPxl6p9l55igm+UljlOCj0CQKwN3BoEbD3KOmDMtQumw2TGuWAE9JWURL5U6v/1oFXyKgEZDGSkQ=="],
 
