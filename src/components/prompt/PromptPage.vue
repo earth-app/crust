@@ -42,7 +42,15 @@
 				:key="response.id"
 				class="w-full mx-3 my-2"
 			>
-				<PromptResponse :response="response" />
+				<PromptResponse
+					:response="response"
+					@deleted="
+						responses.splice(
+							responses.findIndex((r) => r.id === response.id),
+							1
+						)
+					"
+				/>
 			</div>
 		</div>
 	</div>
@@ -66,6 +74,7 @@ const props = defineProps<{
 
 const posting = ref(false);
 const newResponse = ref('');
+
 async function postResponse() {
 	if (posting.value) return;
 
@@ -89,7 +98,7 @@ async function loadResponses() {
 	const res = await getPromptResponses(props.prompt.id, page.value);
 
 	if (res.success && res.data) {
-		const newResponses = res.data;
+		const newResponses = res.data.items;
 		if (newResponses.length > 0) {
 			responses.value.push(...newResponses);
 			page.value++;
