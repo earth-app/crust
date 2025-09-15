@@ -1,4 +1,5 @@
 import { com } from '@earth-app/ocean';
+import type { User } from './user';
 
 export type Prompt = {
 	id: string;
@@ -12,7 +13,7 @@ export type Prompt = {
 export type PromptResponse = {
 	id: string;
 	prompt_id: string;
-	owner_id?: string;
+	owner: User;
 	response: string;
 	created_at: string;
 	updated_at?: string;
