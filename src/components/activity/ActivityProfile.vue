@@ -28,7 +28,7 @@
 			v-for="island in islands"
 			:key="island.name"
 			:name="island.icon"
-			class="relative hidden md:inline-block md:size-8 lg:size-12 z-10 shadow-2xl shadow-gray-950 duration-300 motion-preset-fade-lg"
+			class="absolute top-0 hidden md:inline-block md:size-8 lg:size-12 z-10 shadow-2xl shadow-gray-950 duration-300 motion-preset-fade-lg"
 			:style="{ transform: `translate(${island.x}vw, ${island.y}vh)` }"
 		/>
 		<div class="grid grid-cols-1 xl:grid-cols-2 items-start w-2/3 mt-6 px-4 gap-y-8">
@@ -89,7 +89,7 @@ async function loadIslandsForActivity(activity: Activity) {
 					name: capitalizeFully(id),
 					icon: id.includes(':') ? id.toLowerCase() : `cib:${id.toLowerCase()}`,
 					x: i % 2 == 0 ? Math.random() * 5 + 33 : Math.random() * -5 - 37,
-					y: i * 6
+					y: i * 6 + 30
 				};
 			}).filter((island) => island !== null)
 		);
@@ -102,7 +102,7 @@ async function loadIslandsForActivity(activity: Activity) {
 				name: capitalizeFully(icon),
 				icon: icon,
 				x: i % 2 == 0 ? Math.random() * 5 + 33 : Math.random() * -5 - 37,
-				y: i * 6
+				y: i * 6 + 30
 			});
 			i++;
 		}
