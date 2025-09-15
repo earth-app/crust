@@ -7,7 +7,7 @@
 	</div>
 	<div
 		v-else
-		class="flex flex-col items-center justify-center h-screen"
+		class="flex flex-col items-center justify-center h-screen w-screen"
 	>
 		<p class="text-gray-600">Prompt doesn't exist. Maybe look at the URL again?</p>
 	</div>
