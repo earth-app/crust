@@ -60,7 +60,7 @@ export async function makeRequest<T>(
 			};
 		}
 
-		if (!data.value) {
+		if (!data.value && options['method'] !== 'DELETE') {
 			return {
 				success: false,
 				message: `No data found for ${key} at ${url}`
