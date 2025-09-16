@@ -6,8 +6,8 @@ export type Activity = {
 	description: string;
 	types: (typeof com.earthapp.activity.ActivityType.prototype.name)[];
 	aliases: string[];
-	created_at?: Date;
-	updated_at?: Date;
+	created_at?: string;
+	updated_at?: string;
 	fields: Record<string, string>;
 };
 

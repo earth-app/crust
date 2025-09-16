@@ -1,12 +1,13 @@
 import { com } from '@earth-app/ocean';
+import type { Activity } from './activity';
 
 export type User = {
 	id: string;
 	username: string;
 	full_name?: string;
-	created_at: Date;
-	updated_at?: Date;
-	last_login?: Date;
+	created_at: string;
+	updated_at?: string;
+	last_login?: string;
 	account: {
 		account_type: typeof com.earthapp.account.AccountType.prototype.name;
 		id: string;
@@ -33,13 +34,6 @@ export type User = {
 			account_type: typeof com.earthapp.account.Privacy.prototype.name;
 		};
 	};
-	activities?: {
-		id: string;
-		name: string;
-		description?: string;
-		types: (typeof com.earthapp.activity.ActivityType.prototype.name)[];
-		aliases: string[];
-		fields: Record<string, string>;
-	}[];
+	activities?: Activity[];
 	friends?: string[];
 };

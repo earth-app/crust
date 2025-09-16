@@ -33,7 +33,7 @@
 		>
 			<div
 				ref="scrollContainer"
-				class="flex items-stretch flex-nowrap py-6 px-4 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing *:mx-4 *:h-1/2 *:w-1/4 *:z-10 *:shrink-0"
+				class="flex items-stretch flex-nowrap py-6 px-4 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing *:mx-2 *:h-1/2 *:min-w-10 *:max-w-140 *:z-10 *:shrink-0"
 				@mousedown="startDrag"
 				@mousemove="onDrag"
 				@mouseup="endDrag"
