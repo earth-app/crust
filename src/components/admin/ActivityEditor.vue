@@ -129,6 +129,14 @@
 			{{ props.activity ? 'Update Activity' : 'Create Activity' }}
 		</UButton>
 		<UButton
+			color="secondary"
+			class="ml-4"
+			@click="clearActivityData"
+			:disabled="loading"
+		>
+			Clear Activity Data
+		</UButton>
+		<UButton
 			v-if="props.activity"
 			color="error"
 			class="ml-4"
@@ -294,6 +302,7 @@ async function generateActivity() {
 		toast.add({
 			title: 'Error',
 			description: 'Please enter an activity name before generating.',
+			icon: 'mdi:alert-circle',
 			color: 'error',
 			duration: 3000
 		});
@@ -303,7 +312,6 @@ async function generateActivity() {
 	generating.value = true;
 	const res = await draftActivity(activityId.value);
 	if (res.success && res.data) {
-		activityName.value = res.data.name;
 		activityDescription.value = res.data.description;
 
 		const types = res.data.types;
@@ -314,6 +322,7 @@ async function generateActivity() {
 		if (types.length > 4) activityType5.value = types[4] || undefined;
 
 		activityAliases.value = res.data.aliases.join(',');
+		activityFields.value = res.data.fields || {};
 
 		generating.value = false;
 		newFieldKey.value = '';
@@ -321,13 +330,15 @@ async function generateActivity() {
 		toast.add({
 			title: 'Activity Generated',
 			description: `Activity "${activityName.value}" has been generated successfully.`,
-			color: 'success',
+			icon: activityFields.value['icon'] || 'mdi:refresh',
+			color: 'info',
 			duration: 3000
 		});
 	} else {
 		toast.add({
 			title: 'Error',
 			description: 'Failed to generate activity. Please try again.',
+			icon: 'mdi:alert',
 			color: 'error',
 			duration: 3000
 		});
@@ -362,10 +373,12 @@ async function createActivity() {
 		loading.value = false;
 
 		refreshNuxtData('activities'); // Refresh activities list if needed
+		clearActivityData();
 
 		toast.add({
 			title: 'Activity Created',
 			description: `Activity "${activity.value.name}" has been created successfully.`,
+			icon: activityFields.value['icon'] || 'mdi:earth',
 			color: 'success',
 			duration: 3000
 		});
@@ -469,16 +482,7 @@ async function removeActivity() {
 	const res = await deleteActivity(activity.value.id!);
 	loading.value = false;
 	if (res.success) {
-		activity.value = null;
-		activityName.value = '';
-		activityDescription.value = '';
-		activityType1.value = undefined;
-		activityType2.value = undefined;
-		activityType3.value = undefined;
-		activityType4.value = undefined;
-		activityType5.value = undefined;
-		activityAliases.value = '';
-		activityFields.value = {};
+		clearActivityData();
 
 		toast.add({
 			title: 'Activity Deleted',
@@ -497,5 +501,18 @@ async function removeActivity() {
 	}
 
 	loading.value = false;
+}
+
+async function clearActivityData() {
+	activity.value = null;
+	activityName.value = '';
+	activityDescription.value = '';
+	activityType1.value = undefined;
+	activityType2.value = undefined;
+	activityType3.value = undefined;
+	activityType4.value = undefined;
+	activityType5.value = undefined;
+	activityAliases.value = '';
+	activityFields.value = {};
 }
 </script>
