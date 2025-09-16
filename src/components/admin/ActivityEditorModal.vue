@@ -8,7 +8,7 @@
 			icon: 'i-heroicons-x-mark-solid'
 		}"
 		:ui="{ content: content || 'min-w-1/3' }"
-		:open="open"
+		v-model:open="open"
 	>
 		<slot />
 
@@ -16,6 +16,7 @@
 			<div class="flex flex-col gap-4 w-full">
 				<AdminActivityEditor
 					:activity="activity"
+					@create:activity="open = false"
 					@update:activity="open = false"
 					@delete:activity="open = false"
 				/>

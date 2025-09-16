@@ -379,7 +379,6 @@ async function createActivity() {
 		loading.value = false;
 
 		refreshNuxtData('activities'); // Refresh activities list if needed
-		clearActivityData();
 
 		toast.add({
 			title: 'Activity Created',
