@@ -8,12 +8,17 @@
 			icon: 'i-heroicons-x-mark-solid'
 		}"
 		:ui="{ content: content || 'min-w-1/3' }"
+		:open="open"
 	>
 		<slot />
 
 		<template #body>
 			<div class="flex flex-col gap-4 w-full">
-				<AdminActivityEditor :activity="activity" />
+				<AdminActivityEditor
+					:activity="activity"
+					@update:activity="open = false"
+					@delete:activity="open = false"
+				/>
 			</div>
 		</template>
 	</UModal>
@@ -28,4 +33,6 @@ defineProps<{
 	content?: string;
 	activity?: Partial<Activity>;
 }>();
+
+const open = ref(false);
 </script>

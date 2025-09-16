@@ -164,6 +164,12 @@ const props = defineProps<{
 	activity?: Partial<Activity>;
 }>();
 
+const emit = defineEmits<{
+	(event: 'create:activity', value: Partial<Activity> | null): void;
+	(event: 'update:activity', value: Partial<Activity> | null): void;
+	(event: 'delete:activity', value: Partial<Activity> | null): void;
+}>();
+
 const activity = ref<Partial<Activity> | null>(props.activity || null);
 const toast = useToast();
 
@@ -382,6 +388,8 @@ async function createActivity() {
 			color: 'success',
 			duration: 3000
 		});
+
+		emit('create:activity', activity.value);
 	} else {
 		toast.add({
 			title: 'Error',
@@ -456,6 +464,8 @@ async function updateActivity() {
 			color: 'success',
 			duration: 3000
 		});
+
+		emit('update:activity', activity.value);
 	} else {
 		toast.add({
 			title: 'Error',
@@ -491,6 +501,8 @@ async function removeActivity() {
 			color: 'success',
 			duration: 3000
 		});
+
+		emit('delete:activity', activity.value);
 	} else {
 		toast.add({
 			title: 'Error',
