@@ -13,7 +13,8 @@ const iconSets = [
 	'solar',
 	'healthicons',
 	'game-icons',
-	'icon-park-outline'
+	'icon-park-outline',
+	'map'
 ];
 
 export default defineEventHandler(async (event) => {
