@@ -22,14 +22,18 @@
 				{{ props.user.account.bio }}
 			</span>
 		</div>
-		<div class="flex items-center space-x-2">
+		<div class="flex items-center justify-center space-x-2 space-y-3 flex-wrap max-w-200">
 			<UBadge
 				v-for="(activity, i) in props.user.activities"
 				:label="activity.name"
 				:color="i <= 2 ? 'primary' : 'secondary'"
 				:icon="activity.fields['icon']"
-				variant="outline"
+				:variant="badgeVariants[i] || 'outline'"
+				@mouseenter="badgeVariants[i] = 'solid'"
+				@mouseleave="badgeVariants[i] = 'outline'"
+				@click="$router.push(`/activities/${activity.id}`)"
 				size="xl"
+				class="hover:cursor-pointer transition-all duration-500"
 			/>
 		</div>
 	</div>
@@ -48,6 +52,8 @@ const { user } = useAuth();
 
 const avatar = ref<string | undefined>(undefined);
 let objectUrl: string | undefined = undefined;
+
+const badgeVariants = ref<('outline' | 'solid')[]>([]);
 
 onMounted(async () => {
 	const res = await getUserAvatar(props.user.id);
