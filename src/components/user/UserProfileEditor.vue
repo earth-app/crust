@@ -60,9 +60,9 @@
 				class="w-2/7 mt-2"
 				multiple
 				deleteIcon="i-lucide-trash"
-				:disabled="activitiesLoading"
 				:loading="activitiesLoading"
 				@update:modelValue="updateActivities"
+				@update:searchTerm="updateActivitiesList"
 			/>
 			<template #fallback>
 				<div class="w-2/7 mt-2 p-2 border rounded-md text-gray-500">Loading activities...</div>
@@ -364,6 +364,7 @@ async function regenerateProfilePhoto() {
 		toast.add({
 			title: 'Error',
 			description: res.message || 'Failed to regenerate profile photo.',
+			icon: 'mdi:alert-circle',
 			color: 'error',
 			duration: 5000
 		});
@@ -372,38 +373,67 @@ async function regenerateProfilePhoto() {
 
 // Activities
 
-const allActivities = ref<{ label: string; value: string; icon: string }[]>([]);
+const allActivities = ref<{ label: string; value: string; icon: string; disabled?: boolean }[]>([]);
 const currentActivities = ref<{ label: string; value: string; icon: string }[]>([]);
 
-onMounted(async () => {
-	const res = await getAllActivities();
-	if (res.success) {
-		const activities =
-			res.data?.map((activity) => {
-				return {
-					label: activity.name,
-					value: activity.id,
-					icon: activity.fields['icon'] || 'material-symbols:activity-zone'
-				};
-			}) || [];
-		allActivities.value = activities;
+const activitiesSearch = ref<string>('');
+const activitiesLoading = ref(false);
 
-		// Initialize current activities from user data
-		if (user.value?.activities) {
-			currentActivities.value = user.value.activities
-				.map((userActivity) => {
-					return {
-						label: userActivity.name,
-						value: userActivity.id,
-						icon: userActivity.fields['icon'] || 'material-symbols:activity-zone'
-					};
-				})
-				.filter(Boolean);
-		}
-	} else {
-		console.error(res.message || 'Failed to fetch activities.');
+onMounted(() => {
+	// Initialize current activities from user data
+	if (user.value?.activities) {
+		const current = user.value.activities
+			.map((userActivity) => {
+				return {
+					label: userActivity.name,
+					value: userActivity.id,
+					icon: userActivity.fields['icon'] || 'material-symbols:activity-zone'
+				};
+			})
+			.filter(Boolean);
+
+		allActivities.value = current;
+		currentActivities.value = current;
 	}
 });
+
+function updateActivitiesList(search: string) {
+	activitiesSearch.value = search;
+	activitiesLoading.value = true;
+
+	getAllActivities(-1, activitiesSearch.value).then((res) => {
+		if (res.success) {
+			const activities =
+				res.data?.map((activity) => {
+					return {
+						label: activity.name,
+						value: activity.id,
+						icon: activity.fields['icon'] || 'material-symbols:activity-zone'
+					};
+				}) || [];
+
+			allActivities.value = allActivities.value
+				.concat(activities)
+				.filter(
+					(activity, index, self) => index === self.findIndex((a) => a.value === activity.value)
+				); // Remove duplicates
+
+			activitiesLoading.value = false;
+		} else {
+			console.error(res.message || 'Failed to fetch activities.');
+
+			const toast = useToast();
+			toast.add({
+				title: 'Error',
+				description: res.message || 'Failed to fetch activities.',
+				icon: 'mdi:alert',
+				color: 'error',
+				duration: 5000
+			});
+			allActivities.value = [];
+		}
+	});
+}
 
 watch(
 	() => user.value?.activities,
@@ -421,8 +451,7 @@ watch(
 	{ deep: true }
 );
 
-const activitiesLoading = ref(false);
-async function updateActivities() {
+function updateActivities() {
 	if (!user.value) return;
 
 	if (currentActivities.value.length === 0) return;
@@ -437,34 +466,32 @@ async function updateActivities() {
 		return;
 	}
 
-	activitiesLoading.value = true;
-	const res = await useUser.setUserActivities(
-		currentActivities.value.map((activity) => activity.value as string)
-	);
-	activitiesLoading.value = false;
-	if (res.success && res.data) {
-		user.value.activities = res.data.activities;
+	useUser
+		.setUserActivities(currentActivities.value.map((activity) => activity.value as string))
+		.then((res) => {
+			if (res.success && res.data) {
+				user.value.activities = res.data.activities;
 
-		const toast = useToast();
-		toast.add({
-			title: 'Activities Updated',
-			description: 'Your activities have been successfully updated.',
-			color: 'success',
-			icon: 'mdi:check-circle',
-			duration: 3000
+				const toast = useToast();
+				toast.add({
+					title: 'Activities Updated',
+					description: 'Your activities have been successfully updated.',
+					color: 'success',
+					icon: 'mdi:check-circle',
+					duration: 3000
+				});
+			} else {
+				console.error(res.message || 'Failed to update activities.');
+				const toast = useToast();
+				toast.add({
+					title: 'Error',
+					description: res.message || 'Failed to update activities.',
+					icon: 'mdi:alert',
+					color: 'error',
+					duration: 5000
+				});
+			}
 		});
-	} else {
-		console.error(res.message || 'Failed to update activities.');
-		const toast = useToast();
-		toast.add({
-			title: 'Error',
-			description: res.message || 'Failed to update activities.',
-			color: 'error',
-			duration: 5000
-		});
-	}
-
-	activitiesLoading.value = false;
 }
 
 // Account Privacy
