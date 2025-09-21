@@ -124,12 +124,12 @@ export async function getActivityWikipediaSearches(queries: string[]) {
 						r.snippet
 							.replace(/<\/?span[^>]*>/g, '') // Remove any <span> tags from snippet
 							.replace(/&quot;/g, '"') // Decode HTML entities
-							.replace(/&amp;/g, '&')
 							.replace(/&lt;/g, '<')
 							.replace(/&gt;/g, '>')
 							.replace(/&#39;/g, "'")
 							.replace(/&#039;s/g, "'s")
 							.replace(/&#039;/g, "'")
+							.replace(/&amp;/g, '&') // Decode &amp; last to prevent double-unescaping
 							.trim() +
 						'...';
 
