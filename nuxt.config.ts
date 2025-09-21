@@ -38,7 +38,8 @@ export default defineNuxtConfig({
 					head_sampling_rate: 0.1
 				}
 			}
-		}
+		},
+		cache: true
 	},
 	routeRules: {
 		'/': { prerender: true },
