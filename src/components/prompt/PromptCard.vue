@@ -16,14 +16,14 @@
 					hasButtons
 						? [
 								{
-									text: 'Edit Prompt',
+									text: 'Edit',
 									color: 'secondary',
 									onClick: () => {
 										editOpen = true;
 									}
 								},
 								{
-									text: 'Delete Prompt',
+									text: 'Delete',
 									color: 'error',
 									onClick: () => {
 										deletePrompt();

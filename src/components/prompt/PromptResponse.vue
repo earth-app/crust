@@ -22,14 +22,14 @@
 					hasButtons
 						? [
 								{
-									text: 'Edit Response',
+									text: 'Edit',
 									color: 'secondary',
 									onClick: () => {
 										editOpen = true;
 									}
 								},
 								{
-									text: 'Delete Response',
+									text: 'Delete',
 									color: 'error',
 									onClick: () => {
 										deleteResponse();
@@ -42,7 +42,7 @@
 		</div>
 		<UModal
 			v-if="hasButtons"
-			title="Edit Prompt Response"
+			title="Edit"
 			size="2xl"
 			:closeable="true"
 			v-model:open="editOpen"
