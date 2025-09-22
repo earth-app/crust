@@ -53,11 +53,7 @@ export async function makeRequest<T>(
 				};
 
 		if (error.value) {
-			console.error(`Error fetching ${key}:`, error.value);
-			return {
-				success: false,
-				message: error.value.message || 'An error occurred while fetching data.'
-			};
+			throw error.value;
 		}
 
 		if (!data.value && options['method'] !== 'DELETE') {
