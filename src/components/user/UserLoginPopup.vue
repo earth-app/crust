@@ -31,5 +31,7 @@ function handleLoginSuccess() {
 		color: 'success',
 		duration: 3000
 	});
+
+	useRouter().go(0); // Refresh the page to update user state
 }
 </script>
