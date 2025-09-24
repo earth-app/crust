@@ -1,7 +1,7 @@
 <template>
 	<UCard
 		:variant="variant || 'outline'"
-		class="min-w-100 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-4 transition-all duration-600 motion-preset-fade motion-duration-1000"
+		class="relative min-w-100 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-4 transition-all duration-600 motion-preset-fade motion-duration-1000"
 	>
 		<div class="flex flex-row h-full justify-between">
 			<div class="flex items-center space-x-4 h-full">
@@ -35,7 +35,7 @@
 						/>
 						<NuxtLink
 							v-if="link && external"
-							:to="`${link}?utm_source=earth-app&utm_medium=referral&utm_campaign=activity-info-card`"
+							:to="`${link}?utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`"
 							target="_blank"
 							rel="noopener noreferrer"
 							class="text-lg font-semibold text-blue-500 hover:underline"
@@ -53,6 +53,26 @@
 						>
 							{{ title }}
 						</h4>
+						<UChip
+							v-if="secondaryAvatarChip"
+							inset
+							:color="secondaryAvatarChipColor || 'primary'"
+							:size="secondaryAvatarChipSize || 'sm'"
+							class="ml-2 self-start"
+						>
+							<UAvatar
+								v-if="secondaryAvatar"
+								:src="secondaryAvatar"
+								:size="secondaryAvatarSize || 'sm'"
+								class="ml-2 self-start"
+							/>
+						</UChip>
+						<UAvatar
+							v-else-if="secondaryAvatar"
+							:src="secondaryAvatar"
+							:size="secondaryAvatarSize || 'sm'"
+							class="ml-2 self-start"
+						/>
 					</div>
 					<p
 						v-if="description"
@@ -81,7 +101,7 @@
 						>{{ content }}</span
 					>
 					<div
-						class="flex items-center space-x-2 mt-2"
+						class="flex flex-wrap items-center space-x-2 space-y-2 mt-2"
 						v-if="badges"
 					>
 						<UBadge
@@ -89,7 +109,7 @@
 							:key="`badge-${index}`"
 							:color="badge.color || 'primary'"
 							:size="badge.size || 'md'"
-							class="text-xs hover:scale-105 transition-all duration-300 hover:cursor-text"
+							class="text-xs max-w-100 hover:scale-105 transition-all duration-300 hover:cursor-text"
 							>{{ badge.text }}</UBadge
 						>
 					</div>
@@ -108,6 +128,29 @@
 							{{ footer }}
 						</p>
 					</UTooltip>
+					<div
+						v-if="additionalLinks"
+						class="flex flex-wrap space-x-1 mb-1"
+					>
+						<div
+							v-for="(linkObj, index) in additionalLinks"
+							:key="`additional-link-${index}`"
+							class="flex items-center space-x-1"
+						>
+							<NuxtLink
+								:to="
+									linkObj.external
+										? `${linkObj.link}?utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`
+										: linkObj.link
+								"
+								:target="linkObj.external ? '_blank' : '_self'"
+								rel="noopener noreferrer"
+								class="font-semibold text-blue-500 text-sm hover:underline"
+								>{{ linkObj.text }}
+							</NuxtLink>
+							<span v-if="index < additionalLinks.length - 1">•</span>
+						</div>
+					</div>
 					<p
 						v-else-if="footer"
 						class="text-gray-500 text-sm"
@@ -137,11 +180,16 @@
 				</div>
 			</div>
 		</div>
+		<div
+			v-if="color"
+			:style="`background-color: rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.7);`"
+			class="absolute top-0 left-0 w-2 min-h-4 h-full rounded-lg pointer-events-none z-50"
+		></div>
 	</UCard>
 </template>
 
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
 	external?: boolean;
 	variant?: 'outline' | 'subtle' | 'solid' | 'soft';
 	badges?: {
@@ -160,16 +208,43 @@ defineProps<{
 	avatarChip?: boolean;
 	avatarChipColor?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
 	avatarChipSize?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
+	secondaryAvatar?: string;
+	secondaryAvatarSize?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
+	secondaryAvatarChip?: boolean;
+	secondaryAvatarChipColor?:
+		| 'primary'
+		| 'secondary'
+		| 'success'
+		| 'info'
+		| 'warning'
+		| 'error'
+		| 'neutral';
+	secondaryAvatarChipSize?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
 	image?: string;
 	youtubeId?: string;
 	footer?: string;
 	footerTooltip?: string;
 	secondaryFooter?: string;
+	additionalLinks?: {
+		text: string;
+		link: string;
+		external?: boolean;
+	}[];
 	buttons?: {
 		text: string;
 		color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
 		size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
 		onClick?: () => void;
 	}[];
+	color?: number;
 }>();
+
+const rgb = computed<[number, number, number]>(() => {
+	if (!props.color) return [0, 0, 0];
+
+	const r = (props.color >> 16) & 0xff;
+	const g = (props.color >> 8) & 0xff;
+	const b = props.color & 0xff;
+	return [r, g, b];
+});
 </script>
