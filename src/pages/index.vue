@@ -11,7 +11,7 @@
 				v-if="!user"
 				class="text-lg mt-3 motion-preset-fade-lg"
 			>
-				Meet New People, Try New Things, Discover the World
+				Find Your Novelty, Try New Things, Discover the World
 			</p>
 			<div
 				v-else
