@@ -61,8 +61,8 @@ export async function ensureLoggedIn(event: H3Event) {
 		return user;
 	} catch (error) {
 		throw createError({
-			statusCode: 401,
-			statusMessage: 'Unauthorized'
+			statusCode: 403,
+			statusMessage: 'Forbidden: You must be logged in to access this resource'
 		});
 	}
 }

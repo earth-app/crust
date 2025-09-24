@@ -1,4 +1,5 @@
 import { useRuntimeConfig } from '#imports';
+import { DateTime } from 'luxon';
 
 export async function makeRequest<T>(
 	key: string | null,
@@ -218,4 +219,22 @@ export function withSuffix(num: number): string {
 	if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
 	if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
 	return num.toString();
+}
+
+export function parseLooseDate(input: string): DateTime | string {
+	const formats = [
+		'yyyy', // 2025
+		'LL yyyy', // 06 2024
+		'LLL yyyy', // Jun 2024
+		'LLLL yyyy' // July 2025
+	];
+
+	for (const fmt of formats) {
+		const dt = DateTime.fromFormat(input, fmt, { zone: 'utc', locale: 'en' });
+		if (dt.isValid) {
+			return dt;
+		}
+	}
+
+	return input;
 }

@@ -23,6 +23,11 @@
 					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 mx-6"
 					>Prompts</NuxtLink
 				>
+				<NuxtLink
+					to="/articles"
+					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 mx-6"
+					>Articles</NuxtLink
+				>
 			</div>
 		</div>
 		<ClientOnly>
