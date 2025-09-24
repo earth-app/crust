@@ -99,15 +99,6 @@ export function useCurrentSessionToken() {
 		const match = cookieHeader.match(/session_token=([^;]+)/);
 		const token = match?.[1] || null;
 
-		if (token) {
-			const sessionCookie = useCookie('session_token', {
-				maxAge: 60 * 60 * 24 * 14,
-				secure: true,
-				sameSite: 'strict'
-			});
-			sessionCookie.value = token;
-		}
-
 		return token;
 	} else {
 		const sessionCookie = useCookie('session_token', {
@@ -115,12 +106,8 @@ export function useCurrentSessionToken() {
 			secure: true,
 			sameSite: 'strict'
 		});
+
 		const token = sessionCookie.value || null;
-
-		if (token) {
-			sessionCookie.value = token;
-		}
-
 		return token;
 	}
 }
