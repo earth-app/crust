@@ -37,3 +37,15 @@ export type User = {
 	activities?: Activity[];
 	friends?: string[];
 };
+
+export type UserNotification = {
+	id: string;
+	title: string;
+	user_id: string;
+	message: string;
+	link?: string;
+	type: 'info' | 'warning' | 'error';
+	source: string;
+	read: boolean;
+	created_at: number;
+};

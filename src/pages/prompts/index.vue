@@ -11,7 +11,7 @@
 			:disabled="promptsLoading"
 			@click="fetchPrompts"
 		/>
-		<div class="mt-12 w-9/10 grid grid-cols-1 md:grid-cols-2 gap-x-8">
+		<div class="mt-12 w-9/10 grid grid-cols-1 lg:grid-cols-2 gap-x-8">
 			<InfoCardSkeleton
 				v-if="promptsLoading"
 				v-for="n in 5"

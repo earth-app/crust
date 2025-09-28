@@ -8,7 +8,7 @@
 				:content="responseText"
 				:footer="time"
 				:footer-tooltip="tooltip"
-				:avatar="userAvatar || 'https://cdn.earth-app.com/earth-app.png'"
+				:avatar="authorAvatar"
 				avatar-size="md"
 				:avatar-chip="user?.account.account_type ? true : false"
 				:avatar-chip-color="
@@ -67,7 +67,7 @@
 <script setup lang="ts">
 import { DateTime } from 'luxon';
 import { removePromptResponse, updatePromptResponse } from '~/compostables/usePrompt';
-import { getUserAvatar } from '~/compostables/useUser';
+import { useUser } from '~/compostables/useUser';
 import { type PromptResponse } from '~/shared/types/prompts';
 import type { User } from '~/shared/types/user';
 
@@ -85,7 +85,27 @@ const user = ref<User | null>(null);
 const identifier = computed(
 	() => user.value?.full_name || `@${user.value?.username || 'anonymous'}`
 );
-const userAvatar = ref<string | null>(null);
+
+const authorAvatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
+const { photo } = useUser(props.response.owner.id);
+watch(
+	() => photo.value,
+	(photo) => {
+		if (photo) {
+			if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
+				URL.revokeObjectURL(authorAvatar.value);
+
+			const blob = URL.createObjectURL(photo);
+			authorAvatar.value = blob;
+		}
+	},
+	{ immediate: true }
+);
+
+onBeforeUnmount(() => {
+	if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
+		URL.revokeObjectURL(authorAvatar.value);
+});
 
 const time = computed(() => {
 	const created = DateTime.fromISO(props.response.created_at, {
@@ -119,25 +139,6 @@ const tooltip = computed(() => {
 	}
 
 	return created;
-});
-
-onMounted(async () => {
-	if (props.response.owner) {
-		user.value = props.response.owner;
-		userAvatar.value = await getUserAvatar(props.response.owner.id).then((res) => {
-			if (res.success && res.data) {
-				const blob = res.data;
-				return URL.createObjectURL(blob);
-			}
-			return null;
-		});
-	}
-});
-
-onUnmounted(() => {
-	if (userAvatar.value) {
-		URL.revokeObjectURL(userAvatar.value);
-	}
 });
 
 const hasButtons = computed(() => {

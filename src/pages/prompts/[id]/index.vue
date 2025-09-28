@@ -1,9 +1,9 @@
 <template>
 	<div
-		v-if="currentPrompt"
+		v-if="prompt"
 		class="flex flex-row items-center justify-between w-full"
 	>
-		<PromptPage :prompt="currentPrompt" />
+		<PromptPage :prompt="prompt" />
 	</div>
 	<div
 		v-else
@@ -14,23 +14,16 @@
 </template>
 
 <script setup lang="ts">
-import { getPrompt } from '~/compostables/usePrompt';
+import { usePrompt } from '~/compostables/usePrompt';
 import { useTitleSuffix } from '~/compostables/useTitleSuffix';
-import type { Prompt } from '~/shared/types/prompts';
 
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
-const currentPrompt = ref<Prompt | null>(null);
-
-if (route.params.id) {
-	const res = await getPrompt(route.params.id as string);
-
-	if (res.success && res.data) {
-		currentPrompt.value = res.data;
-		setTitleSuffix(`Prompt | ${currentPrompt.value.prompt}`);
-	} else {
-		currentPrompt.value = null;
-		setTitleSuffix('Prompt');
+const { prompt } = usePrompt(route.params.id as string);
+watch(
+	() => prompt.value,
+	(prompt) => {
+		setTitleSuffix(prompt ? prompt.prompt : 'Prompt');
 	}
-}
+);
 </script>

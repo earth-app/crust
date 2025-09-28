@@ -3,14 +3,14 @@
 		<div class="w-full flex items-center justify-center my-8">
 			<InfoCard
 				:title="promptText"
-				:description="author?.full_name"
-				:avatar="authorAvatar || 'https://cdn.earth-app.com/earth-app.png'"
+				:description="prompt.owner.full_name || `@${prompt.owner.username}`"
+				:avatar="authorAvatar"
 				avatar-size="xl"
 				:avatar-chip="authorAvatarChipColor ? true : false"
 				:avatar-chip-color="authorAvatarChipColor"
 				avatar-chip-size="xl"
 				:link="noLink ? undefined : `/prompts/${prompt.id}`"
-				:footer="`${footer} • ${responsesCount ? withSuffix(responsesCount) + ' Responses' : 'No Responses'}`"
+				:footer="`${footer} • ${prompt.responses_count ? withSuffix(prompt.responses_count) + ' Responses' : 'No Responses'}`"
 				:secondary-footer="secondaryFooter"
 				:buttons="
 					hasButtons
@@ -59,10 +59,9 @@
 
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import { getPromptResponsesCount, removePrompt, updatePrompt } from '~/compostables/usePrompt';
-import { getUser, getUserAvatar, useAuth } from '~/compostables/useUser';
+import { removePrompt, updatePrompt } from '~/compostables/usePrompt';
+import { useAuth, useUser } from '~/compostables/useUser';
 import type { Prompt } from '~/shared/types/prompts';
-import { type User } from '~/shared/types/user';
 import { withSuffix } from '~/shared/util';
 
 const props = defineProps<{
@@ -71,13 +70,6 @@ const props = defineProps<{
 }>();
 
 const promptText = ref(props.prompt.prompt);
-const author = ref<User | null>(null);
-const footer = ref<string | undefined>(undefined);
-const secondaryFooter = ref<string | undefined>(undefined);
-const authorAvatar = ref<string | null>(null);
-const authorAvatarChipColor = ref<any | null>(null);
-const responsesCount = ref<number | null>(null);
-
 watch(
 	() => props.prompt,
 	(newPrompt) => {
@@ -85,6 +77,31 @@ watch(
 	}
 );
 
+const footer = ref<string | undefined>(undefined);
+const secondaryFooter = ref<string | undefined>(undefined);
+
+const authorAvatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
+const { photo } = useUser(props.prompt.owner_id);
+watch(
+	() => photo.value,
+	(photo) => {
+		if (photo) {
+			if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
+				URL.revokeObjectURL(authorAvatar.value);
+
+			const blob = URL.createObjectURL(photo);
+			authorAvatar.value = blob;
+		}
+	},
+	{ immediate: true }
+);
+
+onBeforeUnmount(() => {
+	if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
+		URL.revokeObjectURL(authorAvatar.value);
+});
+
+const authorAvatarChipColor = ref<any | null>(null);
 const { user } = useAuth();
 
 const i18n = useI18n();
@@ -118,41 +135,16 @@ onMounted(async () => {
 		secondaryFooter.value = `Updated ${updatedTime.value}`;
 	}
 
-	if (props.prompt.owner_id) {
-		const res = await getUser(props.prompt.owner_id);
-		if (res.success && res.data) {
-			author.value = res.data;
-			switch (author.value.account.account_type) {
-				case 'ORGANIZER':
-					authorAvatarChipColor.value = 'warning';
-					break;
-				case 'ADMINISTRATOR':
-					authorAvatarChipColor.value = 'error';
-					break;
-			}
-			footer.value = `@${author.value.username} - ${time.value}`;
-
-			const avatar = await getUserAvatar(author.value.id);
-			if (avatar.success && avatar.data) {
-				const blob = avatar.data;
-				authorAvatar.value = URL.createObjectURL(blob);
-			}
-		} else {
-			author.value = null;
-			footer.value = `Unknown User - ${time.value}`;
-		}
+	const author = props.prompt.owner;
+	switch (author.account.account_type) {
+		case 'ORGANIZER':
+			authorAvatarChipColor.value = 'warning';
+			break;
+		case 'ADMINISTRATOR':
+			authorAvatarChipColor.value = 'error';
+			break;
 	}
-
-	const resCount = await getPromptResponsesCount(props.prompt.id);
-	if (resCount.success && resCount.data) {
-		responsesCount.value = resCount.data.count;
-	}
-});
-
-onUnmounted(() => {
-	if (authorAvatar.value) {
-		URL.revokeObjectURL(authorAvatar.value);
-	}
+	footer.value = `@${author.username} - ${time.value}`;
 });
 
 const editOpen = ref(false);

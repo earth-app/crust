@@ -11,7 +11,7 @@
 					:avatar="
 						user
 							? {
-									src: avatarUrl,
+									src: avatar,
 									alt: user?.full_name || `@${user?.username || 'anonymous'}`
 								}
 							: undefined
@@ -57,12 +57,28 @@
 </template>
 
 <script setup lang="ts">
-import { createPromptResponse, getPromptResponses } from '~/compostables/usePrompt';
+import { createPromptResponse, usePromptResponses } from '~/compostables/usePrompt';
 import { useAuth } from '~/compostables/useUser';
 import { type Prompt, type PromptResponse } from '~/shared/types/prompts';
 
-const { user } = useAuth();
-const avatarUrl = useState<string>('current-avatar', () => '/favicon.png');
+const { user, photo } = useAuth();
+const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
+watch(
+	() => photo.value,
+	(photo) => {
+		if (photo) {
+			if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
+
+			const blob = URL.createObjectURL(photo);
+			avatar.value = blob;
+		}
+	},
+	{ immediate: true }
+);
+
+onBeforeUnmount(() => {
+	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
+});
 
 const responses = ref<PromptResponse[]>([]);
 const page = ref(1);
@@ -95,16 +111,12 @@ async function loadResponses() {
 	if (isLoading.value || !hasMore.value) return;
 
 	isLoading.value = true;
-	const res = await getPromptResponses(props.prompt.id, page.value);
-
-	if (res.success && res.data) {
-		const newResponses = res.data.items;
-		if (newResponses.length > 0) {
-			responses.value.push(...newResponses);
-			page.value++;
-		} else {
-			hasMore.value = false;
-		}
+	const { responses } = usePromptResponses(props.prompt.id);
+	if (responses.value.length > 0) {
+		responses.value.push(...responses.value);
+		page.value++;
+	} else {
+		hasMore.value = false;
 	}
 }
 

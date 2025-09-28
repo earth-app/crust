@@ -93,7 +93,7 @@ async function handleLogin() {
 		} else if (result.message.includes('500')) {
 			error.value = 'Internal server error. Please try again later.';
 		} else {
-			error.value = 'An unexpected error occurred. Please try again.';
+			error.value = result.message;
 		}
 	}
 

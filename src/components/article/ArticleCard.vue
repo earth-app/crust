@@ -8,7 +8,7 @@
 				:link="noLink ? undefined : `/articles/${article.id}`"
 				:footer="footer"
 				:color="article.color"
-				:avatar="authorAvatar || 'https://cdn.earth-app.com/earth-app.png'"
+				:avatar="authorAvatar"
 				:avatar-chip="authorAvatarChipColor ? true : false"
 				:avatar-chip-color="authorAvatarChipColor"
 				:secondary-avatar="article.ocean.favicon"
@@ -20,7 +20,7 @@
 
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import { getUserAvatar } from '~/compostables/useUser';
+import { useUser } from '~/compostables/useUser';
 import type { Article } from '~/shared/types/article';
 import { trimString } from '~/shared/util';
 
@@ -29,9 +29,29 @@ const props = defineProps<{
 	noLink?: boolean;
 }>();
 
-const author = computed(() => props.article.author);
 const footer = ref<string | undefined>(undefined);
-const authorAvatar = ref<string | null>(null);
+
+const authorAvatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
+const { photo } = useUser(props.article.author_id);
+watch(
+	() => photo.value,
+	(photo) => {
+		if (photo) {
+			if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
+				URL.revokeObjectURL(authorAvatar.value);
+
+			const blob = URL.createObjectURL(photo);
+			authorAvatar.value = blob;
+		}
+	},
+	{ immediate: true }
+);
+
+onBeforeUnmount(() => {
+	if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
+		URL.revokeObjectURL(authorAvatar.value);
+});
+
 const authorAvatarChipColor = ref<any | null>(null);
 
 const i18n = useI18n();
@@ -45,7 +65,7 @@ const time = computed(() => {
 });
 
 onMounted(async () => {
-	switch (author.value.account.account_type) {
+	switch (props.article.author.account.account_type) {
 		case 'WRITER':
 			authorAvatarChipColor.value = 'primary';
 			break;
@@ -57,12 +77,6 @@ onMounted(async () => {
 			break;
 	}
 
-	footer.value = `@${author.value.username} - ${time.value}`;
-
-	const avatar = await getUserAvatar(author.value.id);
-	if (avatar.success && avatar.data) {
-		const blob = avatar.data;
-		authorAvatar.value = URL.createObjectURL(blob);
-	}
+	footer.value = `@${props.article.author.username} - ${time.value}`;
 });
 </script>

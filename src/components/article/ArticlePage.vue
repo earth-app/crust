@@ -3,7 +3,7 @@
 		<div class="my-8">
 			<div class="flex justify-center mb-4">
 				<UAvatar
-					:src="authorAvatar || 'https://cdn.earth-app.com/earth-app.png'"
+					:src="authorAvatar"
 					alt="Author's avatar"
 					:title="`@${article.author.username}`"
 					class="mb-4 w-30 h-30"
@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import { getUserAvatar } from '~/compostables/useUser';
+import { useUser } from '~/compostables/useUser';
 import type { Article } from '~/shared/types/article';
 import { parseLooseDate, trimString } from '~/shared/util';
 
@@ -68,7 +68,26 @@ const props = defineProps<{
 	article: Article;
 }>();
 
-const authorAvatar = ref<string | null>(null);
+const authorAvatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
+const { photo } = useUser(props.article.author_id);
+watch(
+	() => photo.value,
+	(photo) => {
+		if (photo) {
+			if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
+				URL.revokeObjectURL(authorAvatar.value);
+
+			const blob = URL.createObjectURL(photo);
+			authorAvatar.value = blob;
+		}
+	},
+	{ immediate: true }
+);
+
+onBeforeUnmount(() => {
+	if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
+		URL.revokeObjectURL(authorAvatar.value);
+});
 
 const i18n = useI18n();
 const time = computed(() => {
@@ -78,14 +97,6 @@ const time = computed(() => {
 	});
 
 	return created.setLocale(i18n.locale.value).toLocaleString(DateTime.DATETIME_FULL);
-});
-
-onMounted(async () => {
-	const avatar = await getUserAvatar(props.article.author_id);
-	if (avatar.success && avatar.data) {
-		const blob = avatar.data;
-		authorAvatar.value = URL.createObjectURL(blob);
-	}
 });
 
 const oceanTime = computed(() => {

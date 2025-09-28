@@ -7,7 +7,7 @@
 		<UButton
 			color="neutral"
 			variant="link"
-			class="text-xl font-semibold hover:text-gray-300 mx-6 cursor-pointer"
+			class="text-md md:text-lg lg:text-xl font-semibold hover:text-gray-300 mx-3 lg:mx-6 cursor-pointer"
 		>
 			Login
 		</UButton>

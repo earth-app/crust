@@ -18,7 +18,7 @@
 				class="flex justify-center mt-3 motion-preset-fade-lg"
 			>
 				<UAvatar
-					:src="avatarUrl"
+					:src="avatar"
 					class="size-8 min-w-4 h-auto mr-2"
 				/>
 				<p class="text-lg font-semibold">Welcome Back, @{{ user.username }}</p>
@@ -53,8 +53,24 @@ import { useAuth } from '~/compostables/useUser';
 import type { Activity } from '~/shared/types/activity';
 import type { Prompt } from '~/shared/types/prompts';
 
-const { user } = useAuth();
-const avatarUrl = useState<string>('current-avatar', () => '/favicon.png');
+const { user, photo } = useAuth();
+const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
+watch(
+	() => photo.value,
+	(photo) => {
+		if (photo) {
+			if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
+
+			const blob = URL.createObjectURL(photo);
+			avatar.value = blob;
+		}
+	},
+	{ immediate: true }
+);
+
+onBeforeUnmount(() => {
+	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
+});
 
 const randomPrompts = ref<Prompt[]>([]);
 const randomActivities = ref<Activity[]>([]);

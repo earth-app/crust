@@ -41,7 +41,7 @@
 			:onFinish="updateUser"
 		/>
 
-		<h3 class="text-2xl text-gray-600 italic mt-8 underline">Bio</h3>
+		<h3 class="text-2xl font-semibold text-gray-200 mt-8">Bio</h3>
 		<EditableValue
 			v-model="bio"
 			class="text-lg mt-2 w-3/4"
@@ -50,7 +50,7 @@
 			:onFinish="updateUser"
 		/>
 
-		<h3 class="text-2xl text-gray-600 italic mt-8 underline">Activities</h3>
+		<h3 class="text-2xl font-semibold text-gray-200 mt-8">Activities</h3>
 		<ClientOnly>
 			<UInputMenu
 				placeholder="Select your activities..."
@@ -69,7 +69,7 @@
 			</template>
 		</ClientOnly>
 
-		<h3 class="text-2xl text-gray-600 italic mt-10 underline">Settings</h3>
+		<h3 class="text-2xl font-semibold text-gray-200 mt-10">Settings</h3>
 		<div class="mt-2 border-t-4 border-black dark:border-white w-2/5 min-w-144">
 			<div class="mt-4 w-full grid grid-cols-3 gap-x-4">
 				<h2 class="text-xl">Account Visibility</h2>
@@ -318,22 +318,24 @@ function getLabel(key: keyof User['account']['field_privacy']): string {
 
 // Profile Photo
 
-const avatar = ref<string>('/favicon.png');
-let objectUrl: string | undefined = undefined;
+const { photo } = useUser.useUser(user.value.id);
+const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
 const avatarLoading = ref(false);
+watch(
+	() => photo.value,
+	(photo) => {
+		if (photo) {
+			if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
 
-onMounted(async () => {
-	const res = await useUser.getUserAvatar(user.value.id);
-	if (res.success && res.data) {
-		if (objectUrl) URL.revokeObjectURL(objectUrl);
-
-		objectUrl = URL.createObjectURL(res.data);
-		avatar.value = objectUrl;
-	}
-});
+			const blob = URL.createObjectURL(photo);
+			avatar.value = blob;
+		}
+	},
+	{ immediate: true }
+);
 
 onBeforeUnmount(() => {
-	if (objectUrl) URL.revokeObjectURL(objectUrl);
+	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
 });
 
 async function regenerateProfilePhoto() {
@@ -343,9 +345,9 @@ async function regenerateProfilePhoto() {
 
 	const res = await useUser.regenerateAvatar();
 	if (res.data) {
-		if (objectUrl) URL.revokeObjectURL(objectUrl);
-		objectUrl = URL.createObjectURL(res.data);
-		avatar.value = objectUrl;
+		if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
+		const blob = URL.createObjectURL(res.data);
+		avatar.value = blob;
 		avatarLoading.value = false;
 
 		const toast = useToast();

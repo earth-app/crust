@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { getUserAvatar, useAuth } from '~/compostables/useUser';
+import { useAuth, useUser } from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 
 const props = defineProps<{
@@ -49,23 +49,25 @@ const props = defineProps<{
 }>();
 
 const { user } = useAuth();
+const { photo } = useUser(props.user.id);
 
-const avatar = ref<string | undefined>(undefined);
-let objectUrl: string | undefined = undefined;
+const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
+watch(
+	() => photo.value,
+	(photo) => {
+		if (photo) {
+			if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
 
-const badgeVariants = ref<('outline' | 'solid')[]>([]);
-
-onMounted(async () => {
-	const res = await getUserAvatar(props.user.id);
-	if (res.success && res.data) {
-		if (objectUrl) URL.revokeObjectURL(objectUrl);
-
-		objectUrl = URL.createObjectURL(res.data);
-		avatar.value = objectUrl;
-	}
-});
+			const blob = URL.createObjectURL(photo);
+			avatar.value = blob;
+		}
+	},
+	{ immediate: true }
+);
 
 onBeforeUnmount(() => {
-	if (objectUrl) URL.revokeObjectURL(objectUrl);
+	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
 });
+
+const badgeVariants = ref<('outline' | 'solid')[]>([]);
 </script>

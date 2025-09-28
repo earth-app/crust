@@ -53,13 +53,18 @@ if (route.params.id) {
 
 	if (res.success && res.data) {
 		currentArticle.value = res.data;
-		loadSimilar(currentArticle.value);
 		setTitleSuffix(`Article | ${currentArticle.value.title}`);
 	} else {
 		currentArticle.value = null;
 		setTitleSuffix('Article');
 	}
 }
+
+onMounted(async () => {
+	if (currentArticle.value) {
+		await loadSimilar(currentArticle.value);
+	}
+});
 
 async function loadSimilar(article?: Article) {
 	if (!article) return;
