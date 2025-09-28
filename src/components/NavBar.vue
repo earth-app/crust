@@ -41,7 +41,7 @@
 						@click="$router.push(`/profile/@${user.username}`)"
 					>
 						<UAvatar
-							:src="avatarUrl"
+							:src="avatar"
 							class="size-6 md:size-8 lg:size-12 rounded-full shadow-lg shadow-black/50"
 						/>
 
@@ -51,6 +51,30 @@
 						>
 					</div>
 					<div class="flex space-x-4 items-center justify-center">
+						<UPopover mode="hover">
+							<NuxtLink
+								to="/profile/notifications"
+								class="size-4 lg:size-8 relative"
+							>
+								<UChip
+									:color="chipColor"
+									:show="unreadCount > 0"
+									:ui="{ base: 'size-2 lg:size-3' }"
+									class="m-0"
+								>
+									<UIcon
+										name="mdi:bell"
+										class="size-4 lg:size-8 hover:cursor-pointer"
+									/>
+								</UChip>
+							</NuxtLink>
+
+							<template #content>
+								<div class="w-85 h-96">
+									<UserNotificationList />
+								</div>
+							</template>
+						</UPopover>
 						<NuxtLink
 							class="size-4 lg:size-8"
 							to="/profile"
@@ -72,7 +96,10 @@
 						</NuxtLink>
 					</div>
 				</div>
-				<div v-else>
+				<div
+					v-else
+					class="flex items-center"
+				>
 					<UserSignupPopup />
 					<UserLoginPopup />
 				</div>
@@ -83,38 +110,33 @@
 
 <script setup lang="ts">
 import { useLogout } from '~/compostables/useLogin';
-import { useAuth } from '~/compostables/useUser';
+import { useAuth, useNotifications } from '~/compostables/useUser';
 
 const { user, photo } = useAuth();
 const logout = useLogout();
-const avatarUrl = useState<string>('current-avatar', () => '/favicon.png');
-let objectUrl: string | undefined = undefined;
-
+const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
 watch(
-	photo,
-	(newPhoto) => {
-		if (objectUrl) {
-			URL.revokeObjectURL(objectUrl);
-			objectUrl = undefined;
-		}
+	() => photo.value,
+	(photo) => {
+		if (photo) {
+			if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
 
-		if (newPhoto) {
-			objectUrl = URL.createObjectURL(newPhoto);
-			avatarUrl.value = objectUrl;
+			const blob = URL.createObjectURL(photo);
+			avatar.value = blob;
 		}
 	},
 	{ immediate: true }
 );
 
+onBeforeUnmount(() => {
+	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
+});
+
 const toast = useToast();
 async function logoutUser() {
 	await logout();
 
-	if (objectUrl) {
-		URL.revokeObjectURL(objectUrl);
-		objectUrl = undefined;
-	}
-	avatarUrl.value = '/favicon.png';
+	avatar.value = 'https://cdn.earth-app.com/earth-app.png';
 	user.value = null;
 	photo.value = null;
 
@@ -127,7 +149,12 @@ async function logoutUser() {
 	});
 }
 
-onBeforeUnmount(() => {
-	if (objectUrl) URL.revokeObjectURL(objectUrl);
+const { hasWarnings, hasErrors, unreadCount } = useNotifications();
+const chipColor = computed(() => {
+	if (hasErrors.value) return 'error';
+	if (hasWarnings.value) return 'warning';
+	if (unreadCount.value > 0) return 'info';
+
+	return 'neutral';
 });
 </script>
