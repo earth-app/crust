@@ -57,7 +57,7 @@ export async function makeRequest<T>(
 			throw error.value;
 		}
 
-		if (!data.value && options['method'] !== 'DELETE') {
+		if (!data.value && key) {
 			return {
 				success: false,
 				message: `No data found for ${key} at ${url}`
