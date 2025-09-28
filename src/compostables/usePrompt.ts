@@ -3,11 +3,38 @@ import * as util from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 export async function getRandomPrompts(count: number = 10) {
-	return await util.makeClientAPIRequest<Prompt[]>(`/v2/prompts/random?count=${count}`);
+	const res = await util.makeClientAPIRequest<Prompt[]>(`/v2/prompts/random?count=${count}`);
+
+	if (res.success && res.data) {
+		// load individual prompts into state
+		for (const p of res.data) {
+			useState<Prompt | null>(`prompt-${p.id}`, () => p);
+		}
+	}
+
+	return res;
 }
 
-export async function getPrompt(id: string) {
-	return await util.makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`);
+export function usePrompt(id: string) {
+	const prompt = useState<Prompt | null>(`prompt-${id}`, () => null);
+
+	const fetch = async () => {
+		const res = await util.makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`);
+		if (res.success && res.data) {
+			prompt.value = res.data;
+		}
+
+		return res;
+	};
+
+	if (!prompt.value) {
+		fetch();
+	}
+
+	return {
+		prompt,
+		fetch
+	};
 }
 
 export async function updatePrompt(id: string, prompt: string) {
@@ -27,16 +54,27 @@ export async function removePrompt(id: string) {
 	);
 }
 
-export async function getPromptResponses(id: string, page: number = 1, limit: number = 25) {
-	return await util.makeClientAPIRequest<{ items: PromptResponse[] }>(
-		`/v2/prompts/${id}/responses?page=${page}&limit=${limit}`
-	);
-}
+export function usePromptResponses(id: string, page: number = 1, limit: number = 25) {
+	const responses = useState<PromptResponse[]>(`prompt-${id}-responses-page-${page}`, () => []);
 
-export async function getPromptResponsesCount(id: string) {
-	return await util.makeClientAPIRequest<{ count: number; prompt: Prompt }>(
-		`/v2/prompts/${id}/responses/count`
-	);
+	const fetch = async (newPage: number = page, newLimit: number = limit) => {
+		const res = await util.makeClientAPIRequest<{ items: PromptResponse[] }>(
+			`/v2/prompts/${id}/responses?page=${newPage}&limit=${newLimit}`
+		);
+		if (res.success && res.data) {
+			responses.value = res.data.items;
+		}
+		return res;
+	};
+
+	if (responses.value.length === 0) {
+		fetch(page, limit);
+	}
+
+	return {
+		responses,
+		fetch
+	};
 }
 
 export async function createPromptResponse(promptId: string, content: string) {

@@ -4,6 +4,8 @@ import type { User } from './user';
 export type Prompt = {
 	id: string;
 	owner_id: string;
+	owner: User;
+	responses_count: number;
 	prompt: string;
 	visibility: typeof com.earthapp.account.Privacy.prototype.name;
 	created_at: string;
