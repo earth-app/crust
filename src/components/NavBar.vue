@@ -70,7 +70,7 @@
 							</NuxtLink>
 
 							<template #content>
-								<div class="w-85 h-96">
+								<div class="w-85 max-h-96">
 									<UserNotificationList />
 								</div>
 							</template>
@@ -106,11 +106,36 @@
 			</div>
 		</ClientOnly>
 	</div>
+	<ClientOnly>
+		<UBanner
+			v-if="user?.account.email_verified === false"
+			class="mb-4"
+			icon="mdi:email-alert"
+			title="Your email is unverified. Please verify your email to access all features."
+			color="warning"
+			:ui="{ root: 'flex items-center', title: 'font-semibold' }"
+			:actions="actions"
+			close
+		>
+		</UBanner>
+		<UserEmailVerificationModal
+			v-model:open="emailVerificationOpen"
+			@verified="
+				() => {
+					if (user) {
+						user.account.email_verified = true;
+					}
+
+					emailVerificationOpen = false;
+				}
+			"
+		/>
+	</ClientOnly>
 </template>
 
 <script setup lang="ts">
 import { useLogout } from '~/compostables/useLogin';
-import { useAuth, useNotifications } from '~/compostables/useUser';
+import { sendVerificationEmail, useAuth, useNotifications } from '~/compostables/useUser';
 
 const { user, photo } = useAuth();
 const logout = useLogout();
@@ -157,4 +182,78 @@ const chipColor = computed(() => {
 
 	return 'neutral';
 });
+
+const emailVerificationOpen = ref(false);
+const actions = ref<
+	{
+		label: string;
+		color: 'info' | 'neutral';
+		variant: 'outline';
+		trailingIcon: string;
+		ui?: any;
+		onClick: () => void;
+	}[]
+>([
+	{
+		label: 'Resend',
+		color: 'neutral',
+		variant: 'outline',
+		trailingIcon: 'mdi:email-arrow-right',
+		ui: { base: 'hover:cursor-pointer' },
+		onClick: async () => {
+			const result = await resendEmailVerification();
+			if (result) {
+				emailVerificationOpen.value = true;
+			}
+		}
+	}
+]);
+
+async function resendEmailVerification(): Promise<boolean> {
+	if (!user.value) return false;
+
+	const toast = useToast();
+	if (user.value.account.email_verified) {
+		toast.add({
+			title: 'Email Already Verified',
+			description: 'Your email is already verified.',
+			icon: 'mdi:check-circle',
+			color: 'info',
+			duration: 3000
+		});
+		return false;
+	}
+
+	if (user.value.email_change_pending) {
+		toast.add({
+			title: 'Email Change Pending',
+			description: 'You have a pending email change. Please verify your new email address.',
+			icon: 'mdi:email-arrow-right',
+			color: 'info',
+			duration: 3000
+		});
+		return false;
+	}
+
+	const res = await sendVerificationEmail();
+	if (res.success && res.data) {
+		toast.add({
+			title: 'Verification Email Sent',
+			description: 'A verification email has been sent to your email address.',
+			icon: 'mdi:check-circle',
+			color: 'success',
+			duration: 3000
+		});
+		return true;
+	} else {
+		toast.add({
+			title: 'Error Sending Email',
+			description: res.message || 'An error occurred while sending the verification email.',
+			icon: 'mdi:alert-circle',
+			color: 'error',
+			duration: 5000
+		});
+		return false;
+	}
+}
 </script>

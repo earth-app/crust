@@ -380,3 +380,25 @@ export async function deleteNotification(id: string) {
 		}
 	);
 }
+
+// Email Verification
+
+export async function sendVerificationEmail() {
+	return await makeClientAPIRequest<{ message: string; email: string }>(
+		`/v2/users/current/send_email_verification`,
+		useCurrentSessionToken(),
+		{
+			method: 'POST'
+		}
+	);
+}
+
+export async function verifyEmail(code: string) {
+	return await makeClientAPIRequest<{ message: string; email: string }>(
+		`/v2/users/current/verify_email?code=${code}`,
+		useCurrentSessionToken(),
+		{
+			method: 'POST'
+		}
+	);
+}

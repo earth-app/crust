@@ -16,6 +16,7 @@ export type User = {
 		username: string;
 		bio?: string;
 		email?: string;
+		email_verified?: boolean;
 		address?: string;
 		country?: string;
 		phone_number?: number;
@@ -34,6 +35,8 @@ export type User = {
 			account_type: typeof com.earthapp.account.Privacy.prototype.name;
 		};
 	};
+	email_change_pending?: string;
+	message?: string;
 	activities?: Activity[];
 	friends?: string[];
 };

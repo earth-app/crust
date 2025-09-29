@@ -70,119 +70,157 @@
 		</ClientOnly>
 
 		<h3 class="text-2xl font-semibold text-gray-200 mt-10">Settings</h3>
-		<div class="mt-2 border-t-4 border-black dark:border-white w-2/5 min-w-144">
-			<div class="mt-4 w-full grid grid-cols-3 gap-x-4">
-				<h2 class="text-xl">Account Visibility</h2>
-				<ClientOnly>
-					<UDropdownMenu
-						title="Visibility Settings"
-						:items="accountVisibilityOptions"
-						:ui="{ content: 'w-48' }"
-					>
-						<UButton
-							:icon="'mdi:eye'"
-							:label="
-								accountVisibilityOptions.find((opt: any) => opt.value === accountVisibility)
-									?.label || 'Select Visibility'
-							"
-							color="neutral"
-							variant="outline"
-							:loading="visibilityLoading"
-						/>
-						<template #item="{ item }">
-							<button
-								class="flex items-center w-full px-2 py-1.5 gap-2 text-left"
-								@click="updateAccountVisibility(item.value)"
-							>
-								<div class="flex flex-col">
-									<div class="flex flex-row items-center gap-1">
-										<UIcon :name="item.icon || 'mdi:lock'" />
-										<span class="font-medium text-sm">
-											{{ item.label }}
-										</span>
+		<div class="mt-2 border-t-4 border-black dark:border-white w-full max-w-4xl">
+			<div class="mt-4 w-full flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-x-4">
+				<h2 class="text-xl font-medium">Account Visibility</h2>
+				<div class="w-full flex flex-col sm:flex-row gap-2">
+					<ClientOnly>
+						<UDropdownMenu
+							title="Visibility Settings"
+							:items="accountVisibilityOptions"
+							:ui="{ content: 'w-48' }"
+						>
+							<UButton
+								:icon="'mdi:eye'"
+								:label="
+									accountVisibilityOptions.find((opt: any) => opt.value === accountVisibility)
+										?.label || 'Select Visibility'
+								"
+								color="neutral"
+								variant="outline"
+								:loading="visibilityLoading"
+								class="w-full min-w-48"
+							/>
+							<template #item="{ item }">
+								<button
+									class="flex items-center w-full px-2 py-1.5 gap-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
+									@click="updateAccountVisibility(item.value)"
+								>
+									<div class="flex flex-col">
+										<div class="flex flex-row items-center gap-1">
+											<UIcon :name="item.icon || 'mdi:lock'" />
+											<span class="font-medium text-sm">
+												{{ item.label }}
+											</span>
+										</div>
+										<span
+											v-if="item.description"
+											class="text-xs text-gray-500"
+											>{{ item.description }}</span
+										>
 									</div>
-									<span
-										v-if="item.description"
-										class="text-xs text-gray-500"
-										>{{ item.description }}</span
-									>
-								</div>
-							</button>
+								</button>
+							</template>
+						</UDropdownMenu>
+						<template #fallback>
+							<UButton
+								:icon="'mdi:eye'"
+								:label="
+									accountVisibilityOptions.find((opt: any) => opt.value === accountVisibility)
+										?.label || 'Select Visibility'
+								"
+								color="neutral"
+								variant="outline"
+								disabled
+								class="w-full sm:w-auto min-w-48"
+							/>
 						</template>
-					</UDropdownMenu>
-					<template #fallback>
-						<UButton
-							:icon="'mdi:eye'"
-							:label="
-								accountVisibilityOptions.find((opt: any) => opt.value === accountVisibility)
-									?.label || 'Select Visibility'
-							"
-							color="neutral"
-							variant="outline"
-							disabled
-						/>
-					</template>
-				</ClientOnly>
+					</ClientOnly>
+				</div>
 			</div>
 			<div
-				v-for="prop in props.filter((p) => p.disabled !== true)"
-				class="mt-4 w-full grid grid-cols-3 gap-x-4"
+				v-for="(prop, i) in props.filter((p) => p.disabled !== true)"
+				:key="prop.id"
+				class="mt-4 w-full flex flex-col lg:grid lg:grid-cols-3 gap-2 lg:gap-x-4"
 			>
-				<h2 class="text-xl">{{ prop.name }}</h2>
+				<h2 class="text-xl flex">
+					{{ prop.name
+					}}<span
+						v-if="prop.unverified === true"
+						class="relative text-xs font-bold pl-1 text-orange-300 hover:cursor-pointer"
+						:title="`${prop.name} not verified`"
+						>!</span
+					>
+				</h2>
 				<UserFieldPrivacyDropdown
 					:user="user"
 					:label="getLabel(prop.id)"
 					:field="prop.id"
 				/>
-				<EditableValue
-					v-if="prop.type !== 'dropdown' && prop.computed"
-					v-model="prop.computed.value"
-					class="text-lg mt-2"
-					size="lg"
-					:type="prop.type"
-					:onFinish="updateUser"
-					:disabled="prop.disabled"
-				/>
-				<ClientOnly>
-					<UDropdownMenu
-						v-if="prop.type === 'dropdown' && prop.computed"
-						:items="prop.dropdownItems"
-						:value="prop.computed.value"
-						@update:value="(value: string) => (prop.computed!.value = value)"
-						:ui="{
-							content: 'h-48 overflow-y-auto'
-						}"
-					>
-						<UButton
-							class="w-full text-left"
-							:icon="prop.computed.value ? 'mdi:building' : 'mdi:chevron-down'"
-							:label="prop.computed.value?.toString() || prop.name"
-							color="primary"
-							variant="outline"
+				<div class="flex gap-4 justify-between items-start shrink-0">
+					<div class="flex-1 min-w-fit">
+						<EditableValue
+							v-if="prop.type !== 'dropdown' && prop.computed"
+							v-model="prop.computed.value"
+							class="text-lg"
+							size="lg"
+							:type="prop.type"
+							:onFinish="updateUser"
+							:disabled="prop.disabled"
 						/>
-						<template #item="{ item }">
-							<UButton
-								:label="item.label"
-								class="w-full text-left font-bold"
-								color="secondary"
-								@click="prop.computed.value = item.value"
-							/>
-						</template>
-					</UDropdownMenu>
-					<template #fallback>
-						<UButton
-							v-if="prop.type === 'dropdown' && prop.computed"
-							class="w-full text-left"
-							:icon="prop.computed.value ? 'mdi:building' : 'mdi:chevron-down'"
-							:label="prop.computed.value?.toString() || prop.name"
-							color="primary"
-							variant="outline"
-							disabled
-						/>
-					</template>
-				</ClientOnly>
+						<ClientOnly>
+							<UDropdownMenu
+								v-if="prop.type === 'dropdown' && prop.computed"
+								:items="prop.dropdownItems"
+								:value="prop.computed.value"
+								@update:value="(value: string) => (prop.computed!.value = value)"
+								:ui="{
+									content: 'h-48 overflow-y-auto'
+								}"
+							>
+								<UButton
+									class="w-full sm:w-auto min-w-48 text-left"
+									:icon="prop.computed.value ? 'mdi:building' : 'mdi:chevron-down'"
+									:label="prop.computed.value?.toString() || prop.name"
+									color="primary"
+									variant="outline"
+								/>
+								<template #item="{ item }">
+									<UButton
+										:label="item.label"
+										class="w-full text-left font-bold"
+										color="secondary"
+										@click="prop.computed.value = item.value"
+									/>
+								</template>
+							</UDropdownMenu>
+							<template #fallback>
+								<UButton
+									v-if="prop.type === 'dropdown' && prop.computed"
+									class="w-full sm:w-auto min-w-48 text-left"
+									:icon="prop.computed.value ? 'mdi:building' : 'mdi:chevron-down'"
+									:label="prop.computed.value?.toString() || prop.name"
+									color="primary"
+									variant="outline"
+									disabled
+								/>
+							</template>
+						</ClientOnly>
+					</div>
+					<ClientOnly>
+						<UBadge
+							v-if="prop.unverified === true"
+							class="mt-1 transition-all duration-300 hover:cursor-pointer flex-shrink-0"
+							color="warning"
+							:variant="badgeVariants[i] || 'outline'"
+							@mouseenter="badgeVariants[i] = 'solid'"
+							@mouseleave="badgeVariants[i] = 'outline'"
+							@click="if (prop.verify) prop.verify();"
+							role="button"
+							:aria-label="`Verify ${prop.name}`"
+							tabindex="0"
+							@keydown.enter="if (prop.verify) prop.verify();"
+							@keydown.space.prevent="if (prop.verify) prop.verify();"
+							>Unverified</UBadge
+						>
+					</ClientOnly>
+				</div>
 			</div>
 		</div>
+		<UserEmailVerificationModal
+			ref="emailVerificationModal"
+			@verified="handleEmailVerified"
+		/>
 	</div>
 </template>
 
@@ -194,6 +232,9 @@ import { getAllActivities } from '~/compostables/useActivity';
 import * as useUser from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 import { capitalizeFully } from '~/shared/util';
+import { type EmailVerificationModalRef } from './UserEmailVerificationModal.vue';
+
+const badgeVariants = ref<('outline' | 'solid')[]>(new Array(6).fill('outline'));
 
 const componentProps = defineProps<{
 	user: User;
@@ -232,13 +273,24 @@ const props: {
 	dropdownItems?: { label: string; value: string }[];
 	computed?: globalThis.Ref<string | number>;
 	disabled?: boolean;
+	unverified?: boolean;
+	verify?: () => Promise<boolean>;
 }[] = [
 	{
 		name: 'Email Address',
 		id: 'email',
 		type: 'email',
 		computed: email,
-		disabled: true // TODO Implement email verification
+		get unverified() {
+			return !user.value.account.email_verified;
+		},
+		verify: async () => {
+			const result = await sendVerificationEmail();
+			if (result) {
+				emailVerificationModal.value?.open();
+			}
+			return result;
+		}
 	},
 	{
 		name: 'Address',
@@ -547,5 +599,56 @@ async function updateAccountVisibility(value: User['account']['visibility']) {
 	}
 
 	visibilityLoading.value = false;
+}
+
+// Email Verification
+const emailVerificationModal = ref<EmailVerificationModalRef | null>(null);
+
+async function sendVerificationEmail(): Promise<boolean> {
+	const toast = useToast();
+	const res = await useUser.sendVerificationEmail();
+	if (res.success && res.data) {
+		toast.add({
+			title: 'Verification Email Sent',
+			description: res.data.message || 'A verification email has been sent to your email address.',
+			color: 'success',
+			icon: 'mdi:email-check',
+			duration: 5000
+		});
+		return true;
+	} else {
+		console.error(res.message || 'Failed to send verification email.');
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to send verification email.',
+			color: 'error',
+			icon: 'mdi:alert-circle',
+			duration: 5000
+		});
+		return false;
+	}
+}
+
+function handleEmailVerified() {
+	if (user.value) {
+		user.value.account.email_verified = true;
+
+		// Update the global auth state if this is the current user
+		const { user: authUser } = useUser.useAuth();
+		if (authUser.value && authUser.value.id === user.value.id) {
+			authUser.value.account.email_verified = true;
+		}
+
+		// Show success toast
+		const toast = useToast();
+		toast.add({
+			title: 'Email Verified',
+			description: 'Your email address has been successfully verified.',
+			color: 'success',
+			icon: 'mdi:email-check',
+			duration: 5000
+		});
+	}
+	emailVerificationModal.value?.close();
 }
 </script>
