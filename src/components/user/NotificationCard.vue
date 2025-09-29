@@ -6,20 +6,17 @@
 			<div>
 				<NuxtLink :to="`/profile/notifications/${notification.id}`">
 					<p
-						v-if="!notification.read"
-						class="text-blue-500 light:text-gray-600 font-semibold mb-2"
-					>
-						{{ notification.title }}
-					</p>
-					<p
-						v-else
 						class="text-blue-400 light:text-gray-700 mb-2"
+						:style="{ fontWeight: notification.read ? 'normal' : 'bold' }"
 					>
 						{{ notification.title }}
 					</p>
 				</NuxtLink>
 
-				<p class="text-gray-300 light:text-gray-700">
+				<p
+					class="text-gray-300 light:text-gray-700"
+					:style="{ fontWeight: notification.read ? 'normal' : 'bold' }"
+				>
 					{{ trimString(notification.message, 50) }}
 				</p>
 				<p class="text-gray-400 light:text-gray-800 text-sm">
@@ -29,24 +26,26 @@
 					{{ notification.source }} | ID: {{ notification.id }}
 				</p>
 			</div>
-			<div
-				v-if="!notification.read"
-				class="ml-4"
-			>
-				<span
-					class="inline-block w-3 h-3 bg-blue-500 rounded-full hover:cursor-pointer"
-					title="Mark as Read"
-					@click="markAsRead"
-				></span>
+			<div class="flex items-end">
+				<div
+					v-if="!notification.read"
+					class="mx-2"
+				>
+					<span
+						class="inline-block w-3 h-3 bg-blue-500 rounded-full hover:cursor-pointer"
+						title="Mark as Read"
+						@click="markAsRead"
+					></span>
+				</div>
+				<UIcon
+					v-if="additional"
+					name="mdi:delete"
+					:size="24"
+					class="text-gray-500 hover:text-red-500 hover:cursor-pointer transition-colors duration-200"
+					title="Delete Notification"
+					@click="deleteNotification"
+				/>
 			</div>
-			<UIcon
-				v-if="additional"
-				name="mdi:delete"
-				:size="24"
-				class="ml-4 text-gray-500 hover:text-red-500 hover:cursor-pointer transition-colors duration-200"
-				title="Delete Notification"
-				@click="deleteNotification"
-			/>
 		</div>
 	</div>
 </template>

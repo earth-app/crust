@@ -5,9 +5,15 @@
 			class="flex flex-col items-center w-full h-full"
 		>
 			<ArticlePage :article="currentArticle" />
-			<USeparator class="my-2 w-3/4" />
+			<USeparator
+				v-if="user"
+				class="my-2 w-3/4"
+			/>
 
-			<div class="flex items-center w-screen">
+			<div
+				v-if="user"
+				class="flex items-center w-screen"
+			>
 				<InfoCardGroup
 					title="Related Articles"
 					description="Articles similar to this one"
@@ -39,7 +45,10 @@
 <script setup lang="ts">
 import { getArticle, getSimilarArticles } from '~/compostables/useArticle';
 import { useTitleSuffix } from '~/compostables/useTitleSuffix';
+import { useAuth } from '~/compostables/useUser';
 import type { Article } from '~/shared/types/article';
+
+const { user } = useAuth();
 
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
@@ -68,6 +77,7 @@ onMounted(async () => {
 
 async function loadSimilar(article?: Article) {
 	if (!article) return;
+	if (!user.value) return;
 	relatedLoaded.value = false;
 
 	const res = await getSimilarArticles(article);

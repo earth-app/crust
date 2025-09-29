@@ -606,27 +606,65 @@ const emailVerificationModal = ref<EmailVerificationModalRef | null>(null);
 
 async function sendVerificationEmail(): Promise<boolean> {
 	const toast = useToast();
-	const res = await useUser.sendVerificationEmail();
-	if (res.success && res.data) {
-		toast.add({
-			title: 'Verification Email Sent',
-			description: res.data.message || 'A verification email has been sent to your email address.',
-			color: 'success',
-			icon: 'mdi:email-check',
-			duration: 5000
-		});
-		return true;
-	} else {
-		console.error(res.message || 'Failed to send verification email.');
+
+	if (!user.value) {
 		toast.add({
 			title: 'Error',
-			description: res.message || 'Failed to send verification email.',
+			description: 'User not found.',
 			color: 'error',
 			icon: 'mdi:alert-circle',
 			duration: 5000
 		});
 		return false;
 	}
+
+	if (user.value.account.email_verified) {
+		toast.add({
+			title: 'Email Already Verified',
+			description: 'Your email is already verified.',
+			icon: 'mdi:check-circle',
+			color: 'info',
+			duration: 3000
+		});
+		return false;
+	}
+
+	if (user.value.email_change_pending) {
+		toast.add({
+			title: 'Email Change Pending',
+			description: 'You have a pending email change. Please verify your new email address.',
+			icon: 'mdi:email-arrow-right',
+			color: 'info',
+			duration: 3000
+		});
+		return false;
+	}
+
+	useUser.sendVerificationEmail().then((res) => {
+		if (res.success && res.data) {
+			toast.add({
+				title: 'Verification Email Sent',
+				description:
+					res.data.message || 'A verification email has been sent to your email address.',
+				color: 'success',
+				icon: 'mdi:email-check',
+				duration: 5000
+			});
+			return true;
+		} else {
+			console.error(res.message || 'Failed to send verification email.');
+			toast.add({
+				title: 'Error',
+				description: res.message || 'Failed to send verification email.',
+				color: 'error',
+				icon: 'mdi:alert-circle',
+				duration: 5000
+			});
+			return false;
+		}
+	});
+
+	return true;
 }
 
 function handleEmailVerified() {

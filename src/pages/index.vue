@@ -23,22 +23,43 @@
 				/>
 				<p class="text-lg font-semibold">Welcome Back, @{{ user.username }}</p>
 			</div>
-			<div class="flex items-center justify-center w-full motion-opacity-in-0 motion-duration-1500">
+			<div
+				class="flex flex-col items-center justify-center w-full motion-opacity-in-0 motion-duration-1500"
+			>
 				<InfoCardGroup
 					:title="user ? `Today's Content` : 'Discover Content'"
 					:description="user ? 'Topics you might enjoy' : 'Explore interests from around the world'"
 					icon="material-symbols:apps"
 					class="w-11/12"
 				>
+					<ActivityCard
+						v-for="activity in randomActivities"
+						:key="activity.id"
+						:activity="activity"
+					/>
+				</InfoCardGroup>
+				<InfoCardGroup
+					:title="user ? `A Fun Prompt` : 'Get Inspired'"
+					description="Writing prompts to spark your creativity"
+					icon="mdi:lightbulb-on-outline"
+					class="w-11/12 mt-4"
+				>
 					<PromptCard
 						v-for="prompt in randomPrompts"
 						:key="prompt.id"
 						:prompt="prompt"
 					/>
-					<ActivityCard
-						v-for="activity in randomActivities"
-						:key="activity.id"
-						:activity="activity"
+				</InfoCardGroup>
+				<InfoCardGroup
+					title="A Good Read"
+					description="Articles you might find interesting"
+					icon="mdi:book-multiple-variant"
+					class="w-11/12 mt-4"
+				>
+					<ArticleCard
+						v-for="article in randomArticles"
+						:key="article.id"
+						:article="article"
 					/>
 				</InfoCardGroup>
 			</div>
@@ -48,9 +69,11 @@
 
 <script setup lang="ts">
 import { getRandomActivities } from '~/compostables/useActivity';
+import { getRandomArticles } from '~/compostables/useArticle';
 import { getRandomPrompts } from '~/compostables/usePrompt';
 import { useAuth } from '~/compostables/useUser';
 import type { Activity } from '~/shared/types/activity';
+import type { Article } from '~/shared/types/article';
 import type { Prompt } from '~/shared/types/prompts';
 
 const { user, photo } = useAuth();
@@ -74,16 +97,22 @@ onBeforeUnmount(() => {
 
 const randomPrompts = ref<Prompt[]>([]);
 const randomActivities = ref<Activity[]>([]);
+const randomArticles = ref<Article[]>([]);
 
 onMounted(async () => {
-	const resPrompt = await getRandomPrompts(2);
+	const resPrompt = await getRandomPrompts(3);
 	if (resPrompt.success && resPrompt.data) {
 		randomPrompts.value = resPrompt.data;
 	}
 
-	const resActivities = await getRandomActivities(2);
+	const resActivities = await getRandomActivities(5);
 	if (resActivities.success && resActivities.data) {
 		randomActivities.value = resActivities.data;
+	}
+
+	const resArticles = await getRandomArticles(4);
+	if (resArticles.success && resArticles.data) {
+		randomArticles.value = resArticles.data;
 	}
 });
 </script>

@@ -2,9 +2,9 @@
 	<ClientOnly>
 		<div
 			v-if="user"
-			class="w-full h-full"
+			class="w-full h-full p-2"
 		>
-			<div class="flex flex-col items-start mb-6">
+			<div class="flex flex-col items-start mb-6 p-2">
 				<h1
 					id="verification-title"
 					class="text-2xl font-semibold mb-4"
@@ -44,6 +44,16 @@
 					Enter all 8 digits of the verification code. The code will be automatically submitted when
 					complete.
 				</p>
+				<UButton
+					variant="outline"
+					size="sm"
+					class="mt-2 p-2"
+					trailing-icon="mdi:email-arrow-right-outline"
+					:disabled="loading"
+					@click="resendVerificationEmail"
+				>
+					Resend Code
+				</UButton>
 				<div
 					v-if="loading"
 					class="mt-4 text-center"
@@ -87,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { useAuth, verifyEmail } from '~/compostables/useUser';
+import { sendVerificationEmail, useAuth, verifyEmail } from '~/compostables/useUser';
 
 const { user } = useAuth();
 
@@ -99,6 +109,49 @@ const emit = defineEmits<{
 }>();
 
 const loading = ref(false);
+
+async function resendVerificationEmail() {
+	loading.value = true;
+	errorMessage.value = '';
+	const toast = useToast();
+
+	sendVerificationEmail()
+		.then((res) => {
+			if (res.success) {
+				toast.add({
+					title: 'Verification Email Sent',
+					description: 'A new verification code has been sent to your email address.',
+					color: 'success',
+					icon: 'mdi:email-check-outline',
+					duration: 5000
+				});
+			} else {
+				errorMessage.value =
+					res.message || 'Failed to resend verification email. Please try again later.';
+				toast.add({
+					title: 'Error',
+					description: errorMessage.value,
+					color: 'error',
+					icon: 'mdi:alert-circle-outline',
+					duration: 7000
+				});
+			}
+
+			loading.value = false;
+		})
+		.catch((error) => {
+			errorMessage.value = error.message || 'An unexpected error occurred. Please try again later.';
+			toast.add({
+				title: 'Error',
+				description: errorMessage.value,
+				color: 'error',
+				icon: 'mdi:alert-circle-outline',
+				duration: 7000
+			});
+
+			loading.value = false;
+		});
+}
 
 async function sendVerifyEmail(inputValue: string[]) {
 	loading.value = true;

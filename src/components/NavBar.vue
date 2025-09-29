@@ -235,25 +235,26 @@ async function resendEmailVerification(): Promise<boolean> {
 		return false;
 	}
 
-	const res = await sendVerificationEmail();
-	if (res.success && res.data) {
-		toast.add({
-			title: 'Verification Email Sent',
-			description: 'A verification email has been sent to your email address.',
-			icon: 'mdi:check-circle',
-			color: 'success',
-			duration: 3000
-		});
-		return true;
-	} else {
-		toast.add({
-			title: 'Error Sending Email',
-			description: res.message || 'An error occurred while sending the verification email.',
-			icon: 'mdi:alert-circle',
-			color: 'error',
-			duration: 5000
-		});
-		return false;
-	}
+	sendVerificationEmail().then((res) => {
+		if (res.success && res.data) {
+			toast.add({
+				title: 'Verification Email Sent',
+				description: 'A verification email has been sent to your email address.',
+				icon: 'mdi:check-circle',
+				color: 'success',
+				duration: 3000
+			});
+		} else {
+			toast.add({
+				title: 'Error Sending Email',
+				description: res.message || 'An error occurred while sending the verification email.',
+				icon: 'mdi:alert-circle',
+				color: 'error',
+				duration: 5000
+			});
+		}
+	});
+
+	return true;
 }
 </script>

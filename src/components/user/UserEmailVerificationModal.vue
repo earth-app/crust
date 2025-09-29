@@ -8,12 +8,14 @@
 		<slot />
 
 		<template #content>
-			<UserEmailVerification
-				@verified="
-					emit('verified');
-					open = false;
-				"
-			/>
+			<div class="flex w-full h-full items-center justify-center mb-4 p-4">
+				<UserEmailVerification
+					@verified="
+						emit('verified');
+						open = false;
+					"
+				/>
+			</div>
 		</template>
 	</UModal>
 </template>
