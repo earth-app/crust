@@ -21,7 +21,7 @@
 					:src="avatar"
 					class="size-8 min-w-4 h-auto mr-2"
 				/>
-				<p class="text-lg font-semibold">Welcome Back, @{{ user.username }}</p>
+				<p class="text-lg font-semibold">Welcome, @{{ user.username }}</p>
 			</div>
 			<div
 				class="flex flex-col items-center justify-center w-full motion-opacity-in-0 motion-duration-1500"

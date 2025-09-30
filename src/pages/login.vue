@@ -29,10 +29,8 @@ onMounted(() => {
 });
 
 function handleLoginSuccess() {
-	if (user.value) {
-		// Redirect to home page or dashboard after successful login
-		useRouter().push('/');
-		refreshNuxtData(['user-current', 'avatar-current']); // Refresh user data
-	}
+	// Redirect to home page or dashboard after successful login
+	useRouter().push('/');
+	refreshNuxtData(['user-current', 'avatar-current']); // Refresh user data
 }
 </script>

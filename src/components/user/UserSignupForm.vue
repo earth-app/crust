@@ -100,9 +100,9 @@ async function handleSignup() {
 
 	if (result.success) {
 		// Fetch user data to update the auth state
-		await fetchUser();
-		await fetchPhoto();
-		emit('signupSuccess');
+		Promise.all([fetchUser(), fetchPhoto()]).then(() => {
+			emit('signupSuccess');
+		});
 		message.value = 'Welcome!';
 
 		toast.add({
