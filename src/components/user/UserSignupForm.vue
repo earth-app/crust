@@ -1,11 +1,23 @@
 <template>
 	<UCard class="size-full">
 		<UForm
-			:state="{ username, password }"
+			:state="{ email, username, password }"
 			@submit="handleSignup"
 			class="space-x-6 *:mb-4"
-			:schema="z.object({ username: usernameSchema, password: passwordSchema })"
+			:schema="z.object({ email: emailSchema, username: usernameSchema, password: passwordSchema })"
 		>
+			<UFormField
+				label="Email"
+				name="email"
+			>
+				<UInput
+					v-model="email"
+					placeholder="Email"
+					type="email"
+					class="min-w-60 w-2/5 max-w-120"
+				/>
+			</UFormField>
+
 			<UFormField
 				label="Username"
 				name="username"
@@ -57,8 +69,9 @@
 import z from 'zod';
 import { useSignup } from '~/compostables/useLogin';
 import { useAuth } from '~/compostables/useUser';
-import { passwordSchema, usernameSchema } from '~/shared/schemas';
+import { emailSchema, passwordSchema, usernameSchema } from '~/shared/schemas';
 
+const email = ref('');
 const username = ref('');
 const password = ref('');
 const loading = ref(false);
@@ -77,7 +90,13 @@ async function handleSignup() {
 	loading.value = true;
 	error.value = '';
 
-	const result = await signup(username.value, password.value);
+	const toast = useToast();
+
+	const result = await signup(
+		username.value,
+		password.value,
+		email.value.trim() ? email.value : undefined
+	);
 
 	if (result.success) {
 		// Fetch user data to update the auth state
@@ -85,6 +104,14 @@ async function handleSignup() {
 		await fetchPhoto();
 		emit('signupSuccess');
 		message.value = 'Welcome!';
+
+		toast.add({
+			title: 'Sign Up Successful',
+			description: 'You have successfully signed up. Welcome!',
+			icon: 'mdi:account-plus',
+			color: 'success',
+			duration: 3000
+		});
 	} else {
 		if (result.message.includes('409')) {
 			error.value = 'Username already exists. Please choose another.';

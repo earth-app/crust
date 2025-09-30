@@ -1,35 +1,29 @@
 <template>
 	<UPopover
 		v-model="isOpen"
-		trigger="click"
+		mode="hover"
 		:popper="{ placement: 'bottom-end' }"
 	>
-		<UButton
-			color="neutral"
-			variant="link"
-			class="text-md md:text-lg lg:text-xl font-semibold hover:text-gray-300 mx-3 lg:mx-6 cursor-pointer"
-		>
-			Sign&nbsp;Up
-		</UButton>
+		<NuxtLink to="/signup">
+			<UButton
+				color="neutral"
+				variant="link"
+				class="text-md md:text-lg lg:text-xl font-semibold hover:text-gray-300 mx-3 lg:mx-6 cursor-pointer"
+			>
+				Sign&nbsp;Up
+			</UButton>
+		</NuxtLink>
 
 		<template #content>
-			<UserSignupForm @login-success="handleSignupSuccess" />
+			<UserSignupForm @signup-success="handleSignupSuccess" />
 		</template>
 	</UPopover>
 </template>
 
 <script setup lang="ts">
 const isOpen = ref(false);
-const toast = useToast();
 
 function handleSignupSuccess() {
-	isOpen.value = false; // Close the popup after successful login
-	toast.add({
-		title: 'Signup Successful',
-		description: 'You have successfully signed up. Welcome!',
-		icon: 'mdi:account-plus',
-		color: 'success',
-		duration: 3000
-	});
+	isOpen.value = false; // Close the popup after successful sign up
 }
 </script>

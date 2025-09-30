@@ -1,7 +1,9 @@
+import { sendVerificationEmail } from './useUser';
+
 export function useSignup() {
 	const config = useRuntimeConfig();
 
-	return async function signup(username: string, password: string) {
+	return async function signup(username: string, password: string, email?: string) {
 		try {
 			const response = await $fetch<{ session_token: string }>(
 				`${config.public.apiBaseUrl}/v2/users/create`,
@@ -12,7 +14,8 @@ export function useSignup() {
 					},
 					body: {
 						username,
-						password
+						password,
+						email
 					}
 				}
 			);
@@ -23,6 +26,19 @@ export function useSignup() {
 				sameSite: 'strict'
 			});
 			sessionCookie.value = response.session_token;
+
+			if (email) {
+				// Automatically send verification email upon signup
+				sendVerificationEmail()
+					.then((res) => {
+						if (!res.success) {
+							console.error('Failed to send verification email:', res.message);
+						}
+					})
+					.catch((err) => {
+						console.error('Failed to send verification email:', err);
+					});
+			}
 
 			return { success: true, message: 'Signup successful' };
 		} catch (error) {

@@ -77,14 +77,24 @@ async function handleLogin() {
 	loading.value = true;
 	error.value = '';
 
+	const toast = useToast();
+
 	const result = await login(username.value, password.value);
 
 	if (result.success) {
 		// Fetch user data to update the auth state
-		await fetchUser();
-		await fetchPhoto();
+		fetchUser();
+		fetchPhoto();
 		emit('loginSuccess');
 		message.value = 'Welcome!';
+
+		toast.add({
+			title: 'Login Successful',
+			description: `Welcome back, @${username.value}!`,
+			icon: 'mdi:login',
+			color: 'success',
+			duration: 3000
+		});
 	} else {
 		if (result.message.includes('401')) {
 			error.value = 'Invalid username or password.';
