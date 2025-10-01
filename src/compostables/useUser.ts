@@ -402,3 +402,54 @@ export async function verifyEmail(code: string) {
 		}
 	);
 }
+
+// Password Change
+
+export async function changePassword(currentPassword: string, newPassword: string) {
+	return await makeClientAPIRequest<{ message: string }>(
+		`/v2/users/current/change_password?old_password=${encodeURIComponent(currentPassword)}`,
+		useCurrentSessionToken(),
+		{
+			method: 'POST',
+			body: {
+				new_password: newPassword
+			}
+		}
+	);
+}
+
+export async function sendResetPasswordEmail(email: string) {
+	return await makeAPIRequest<void>(
+		`reset-password-email-${email}`,
+		`/v2/users/reset_password?email=${encodeURIComponent(email)}`,
+		null,
+		{
+			method: 'POST'
+		}
+	);
+}
+
+export async function resetPassword(id: string, token: string, newPassword: string) {
+	return await makeAPIRequest<{ message: string }>(
+		`reset-password-${token}`,
+		`/v2/users/${id}/change_password?token=${encodeURIComponent(token)}`,
+		null,
+		{
+			method: 'POST',
+			body: {
+				new_password: newPassword
+			}
+		}
+	);
+}
+
+// Account Deletion
+
+export async function deleteAccount(password: string) {
+	return await makeClientAPIRequest<void>(`/v2/users/current`, useCurrentSessionToken(), {
+		method: 'DELETE',
+		body: {
+			password
+		}
+	});
+}

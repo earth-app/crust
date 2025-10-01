@@ -244,6 +244,10 @@
 			ref="emailVerificationModal"
 			@verified="handleEmailVerified"
 		/>
+		<UserPasswordChangeModal
+			ref="passwordChangeModal"
+			@change-password-success="handlePasswordChange"
+		/>
 	</div>
 </template>
 
@@ -256,8 +260,7 @@ import * as useUser from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 import { capitalizeFully } from '~/shared/util';
 import { type EmailVerificationModalRef } from './UserEmailVerificationModal.vue';
-
-const badgeVariants = ref<('outline' | 'solid')[]>(new Array(6).fill('outline'));
+import { type PasswordChangeModalRef } from './UserPasswordChangeModal.vue';
 
 const componentProps = defineProps<{
 	user: User;
@@ -347,6 +350,8 @@ const props: {
 		id: 'bio'
 	}
 ];
+
+const badgeVariants = ref<('outline' | 'solid')[]>(new Array(props.length).fill('outline'));
 
 function sanitize(obj: User['account']): Partial<User['account']> {
 	return {
@@ -711,5 +716,21 @@ function handleEmailVerified() {
 		});
 	}
 	emailVerificationModal.value?.close();
+}
+
+// Password Change
+const passwordChangeModal = ref<PasswordChangeModalRef | null>(null);
+
+function handlePasswordChange() {
+	const toast = useToast();
+	toast.add({
+		title: 'Password Changed',
+		description: 'Your password has been successfully changed.',
+		color: 'success',
+		icon: 'mdi:lock-check-outline',
+		duration: 5000
+	});
+
+	passwordChangeModal.value?.close();
 }
 </script>
