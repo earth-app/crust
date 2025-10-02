@@ -164,6 +164,7 @@ async function logoutUser() {
 	avatar.value = 'https://cdn.earth-app.com/earth-app.png';
 	user.value = null;
 	photo.value = null;
+	refreshNuxtData(['user-current', 'avatar-current']); // Invalidate user and avatar data
 
 	toast.add({
 		title: 'Logged out',
