@@ -1,16 +1,26 @@
 <template>
-	<div
-		v-if="currentUser"
-		class="flex flex-row items-center justify-between w-full"
-	>
-		<UserProfile :user="currentUser" />
-	</div>
-	<div
-		v-else
-		class="flex flex-col items-center justify-center h-screen"
-	>
-		<p class="text-gray-600">User doesn't exist. Maybe look at the URL again?</p>
-	</div>
+	<ClientOnly>
+		<div
+			v-if="currentUser"
+			class="flex flex-row items-center justify-between w-full"
+		>
+			<UserProfile :user="currentUser" />
+		</div>
+		<div
+			v-if="currentUser === undefined"
+			class="flex flex-col items-center justify-center h-screen"
+		>
+			<!-- Loading state -->
+			<p class="text-gray-600">Loading profile...</p>
+		</div>
+		<div
+			v-else-if="currentUser === null"
+			class="flex flex-col items-center justify-center h-screen"
+		>
+			<!-- User not found -->
+			<p class="text-gray-600">User doesn't exist. Maybe look at the URL again?</p>
+		</div>
+	</ClientOnly>
 </template>
 
 <script setup lang="ts">
@@ -18,12 +28,23 @@ import { useTitleSuffix } from '~/compostables/useTitleSuffix';
 import { useUser } from '~/compostables/useUser';
 
 const { setTitleSuffix } = useTitleSuffix();
+const toast = useToast();
 const route = useRoute();
 const { user: currentUser } = useUser(route.params.id as string);
 watch(
 	() => currentUser.value,
 	(user) => {
 		setTitleSuffix(user ? user.username : 'Profile');
+
+		if (user === null) {
+			toast.add({
+				title: 'User not found',
+				description: `The user "${route.params.id}" does not exist.`,
+				icon: 'mdi:account-off',
+				color: 'error',
+				duration: 10000
+			});
+		}
 	}
 );
 </script>

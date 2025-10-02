@@ -135,7 +135,13 @@ export async function getUsers(limit: number = 25, search: string = '') {
 	);
 }
 
-export async function getUser(identifier: string) {
+export async function getUser(identifier?: string) {
+	if (!identifier) return { success: true, data: undefined };
+
+	if (identifier === 'current') {
+		return await useCurrentUser();
+	}
+
 	return await makeAPIRequest<User>(
 		`user-${identifier}`,
 		`/v2/users/${identifier}`,
@@ -143,7 +149,9 @@ export async function getUser(identifier: string) {
 	);
 }
 
-export async function getUserAvatar(identifier: string) {
+export async function getUserAvatar(identifier?: string) {
+	if (!identifier) return { success: true, data: undefined };
+
 	if (identifier === 'current') {
 		return await useCurrentAvatar();
 	}
@@ -158,25 +166,22 @@ export async function getUserAvatar(identifier: string) {
 	);
 }
 
-export function useUser(identifier?: string) {
-	if (!identifier)
-		return {
-			user: { value: null },
-			photo: { value: null },
-			fetchPhoto: async () => {},
-			fetchUser: async () => {}
-		};
-
-	const user = useState<User | null>(`user-${identifier}`, () => null);
+export function useUser(identifier: string) {
+	const user = useState<User | null | undefined>(`user-${identifier}`, () => undefined);
 	const photo = import.meta.client
 		? useState<Blob | null>(`photo-${identifier}`, () => null)
 		: ref<Blob | null>(null);
 
 	const fetchUser = async () => {
+		if (!identifier) return;
+		if (user.value) return;
+
 		try {
 			const res = await getUser(identifier);
 			if (res.success && res.data) {
 				user.value = res.data;
+			} else {
+				user.value = null;
 			}
 		} catch (error) {
 			console.warn(`Failed to fetch user ${identifier}:`, error);
@@ -189,6 +194,9 @@ export function useUser(identifier?: string) {
 	}
 
 	const fetchPhoto = async () => {
+		if (!identifier) return;
+		if (photo.value) return;
+
 		try {
 			const res = await getUserAvatar(identifier);
 			if (res.success && res.data) {
