@@ -11,7 +11,7 @@ export const usernameSchema = z
 
 export const passwordSchema = z
 	.string()
-	.min(5, 'Must be at least 5 characters')
+	.min(8, 'Must be at least 8 characters')
 	.max(100, 'Must be at most 100 characters')
 	.regex(/^[a-zA-Z0-9!@#$%^&*()_+={}\[\]:;"'<>,.?\/\\|-]+$/, 'Invalid characters in password');
 

@@ -32,27 +32,31 @@
 				/>
 			</UFormField>
 
-			<UButton
-				type="submit"
-				:loading="loading"
-				class="w-3/5 max-w-60"
-				color="info"
-				>Change Password</UButton
-			>
+			<div class="flex space-x-4">
+				<UButton
+					type="submit"
+					:loading="loading"
+					class="w-3/5 max-w-60"
+					color="info"
+					icon="mdi:lock-reset"
+					>Change Password</UButton
+				>
 
-			<UButton
-				variant="outline"
-				class="w-3/5 max-w-60"
-				@click="
-					oldPassword = '';
-					newPassword = '';
-					error = '';
-					message = '';
-				"
-				color="error"
-				:disabled="loading"
-				>Clear</UButton
-			>
+				<UButton
+					variant="outline"
+					class="w-3/5 max-w-60"
+					@click="
+						oldPassword = '';
+						newPassword = '';
+						error = '';
+						message = '';
+					"
+					color="error"
+					icon="mdi:close-circle-outline"
+					:disabled="loading"
+					>Clear</UButton
+				>
+			</div>
 
 			<div
 				v-if="error"

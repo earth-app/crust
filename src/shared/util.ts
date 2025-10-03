@@ -78,10 +78,10 @@ export async function makeRequest<T>(
 		}
 
 		if (value.includes('400')) {
-			console.error(`Bad request to ${url}:`, error.value.data);
+			console.error(`Bad request to ${url}:`, error);
 			return {
 				success: false,
-				message: `Bad request to ${url}: ${error.value.statusMessage || 'Invalid parameters'}`
+				message: `Bad request: ${error?.value?.statusMessage || value}`
 			};
 		}
 
