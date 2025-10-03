@@ -39,6 +39,21 @@
 				color="info"
 				>Change Password</UButton
 			>
+
+			<UButton
+				variant="outline"
+				class="w-3/5 max-w-60"
+				@click="
+					oldPassword = '';
+					newPassword = '';
+					error = '';
+					message = '';
+				"
+				color="error"
+				:disabled="loading"
+				>Clear</UButton
+			>
+
 			<div
 				v-if="error"
 				class="text-red-500 mt-2"
@@ -68,7 +83,7 @@ const error = ref('');
 const message = ref('');
 
 const emit = defineEmits<{
-	changePasswordSuccess: [];
+	changed: [];
 }>();
 
 async function handlePasswordChange() {
@@ -84,7 +99,7 @@ async function handlePasswordChange() {
 		error.value = '';
 		oldPassword.value = '';
 		newPassword.value = '';
-		emit('changePasswordSuccess');
+		emit('changed');
 	} else {
 		error.value = res.message || 'Failed to change password.';
 		message.value = '';

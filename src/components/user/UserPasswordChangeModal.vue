@@ -1,17 +1,15 @@
 <template>
 	<UModal
 		v-model="open"
-		title="Verify Your Email"
-		:dismissible="false"
-		:close="false"
+		title="Change Password"
 	>
 		<slot />
 
-		<template #content>
+		<template #body>
 			<div class="flex w-full h-full items-center justify-center mb-4 p-4">
 				<UserPasswordChangeForm
-					@changePasswordSuccess="
-						emit('changePasswordSuccess');
+					@changed="
+						emit('changed');
 						open = false;
 					"
 				/>
@@ -22,7 +20,7 @@
 
 <script setup lang="ts">
 const emit = defineEmits<{
-	(event: 'changePasswordSuccess'): void;
+	(event: 'changed'): void;
 }>();
 
 const open = ref(false);

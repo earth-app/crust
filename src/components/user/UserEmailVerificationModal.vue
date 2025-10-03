@@ -7,7 +7,7 @@
 	>
 		<slot />
 
-		<template #content>
+		<template #body>
 			<div class="flex w-full h-full items-center justify-center mb-4 p-4">
 				<UserEmailVerification
 					@verified="

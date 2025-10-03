@@ -220,14 +220,20 @@
 				<div class="flex flex-col w-full max-w-3xl items-center my-6">
 					<USeparator class="my-4" />
 					<div class="flex items-center justify-center gap-4 w-full">
-						<UButton
-							color="warning"
-							variant="outline"
-							trailing-icon="mdi:shield-lock"
-							class="font-semibold hover:cursor-pointer"
+						<UserPasswordChangeModal
+							ref="passwordChangeModal"
+							@changed="handlePasswordChange"
 						>
-							Change Password
-						</UButton>
+							<UButton
+								color="warning"
+								variant="outline"
+								trailing-icon="mdi:shield-lock"
+								class="font-semibold hover:cursor-pointer"
+								@click="passwordChangeModal?.open()"
+							>
+								Change Password
+							</UButton>
+						</UserPasswordChangeModal>
 						<UButton
 							color="error"
 							variant="outline"
@@ -243,10 +249,6 @@
 		<UserEmailVerificationModal
 			ref="emailVerificationModal"
 			@verified="handleEmailVerified"
-		/>
-		<UserPasswordChangeModal
-			ref="passwordChangeModal"
-			@change-password-success="handlePasswordChange"
 		/>
 	</div>
 </template>
@@ -311,11 +313,9 @@ const props: {
 			return !user.value.account.email_verified;
 		},
 		verify: async () => {
-			const result = await sendVerificationEmail();
-			if (result) {
-				emailVerificationModal.value?.open();
-			}
-			return result;
+			const result = sendVerificationEmail();
+			emailVerificationModal.value?.open();
+			return await result;
 		}
 	},
 	{
