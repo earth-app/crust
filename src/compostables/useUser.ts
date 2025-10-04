@@ -31,8 +31,11 @@ export const useAuth = () => {
 
 	const fetchUser = async () => {
 		const res = await useCurrentUser();
-		if (res.success && res.data) {
+		if (res.success && res.data && 'id' in res.data) {
 			user.value = res.data;
+		} else {
+			user.value = null;
+			console.error('Failed to fetch current user:', res.data?.message || res.message);
 		}
 	};
 
@@ -43,8 +46,11 @@ export const useAuth = () => {
 
 	const fetchPhoto = async () => {
 		const res = await useCurrentAvatar();
-		if (res.success && res.data) {
+		if (res.success && res.data && res.data instanceof Blob) {
 			photo.value = res.data;
+		} else {
+			photo.value = null;
+			console.error('Failed to fetch current user avatar:', res.message);
 		}
 	};
 
@@ -178,7 +184,7 @@ export function useUser(identifier: string) {
 
 		try {
 			const res = await getUser(identifier);
-			if (res.success && res.data) {
+			if (res.success && res.data && 'id' in res.data) {
 				user.value = res.data;
 			} else {
 				user.value = null;
@@ -199,7 +205,7 @@ export function useUser(identifier: string) {
 
 		try {
 			const res = await getUserAvatar(identifier);
-			if (res.success && res.data) {
+			if (res.success && res.data && res.data instanceof Blob) {
 				photo.value = res.data;
 			}
 		} catch (error) {
@@ -230,7 +236,7 @@ export function useNotifications() {
 
 	const fetch = async () => {
 		const res = await fetchNotifications();
-		if (res.success && res.data) {
+		if (res.success && res.data && 'items' in res.data) {
 			notifications.value = res.data.items;
 
 			// load individual notifications
@@ -364,7 +370,7 @@ export function useNotification(id: string) {
 			`/v2/users/current/notifications/${id}`,
 			useCurrentSessionToken()
 		);
-		if (res.success && res.data) {
+		if (res.success && res.data && 'id' in res.data) {
 			notification.value = res.data;
 		}
 	};

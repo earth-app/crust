@@ -6,7 +6,7 @@ export async function makeRequest<T>(
 	url: string,
 	token: string | null | undefined = null,
 	options: any = {}
-): Promise<{ success: boolean; data?: T; message?: string }> {
+): Promise<{ success: boolean; data?: T | { code: number; message: string }; message?: string }> {
 	try {
 		// Check if this is a request for binary data (like images)
 		const isBinaryRequest = url.includes('profile_photo') || options.responseType === 'blob';
@@ -54,12 +54,18 @@ export async function makeRequest<T>(
 				};
 
 		if (error.value) {
-			throw error.value;
+			throw {
+				message: `Error fetching ${key} from ${url}: ${error.value.message || error.value}`,
+				data: data.value,
+				value: error.value,
+				toString: () => error.value?.toString()
+			};
 		}
 
 		if (!data.value && key) {
 			return {
 				success: false,
+				data: { code: 404, message: 'Not Found' },
 				message: `No data found for ${key} at ${url}`
 			};
 		}
@@ -70,6 +76,7 @@ export async function makeRequest<T>(
 		};
 	} catch (error: any) {
 		const value: string = error.toString();
+		const data = error.data as { code: number; message: string } | undefined;
 		if (value.includes('404')) {
 			return {
 				success: false,
@@ -78,31 +85,34 @@ export async function makeRequest<T>(
 		}
 
 		if (value.includes('400')) {
-			console.error(`Bad request to ${url}:`, error);
 			return {
 				success: false,
-				message: `Bad request: ${error?.value?.statusMessage || value}`
+				message: `Bad request: ${error?.value?.statusMessage || value}`,
+				data
 			};
 		}
 
 		if (value.includes('429')) {
 			return {
 				success: false,
-				message: `Rate limit exceeded. Please try again later.`
+				message: `Rate limit exceeded. Please try again later.`,
+				data
 			};
 		}
 
 		if (value.includes('401') || value.includes('403')) {
 			return {
 				success: false,
-				message: `Not authorized. Please check your credentials.`
+				message: `Not authorized. Please check your credentials.`,
+				data
 			};
 		}
 
 		console.error(`Failed to fetch ${key}:`, error);
 		return {
 			success: false,
-			message: 'An error occurred while fetching data.'
+			message: 'An error occurred while fetching data.',
+			data
 		};
 	}
 }
@@ -112,7 +122,7 @@ export async function makeAPIRequest<T>(
 	url: string,
 	token: string | null | undefined = null,
 	options: any = {}
-): Promise<{ success: boolean; data?: T; message?: string }> {
+): Promise<{ success: boolean; data?: T | { code: number; message: string }; message?: string }> {
 	const config = useRuntimeConfig();
 	return await makeRequest<T>(key, `${config.public.apiBaseUrl}${url}`, token, options);
 }
@@ -121,7 +131,7 @@ export async function makeClientAPIRequest<T>(
 	url: string,
 	token: string | null | undefined = null,
 	options: any = {}
-): Promise<{ success: boolean; data?: T; message?: string }> {
+): Promise<{ success: boolean; data?: T | { code: number; message: string }; message?: string }> {
 	const config = useRuntimeConfig();
 	return await makeRequest<T>(null, `${config.public.apiBaseUrl}${url}`, token, options);
 }
@@ -187,6 +197,11 @@ export async function paginatedAPIRequest<T>(
 		if (!res.success || !res.data) {
 			console.error(`Failed to fetch page ${currentPage}:`, res.message);
 			return { success: false, message: res.message || 'Failed to fetch paginated data.' };
+		}
+
+		if (!('items' in res.data)) {
+			console.error(`Failed to fetch page ${currentPage}:`, res.data.message);
+			return { success: false, ...res.data };
 		}
 
 		allItems.push(...res.data.items);

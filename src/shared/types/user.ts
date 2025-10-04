@@ -47,7 +47,7 @@ export type UserNotification = {
 	user_id: string;
 	message: string;
 	link?: string;
-	type: 'info' | 'warning' | 'error';
+	type: 'info' | 'warning' | 'error' | 'success';
 	source: string;
 	read: boolean;
 	created_at: number;
