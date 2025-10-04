@@ -234,14 +234,16 @@
 								Change Password
 							</UButton>
 						</UserPasswordChangeModal>
-						<UButton
-							color="error"
-							variant="outline"
-							trailing-icon="mdi:account-cancel"
-							class="font-semibold hover:cursor-pointer"
-						>
-							Delete Account
-						</UButton>
+						<UserDeleteAccountModal @deleted="handleAccountDeletion">
+							<UButton
+								color="error"
+								variant="outline"
+								trailing-icon="mdi:account-cancel"
+								class="font-semibold hover:cursor-pointer"
+							>
+								Delete Account
+							</UButton>
+						</UserDeleteAccountModal>
 					</div>
 				</div>
 			</div>
@@ -268,6 +270,9 @@ const componentProps = defineProps<{
 	user: User;
 	title?: string;
 }>();
+
+const toast = useToast();
+const router = useRouter();
 
 const user = ref(componentProps.user);
 const changed = ref(false);
@@ -376,7 +381,6 @@ async function updateUser() {
 			return res.message || 'Failed to update profile.';
 		}
 
-		const toast = useToast();
 		toast.add({
 			title: 'Profile Updated!',
 			description: 'Your profile has been successfully updated.',
@@ -424,13 +428,12 @@ async function regenerateProfilePhoto() {
 	avatarLoading.value = true;
 
 	const res = await useUser.regenerateAvatar();
-	if (res.data) {
+	if (res.data && res.data instanceof Blob) {
 		if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
 		const blob = URL.createObjectURL(res.data);
 		avatar.value = blob;
 		avatarLoading.value = false;
 
-		const toast = useToast();
 		toast.add({
 			title: 'Avatar Regenerated',
 			description: 'Your profile photo has been successfully regenerated.',
@@ -442,7 +445,6 @@ async function regenerateProfilePhoto() {
 		avatarLoading.value = false;
 		console.error(res.message || 'Failed to regenerate profile photo.');
 
-		const toast = useToast();
 		toast.add({
 			title: 'Error',
 			description: res.message || 'Failed to regenerate profile photo.',
@@ -503,8 +505,6 @@ function updateActivitiesList(search: string) {
 			activitiesLoading.value = false;
 		} else {
 			console.error(res.message || 'Failed to fetch activities.');
-
-			const toast = useToast();
 			toast.add({
 				title: 'Error',
 				description: res.message || 'Failed to fetch activities.',
@@ -538,7 +538,6 @@ function updateActivities() {
 
 	if (currentActivities.value.length === 0) return;
 	if (currentActivities.value.length >= 10) {
-		const toast = useToast();
 		toast.add({
 			title: 'Too Many Activities',
 			description: 'You can only select up to 10 activities.',
@@ -551,10 +550,8 @@ function updateActivities() {
 	useUser
 		.setUserActivities(currentActivities.value.map((activity) => activity.value as string))
 		.then((res) => {
-			if (res.success && res.data) {
+			if (res.success && res.data && 'activities' in res.data) {
 				user.value.activities = res.data.activities;
-
-				const toast = useToast();
 				toast.add({
 					title: 'Activities Updated',
 					description: 'Your activities have been successfully updated.',
@@ -564,7 +561,6 @@ function updateActivities() {
 				});
 			} else {
 				console.error(res.message || 'Failed to update activities.');
-				const toast = useToast();
 				toast.add({
 					title: 'Error',
 					description: res.message || 'Failed to update activities.',
@@ -607,7 +603,6 @@ async function updateAccountVisibility(value: User['account']['visibility']) {
 	visibilityLoading.value = false;
 
 	if (res.success) {
-		const toast = useToast();
 		toast.add({
 			title: 'Privacy Updated',
 			description: 'Your account privacy has been successfully updated.',
@@ -617,7 +612,6 @@ async function updateAccountVisibility(value: User['account']['visibility']) {
 		});
 	} else {
 		console.error(res.message || 'Failed to update account privacy.');
-		const toast = useToast();
 		toast.add({
 			title: 'Error',
 			description: res.message || 'Failed to update account privacy.',
@@ -633,8 +627,6 @@ async function updateAccountVisibility(value: User['account']['visibility']) {
 const emailVerificationModal = ref<EmailVerificationModalRef | null>(null);
 
 async function sendVerificationEmail(): Promise<boolean> {
-	const toast = useToast();
-
 	if (!user.value) {
 		toast.add({
 			title: 'Error',
@@ -706,7 +698,6 @@ function handleEmailVerified() {
 		}
 
 		// Show success toast
-		const toast = useToast();
 		toast.add({
 			title: 'Email Verified',
 			description: 'Your email address has been successfully verified.',
@@ -722,7 +713,6 @@ function handleEmailVerified() {
 const passwordChangeModal = ref<PasswordChangeModalRef | null>(null);
 
 function handlePasswordChange() {
-	const toast = useToast();
 	toast.add({
 		title: 'Password Changed',
 		description: 'Your password has been successfully changed.',
@@ -732,5 +722,25 @@ function handlePasswordChange() {
 	});
 
 	passwordChangeModal.value?.close();
+}
+
+// Account Deletion
+function handleAccountDeletion() {
+	// Remove session token
+	const sessionCookie = useCookie('session_token');
+	sessionCookie.value = null;
+
+	// Clear user state
+	refreshNuxtData(['user-current', 'avatar-current']);
+
+	// Redirect to homepage
+	router.push('/');
+	toast.add({
+		title: 'Account Deleted',
+		description: 'Your account has been successfully deleted.',
+		color: 'success',
+		icon: 'mdi:account-cancel',
+		duration: 5000
+	});
 }
 </script>
