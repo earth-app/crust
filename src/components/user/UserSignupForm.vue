@@ -83,7 +83,7 @@ const signup = useSignup();
 const { fetchUser, fetchPhoto } = useAuth();
 
 const emit = defineEmits<{
-	signupSuccess: [];
+	(event: 'signupSuccess', hasEmail: boolean): void;
 }>();
 
 async function handleSignup() {
@@ -101,7 +101,7 @@ async function handleSignup() {
 	if (result.success) {
 		// Fetch user data to update the auth state
 		Promise.all([fetchUser(), fetchPhoto()]).then(() => {
-			emit('signupSuccess');
+			emit('signupSuccess', !!email.value.trim());
 		});
 		message.value = 'Welcome!';
 

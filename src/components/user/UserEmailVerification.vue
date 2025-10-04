@@ -26,16 +26,6 @@
 						aria-describedby="verification-help"
 						class="mb-2"
 					/>
-					<div
-						v-if="loading"
-						class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 rounded-md"
-						aria-hidden="true"
-					>
-						<UIcon
-							name="mdi:loading"
-							class="animate-spin text-2xl text-primary-500"
-						/>
-					</div>
 				</div>
 				<p
 					id="verification-help"
@@ -62,7 +52,7 @@
 						class="text-sm text-gray-600 dark:text-gray-300"
 						aria-live="polite"
 					>
-						Verifying your email address...
+						Loading...
 					</p>
 				</div>
 				<div
