@@ -138,6 +138,8 @@ import { useLogout } from '~/compostables/useLogin';
 import { sendVerificationEmail, useAuth, useNotifications } from '~/compostables/useUser';
 
 const { user, photo } = useAuth();
+const toast = useToast();
+const router = useRouter();
 const logout = useLogout();
 const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
 watch(
@@ -157,7 +159,6 @@ onBeforeUnmount(() => {
 	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
 });
 
-const toast = useToast();
 async function logoutUser() {
 	await logout();
 
@@ -189,12 +190,22 @@ const actions = ref<
 	{
 		label: string;
 		color: 'info' | 'neutral';
-		variant: 'outline';
+		variant: 'outline' | 'solid';
 		trailingIcon: string;
 		ui?: any;
 		onClick: () => void;
 	}[]
 >([
+	{
+		label: 'Verify',
+		color: 'info',
+		variant: 'solid',
+		trailingIcon: 'mdi:email-outline',
+		ui: { base: 'hover:cursor-pointer' },
+		onClick: () => {
+			router.push('/verify-email');
+		}
+	},
 	{
 		label: 'Resend',
 		color: 'neutral',
@@ -213,7 +224,6 @@ const actions = ref<
 async function resendEmailVerification(): Promise<boolean> {
 	if (!user.value) return false;
 
-	const toast = useToast();
 	if (user.value.account.email_verified) {
 		toast.add({
 			title: 'Email Already Verified',
