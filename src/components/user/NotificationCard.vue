@@ -26,7 +26,28 @@
 					{{ notification.source }} | ID: {{ notification.id }}
 				</p>
 			</div>
-			<div class="flex items-end">
+			<div class="flex items-center">
+				<UIcon
+					v-if="notification.type === 'error'"
+					name="mdi:alert-circle-outline"
+					class="text-red-400"
+					size="20"
+					title="Error Notification"
+				/>
+				<UIcon
+					v-else-if="notification.type === 'warning'"
+					name="mdi:alert-outline"
+					class="text-yellow-400"
+					size="20"
+					title="Warning Notification"
+				/>
+				<UIcon
+					v-else-if="notification.type === 'success' && additional"
+					name="mdi:check-circle-outline"
+					class="text-green-400"
+					title="Success Notification"
+					size="20"
+				/>
 				<div
 					v-if="!notification.read"
 					class="mx-2"
@@ -107,7 +128,7 @@ async function deleteNotification() {
 		toast.add({
 			title: 'Success',
 			description: 'Notification deleted successfully.',
-			icon: 'mdi:check-circle',
+			icon: 'mdi:trash-can-outline',
 			color: 'success'
 		});
 	} else {
@@ -116,7 +137,7 @@ async function deleteNotification() {
 		toast.add({
 			title: 'Error',
 			description: res.message || 'Failed to delete notification.',
-			icon: 'mdi:alert-circle',
+			icon: 'mdi:delete-alert-outline',
 			color: 'error'
 		});
 	}
