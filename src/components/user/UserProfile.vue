@@ -15,6 +15,12 @@
 					class="ml-3"
 				/>
 			</div>
+			<h2
+				v-if="props.user.full_name"
+				class="text-xl ml-2 text-gray-400"
+			>
+				@{{ props.user.username }}
+			</h2>
 			<span
 				v-if="props.user.account.bio"
 				class="mt-1 text-center max-w-md"
@@ -22,7 +28,33 @@
 				{{ props.user.account.bio }}
 			</span>
 		</div>
-		<div class="flex items-center justify-center space-x-2 space-y-3 flex-wrap max-w-200">
+		<div class="flex mb-4">
+			<UBadge
+				v-if="props.user.account.email && props.user.account.email_verified"
+				:label="props.user.account.email"
+				variant="subtle"
+				icon="mdi:mail-ru"
+				class="mr-2 hover:cursor-pointer"
+				@click="openEmail"
+			/>
+			<UBadge
+				v-if="props.user.account.address"
+				:label="props.user.account.address"
+				variant="subtle"
+				icon="mdi:map-marker"
+				color="warning"
+				class="mr-2"
+			/>
+			<UBadge
+				v-if="props.user.account.country"
+				:label="props.user.account.country"
+				variant="subtle"
+				icon="mdi:flag"
+				color="info"
+				class="mr-2"
+			/>
+		</div>
+		<div class="flex items-center justify-center flex-wrap max-w-200">
 			<UBadge
 				v-for="(activity, i) in props.user.activities"
 				:label="activity.name"
@@ -33,7 +65,7 @@
 				@mouseleave="badgeVariants[i] = 'outline'"
 				@click="$router.push(`/activities/${activity.id}`)"
 				size="xl"
-				class="hover:cursor-pointer transition-all duration-500"
+				class="hover:cursor-pointer transition-all duration-500 ml-2 mb-3"
 			/>
 		</div>
 	</div>
@@ -70,4 +102,9 @@ onBeforeUnmount(() => {
 });
 
 const badgeVariants = ref<('outline' | 'solid')[]>([]);
+
+function openEmail() {
+	if (!props.user.account.email && !props.user.account.email_verified) return;
+	window.location.href = `mailto:${props.user.account.email}`;
+}
 </script>
