@@ -20,14 +20,33 @@ import type { Activity } from '~/shared/types/activity';
 
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
+const toast = useToast();
 const currentActivity = ref<Activity | null>(null);
 
 if (route.params.id) {
 	const res = await getActivity(route.params.id as string);
 
 	if (res.success && res.data) {
-		currentActivity.value = res.data;
-		setTitleSuffix(currentActivity.value?.name || 'Activity Profile');
+		if ('message' in res.data) {
+			toast.add({
+				title: 'Error Fetching Activity',
+				description: res.data.message || 'An unknown error occurred.',
+				icon: 'mdi:alert-circle-outline',
+				color: 'error',
+				duration: 5000
+			});
+
+			currentActivity.value = null;
+			setTitleSuffix('Activity Profile');
+		} else {
+			currentActivity.value = res.data;
+			setTitleSuffix(currentActivity.value?.name || 'Activity Profile');
+
+			useSeoMeta({
+				ogTitle: currentActivity.value?.name || 'Activity Profile',
+				ogDescription: currentActivity.value?.description || ''
+			});
+		}
 	} else {
 		currentActivity.value = null;
 		setTitleSuffix('Activity Profile');
