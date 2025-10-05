@@ -1,6 +1,11 @@
 import type { Activity } from '~/shared/types/activity';
 import type { User, UserNotification } from '~/shared/types/user';
-import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/util';
+import {
+	makeAPIRequest,
+	makeClientAPIRequest,
+	makeServerRequest,
+	paginatedAPIRequest
+} from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 export async function useCurrentUser() {
@@ -478,4 +483,38 @@ export async function deleteAccount(password: string) {
 			password
 		}
 	});
+}
+
+// User Journeys
+
+export async function getCurrentJourney(identifier: string, id: string) {
+	if (!id) return { success: true, data: { count: 0 } };
+
+	return await makeServerRequest<{ count: number }>(
+		`journey-${identifier}`,
+		`/api/user/journey?type=${identifier}&id=${id}`,
+		useCurrentSessionToken()
+	);
+}
+
+export async function pingCurrentJourney(identifier: string, activity?: string) {
+	return await makeServerRequest<{ count: number }>(
+		null,
+		`/api/user/journey?type=${identifier}${activity ? `&activity=${activity}` : ''}`,
+		useCurrentSessionToken(),
+		{
+			method: 'POST'
+		}
+	);
+}
+
+export async function clearCurrentJourney(identifier: string) {
+	return await makeServerRequest<void>(
+		null,
+		`/api/user/journey/clear?type=${identifier}`,
+		useCurrentSessionToken(),
+		{
+			method: 'POST'
+		}
+	);
 }

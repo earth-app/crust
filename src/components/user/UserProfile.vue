@@ -68,6 +68,9 @@
 				class="hover:cursor-pointer transition-all duration-500 ml-2 mb-3"
 			/>
 		</div>
+		<div class="max-w-3xl mt-4">
+			<UserJourneys :user="props.user" />
+		</div>
 	</div>
 </template>
 

@@ -23,6 +23,17 @@ export async function getActivities(page: number = 1, limit: number = 25, search
 	);
 }
 
+export async function getActivitiesList(
+	page: number = 1,
+	limit: number = 100,
+	search: string = ''
+) {
+	return await util.makeClientAPIRequest<{ items: string[]; total: number }>(
+		`/v2/activities/list?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
+		useCurrentSessionToken()
+	);
+}
+
 export async function getRandomActivities(count: number = 3) {
 	return await util.makeClientAPIRequest<Activity[]>(
 		`/v2/activities/random?count=${count}`,
