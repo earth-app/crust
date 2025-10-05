@@ -44,10 +44,22 @@
 			</div>
 		</div>
 		<div
-			v-else
+			v-else-if="user && notification === undefined"
+			class="flex flex-col items-center justify-center h-screen"
+		>
+			<p class="text-gray-600">Loading notification...</p>
+		</div>
+		<div
+			v-else-if="user && notification === null"
 			class="flex flex-col items-center justify-center h-screen"
 		>
 			<p class="text-gray-600">Notification doesn't exist. Maybe look at the URL again?</p>
+		</div>
+		<div
+			v-else
+			class="flex flex-col w-full h-full items-center justify-center"
+		>
+			<p class="text-center text-gray-600">Please log in to view your notifications.</p>
 		</div>
 	</ClientOnly>
 </template>

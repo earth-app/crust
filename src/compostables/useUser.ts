@@ -29,7 +29,12 @@ export const useAuth = () => {
 		? useState<Blob | null>('avatar', () => null)
 		: ref<Blob | null>(null);
 
+	const token = useCurrentSessionToken();
+	if (!token) return { user, photo, fetchUser: async () => {}, fetchPhoto: async () => {} };
+
 	const fetchUser = async () => {
+		if (user.value) return;
+
 		const res = await useCurrentUser();
 		if (res.success && res.data && 'id' in res.data) {
 			user.value = res.data;
@@ -45,6 +50,8 @@ export const useAuth = () => {
 	}
 
 	const fetchPhoto = async () => {
+		if (photo.value) return;
+
 		const res = await useCurrentAvatar();
 		if (res.success && res.data && res.data instanceof Blob) {
 			photo.value = res.data;
@@ -362,7 +369,10 @@ export async function markAllNotificationsUnread() {
 }
 
 export function useNotification(id: string) {
-	const notification = useState<UserNotification | null>(`notification-${id}`, () => null);
+	const notification = useState<UserNotification | null | undefined>(
+		`notification-${id}`,
+		() => undefined
+	);
 
 	const fetch = async () => {
 		const res = await makeAPIRequest<UserNotification>(
@@ -372,6 +382,8 @@ export function useNotification(id: string) {
 		);
 		if (res.success && res.data && 'id' in res.data) {
 			notification.value = res.data;
+		} else {
+			notification.value = null;
 		}
 	};
 
