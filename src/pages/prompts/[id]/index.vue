@@ -26,4 +26,9 @@ watch(
 		setTitleSuffix(prompt ? prompt.prompt : 'Prompt');
 	}
 );
+
+useSeoMeta({
+	ogTitle: prompt.value ? prompt.value.prompt : 'Prompt',
+	ogDescription: prompt.value ? `${prompt.value.responses_count} Responses` : 'Prompt'
+});
 </script>

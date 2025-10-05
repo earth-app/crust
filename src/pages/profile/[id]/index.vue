@@ -47,4 +47,11 @@ watch(
 		}
 	}
 );
+
+useSeoMeta({
+	ogTitle: currentUser.value ? currentUser.value.username : 'Profile',
+	ogDescription: currentUser.value
+		? `Check out ${currentUser.value.username}'s profile on The Earth App!`
+		: 'Profile'
+});
 </script>

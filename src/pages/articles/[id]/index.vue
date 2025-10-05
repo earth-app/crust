@@ -49,6 +49,7 @@ import { useAuth } from '~/compostables/useUser';
 import type { Article } from '~/shared/types/article';
 
 const { user } = useAuth();
+const toast = useToast();
 
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
@@ -61,8 +62,32 @@ if (route.params.id) {
 	const res = await getArticle(route.params.id as string);
 
 	if (res.success && res.data) {
-		currentArticle.value = res.data;
-		setTitleSuffix(`Article | ${currentArticle.value.title}`);
+		if ('message' in res.data) {
+			currentArticle.value = null;
+			setTitleSuffix('Article');
+
+			toast.add({
+				title: 'Error',
+				icon: 'mdi:alert-circle',
+				description: res.data.message || 'Article not found.',
+				color: 'error'
+			});
+		} else {
+			currentArticle.value = res.data;
+			setTitleSuffix(`Article | ${currentArticle.value.title}`);
+
+			useSeoMeta({
+				ogTitle: currentArticle.value.title,
+				ogDescription: currentArticle.value.description,
+				twitterTitle: currentArticle.value.title,
+				twitterDescription: currentArticle.value.description,
+				articleAuthor: [
+					currentArticle.value.author.full_name || currentArticle.value.author.username
+				],
+				articleSection: currentArticle.value.ocean?.source || 'General',
+				articleTag: currentArticle.value.ocean?.keywords || []
+			});
+		}
 	} else {
 		currentArticle.value = null;
 		setTitleSuffix('Article');
@@ -89,7 +114,6 @@ async function loadSimilar(article?: Article) {
 		console.error('Failed to load similar articles:', res.message);
 		relatedLoaded.value = true;
 
-		const toast = useToast();
 		toast.add({
 			title: 'Error',
 			icon: 'mdi:alert-circle',
