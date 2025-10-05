@@ -19,7 +19,11 @@
 </template>
 
 <script setup lang="ts">
+import { useTitleSuffix } from '~/compostables/useTitleSuffix';
 import { useAuth } from '~/compostables/useUser';
+
+const { setTitleSuffix } = useTitleSuffix();
+setTitleSuffix('Verify Email');
 
 const { user } = useAuth();
 
