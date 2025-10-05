@@ -144,7 +144,7 @@ export async function makeServerRequest<T>(
 ) {
 	try {
 		const headers: Record<string, string> = {
-			'Content-Type': 'application/json'
+			Accept: 'application/json'
 		};
 
 		if (token) {

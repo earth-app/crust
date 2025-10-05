@@ -10,7 +10,7 @@ export function useSignup() {
 				{
 					method: 'POST',
 					headers: {
-						'Content-Type': 'application/json'
+						Accept: 'application/json'
 					},
 					body: {
 						username,
@@ -60,7 +60,7 @@ export function useLogin() {
 					method: 'POST',
 					headers: {
 						Authorization: `Basic ${auth}`,
-						'Content-Type': 'application/json'
+						Accept: 'application/json'
 					}
 				}
 			);

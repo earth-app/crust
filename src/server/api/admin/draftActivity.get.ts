@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
 	const config = useRuntimeConfig();
 	const { id } = getQuery(event);
 
-	if (!id) {
+	if (!id || typeof id !== 'string') {
 		throw createError({
 			statusCode: 400,
 			statusMessage: 'Activity ID is required'
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
 		const response = await $fetch(`${config.public.cloudBaseUrl}/v1/activity/${id}`, {
 			headers: {
 				Authorization: `Bearer ${config.adminApiKey}`,
-				'Content-Type': 'application/json'
+				Accept: 'application/json'
 			}
 		});
 
