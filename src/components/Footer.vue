@@ -19,12 +19,7 @@
 				>
 					API
 				</NuxtLink>
-				<NuxtLink
-					to="https://deepwiki.com/earth-app/mantle"
-					target="_blank"
-				>
-					Documentation
-				</NuxtLink>
+				<NuxtLink to="/about">About</NuxtLink>
 			</div>
 			<div class="flex space-x-3 mt-2 *:hover:opacity-70 *:transition-opacity *:duration-200">
 				<NuxtLink
