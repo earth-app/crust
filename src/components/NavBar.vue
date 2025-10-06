@@ -97,7 +97,7 @@
 					</div>
 				</div>
 				<div
-					v-else
+					v-else-if="user === null"
 					class="flex items-center"
 				>
 					<UserSignupPopup />

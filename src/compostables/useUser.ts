@@ -29,9 +29,9 @@ export async function useCurrentAvatar() {
 }
 
 export const useAuth = () => {
-	const user = useState<User | null>('user', () => null);
+	const user = useState<User | null | undefined>('user', () => undefined);
 	const photo = import.meta.client
-		? useState<Blob | null>('avatar', () => null)
+		? useState<Blob | null | undefined>('avatar', () => undefined)
 		: ref<Blob | null>(null);
 
 	const token = useCurrentSessionToken();
@@ -41,11 +41,17 @@ export const useAuth = () => {
 		if (user.value) return;
 
 		const res = await useCurrentUser();
-		if (res.success && res.data && 'id' in res.data) {
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				// API returned an error message
+				user.value = null;
+				console.error('Failed to fetch current user:', res.data.message);
+				return;
+			}
+
 			user.value = res.data;
 		} else {
 			user.value = null;
-			console.error('Failed to fetch current user:', res.data?.message || res.message);
 		}
 	};
 
@@ -58,11 +64,17 @@ export const useAuth = () => {
 		if (photo.value) return;
 
 		const res = await useCurrentAvatar();
-		if (res.success && res.data && res.data instanceof Blob) {
+		if (res.success && res.data) {
+			if (!(res.data instanceof Blob)) {
+				// API returned an error message
+				photo.value = null;
+				console.error('Failed to fetch current avatar:', res.data.message);
+				return;
+			}
+
 			photo.value = res.data;
 		} else {
 			photo.value = null;
-			console.error('Failed to fetch current user avatar:', res.message);
 		}
 	};
 
