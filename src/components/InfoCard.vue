@@ -101,7 +101,7 @@
 						>{{ content }}</span
 					>
 					<div
-						class="flex flex-wrap items-center space-x-2 space-y-2 mt-2"
+						class="flex flex-wrap items-center mt-2"
 						v-if="badges"
 					>
 						<UBadge
@@ -109,7 +109,7 @@
 							:key="`badge-${index}`"
 							:color="badge.color || 'primary'"
 							:size="badge.size || 'md'"
-							class="text-xs max-w-100 hover:scale-105 transition-all duration-300 hover:cursor-text"
+							class="text-xs max-w-100 mr-2 mb-2 hover:scale-105 transition-all duration-300 hover:cursor-text"
 							>{{ badge.text }}</UBadge
 						>
 					</div>
