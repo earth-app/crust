@@ -58,7 +58,7 @@
 
 <script setup lang="ts">
 import { createPromptResponse, usePromptResponses } from '~/compostables/usePrompt';
-import { useAuth } from '~/compostables/useUser';
+import { tapCurrentJourney, useAuth } from '~/compostables/useUser';
 import { type Prompt, type PromptResponse } from '~/shared/types/prompts';
 
 const { user, photo } = useAuth();
@@ -80,6 +80,8 @@ onBeforeUnmount(() => {
 	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
 });
 
+const toast = useToast();
+
 const responses = ref<PromptResponse[]>([]);
 const page = ref(1);
 const isLoading = ref(false);
@@ -98,8 +100,41 @@ async function postResponse() {
 
 	const res = await createPromptResponse(props.prompt.id, newResponse.value);
 	if (res.success && res.data) {
+		if ('message' in res.data) {
+			toast.add({
+				title: 'Error Posting Response',
+				description: res.data.message || 'An unknown error occurred.',
+				icon: 'mdi:alert-circle-outline',
+				color: 'error',
+				duration: 5000
+			});
+
+			posting.value = false;
+			return;
+		}
+
 		responses.value.unshift(res.data);
 		newResponse.value = '';
+
+		// Tap Prompts Journey
+		const journeyRes = await tapCurrentJourney('prompt');
+		if (journeyRes.success && journeyRes.data) {
+			toast.add({
+				title: 'Journey Updated',
+				description: `Your prompts streak is now at ${journeyRes.data.count} prompts on your journey!`,
+				icon: 'solar:flame-bold',
+				color: 'success',
+				duration: 5000
+			});
+		} else {
+			toast.add({
+				title: 'Journey Update Failed',
+				description: journeyRes.message || 'An unknown error occurred.',
+				icon: 'mdi:alert-circle-outline',
+				color: 'error',
+				duration: 5000
+			});
+		}
 	}
 
 	posting.value = false;

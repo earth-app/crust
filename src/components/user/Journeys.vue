@@ -1,5 +1,7 @@
 <template>
-	<div class="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+	<div
+		class="p-4 bg-white dark:bg-gray-900 rounded-lg shadow border-2 border-gray-200 dark:border-gray-700"
+	>
 		<h2 class="text-lg font-semibold mb-4">@{{ user.username }}'s Journeys</h2>
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
 			<UserJourneyProgress
@@ -8,6 +10,7 @@
 				title="Activities"
 				:count="activity"
 				:total="totalActivities"
+				help="Visit and read about activities to increase this number."
 			/>
 			<UserJourneyProgressSkeleton v-else />
 			<UserJourneyProgress
@@ -15,6 +18,7 @@
 				icon="mdi:pencil"
 				title="Prompts"
 				:count="prompt"
+				help="Respond to prompts to increase this number."
 			/>
 			<UserJourneyProgressSkeleton v-else />
 			<UserJourneyProgress
@@ -22,6 +26,7 @@
 				icon="mdi:newspaper"
 				title="Articles"
 				:count="article"
+				help="Read articles to increase this number."
 			/>
 			<UserJourneyProgressSkeleton v-else />
 		</div>
@@ -29,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { getActivitiesList } from '~/compostables/useActivity';
+import { useActivitiesCount } from '~/compostables/useActivity';
 import { getCurrentJourney } from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 
@@ -43,38 +48,10 @@ const loading = ref(false);
 const activity = ref(0);
 const prompt = ref(0);
 const article = ref(0);
-const totalActivities = ref(0);
+const { count: totalActivities } = useActivitiesCount();
 
 onMounted(async () => {
 	loading.value = true;
-
-	const { total: activitiesCount } = await getActivitiesList(1, 1).then((res) => {
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				toast.add({
-					title: 'Error',
-					description: res.data.message || 'Failed to fetch activity data.',
-					icon: 'mdi:alert-circle-outline',
-					color: 'error'
-				});
-
-				return { total: 0 };
-			}
-
-			return res.data;
-		} else {
-			toast.add({
-				title: 'Error',
-				description: res.message || 'Failed to fetch activity data.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error'
-			});
-		}
-
-		return { total: 0 };
-	});
-
-	totalActivities.value = activitiesCount;
 
 	// Retrieve journey values
 	const values: [

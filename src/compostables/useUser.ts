@@ -490,14 +490,14 @@ export async function deleteAccount(password: string) {
 export async function getCurrentJourney(identifier: string, id: string) {
 	if (!id) return { success: true, data: { count: 0 } };
 
-	return await makeServerRequest<{ count: number }>(
+	return await makeServerRequest<{ count: number; lastWrite?: number }>(
 		`journey-${identifier}`,
 		`/api/user/journey?type=${identifier}&id=${id}`,
 		useCurrentSessionToken()
 	);
 }
 
-export async function pingCurrentJourney(identifier: string, activity?: string) {
+export async function tapCurrentJourney(identifier: string, activity?: string) {
 	return await makeServerRequest<{ count: number }>(
 		null,
 		`/api/user/journey?type=${identifier}${activity ? `&activity=${activity}` : ''}`,

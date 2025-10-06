@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
 
 	try {
 		const response = await $fetch(
-			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/${user.id}`,
+			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/${user.id}/delete`,
 			{
 				headers: {
 					Authorization: `Bearer ${config.adminApiKey}`,

@@ -34,6 +34,29 @@ export async function getActivitiesList(
 	);
 }
 
+export function useActivitiesCount() {
+	const count = useState<number | undefined>('activities-count', () => undefined);
+
+	const fetchCount = async () => {
+		const res = await getActivitiesList(1, 1);
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				count.value = undefined;
+			} else {
+				count.value = res.data.total;
+			}
+		} else {
+			count.value = undefined;
+		}
+	};
+
+	if (count.value === undefined) {
+		fetchCount();
+	}
+
+	return { count, refresh: fetchCount };
+}
+
 export async function getRandomActivities(count: number = 3) {
 	return await util.makeClientAPIRequest<Activity[]>(
 		`/v2/activities/random?count=${count}`,

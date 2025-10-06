@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import { getArticle, getSimilarArticles } from '~/compostables/useArticle';
 import { useTitleSuffix } from '~/compostables/useTitleSuffix';
-import { useAuth } from '~/compostables/useUser';
+import { getCurrentJourney, tapCurrentJourney, useAuth } from '~/compostables/useUser';
 import type { Article } from '~/shared/types/article';
 
 const { user } = useAuth();
@@ -97,6 +97,26 @@ if (route.params.id) {
 onMounted(async () => {
 	if (currentArticle.value) {
 		await loadSimilar(currentArticle.value);
+	}
+
+	if (user.value) {
+		const count = await getCurrentJourney('article', user.value.id);
+		if (!count.success || !count.data) return; // silently ignore errors
+		if ('message' in count.data) return;
+
+		const res = await tapCurrentJourney('article');
+		if (!res.success || !res.data) return; // silently ignore errors
+		if ('message' in res.data) return;
+
+		if (count.data.count === res.data.count) return; // no change
+
+		toast.add({
+			title: 'Journey Updated',
+			description: `You have now read ${res.data.count} articles on your journey streak. Keep going!`,
+			icon: 'game-icons:horizon-road',
+			color: 'success',
+			duration: 5000
+		});
 	}
 });
 

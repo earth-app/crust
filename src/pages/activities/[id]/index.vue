@@ -14,8 +14,9 @@
 </template>
 
 <script setup lang="ts">
-import { getActivity } from '~/compostables/useActivity';
+import { getActivity, useActivitiesCount } from '~/compostables/useActivity';
 import { useTitleSuffix } from '~/compostables/useTitleSuffix';
+import { getCurrentJourney, tapCurrentJourney, useAuth } from '~/compostables/useUser';
 import type { Activity } from '~/shared/types/activity';
 
 const { setTitleSuffix } = useTitleSuffix();
@@ -52,4 +53,30 @@ if (route.params.id) {
 		setTitleSuffix('Activity Profile');
 	}
 }
+
+const { user } = useAuth();
+const { count: totalActivities } = useActivitiesCount();
+
+onMounted(async () => {
+	if (!route.params.id) return;
+	if (!user.value) return;
+
+	const count = await getCurrentJourney('activity', user.value.id);
+	if (!count.success || !count.data) return; // silently ignore errors
+	if ('message' in count.data) return;
+
+	const res = await tapCurrentJourney('activity', route.params.id as string);
+	if (!res.success || !res.data) return; // silently ignore errors
+	if ('message' in res.data) return;
+
+	if (count.data.count === res.data.count) return; // no change
+
+	toast.add({
+		title: 'Journey Updated',
+		description: `You have now found ${res.data.count}/${totalActivities.value} activities on your journey. Keep going!`,
+		icon: 'game-icons:horizon-road',
+		color: 'success',
+		duration: 5000
+	});
+});
 </script>

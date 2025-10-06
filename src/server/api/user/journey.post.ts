@@ -13,21 +13,22 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
-	if (type === 'activity' && (!activity || typeof activity !== 'string')) {
-		throw createError({
-			statusCode: 400,
-			statusMessage: 'Missing or invalid "activity" parameter for activity journey type.'
-		});
-	}
+	if (type === 'activity') {
+		if (!activity || typeof activity !== 'string' || activity.trim() === '')
+			throw createError({
+				statusCode: 400,
+				statusMessage: 'Missing or invalid "activity" parameter for activity journey type.'
+			});
 
-	await ensureValidActivity(activity as string);
+		await ensureValidActivity(activity as string);
+	}
 
 	const user = await ensureLoggedIn(event);
 	const config = useRuntimeConfig();
 
 	try {
 		const response = await $fetch(
-			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/${user.id}${type === 'activity' ? `?activity=${activity}` : ''}`,
+			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/${user.id}${type === 'activity' ? `?activity=${activity}` : '/increment'}`,
 			{
 				headers: {
 					Authorization: `Bearer ${config.adminApiKey}`,

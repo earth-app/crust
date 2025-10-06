@@ -53,6 +53,12 @@
 					You have found {{ count }} {{ title?.toLowerCase() || 'items' }} so far. Make sure you
 					keep going at least every two days to keep up this streak!
 				</p>
+				<p
+					v-if="help"
+					class="mt-2 text-xs text-gray-500 dark:text-gray-400"
+				>
+					{{ help }}
+				</p>
 			</div>
 		</template>
 	</UPopover>
@@ -62,6 +68,7 @@
 defineProps<{
 	icon: string;
 	title?: string;
+	help?: string;
 	count: number;
 	total?: number;
 }>();
