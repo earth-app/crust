@@ -1,6 +1,6 @@
 <template>
 	<div class="w-full flex justify-center">
-		<div class="relative size-48 my-28">
+		<div class="relative size-32 sm:size-40 md:size-48 my-28">
 			<EarthCircle />
 		</div>
 	</div>

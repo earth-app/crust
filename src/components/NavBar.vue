@@ -11,7 +11,9 @@
 					class="min-w-8 w-8 h-auto xl:w-12 inline-block mr-2 shadow-lg shadow-black/50 rounded-full hover:scale-105 transition-transform duration-300"
 				/>
 			</NuxtLink>
-			<Discover class="mx-2 sm:ml-4 md:ml-8 lg:ml-12" />
+			<div class="flex min-w-30 sm:min-w-40 w-3/5 max-w-120">
+				<Discover class="mx-1 sm:ml-4 md:ml-8 lg:ml-12" />
+			</div>
 			<div class="hidden sm:flex items-center mr-12 space-x-4">
 				<NuxtLink
 					to="/activities"
@@ -42,15 +44,15 @@
 					>
 						<UAvatar
 							:src="avatar"
-							class="size-6 md:size-8 lg:size-12 rounded-full shadow-lg shadow-black/50"
+							class="size-4 sm:size-6 md:size-8 lg:size-12 rounded-full shadow-lg shadow-black/50"
 						/>
 
 						<span
-							class="font-title text-md sm:text-lg md:text-xl text-shadow-2xs text-shadow-black"
+							class="font-title text-sm sm:text-lg md:text-xl text-shadow-2xs text-shadow-black"
 							>{{ user.username }}</span
 						>
 					</div>
-					<div class="flex space-x-4 items-center justify-center">
+					<div class="flex sm:space-x-2 md:space-x-4 items-center justify-center">
 						<UPopover mode="hover">
 							<NuxtLink
 								to="/profile/notifications"
@@ -90,7 +92,7 @@
 						>
 							<UIcon
 								name="material-symbols:logout-rounded"
-								class="size-4 lg:size-8 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-4 lg:size-8 ml-3 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
 								@click="logoutUser"
 							/>
 						</NuxtLink>

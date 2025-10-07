@@ -18,7 +18,7 @@
 					"
 					:rows="2"
 					size="xl"
-					class="w-3/5"
+					class="w-3/5 min-w-50"
 					:placeholder="user ? `Write your response...` : 'Please log in to respond'"
 					autoresize
 					:loading="posting"

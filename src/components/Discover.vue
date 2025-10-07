@@ -1,5 +1,5 @@
 <template>
-	<div class="relative min-w-30 w-full max-w-120">
+	<div class="relative w-full">
 		<UInput
 			v-model="query"
 			placeholder="Discover..."
@@ -7,6 +7,7 @@
 			@focus="handleFocus"
 			@blur="handleBlur"
 			@keydown="handleKeydown"
+			:ui="{ base: 'text-xs sm:text-sm', leadingIcon: 'size-4 sm:size-5' }"
 			ref="inputRef"
 			icon="mdi:compass-outline"
 		/>

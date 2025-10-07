@@ -7,7 +7,8 @@
 		<UBadge
 			:label="badgeLabel"
 			:class="badgeStyling"
-			class="px-3 py-1 rounded-full text-white text-sm font-semibold hover:cursor-pointer"
+			:ui="{ base: 'justify-center' }"
+			class="px-1 sm:px-2 md:px-3 py-1 rounded-full text-white text-sm font-semibold hover:cursor-pointer"
 		/>
 	</UDropdownMenu>
 	<UBadge
@@ -15,7 +16,8 @@
 		v-if="props.user.account.account_type !== 'FREE'"
 		:label="badgeLabel"
 		:class="badgeStyling"
-		class="px-3 py-1 rounded-full text-white text-sm font-semibold"
+		:ui="{ base: 'justify-center' }"
+		class="px-1 sm:px-2 md:px-3 py-1 rounded-full text-white text-sm font-semibold"
 	/>
 </template>
 

@@ -7,7 +7,7 @@
 			class="my-2"
 		/>
 		<div class="flex items-center justify-center">
-			<h1 class="text-5xl font-bold">{{ activity.name }}</h1>
+			<h1 class="text-4xl sm:text-5xl font-bold">{{ activity.name }}</h1>
 			<UButton
 				v-if="user && user.account.account_type === 'ADMINISTRATOR'"
 				color="primary"
@@ -22,7 +22,7 @@
 				v-model:open="editing"
 			/>
 		</div>
-		<h3 class="text-xl w-3/5 mt-8">{{ activity.description }}</h3>
+		<h3 class="text-xl min-w-75 w-3/5 mt-8">{{ activity.description }}</h3>
 		<!-- Icon Islands -->
 		<UIcon
 			v-for="island in islands"
@@ -31,7 +31,9 @@
 			class="absolute top-0 hidden md:inline-block md:size-8 lg:size-12 z-10 shadow-2xl shadow-gray-950 duration-300 motion-preset-fade-lg"
 			:style="{ transform: `translate(${island.x}vw, ${island.y}vh)` }"
 		/>
-		<div class="grid grid-cols-1 xl:grid-cols-2 items-start w-2/3 mt-6 px-4 gap-y-8">
+		<div
+			class="grid grid-cols-1 xl:grid-cols-2 justify-items-center items-start w-2/3 min-w-80 mt-6 sm:px-4 gap-y-8"
+		>
 			<!-- Skeleton Loading Cards -->
 			<InfoCardSkeleton
 				v-if="cards.length === 0"

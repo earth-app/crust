@@ -1,16 +1,16 @@
 <template>
 	<UCard
 		:variant="variant || 'outline'"
-		class="relative min-w-100 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-4 transition-all duration-600 motion-preset-fade motion-duration-1000"
+		class="relative min-w-65 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-4 transition-all duration-600 motion-preset-fade motion-duration-1000"
 	>
 		<div class="flex flex-row h-full justify-between">
 			<div class="flex items-center space-x-4 h-full">
 				<div class="flex flex-col">
-					<div class="flex items-center">
+					<div class="flex flex-col sm:flex-row items-center">
 						<UIcon
 							v-if="icon"
 							:name="icon"
-							:size="iconSize || '2rem'"
+							:size="iconSize || 'calc(2vw + 2vh)'"
 							class="mr-1"
 						/>
 						<UChip
@@ -38,18 +38,18 @@
 							:to="`${link}?utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`"
 							target="_blank"
 							rel="noopener noreferrer"
-							class="text-lg font-semibold text-blue-500 hover:underline"
+							class="text-md sm:text-md md:text-lg font-semibold text-blue-500 hover:underline"
 							>{{ title }}</NuxtLink
 						>
 						<NuxtLink
 							v-else-if="link"
 							:to="link"
-							class="text-lg font-semibold text-blue-500 hover:underline"
+							class="text-sm sm:text-md md:text-lg font-semibold text-blue-500 hover:underline"
 							>{{ title }}</NuxtLink
 						>
 						<h4
 							v-else
-							class="text-lg font-semibold"
+							class="text-sm sm:text-md md:text-lg font-semibold"
 						>
 							{{ title }}
 						</h4>
@@ -58,25 +58,25 @@
 							inset
 							:color="secondaryAvatarChipColor || 'primary'"
 							:size="secondaryAvatarChipSize || 'sm'"
-							class="ml-2 self-start"
+							class="ml-2 self-start md:block hidden"
 						>
 							<UAvatar
 								v-if="secondaryAvatar"
 								:src="secondaryAvatar"
 								:size="secondaryAvatarSize || 'sm'"
-								class="ml-2 self-start"
+								class="ml-2 self-start md:block hidden"
 							/>
 						</UChip>
 						<UAvatar
 							v-else-if="secondaryAvatar"
 							:src="secondaryAvatar"
 							:size="secondaryAvatarSize || 'sm'"
-							class="ml-2 self-start"
+							class="ml-2 self-start md:block hidden"
 						/>
 					</div>
 					<p
 						v-if="description"
-						class="text-gray-600 hover:cursor-text"
+						class="text-sm md:text-md text-gray-600 hover:cursor-text"
 					>
 						{{ description }}
 					</p>
@@ -97,7 +97,7 @@
 					></iframe>
 					<span
 						v-if="content"
-						class="text-gray-300 hover:cursor-text"
+						class="text-xs sm:text-sm md:text-md text-gray-300 hover:cursor-text"
 						>{{ content }}</span
 					>
 					<div
@@ -109,7 +109,8 @@
 							:key="`badge-${index}`"
 							:color="badge.color || 'primary'"
 							:size="badge.size || 'md'"
-							class="text-xs max-w-100 mr-2 mb-2 hover:scale-105 transition-all duration-300 hover:cursor-text"
+							:ui="{ label: 'text-sm' }"
+							class="max-w-100 mr-2 mb-2 hover:scale-105 transition-all duration-300 hover:cursor-text"
 							>{{ badge.text }}</UBadge
 						>
 					</div>
@@ -123,7 +124,7 @@
 					>
 						<p
 							v-if="footer"
-							class="text-gray-500 text-sm"
+							class="text-gray-500 text-xs sm:text-sm"
 						>
 							{{ footer }}
 						</p>
@@ -153,7 +154,7 @@
 					</div>
 					<p
 						v-else-if="footer"
-						class="text-gray-500 text-sm"
+						class="text-gray-500 text-xs sm:text-sm"
 					>
 						{{ footer }}
 					</p>
@@ -166,7 +167,7 @@
 				</div>
 			</div>
 			<div v-if="buttons">
-				<div class="flex flex-col space-y-2">
+				<div class="flex flex-col">
 					<h2 class="text-center font-semibold text-gray-500 light:text-gray-800">Actions</h2>
 					<UButton
 						v-for="(button, index) in buttons"
@@ -174,7 +175,7 @@
 						:color="button.color || 'primary'"
 						:size="button.size || 'md'"
 						@click="() => button.onClick && button.onClick()"
-						class="hover:opacity-90 hover:cursor-pointer transition-all duration-300"
+						class="my-1 hover:opacity-90 hover:cursor-pointer transition-all duration-300"
 						>{{ button.text }}</UButton
 					>
 				</div>

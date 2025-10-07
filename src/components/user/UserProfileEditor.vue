@@ -17,7 +17,7 @@
 			</UButton>
 		</div>
 
-		<h1 class="text-8xl font-bold mb-2">Profile</h1>
+		<h1 class="text-6xl sm:text-7xl md:text-8xl font-bold mb-2">Profile</h1>
 		<div class="flex flex-row items-center space-x-1.5 mb-4">
 			<EditableValue
 				v-model="first_name"
@@ -57,7 +57,7 @@
 				v-model="currentActivities"
 				:items="allActivities"
 				size="xl"
-				class="w-2/7 mt-2"
+				class="min-w-65 w-2/7 max-w-110 mt-2"
 				multiple
 				deleteIcon="i-lucide-trash"
 				:loading="activitiesLoading"
@@ -65,12 +65,14 @@
 				@update:searchTerm="updateActivitiesList"
 			/>
 			<template #fallback>
-				<div class="w-2/7 mt-2 p-2 border rounded-md text-gray-500">Loading activities...</div>
+				<div class="min-w-65 w-2/7 max-w-110 mt-2 p-2 border rounded-md text-gray-500">
+					Loading activities...
+				</div>
 			</template>
 		</ClientOnly>
 
 		<h3 class="text-2xl font-semibold text-gray-200 mt-10">Settings</h3>
-		<div class="mt-2 border-t-4 border-black dark:border-white w-full max-w-4xl">
+		<div class="px-4 mt-2 border-t-4 border-black dark:border-white w-full max-w-4xl">
 			<div class="mt-4 w-full flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-x-4">
 				<h2 class="text-xl font-medium">Account Visibility</h2>
 				<div class="w-full flex flex-col sm:flex-row gap-2">
@@ -99,7 +101,7 @@
 									<div class="flex flex-col">
 										<div class="flex flex-row items-center gap-1">
 											<UIcon :name="item.icon || 'mdi:lock'" />
-											<span class="font-medium text-sm">
+											<span class="font-medium text-xs sm:text-sm">
 												{{ item.label }}
 											</span>
 										</div>
@@ -133,7 +135,7 @@
 				:key="prop.id"
 				class="mt-4 w-full flex flex-col lg:grid lg:grid-cols-3 gap-2 lg:gap-x-4"
 			>
-				<h2 class="text-xl flex">
+				<h2 class="text-md sm:text-lg md:text-xl flex">
 					{{ prop.name
 					}}<span
 						v-if="prop.unverified === true"
@@ -152,7 +154,7 @@
 						<EditableValue
 							v-if="prop.type !== 'dropdown' && prop.computed"
 							v-model="prop.computed.value"
-							class="text-lg"
+							class="text-md sm:text-lg"
 							size="lg"
 							:type="prop.type"
 							:onFinish="updateUser"

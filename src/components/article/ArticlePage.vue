@@ -9,7 +9,7 @@
 					class="mb-4 w-30 h-30"
 				/>
 			</div>
-			<h1 class="text-3xl font-bold">{{ article.title }}</h1>
+			<h1 class="text-2xl sm:text-3xl font-bold">{{ article.title }}</h1>
 			<h2>
 				by
 				<NuxtLink :to="`/profile/@${article.author.username}`">
@@ -20,7 +20,7 @@
 			</h2>
 			<USeparator class="my-2" />
 		</div>
-		<div class="prose max-w-4/7 items-center">
+		<div class="prose min-w-67 max-w-4/7 items-center">
 			<p>{{ article.content }}</p>
 		</div>
 		<div

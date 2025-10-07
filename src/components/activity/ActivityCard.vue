@@ -1,6 +1,6 @@
 <template>
 	<ClientOnly>
-		<div class="w-full flex items-center justify-center my-8">
+		<div class="w-full flex items-center justify-center my-2 sm:my-4 md:my-6 lg:my-8">
 			<InfoCard
 				:title="activity.name"
 				:badges="

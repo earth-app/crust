@@ -3,16 +3,16 @@
 		<div class="flex flex-col items-center mb-8">
 			<UAvatar
 				:src="avatar"
-				class="w-32 h-32 rounded-full shadow-lg shadow-black/50 mb-4 hover:scale-110 transition-transform duration-300"
+				class="size-20 sm:size-24 md:size-28 lg:size-32 rounded-full shadow-lg shadow-black/50 mb-4 hover:scale-110 transition-transform duration-300"
 			/>
-			<div class="flex">
+			<div class="flex flex-col md:flex-row">
 				<h1 class="text-3xl font-semibold">
 					{{ props.user.full_name || `@${props.user.username}` }}
 				</h1>
 				<UserTypeBadge
 					:user="props.user"
 					:editor="user?.account.account_type === 'ADMINISTRATOR'"
-					class="ml-3"
+					class="ml-3 mt-1 mb-2"
 				/>
 			</div>
 			<h2
@@ -64,8 +64,11 @@
 				@mouseenter="badgeVariants[i] = 'solid'"
 				@mouseleave="badgeVariants[i] = 'outline'"
 				@click="$router.push(`/activities/${activity.id}`)"
-				size="xl"
-				class="hover:cursor-pointer transition-all duration-500 ml-2 mb-3"
+				:ui="{
+					base: 'text-xs sm:text-sm md:text-md lg:text-base px-1 sm:px-1.5 md:px-2.5 py-1 gap-1 md:gap-1.5 rounded-sm sm:rounded-md',
+					leadingIcon: 'size-4 sm:size-5 md:size-6'
+				}"
+				class="hover:cursor-pointer transition-all duration-500 ml-2 mb-2 sm:mb-3"
 			/>
 		</div>
 		<div class="max-w-3xl mt-4">

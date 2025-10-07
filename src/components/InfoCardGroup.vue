@@ -1,6 +1,6 @@
 <template>
 	<UCard
-		class="ml-8 mt-6 shadow-xl rounded-lg min-w-300 max-w-11/12"
+		class="ml-2 sm:ml-4 md:ml-6 lg:ml-8 mt-6 shadow-xl rounded-lg min-w-70 max-w-11/12"
 		variant="soft"
 	>
 		<div class="flex space-x-1 items-start mb-4">
@@ -33,7 +33,7 @@
 		>
 			<div
 				ref="scrollContainer"
-				class="flex items-stretch flex-nowrap py-6 px-4 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing *:mx-2 *:h-1/2 *:min-w-10 *:max-w-140 *:z-10 *:shrink-0"
+				class="flex flex-col sm:flex-row items-stretch flex-nowrap sm:py-2 md:py-4 lg:py-6 px-4 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing *:mx-2 *:h-1/2 *:min-w-10 *:max-w-140 *:z-10 *:shrink-0"
 				@mousedown="startDrag"
 				@mousemove="onDrag"
 				@mouseup="endDrag"

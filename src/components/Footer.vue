@@ -1,11 +1,13 @@
 <template>
 	<div
-		class="flex items-center justify-between w-full mt-8 min-h-32 bg-gray-950 border-t-2 border-gray-800 text-gray-700 text-left px-12 text-xs sm:text-sm md:text-md"
+		class="flex items-center justify-between w-full mt-8 min-h-32 bg-gray-950 border-t-2 border-gray-800 text-gray-700 text-left px-4 sm:px-8 md:px-12 text-xs sm:text-sm md:text-md"
 	>
 		<div class="flex flex-col items-start">
-			<span>Copyright © 2025 The Earth App. All Rights Reserved.</span>
+			<span class="text-[10px] sm:text-xs"
+				>Copyright © 2025 The Earth App. All Rights Reserved.</span
+			>
 			<div
-				class="flex space-x-4 text-gray-500 *:hover:text-gray-300 *:transition-colors *:duration-200"
+				class="flex text-[10px] sm:text-xs space-x-1 sm:space-x-2 md:space-x-4 text-gray-500 *:hover:text-gray-300 *:transition-colors *:duration-200"
 			>
 				<NuxtLink
 					to="https://earth-app.com"
@@ -61,7 +63,7 @@
 			</div>
 		</div>
 		<ClientOnly>
-			<div class="flex flex-col items-start p-4">
+			<div class="flex flex-col items-start p-4 text-[10px] sm:text-xs">
 				<span v-if="user">
 					Logged in as {{ user.username }} {{ user.account.email ? `(${user.account.email})` : '' }}
 				</span>
