@@ -1,7 +1,7 @@
 <template>
 	<UCard
 		:variant="variant || 'outline'"
-		class="relative min-w-65 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-4 transition-all duration-600 motion-preset-fade motion-duration-1000"
+		class="relative min-w-65 lg:min-w-100 xl:min-w-120 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-4 transition-all duration-600 motion-preset-fade motion-duration-1000"
 	>
 		<div class="flex flex-row h-full justify-between">
 			<div class="flex items-center space-x-4 h-full">
@@ -76,7 +76,7 @@
 					</div>
 					<p
 						v-if="description"
-						class="text-sm md:text-md text-gray-600 hover:cursor-text"
+						class="text-sm md:text-md lg:text-base text-gray-600 hover:cursor-text"
 					>
 						{{ description }}
 					</p>

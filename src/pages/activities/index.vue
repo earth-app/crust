@@ -59,6 +59,7 @@ const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Activities');
 
 const { user } = useAuth();
+const toast = useToast();
 
 const recommendedLoaded = ref(false);
 const recommendedActivities = ref<Activity[]>([]);
@@ -68,6 +69,21 @@ watch(
 		if (newUser) {
 			const res = await getRecommendedActivities();
 			if (res.success && res.data) {
+				if ('message' in res.data) {
+					// No recommendations available
+					recommendedLoaded.value = true;
+					recommendedActivities.value = [];
+
+					toast.add({
+						title: 'No Recommendations',
+						description: res.data.message,
+						icon: 'mdi:alert-circle',
+						color: 'info',
+						duration: 5000
+					});
+					return;
+				}
+
 				recommendedLoaded.value = true;
 				recommendedActivities.value = res.data;
 			}
@@ -87,6 +103,19 @@ async function loadActivities() {
 
 	const res = await getActivities(page.value, 100);
 	if (res.success && res.data) {
+		if ('message' in res.data) {
+			toast.add({
+				title: 'Error Loading Activities',
+				description: res.data.message,
+				icon: 'mdi:alert-circle',
+				color: 'error',
+				duration: 5000
+			});
+
+			isLoading.value = false;
+			return;
+		}
+
 		allActivities.value.push(...res.data.items.sort(() => Math.random() - 0.5)); // Shuffle the activities
 		hasMore.value = allActivities.value.length < res.data.total;
 		page.value++;
