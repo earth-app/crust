@@ -35,7 +35,11 @@ export const useAuth = () => {
 		: ref<Blob | null>(null);
 
 	const token = useCurrentSessionToken();
-	if (!token) return { user, photo, fetchUser: async () => {}, fetchPhoto: async () => {} };
+	if (!token) {
+		user.value = null;
+		photo.value = null;
+		return { user, photo, fetchUser: async () => {}, fetchPhoto: async () => {} };
+	}
 
 	const fetchUser = async () => {
 		if (user.value) return;

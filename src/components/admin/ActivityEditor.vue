@@ -375,6 +375,19 @@ async function createActivity() {
 	});
 
 	if (res.success && res.data) {
+		if ('message' in res.data) {
+			toast.add({
+				title: 'Error',
+				description: res.data.message || 'Failed to create activity. Please try again.',
+				icon: 'mdi:alert-circle',
+				color: 'error',
+				duration: 3000
+			});
+
+			loading.value = false;
+			return;
+		}
+
 		activity.value = res.data;
 		loading.value = false;
 
@@ -439,6 +452,19 @@ async function updateActivity() {
 
 	loading.value = false;
 	if (res.success && res.data) {
+		if ('message' in res.data) {
+			toast.add({
+				title: 'Error',
+				description: res.data.message || 'Failed to update activity. Please try again.',
+				icon: 'mdi:alert-circle',
+				color: 'error',
+				duration: 3000
+			});
+
+			loading.value = false;
+			return;
+		}
+
 		activity.value = res.data;
 		activityName.value = res.data.name;
 		activityDescription.value = res.data.description;

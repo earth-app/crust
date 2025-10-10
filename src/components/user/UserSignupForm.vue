@@ -43,9 +43,29 @@
 				/>
 			</UFormField>
 
+			<TurnstileWidget
+				@received-token="loading = true"
+				@error="
+					loading = false;
+					disabled = true;
+					error = 'Turnstile verification failed. Please re-open and try again.';
+				"
+				@expired="
+					loading = false;
+					disabled = true;
+					error = 'Turnstile verification expired. Please re-open and try again.';
+				"
+				@verified="
+					loading = false;
+					disabled = false;
+				"
+			/>
+
 			<UButton
 				type="submit"
 				:loading="loading"
+				:disabled="loading || disabled"
+				icon="mdi:account-plus"
 				class="w-3/5 max-w-60"
 				>Sign Up</UButton
 			>
@@ -75,6 +95,7 @@ const email = ref('');
 const username = ref('');
 const password = ref('');
 const loading = ref(false);
+const disabled = ref(true);
 
 const error = ref('');
 const message = ref('');

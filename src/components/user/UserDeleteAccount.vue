@@ -12,6 +12,7 @@
 				</p>
 				<p>To delete your account, please enter your password and confirm your choice.</p>
 			</div>
+
 			<div class="flex flex-col w-1/2">
 				<UInput
 					v-model="password"
@@ -25,16 +26,43 @@
 						<span class="inline-flex bg-default px-1">Password</span>
 					</label>
 				</UInput>
+
 				<UButton
 					color="error"
 					class="mt-4 w-full"
 					variant="solid"
 					icon="mdi:account-cancel"
 					:loading="loading"
-					:disabled="!password || loading"
+					:disabled="!password || loading || disabled"
 					@click="confirmDelete"
 					>Delete Account</UButton
 				>
+
+				<TurnstileWidget
+					class="mt-4"
+					@received-token="loading = true"
+					@error="
+						loading = false;
+						disabled = true;
+						error = 'Turnstile verification failed. Please re-open and try again.';
+					"
+					@expired="
+						loading = false;
+						disabled = true;
+						error = 'Turnstile verification expired. Please re-open and try again.';
+					"
+					@verified="
+						loading = false;
+						disabled = false;
+					"
+				/>
+
+				<div
+					v-if="error"
+					class="text-red-500 mt-2"
+				>
+					{{ error }}
+				</div>
 			</div>
 		</div>
 		<div
@@ -53,7 +81,10 @@ const { user } = useAuth();
 const toast = useToast();
 
 const loading = ref(false);
+const disabled = ref(true);
 const password = ref('');
+
+const error = ref('');
 
 const emit = defineEmits<{
 	(event: 'deleted'): void;

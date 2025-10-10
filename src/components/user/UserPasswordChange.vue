@@ -32,10 +32,29 @@
 				/>
 			</UFormField>
 
+			<TurnstileWidget
+				@received-token="loading = true"
+				@error="
+					loading = false;
+					disabled = true;
+					error = 'Turnstile verification failed. Please re-open and try again.';
+				"
+				@expired="
+					loading = false;
+					disabled = true;
+					error = 'Turnstile verification expired. Please re-open and try again.';
+				"
+				@verified="
+					loading = false;
+					disabled = false;
+				"
+			/>
+
 			<div class="flex space-x-4">
 				<UButton
 					type="submit"
 					:loading="loading"
+					:disabled="loading || disabled"
 					class="w-3/5 max-w-60"
 					color="info"
 					icon="mdi:lock-reset"
@@ -82,6 +101,7 @@ import { passwordSchema } from '~/shared/schemas';
 const oldPassword = ref('');
 const newPassword = ref('');
 const loading = ref(false);
+const disabled = ref(true);
 
 const error = ref('');
 const message = ref('');
