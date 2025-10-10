@@ -45,7 +45,11 @@ export default defineNuxtConfig({
 	},
 	routeRules: {
 		'/': { prerender: true },
-		'/api/**': { cors: true, cache: { maxAge: 360, swr: true } },
+		'/activities/**': { prerender: true },
+		'/articles/**': { prerender: true },
+		'/prompts/**': { prerender: true },
+		'/about': { prerender: true },
+		'/api/**': { cors: true },
 		'/api/turnstile': { cache: false }
 	},
 
