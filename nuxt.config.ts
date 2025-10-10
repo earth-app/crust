@@ -9,8 +9,10 @@ export default defineNuxtConfig({
 		public: {
 			baseUrl: process.env.NUXT_PUBLIC_BASE_URL || 'https://app.earth-app.com',
 			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'https://api.earth-app.com',
-			cloudBaseUrl: process.env.NUXT_PUBLIC_CLOUD_BASE_URL || 'https://cloud.earth-app.com',
-			v3SiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_V3_SITE_KEY || ''
+			cloudBaseUrl: process.env.NUXT_PUBLIC_CLOUD_BASE_URL || 'https://cloud.earth-app.com'
+		},
+		turnstile: {
+			secretKey: process.env.NUXT_TURNSTILE_SECRET_KEY || ''
 		}
 	},
 	ssr: true,
@@ -35,7 +37,7 @@ export default defineNuxtConfig({
 			compatibilityDate: '2025-06-20',
 			observability: {
 				logs: {
-					head_sampling_rate: 0.1
+					head_sampling_rate: 0.2
 				}
 			}
 		},
@@ -43,13 +45,15 @@ export default defineNuxtConfig({
 	},
 	routeRules: {
 		'/': { prerender: true },
-		'/api/*': { cache: { maxAge: 360, swr: true } }
+		'/api/**': { cors: true, cache: { maxAge: 360, swr: true } },
+		'/api/turnstile': { cache: false }
 	},
 
 	modules: [
 		'@nuxthub/core',
 		'@nuxt/ui',
 		'@nuxtjs/i18n',
+		'@nuxtjs/turnstile',
 		[
 			'@nuxtjs/google-fonts',
 			{
@@ -71,5 +75,9 @@ export default defineNuxtConfig({
 	],
 	i18n: {
 		defaultLocale: 'en'
+	},
+	turnstile: {
+		siteKey: process.env.NUXT_PUBLIC_TURNSTILE_SITE_KEY || '',
+		addValidateEndpoint: true
 	}
 });
