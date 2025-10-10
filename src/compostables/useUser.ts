@@ -263,6 +263,15 @@ export function useNotifications() {
 	const hasErrors = useState<boolean>('notifications-has-errors', () => false);
 
 	const fetch = async () => {
+		const token = useCurrentSessionToken();
+		if (!token) {
+			notifications.value = [];
+			unreadCount.value = 0;
+			hasWarnings.value = false;
+			hasErrors.value = false;
+			return;
+		}
+
 		const res = await fetchNotifications();
 		if (res.success && res.data && 'items' in res.data) {
 			notifications.value = res.data.items;
