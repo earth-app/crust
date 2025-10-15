@@ -11,25 +11,57 @@
 					class="min-w-8 w-8 h-auto xl:w-12 inline-block mr-2 shadow-lg shadow-black/50 rounded-full hover:scale-105 transition-transform duration-300"
 				/>
 			</NuxtLink>
-			<div class="flex min-w-30 sm:min-w-40 w-3/5 max-w-120">
+			<div class="flex min-w-30 sm:min-w-70 md:min-w-60 w-3/5 max-w-120">
 				<Discover class="mx-1 sm:ml-4 md:ml-8 lg:ml-12" />
 			</div>
-			<div class="hidden sm:flex items-center mr-12 space-x-4">
+			<div class="hidden md:flex items-center mr-12 lg:space-x-4">
 				<NuxtLink
 					to="/activities"
-					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 mx-6"
+					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 md:mx-2 lg:mx-6"
 					>Activities</NuxtLink
 				>
 				<NuxtLink
 					to="/prompts"
-					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 mx-6"
+					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 md:mx-2 lg:mx-6"
 					>Prompts</NuxtLink
 				>
 				<NuxtLink
 					to="/articles"
-					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 mx-6"
+					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 md:mx-2 mx-6"
 					>Articles</NuxtLink
 				>
+			</div>
+			<div
+				class="fixed left-4 w-2/3 z-100 transition-all duration-300 ease-in-out md:hidden space-x-2"
+				:class="isNavbarVisible ? 'top-22' : '-top-32'"
+			>
+				<NuxtLink to="/activities">
+					<UBadge
+						variant="subtle"
+						color="info"
+						size="xl"
+						icon="mdi:run"
+						>Activities</UBadge
+					>
+				</NuxtLink>
+				<NuxtLink to="/prompts">
+					<UBadge
+						variant="subtle"
+						color="warning"
+						size="xl"
+						icon="mdi:lightbulb-on-outline"
+						>Prompts</UBadge
+					>
+				</NuxtLink>
+				<NuxtLink to="/articles">
+					<UBadge
+						variant="subtle"
+						color="secondary"
+						size="xl"
+						icon="mdi:newspaper"
+						>Articles</UBadge
+					>
+				</NuxtLink>
 			</div>
 		</div>
 		<ClientOnly>
@@ -159,6 +191,39 @@ watch(
 
 onBeforeUnmount(() => {
 	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
+});
+
+const isNavbarVisible = ref(true);
+
+onMounted(() => {
+	if (import.meta.client) {
+		let ticking = false;
+
+		const onScroll = () => {
+			const currentScrollY = window.scrollY;
+
+			if (currentScrollY < 80) {
+				isNavbarVisible.value = true;
+			} else {
+				isNavbarVisible.value = false;
+			}
+
+			ticking = false;
+		};
+
+		const throttledScroll = () => {
+			if (!ticking) {
+				requestAnimationFrame(onScroll);
+				ticking = true;
+			}
+		};
+
+		window.addEventListener('scroll', throttledScroll, { passive: true });
+
+		onUnmounted(() => {
+			window.removeEventListener('scroll', throttledScroll);
+		});
+	}
 });
 
 async function logoutUser() {
