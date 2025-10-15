@@ -9,7 +9,7 @@
 		<ClientOnly>
 			<p
 				v-if="!user"
-				class="text-lg mt-3 motion-preset-fade-lg"
+				class="text-lg text-center px-8 mt-3 motion-preset-fade-lg"
 			>
 				Find Your Novelty, Try New Things, Discover the World
 			</p>
