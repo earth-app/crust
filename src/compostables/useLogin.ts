@@ -108,8 +108,13 @@ export function useLogout() {
 	};
 }
 
-export function useCurrentSessionToken() {
+export function useCurrentSessionToken(value?: string | null) {
 	if (import.meta.server) {
+		if (value) {
+			// On server, we cannot set cookies directly. This is a limitation.
+			console.warn('Setting session token on server is not supported.');
+		}
+
 		const headers = useRequestHeaders(['cookie']);
 		const cookieHeader = headers.cookie || '';
 		const match = cookieHeader.match(/session_token=([^;]+)/);
@@ -122,6 +127,8 @@ export function useCurrentSessionToken() {
 			secure: true,
 			sameSite: 'strict'
 		});
+
+		if (value !== undefined) sessionCookie.value = value;
 
 		const token = sessionCookie.value || null;
 		return token;
