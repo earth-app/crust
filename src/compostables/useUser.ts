@@ -14,7 +14,13 @@ export async function useCurrentUser() {
 		return { success: false, message: 'Unauthenticated. Please log in to continue.' };
 	}
 
-	return await makeAPIRequest<User>('user-current', '/v2/users/current', token);
+	const result = await makeAPIRequest<User>('user-current', '/v2/users/current', token);
+	if (!result.success && 'code' in (result.data || {}) && (result.data as any).code === 401) {
+		// remove invalid token
+		useCurrentSessionToken(null);
+	}
+
+	return result;
 }
 
 export async function useCurrentAvatar() {

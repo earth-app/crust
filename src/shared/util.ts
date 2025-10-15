@@ -88,7 +88,7 @@ export async function makeRequest<T>(
 			return {
 				success: false,
 				message: `Bad request: ${error?.value?.statusMessage || value}`,
-				data
+				data: data || { code: 400, message: 'Bad Request' }
 			};
 		}
 
@@ -104,7 +104,7 @@ export async function makeRequest<T>(
 			return {
 				success: false,
 				message: `Not authorized. Please check your credentials.`,
-				data
+				data: data || { code: value.includes('401') ? 401 : 403, message: 'Not authorized' }
 			};
 		}
 
