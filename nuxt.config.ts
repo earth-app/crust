@@ -58,6 +58,9 @@ export default defineNuxtConfig({
 		'@nuxt/ui',
 		'@nuxtjs/i18n',
 		'@nuxtjs/turnstile',
+		'nuxt-viewport',
+		'@nuxtjs/robots',
+		'@nuxtjs/sitemap',
 		[
 			'@nuxtjs/google-fonts',
 			{
@@ -78,6 +81,7 @@ export default defineNuxtConfig({
 		]
 	],
 	i18n: {
+		locales: [{ code: 'en', language: 'en-US' }],
 		defaultLocale: 'en'
 	},
 	turnstile: {
