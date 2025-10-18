@@ -21,7 +21,12 @@
 			<USeparator class="my-2" />
 		</div>
 		<div class="prose min-w-67 max-w-4/7 items-center">
-			<p>{{ article.content }}</p>
+			<p
+				v-for="(paragraph, index) in contentParagraphs"
+				:key="index"
+			>
+				{{ paragraph }}
+			</p>
 		</div>
 		<div
 			v-if="article.ocean"
@@ -67,6 +72,10 @@ import { parseLooseDate, trimString } from '~/shared/util';
 const props = defineProps<{
 	article: Article;
 }>();
+
+const contentParagraphs = computed(() => {
+	return props.article.content.split('\n').filter((p) => p.trim().length > 0);
+});
 
 const authorAvatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
 const { photo } = useUser(props.article.author_id);

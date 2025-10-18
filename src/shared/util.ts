@@ -216,6 +216,8 @@ export async function paginatedAPIRequest<T>(
 	return { success: true, data: allItems.slice(0, limit) };
 }
 
+// Non-request related
+
 export function capitalizeFully(str: string): string {
 	if (!str) return '';
 
