@@ -44,13 +44,40 @@ export default defineNuxtConfig({
 		cache: true
 	},
 	routeRules: {
-		'/': { prerender: true },
-		'/activities/**': { prerender: true },
-		'/articles/**': { prerender: true },
-		'/prompts/**': { prerender: true },
+		// Static pages (prerender at build time)
 		'/about': { prerender: true },
+		'/': { isr: 3600 }, // Homepage regenerates every hour
+
+		// Client-side only pages (auth, profiles, admin)
+		'/login': { ssr: false },
+		'/signup': { ssr: false },
+		'/verify-email': { ssr: false },
+		'/change-password': { ssr: false },
+		'/profile/**': { ssr: false },
+		'/admin': { ssr: false },
+
+		// Content listing pages (ISR)
+		'/activities': { isr: 14400 }, // Regenerate every 4 hours
+		'/articles': { isr: 3600 }, // Regenerate every hour
+		'/prompts': { isr: 900 }, // Regenerate every 15 minutes
+
+		// Individual content pages (SWR)
+		'/activities/**': { swr: 14400 }, // Cache 4 hours
+		'/articles/**': { swr: 3600 }, // Cache 1 hour
+		'/prompts/**': { swr: 1800 }, // Cache 30 minutes
+
+		// API routes
 		'/api/**': { cors: true },
-		'/api/turnstile': { cache: false }
+
+		// No-cache API routes
+		'/api/user/journey': { cors: true, cache: false },
+		'/api/turnstile': { cors: true, cache: false },
+		'/api/article/recommendArticles': { cors: true, cache: false }, // User-specific
+		'/api/admin/**': { cors: true, cache: false },
+
+		// Cached API routes
+		'/api/activity/**': { cors: true, cache: { maxAge: 3600 } }, // 1 hour cache
+		'/api/article/similarArticles': { cors: true, cache: { maxAge: 600 } } // 10 min cache
 	},
 
 	modules: [
