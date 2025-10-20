@@ -1,7 +1,5 @@
-.vsocde/
 .nuxt/
 .config/
-.github/
 bun.lock
 node_modules/
 package.json

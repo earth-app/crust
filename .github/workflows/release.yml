@@ -31,10 +31,10 @@ jobs:
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v5
         with:
-          configuration: ".github/release.json"
-          mode: "HYBRID"
-          fromTag: "${{ env.LATEST_TAG }}"
-          toTag: "master"
+          configuration: '.github/release.json'
+          mode: 'HYBRID'
+          fromTag: '${{ env.LATEST_TAG }}'
+          toTag: 'master'
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
