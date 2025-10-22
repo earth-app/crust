@@ -8,6 +8,19 @@ import {
 } from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
+export function useVisitedSite() {
+	const visitedSite = useState<boolean>('visited-site', () => false);
+
+	const markVisited = () => {
+		visitedSite.value = true;
+	};
+
+	return {
+		visitedSite,
+		markVisited
+	};
+}
+
 export async function useCurrentUser() {
 	const token = useCurrentSessionToken();
 	if (!token) {
