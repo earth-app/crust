@@ -8,8 +8,6 @@
 </template>
 
 <script setup lang="ts">
-import { useAuth } from '~/compostables/useUser';
-
 const { user } = useAuth();
 
 onMounted(() => {

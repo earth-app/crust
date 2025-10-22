@@ -25,7 +25,6 @@
 </template>
 
 <script setup lang="ts">
-import { useNotifications } from '~/compostables/useUser';
 import { type UserNotification } from '~/shared/types/user';
 
 const props = defineProps<{

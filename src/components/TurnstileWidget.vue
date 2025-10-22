@@ -11,8 +11,6 @@
 </template>
 
 <script setup lang="ts">
-import { useTurnstile } from '~/compostables/useTurnstile';
-
 const config = useRuntimeConfig();
 const toast = useToast();
 const siteKey = config.public.turnstile.siteKey;

@@ -57,8 +57,6 @@
 </template>
 
 <script setup lang="ts">
-import { createPromptResponse, usePromptResponses } from '~/compostables/usePrompt';
-import { tapCurrentJourney, useAuth } from '~/compostables/useUser';
 import { type Prompt, type PromptResponse } from '~/shared/types/prompts';
 
 const { user, photo } = useAuth();

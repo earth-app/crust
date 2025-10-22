@@ -65,8 +65,6 @@
 </template>
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import { useTitleSuffix } from '~/compostables/useTitleSuffix';
-import { markNotificationRead, useAuth, useNotification } from '~/compostables/useUser';
 import { capitalizeFully } from '~/shared/util';
 
 const { user } = useAuth();

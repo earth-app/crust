@@ -3,6 +3,7 @@
 		src="/earth-app.png"
 		alt="Earth App Logo"
 		class="absolute h-full w-full rounded-full"
+		id="earth-circle"
 	/>
 
 	<UIcon

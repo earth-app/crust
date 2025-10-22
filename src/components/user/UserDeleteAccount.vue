@@ -75,8 +75,6 @@
 </template>
 
 <script setup lang="ts">
-import { deleteAccount, useAuth } from '~/compostables/useUser';
-
 const { user } = useAuth();
 const toast = useToast();
 

@@ -117,9 +117,6 @@
 </template>
 
 <script setup lang="ts">
-import { getAllActivities } from '~/compostables/useActivity';
-import { useTitleSuffix } from '~/compostables/useTitleSuffix';
-import { getUsers, useAuth } from '~/compostables/useUser';
 import type { Activity } from '~/shared/types/activity';
 import type { User } from '~/shared/types/user';
 

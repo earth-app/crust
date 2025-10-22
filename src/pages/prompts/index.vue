@@ -1,6 +1,11 @@
 <template>
 	<div class="flex flex-col items-center justify-center mt-4">
-		<h2 class="text-2xl font-semibold mr-4">Today's Prompts</h2>
+		<h2
+			class="text-2xl font-semibold mr-4"
+			id="prompts-title"
+		>
+			Today's Prompts
+		</h2>
 		<UButton
 			title="Refresh"
 			icon="i-lucide-refresh-cw"
@@ -11,7 +16,10 @@
 			:disabled="promptsLoading"
 			@click="fetchPrompts"
 		/>
-		<div class="mt-12 w-9/10 grid grid-cols-1 lg:grid-cols-2 gap-x-8">
+		<div
+			id="prompts"
+			class="mt-12 w-9/10 grid grid-cols-1 lg:grid-cols-2 gap-x-8"
+		>
 			<InfoCardSkeleton
 				v-if="promptsLoading"
 				v-for="n in 5"
@@ -29,12 +37,12 @@
 </template>
 
 <script setup lang="ts">
-import { getRandomPrompts } from '~/compostables/usePrompt';
-import { useTitleSuffix } from '~/compostables/useTitleSuffix';
 import type { Prompt } from '~/shared/types/prompts';
 
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Prompts');
+
+const toast = useToast();
 
 const prompts = ref<Prompt[]>([]);
 const promptsLoading = ref(false);
@@ -45,6 +53,19 @@ async function fetchPrompts() {
 	promptsLoading.value = false;
 
 	if (res.success && res.data) {
+		if ('message' in res.data) {
+			prompts.value = [];
+
+			toast.add({
+				title: 'Error',
+				description: res.data.message || 'No prompts available.',
+				icon: 'mdi:alert-circle',
+				color: 'error',
+				duration: 5000
+			});
+			return;
+		}
+
 		prompts.value = res.data;
 	} else {
 		const toast = useToast();

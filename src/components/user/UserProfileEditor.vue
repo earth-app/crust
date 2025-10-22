@@ -202,7 +202,7 @@
 					<ClientOnly>
 						<UBadge
 							v-if="prop.unverified === true"
-							class="mt-1 transition-all duration-300 hover:cursor-pointer flex-shrink-0"
+							class="mt-1 transition-all duration-300 hover:cursor-pointer shrink-0"
 							color="warning"
 							:variant="badgeVariants[i] || 'outline'"
 							@mouseenter="badgeVariants[i] = 'solid'"
@@ -261,8 +261,6 @@
 import { UButton } from '#components';
 import { com } from '@earth-app/ocean';
 import type { InputTypeHTMLAttribute } from 'vue';
-import { getAllActivities } from '~/compostables/useActivity';
-import * as useUser from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 import { capitalizeFully } from '~/shared/util';
 import { type EmailVerificationModalRef } from './UserEmailVerificationModal.vue';
@@ -320,7 +318,7 @@ const props: {
 			return !user.value.account.email_verified;
 		},
 		verify: async () => {
-			const result = sendVerificationEmail();
+			const result = handleSendVerificationEmail();
 			emailVerificationModal.value?.open();
 			return await result;
 		}
@@ -378,7 +376,7 @@ async function updateUser() {
 	if (user.value) {
 		if (!changed.value) return true;
 
-		const res = await useUser.updateAccount(sanitize(user.value.account));
+		const res = await updateAccount(sanitize(user.value.account));
 		if (!res.success) {
 			return res.message || 'Failed to update profile.';
 		}
@@ -404,7 +402,7 @@ function getLabel(key: keyof User['account']['field_privacy']): string {
 
 // Profile Photo
 
-const { photo } = useUser.useUser(user.value.id);
+const { photo } = useUser(user.value.id);
 const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
 const avatarLoading = ref(false);
 watch(
@@ -429,7 +427,7 @@ async function regenerateProfilePhoto() {
 
 	avatarLoading.value = true;
 
-	const res = await useUser.regenerateAvatar();
+	const res = await regenerateAvatar();
 	if (res.data && res.data instanceof Blob) {
 		if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
 		const blob = URL.createObjectURL(res.data);
@@ -549,9 +547,8 @@ function updateActivities() {
 		return;
 	}
 
-	useUser
-		.setUserActivities(currentActivities.value.map((activity) => activity.value as string))
-		.then((res) => {
+	setUserActivities(currentActivities.value.map((activity) => activity.value as string)).then(
+		(res) => {
 			if (res.success && res.data && 'activities' in res.data) {
 				user.value.activities = res.data.activities;
 				toast.add({
@@ -571,7 +568,8 @@ function updateActivities() {
 					duration: 5000
 				});
 			}
-		});
+		}
+	);
 }
 
 // Account Privacy
@@ -601,7 +599,7 @@ async function updateAccountVisibility(value: User['account']['visibility']) {
 	accountVisibility.value = value;
 
 	visibilityLoading.value = true;
-	const res = await useUser.updateAccount(sanitize(user.value.account));
+	const res = await updateAccount(sanitize(user.value.account));
 	visibilityLoading.value = false;
 
 	if (res.success) {
@@ -628,7 +626,7 @@ async function updateAccountVisibility(value: User['account']['visibility']) {
 // Email Verification
 const emailVerificationModal = ref<EmailVerificationModalRef | null>(null);
 
-async function sendVerificationEmail(): Promise<boolean> {
+async function handleSendVerificationEmail(): Promise<boolean> {
 	if (!user.value) {
 		toast.add({
 			title: 'Error',
@@ -662,7 +660,7 @@ async function sendVerificationEmail(): Promise<boolean> {
 		return false;
 	}
 
-	useUser.sendVerificationEmail().then((res) => {
+	sendVerificationEmail().then((res) => {
 		if (res.success && res.data) {
 			toast.add({
 				title: 'Verification Email Sent',
@@ -694,7 +692,7 @@ function handleEmailVerified() {
 		user.value.account.email_verified = true;
 
 		// Update the global auth state if this is the current user
-		const { user: authUser } = useUser.useAuth();
+		const { user: authUser } = useAuth();
 		if (authUser.value && authUser.value.id === user.value.id) {
 			authUser.value.account.email_verified = true;
 		}

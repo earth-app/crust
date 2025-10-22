@@ -87,8 +87,6 @@
 
 <script setup lang="ts">
 import z from 'zod';
-import { useSignup } from '~/compostables/useLogin';
-import { useAuth } from '~/compostables/useUser';
 import { emailSchema, passwordSchema, usernameSchema } from '~/shared/schemas';
 
 const email = ref('');
@@ -133,6 +131,8 @@ async function handleSignup() {
 			color: 'success',
 			duration: 3000
 		});
+
+		refreshNuxtData(['user-current', 'avatar-current']); // Refresh user data
 	} else {
 		if (result.message.includes('409')) {
 			error.value = 'Username already exists. Please choose another.';

@@ -43,9 +43,6 @@
 </template>
 
 <script setup lang="ts">
-import { getArticle, getSimilarArticles } from '~/compostables/useArticle';
-import { useTitleSuffix } from '~/compostables/useTitleSuffix';
-import { getCurrentJourney, tapCurrentJourney, useAuth } from '~/compostables/useUser';
 import type { Article } from '~/shared/types/article';
 
 const { user } = useAuth();

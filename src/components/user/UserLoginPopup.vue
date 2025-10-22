@@ -22,8 +22,10 @@
 
 <script setup lang="ts">
 const isOpen = ref(false);
+const router = useRouter();
 
 function handleLoginSuccess() {
 	isOpen.value = false; // Close the popup after successful login
+	router.push('/profile');
 }
 </script>

@@ -5,7 +5,12 @@
 		</div>
 	</div>
 	<div class="w-full flex flex-col items-center justify-center">
-		<h1 class="text-3xl">The Earth App</h1>
+		<h1
+			id="title"
+			class="text-3xl"
+		>
+			The Earth App
+		</h1>
 		<ClientOnly>
 			<p
 				v-if="!user"
@@ -23,6 +28,14 @@
 				/>
 				<p class="text-lg font-semibold">Welcome, @{{ user.username }}</p>
 			</div>
+			<UButton
+				icon="mdi:account-arrow-right"
+				color="success"
+				variant="soft"
+				class="my-3"
+				@click="welcomeTour"
+				>Take the Tour</UButton
+			>
 			<div
 				class="flex flex-col items-center justify-center w-full motion-opacity-in-0 motion-duration-1500"
 			>
@@ -68,10 +81,6 @@
 </template>
 
 <script setup lang="ts">
-import { getRandomActivities } from '~/compostables/useActivity';
-import { getRandomArticles } from '~/compostables/useArticle';
-import { getRandomPrompts } from '~/compostables/usePrompt';
-import { useAuth } from '~/compostables/useUser';
 import type { Activity } from '~/shared/types/activity';
 import type { Article } from '~/shared/types/article';
 import type { Prompt } from '~/shared/types/prompts';
@@ -96,6 +105,8 @@ onBeforeUnmount(() => {
 });
 
 const toast = useToast();
+const tours = useSiteTour();
+const { visitedSite, markVisited } = useVisitedSite();
 const randomPrompts = ref<Prompt[]>([]);
 const randomActivities = ref<Activity[]>([]);
 const randomArticles = ref<Article[]>([]);
@@ -151,5 +162,15 @@ onMounted(async () => {
 			randomArticles.value = resArticles.data;
 		}
 	}
+
+	// Start Welcome Tour if anonymous and new
+	if (!user.value && !visitedSite.value) {
+		welcomeTour();
+	}
+	markVisited();
 });
+
+function welcomeTour() {
+	tours.startTour('welcome');
+}
 </script>

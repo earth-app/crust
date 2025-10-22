@@ -1,6 +1,11 @@
 <template>
 	<div class="flex flex-col w-full h-full items-center justify-center px-60">
-		<h1 class="text-3xl font-semibold mb-4 mt-8">Sign Up</h1>
+		<h1
+			id="signup"
+			class="text-3xl font-semibold mb-4 mt-8"
+		>
+			Sign Up
+		</h1>
 		<ClientOnly>
 			<UserSignupForm @signup-success="handleSignupSuccess" />
 		</ClientOnly>
@@ -8,8 +13,6 @@
 </template>
 
 <script setup lang="ts">
-import { useAuth } from '~/compostables/useUser';
-
 const { user } = useAuth();
 
 const toast = useToast();
@@ -44,7 +47,5 @@ function handleSignupSuccess(hasEmail: boolean) {
 	} else {
 		router.push('/');
 	}
-
-	refreshNuxtData(['user-current', 'avatar-current']); // Refresh user data
 }
 </script>

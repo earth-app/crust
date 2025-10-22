@@ -23,7 +23,6 @@
 
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
-import * as users from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 import { capitalizeFully } from '~/shared/util';
 
@@ -57,16 +56,16 @@ const editorItems = props.editor
 			label: capitalizeFully(type.name.replace('_', ' ')),
 			value: type.name,
 			disabled: type.name === props.user.account.account_type,
-			onSelect: () => setAccountType(type.name)
+			onSelect: () => handleSetAccountType(type.name)
 		}))
 	: [];
 
-async function setAccountType(type: typeof com.earthapp.account.AccountType.prototype.name) {
+async function handleSetAccountType(type: typeof com.earthapp.account.AccountType.prototype.name) {
 	const old = props.user.account.account_type;
 	const toast = useToast();
 
 	props.user.account.account_type = type;
-	const res = await users.setAccountType(props.user.id, type);
+	const res = await setAccountType(props.user.id, type);
 
 	if (!res.success) {
 		console.error('Failed to update account type:', res.message);

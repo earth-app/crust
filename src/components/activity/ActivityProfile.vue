@@ -60,12 +60,6 @@
 </template>
 
 <script setup lang="ts">
-import {
-	getActivityIconSearches,
-	getActivityWikipediaSearches,
-	getActivityYouTubeSearch
-} from '~/compostables/useActivity';
-import { useAuth } from '~/compostables/useUser';
 import type { Activity } from '~/shared/types/activity';
 import { capitalizeFully } from '~/shared/util';
 import ActivityEditorModal from '../admin/ActivityEditorModal.vue';

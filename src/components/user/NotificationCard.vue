@@ -76,7 +76,7 @@ import { DateTime } from 'luxon';
 import {
 	markNotificationRead,
 	deleteNotification as removeNotification
-} from '~/compostables/useUser';
+} from '~/composables/useUser';
 import type { UserNotification } from '~/shared/types/user';
 import { trimString } from '~/shared/util';
 

@@ -155,7 +155,7 @@ import {
 	draftActivity,
 	editActivity,
 	newActivity
-} from '~/compostables/useActivity';
+} from '~/composables/useActivity';
 import type { Activity } from '~/shared/types/activity';
 
 const props = defineProps<{

@@ -24,9 +24,6 @@
 </template>
 
 <script setup lang="ts">
-import { useTitleSuffix } from '~/compostables/useTitleSuffix';
-import { useUser } from '~/compostables/useUser';
-
 const { setTitleSuffix } = useTitleSuffix();
 const toast = useToast();
 const route = useRoute();

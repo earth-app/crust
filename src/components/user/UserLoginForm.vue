@@ -75,8 +75,6 @@
 
 <script setup lang="ts">
 import z from 'zod';
-import { useLogin } from '~/compostables/useLogin';
-import { useAuth } from '~/compostables/useUser';
 import { passwordSchema, usernameSchema } from '~/shared/schemas';
 
 const username = ref('');
@@ -116,6 +114,8 @@ async function handleLogin() {
 			color: 'success',
 			duration: 3000
 		});
+
+		refreshNuxtData(['user-current', 'avatar-current']); // Refresh user data
 	} else {
 		if (result.message.includes('401')) {
 			error.value = 'Invalid username or password.';

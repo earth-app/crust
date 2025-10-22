@@ -14,9 +14,6 @@
 </template>
 
 <script setup lang="ts">
-import { usePrompt } from '~/compostables/usePrompt';
-import { useTitleSuffix } from '~/compostables/useTitleSuffix';
-
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
 const { prompt } = usePrompt(route.params.id as string);

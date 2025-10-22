@@ -59,8 +59,6 @@
 
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import { removePrompt, updatePrompt } from '~/compostables/usePrompt';
-import { useAuth, useUser } from '~/compostables/useUser';
 import type { Prompt } from '~/shared/types/prompts';
 import { withSuffix } from '~/shared/util';
 

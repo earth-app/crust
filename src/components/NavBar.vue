@@ -168,9 +168,6 @@
 </template>
 
 <script setup lang="ts">
-import { useLogout } from '~/compostables/useLogin';
-import { sendVerificationEmail, useAuth, useNotifications } from '~/compostables/useUser';
-
 const { user, photo } = useAuth();
 const toast = useToast();
 const router = useRouter();

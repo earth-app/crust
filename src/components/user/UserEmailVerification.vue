@@ -87,8 +87,6 @@
 </template>
 
 <script setup lang="ts">
-import { sendVerificationEmail, useAuth, verifyEmail } from '~/compostables/useUser';
-
 const { user } = useAuth();
 
 const value = ref<string[]>([]);

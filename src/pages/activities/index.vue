@@ -19,7 +19,14 @@
 			/>
 		</InfoCardGroup>
 	</div>
-	<h2 class="text-center text-2xl font-semibold my-4">All Activities</h2>
+	<div class="flex w-full justify-center my-4">
+		<h2
+			id="activities"
+			class="text-2xl text-center font-semibold"
+		>
+			All Activities
+		</h2>
+	</div>
 	<div class="flex flex-col w-full justify-between items-center">
 		<div
 			class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 place-items-center w-9/10 px-4 gap-x-4 gap-y-12 *:mx-2 *:max-w-100 *:lg:w-1/2 *:xl:w-1/3"
@@ -50,9 +57,6 @@
 	></div>
 </template>
 <script setup lang="ts">
-import { getActivities } from '~/compostables/useActivity';
-import { useTitleSuffix } from '~/compostables/useTitleSuffix';
-import { getRecommendedActivities, useAuth } from '~/compostables/useUser';
 import type { Activity } from '~/shared/types/activity';
 
 const { setTitleSuffix } = useTitleSuffix();

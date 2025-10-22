@@ -20,8 +20,6 @@
 </template>
 
 <script setup lang="ts">
-import { useAuth, useNotifications } from '~/compostables/useUser';
-
 const { user } = useAuth();
 const { unreadCount } = useNotifications();
 </script>

@@ -78,7 +78,6 @@
 </template>
 
 <script setup lang="ts">
-import { useAuth, useUser } from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 
 const props = defineProps<{

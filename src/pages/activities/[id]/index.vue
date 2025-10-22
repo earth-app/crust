@@ -14,9 +14,6 @@
 </template>
 
 <script setup lang="ts">
-import { getActivity, useActivitiesCount } from '~/compostables/useActivity';
-import { useTitleSuffix } from '~/compostables/useTitleSuffix';
-import { getCurrentJourney, tapCurrentJourney, useAuth } from '~/compostables/useUser';
 import type { Activity } from '~/shared/types/activity';
 
 const { setTitleSuffix } = useTitleSuffix();

@@ -23,6 +23,7 @@
 				title="Explore Articles"
 				description="Discover new and interesting reads"
 				icon="mdi:compass"
+				id="articles"
 			>
 				<InfoCardSkeleton
 					v-if="!randomLoaded"
@@ -41,8 +42,6 @@
 </template>
 
 <script setup lang="ts">
-import { getRandomArticles, getRecommendedArticles } from '~/compostables/useArticle';
-import { useAuth } from '~/compostables/useUser';
 import type { Article } from '~/shared/types/article';
 
 const { user } = useAuth();
@@ -75,6 +74,21 @@ onMounted(async () => {
 
 	const randomRes = await getRandomArticles(5);
 	if (randomRes.success && randomRes.data) {
+		if ('message' in randomRes.data) {
+			randomArticles.value = [];
+			randomLoaded.value = true;
+
+			const toast = useToast();
+			toast.add({
+				title: 'Error',
+				icon: 'mdi:alert-circle',
+				description: randomRes.data.message || 'No articles available.',
+				color: 'error',
+				duration: 5000
+			});
+			return;
+		}
+
 		randomArticles.value = randomRes.data;
 		randomLoaded.value = true;
 	} else {

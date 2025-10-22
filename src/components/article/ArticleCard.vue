@@ -11,7 +11,7 @@
 				:avatar="authorAvatar"
 				:avatar-chip="authorAvatarChipColor ? true : false"
 				:avatar-chip-color="authorAvatarChipColor"
-				:secondary-avatar="article.ocean.favicon"
+				:secondary-avatar="article.ocean?.favicon"
 				secondary-avatar-size="xs"
 			/>
 		</div>
@@ -20,7 +20,6 @@
 
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import { useUser } from '~/compostables/useUser';
 import type { Article } from '~/shared/types/article';
 import { trimString } from '~/shared/util';
 

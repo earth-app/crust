@@ -64,7 +64,6 @@
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
 import type { DropdownMenuItem } from '@nuxt/ui';
-import { updateFieldPrivacy } from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 
 const props = defineProps<{

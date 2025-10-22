@@ -34,8 +34,6 @@
 </template>
 
 <script setup lang="ts">
-import { useActivitiesCount } from '~/compostables/useActivity';
-import { getCurrentJourney } from '~/compostables/useUser';
 import type { User } from '~/shared/types/user';
 
 const props = defineProps<{

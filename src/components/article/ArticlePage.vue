@@ -65,7 +65,6 @@
 
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import { useUser } from '~/compostables/useUser';
 import type { Article } from '~/shared/types/article';
 import { parseLooseDate, trimString } from '~/shared/util';
 

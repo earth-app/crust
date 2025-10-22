@@ -95,7 +95,6 @@
 
 <script setup lang="ts">
 import z from 'zod';
-import { changePassword } from '~/compostables/useUser';
 import { passwordSchema } from '~/shared/schemas';
 
 const oldPassword = ref('');
