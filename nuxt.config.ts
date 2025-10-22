@@ -29,6 +29,9 @@ export default defineNuxtConfig({
 		cloudflare: {
 			deployConfig: true,
 			nodeCompat: true
+		},
+		prerender: {
+			routes: ['/sitemap.xml']
 		}
 	},
 	hub: {
@@ -44,19 +47,19 @@ export default defineNuxtConfig({
 		cache: true
 	},
 	routeRules: {
-		// Static pages (prerender at build time)
+		// Static pages, assets (prerender at build time)
 		'/about': { prerender: true },
-		'/': { isr: 3600 }, // Homepage regenerates every hour
 
 		// Client-side only pages (auth, profiles, admin)
 		'/login': { ssr: false },
 		'/signup': { ssr: false },
-		'/verify-email': { ssr: false },
-		'/change-password': { ssr: false },
+		'/verify-email': { ssr: false, robots: false },
+		'/change-password': { ssr: false, robots: false },
 		'/profile/**': { ssr: false },
-		'/admin': { ssr: false },
+		'/admin': { ssr: false, robots: false },
 
 		// Content listing pages (ISR)
+		'/': { isr: 3600 }, // Homepage regenerates every hour
 		'/activities': { isr: 14400 }, // Regenerate every 4 hours
 		'/articles': { isr: 3600 }, // Regenerate every hour
 		'/prompts': { isr: 900 }, // Regenerate every 15 minutes
