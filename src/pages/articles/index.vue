@@ -75,22 +75,21 @@ onMounted(async () => {
 	const randomRes = await getRandomArticles(5);
 	if (randomRes.success && randomRes.data) {
 		if ('message' in randomRes.data) {
-			randomArticles.value = [];
 			randomLoaded.value = true;
+			randomArticles.value = [];
+			console.error('Failed to load random articles:', randomRes.data.message);
 
 			const toast = useToast();
 			toast.add({
 				title: 'Error',
 				icon: 'mdi:alert-circle',
-				description: randomRes.data.message || 'No articles available.',
-				color: 'error',
-				duration: 5000
+				description: randomRes.data.message || 'Failed to load random articles.',
+				color: 'error'
 			});
-			return;
+		} else {
+			randomArticles.value = randomRes.data;
+			randomLoaded.value = true;
 		}
-
-		randomArticles.value = randomRes.data;
-		randomLoaded.value = true;
 	} else {
 		randomLoaded.value = true;
 		randomArticles.value = [];

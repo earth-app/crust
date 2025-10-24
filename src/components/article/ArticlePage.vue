@@ -10,14 +10,14 @@
 				/>
 			</div>
 			<h1 class="text-2xl sm:text-3xl font-bold">{{ article.title }}</h1>
-			<h2>
-				by
-				<NuxtLink :to="`/profile/@${article.author.username}`">
-					<span class="font-semibold text-blue-500"> @{{ article.author.username }} </span>
-				</NuxtLink>
-				on
-				<span class="font-semibold">{{ time }}</span>
-			</h2>
+			<UTooltip :text="time">
+				<h2>
+					by
+					<NuxtLink :to="`/profile/@${article.author.username}`">
+						<span class="font-semibold text-blue-500"> @{{ article.author.username }} </span>
+					</NuxtLink>
+				</h2>
+			</UTooltip>
 			<USeparator class="my-2" />
 		</div>
 		<div class="prose min-w-67 max-w-4/7 items-center">
