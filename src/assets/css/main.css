@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
-@plugin "tailwindcss-motion";
+@plugin 'tailwindcss-motion';
 
 @theme {
 	--color-primary: #43b54d;
