@@ -24,6 +24,7 @@
 			<p
 				v-for="(paragraph, index) in contentParagraphs"
 				:key="index"
+				class="mb-2"
 			>
 				{{ paragraph }}
 			</p>
