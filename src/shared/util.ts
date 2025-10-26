@@ -151,6 +151,10 @@ export async function makeServerRequest<T>(
 			headers['Authorization'] = `Bearer ${token}`;
 		}
 
+		if (options.body && (options.method === 'POST' || options.method === 'PATCH')) {
+			headers['Content-Type'] = 'application/json';
+		}
+
 		const data = await $fetch<T>(suburl, {
 			headers,
 			...options

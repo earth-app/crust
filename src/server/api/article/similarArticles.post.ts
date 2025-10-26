@@ -1,11 +1,15 @@
-import { ensureLoggedIn } from '~/server/utils';
 import type { Article } from '~/shared/types/article';
 
 export default defineEventHandler(async (event) => {
-	await ensureLoggedIn(event);
-
 	const config = useRuntimeConfig();
 	const body = await readBody<{ article: Article; count: number; pool: Article[] }>(event);
+
+	if (!body) {
+		throw createError({
+			statusCode: 400,
+			statusMessage: 'Request body is required.'
+		});
+	}
 
 	if (!body.article || !body.pool || !Array.isArray(body.pool) || body.pool.length === 0) {
 		throw createError({
@@ -22,12 +26,13 @@ export default defineEventHandler(async (event) => {
 	}
 
 	try {
-		const response = $fetch(
+		const response = await $fetch(
 			`${config.public.cloudBaseUrl}/v1/articles/recommend_similar_articles`,
 			{
 				headers: {
 					Authorization: `Bearer ${config.adminApiKey}`,
-					Accept: 'application/json'
+					Accept: 'application/json',
+					'Content-Type': 'application/json'
 				},
 				body: {
 					pool: body.pool,

@@ -29,10 +29,11 @@ export default defineEventHandler(async (event) => {
 	}
 
 	try {
-		const response = $fetch(`${config.public.cloudBaseUrl}/v1/users/recommend_articles`, {
+		const response = await $fetch(`${config.public.cloudBaseUrl}/v1/users/recommend_articles`, {
 			headers: {
 				Authorization: `Bearer ${config.adminApiKey}`,
-				Accept: 'application/json'
+				Accept: 'application/json',
+				'Content-Type': 'application/json'
 			},
 			body: {
 				pool: body.pool,

@@ -10,7 +10,7 @@
 				class="my-2 w-3/4"
 			/>
 
-			<div
+			<!-- <div
 				v-if="user"
 				class="flex items-center w-screen"
 			>
@@ -31,7 +31,7 @@
 						:article="article"
 					/>
 				</InfoCardGroup>
-			</div>
+			</div> -->
 		</div>
 		<div
 			v-else
@@ -92,9 +92,9 @@ if (route.params.id) {
 }
 
 onMounted(async () => {
-	if (currentArticle.value) {
-		await loadSimilar(currentArticle.value);
-	}
+	// if (currentArticle.value) {
+	// 	await loadSimilar(currentArticle.value);
+	// }
 
 	if (user.value) {
 		const count = await getCurrentJourney('article', user.value.id);
