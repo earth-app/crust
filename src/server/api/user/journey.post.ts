@@ -32,7 +32,8 @@ export default defineEventHandler(async (event) => {
 			{
 				headers: {
 					Authorization: `Bearer ${config.adminApiKey}`,
-					Accept: 'application/json'
+					Accept: 'application/json',
+					'Cache-Control': 'no-cache'
 				},
 				method: 'POST',
 				timeout: 10000
