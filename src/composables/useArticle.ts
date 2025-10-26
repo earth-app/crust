@@ -26,8 +26,12 @@ export async function getRecommendedArticles(user: User, count: number = 3) {
 		res.success ? res.data : res.message
 	);
 
-	if (typeof pool === 'string') {
+	if (!pool || typeof pool === 'string') {
 		throw new Error(`Failed to fetch random articles: ${pool}`);
+	}
+
+	if ('message' in pool) {
+		throw new Error(`Failed to fetch random articles: ${pool.code} ${pool.message}`);
 	}
 
 	if (!pool || pool.length === 0) {
@@ -50,8 +54,12 @@ export async function getSimilarArticles(article: Article, count: number = 5) {
 		res.success ? res.data : res.message
 	);
 
-	if (typeof pool === 'string') {
+	if (!pool || typeof pool === 'string') {
 		throw new Error(`Failed to fetch random articles: ${pool}`);
+	}
+
+	if ('message' in pool) {
+		throw new Error(`Failed to fetch random articles: ${pool.code} ${pool.message}`);
 	}
 
 	if (!pool || pool.length === 0) {
