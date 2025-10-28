@@ -28,14 +28,30 @@
 				/>
 				<p class="text-lg font-semibold">Welcome, @{{ user.username }}</p>
 			</div>
-			<UButton
-				icon="mdi:account-arrow-right"
-				color="success"
-				variant="soft"
-				class="my-3"
-				@click="welcomeTour"
-				>Take the Tour</UButton
-			>
+			<div class="flex my-3 gap-x-2">
+				<UButton
+					icon="mdi:account-arrow-right"
+					color="success"
+					variant="soft"
+					@click="welcomeTour"
+					>Take the Tour</UButton
+				>
+				<UButton
+					v-if="user && user.account.account_type === 'ADMINISTRATOR'"
+					icon="mdi:cog-outline"
+					color="secondary"
+					variant="soft"
+					@click="$router.push('/admin')"
+					>Admin Panel</UButton
+				>
+				<UButton
+					icon="mdi:book-open-variant"
+					color="primary"
+					variant="soft"
+					@click="$router.push('/about')"
+					>About Us</UButton
+				>
+			</div>
 			<div
 				class="flex flex-col items-center justify-center w-full motion-opacity-in-0 motion-duration-1500"
 			>
