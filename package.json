@@ -1,5 +1,6 @@
 {
   "name": "crust",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -37,6 +38,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@iconify-json/bx": "^1.2.2",
     "@iconify-json/carbon": "^1.2.14",
     "@iconify-json/cib": "^1.2.3",
     "@iconify-json/circum": "^1.2.2",
