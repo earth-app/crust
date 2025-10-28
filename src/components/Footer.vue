@@ -69,7 +69,7 @@
 				</span>
 				<span v-if="user"> Account ID: {{ user.id }}</span>
 				<span v-if="user"> Last Login: {{ user.last_login ? user.last_login : 'N/A' }}</span>
-				<span v-else> Not Logged In </span>
+				<span v-else-if="user === null"> Not Logged In </span>
 			</div>
 		</ClientOnly>
 	</div>

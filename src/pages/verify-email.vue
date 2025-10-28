@@ -10,7 +10,7 @@
 			<p class="text-center text-green-600">Your email is already verified.</p>
 		</div>
 		<div
-			v-else
+			v-else-if="user === null"
 			class="flex flex-col w-full h-full items-center justify-center"
 		>
 			<p class="text-center text-gray-600">Please log in to verify your email.</p>
@@ -23,24 +23,25 @@ const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Verify Email');
 
 const { user } = useAuth();
-
 const router = useRouter();
 const toast = useToast();
-onMounted(() => {
-	if (!user.value) {
-		router.push('/login');
 
-		toast.add({
-			title: 'Not Logged In',
-			description: 'You must be logged in to verify your email.',
-			icon: 'mdi:account-alert',
-			color: 'error',
-			duration: 3000
-		});
-	} else {
-		if (user.value.account.email_verified) {
+watch(
+	() => user.value,
+	(currentUser) => {
+		if (currentUser === null) {
+			// User is not logged in, redirect to login
+			router.push('/login');
+			toast.add({
+				title: 'Not Logged In',
+				description: 'You must be logged in to verify your email.',
+				icon: 'mdi:account-alert',
+				color: 'error',
+				duration: 3000
+			});
+		} else if (currentUser && currentUser.account.email_verified) {
+			// Email is already verified, redirect to home
 			router.push('/');
-
 			toast.add({
 				title: 'Email Already Verified',
 				description: 'Your email is already verified.',
@@ -49,8 +50,9 @@ onMounted(() => {
 				duration: 3000
 			});
 		}
-	}
-});
+	},
+	{ immediate: true }
+);
 
 function onEmailVerified() {
 	router.push('/');

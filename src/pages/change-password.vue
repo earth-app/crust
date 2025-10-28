@@ -8,7 +8,7 @@
 			<UserPasswordChange />
 		</div>
 		<div
-			v-else
+			v-else-if="user === null"
 			class="flex flex-col w-full h-full items-center justify-center"
 		>
 			<p class="text-center text-gray-600">Please log in to change your password.</p>
@@ -23,17 +23,21 @@ setTitleSuffix('Change Password');
 const router = useRouter();
 const toast = useToast();
 const { user } = useAuth();
-onMounted(() => {
-	if (!user.value) {
-		router.push('/login');
 
-		toast.add({
-			title: 'Not Logged In',
-			description: 'You must be logged in to verify your email.',
-			icon: 'mdi:account-alert',
-			color: 'error',
-			duration: 3000
-		});
-	}
-});
+watch(
+	() => user.value,
+	(currentUser) => {
+		if (currentUser === null) {
+			router.push('/login');
+			toast.add({
+				title: 'Not Logged In',
+				description: 'You must be logged in to change your password.',
+				icon: 'mdi:account-alert',
+				color: 'error',
+				duration: 3000
+			});
+		}
+	},
+	{ immediate: true }
+);
 </script>

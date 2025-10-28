@@ -108,11 +108,18 @@
 		</div>
 	</div>
 	<div
-		v-else
+		v-else-if="user && user.account.account_type !== 'ADMINISTRATOR'"
 		class="container mx-auto my-8 px-4 py-8 bg-gray-900 border-8 border-gray-950 rounded-lg"
 	>
 		<h1 class="text-2xl">Access Denied</h1>
 		<p class="mt-2 text-gray-500">You do not have permission to access this page.</p>
+	</div>
+	<div
+		v-else-if="user === null"
+		class="container mx-auto my-8 px-4 py-8 bg-gray-900 border-8 border-gray-950 rounded-lg"
+	>
+		<h1 class="text-2xl">Not Logged In</h1>
+		<p class="mt-2 text-gray-500">Please log in to access the admin panel.</p>
 	</div>
 </template>
 

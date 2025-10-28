@@ -9,26 +9,29 @@
 
 <script setup lang="ts">
 const { user } = useAuth();
+const toast = useToast();
+const router = useRouter();
 
-onMounted(() => {
-	if (user.value) {
-		// Redirect to home page or dashboard if already logged in
-		const toast = useToast();
-		useRouter().push('/');
-
-		toast.add({
-			title: 'Already Logged In',
-			description: 'You are already logged in.',
-			icon: 'mdi:login-variant',
-			color: 'info',
-			duration: 3000
-		});
-	}
-});
+watch(
+	() => user.value,
+	(currentUser) => {
+		if (currentUser) {
+			router.push('/');
+			toast.add({
+				title: 'Already Logged In',
+				description: 'You are already logged in.',
+				icon: 'mdi:login-variant',
+				color: 'info',
+				duration: 3000
+			});
+		}
+	},
+	{ immediate: true }
+);
 
 function handleLoginSuccess() {
 	// Redirect to home page or dashboard after successful login
-	useRouter().push('/');
+	router.push('/');
 	refreshNuxtData(['user-current', 'avatar-current']); // Refresh user data
 }
 </script>

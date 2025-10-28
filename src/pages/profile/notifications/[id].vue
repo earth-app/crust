@@ -55,8 +55,9 @@
 		>
 			<p class="text-gray-600">Notification doesn't exist. Maybe look at the URL again?</p>
 		</div>
+		<!-- Only show "Please log in" when user is explicitly null (not loading) -->
 		<div
-			v-else
+			v-else-if="user === null"
 			class="flex flex-col w-full h-full items-center justify-center"
 		>
 			<p class="text-center text-gray-600">Please log in to view your notifications.</p>

@@ -5,8 +5,9 @@
 	>
 		<UserProfileEditor :user="user" />
 	</div>
+	<!-- Only show "Please log in" when user is explicitly null (not loading) -->
 	<div
-		v-else
+		v-else-if="user === null"
 		class="flex flex-col items-center justify-center h-screen"
 	>
 		<p class="text-gray-600">Please log in to view your profile.</p>
