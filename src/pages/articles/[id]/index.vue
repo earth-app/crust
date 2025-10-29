@@ -55,41 +55,18 @@ const currentArticle = ref<Article | null>(null);
 const relatedLoaded = ref(false);
 const relatedArticles = ref<Article[]>([]);
 
-if (route.params.id) {
-	const res = await getArticle(route.params.id as string);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			currentArticle.value = null;
-			setTitleSuffix('Article');
-
-			toast.add({
-				title: 'Error',
-				icon: 'mdi:alert-circle',
-				description: res.data.message || 'Article not found.',
-				color: 'error'
-			});
-		} else {
-			currentArticle.value = res.data;
-			setTitleSuffix(`Article | ${currentArticle.value.title}`);
-
-			useSeoMeta({
-				ogTitle: currentArticle.value.title,
-				ogDescription: currentArticle.value.description,
-				twitterTitle: currentArticle.value.title,
-				twitterDescription: currentArticle.value.description,
-				articleAuthor: [
-					currentArticle.value.author.full_name || currentArticle.value.author.username
-				],
-				articleSection: currentArticle.value.ocean?.source || 'General',
-				articleTag: currentArticle.value.ocean?.keywords || []
-			});
-		}
-	} else {
-		currentArticle.value = null;
-		setTitleSuffix('Article');
+const { article } = useArticle(route.params.id as string);
+watch(
+	() => article.value,
+	(article) => {
+		setTitleSuffix(article ? article.title : 'Article');
 	}
-}
+);
+
+useSeoMeta({
+	ogTitle: article.value ? article.value.title : 'Article',
+	ogDescription: article.value ? article.value.description : 'Article'
+});
 
 onMounted(async () => {
 	// if (currentArticle.value) {

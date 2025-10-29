@@ -42,6 +42,14 @@
 				<slot />
 			</div>
 		</UTooltip>
+		<UProgress
+			v-if="showProgress"
+			v-model="progress"
+			:max="100"
+			class="mt-2 px-12"
+			color="secondary"
+			height="4px"
+		/>
 	</UCard>
 </template>
 
@@ -50,12 +58,41 @@ defineProps<{
 	title: string;
 	description?: string;
 	icon?: string;
+	showProgress?: boolean;
 }>();
 
 const scrollContainer = ref<HTMLElement>();
 const isDragging = ref(false);
 const startX = ref(0);
 const scrollLeft = ref(0);
+
+const progress = ref(0);
+function updateProgress() {
+	if (scrollContainer.value) {
+		const scrollWidth = scrollContainer.value.scrollWidth - scrollContainer.value.clientWidth;
+		if (scrollWidth > 0) {
+			progress.value = (scrollContainer.value.scrollLeft / scrollWidth) * 100;
+		} else {
+			progress.value = 0;
+		}
+	}
+}
+
+onMounted(() => {
+	if (scrollContainer.value) {
+		scrollContainer.value.addEventListener('scroll', updateProgress);
+	}
+});
+
+onUnmounted(() => {
+	if (scrollContainer.value) {
+		scrollContainer.value.removeEventListener('scroll', updateProgress);
+	}
+});
+
+watchEffect(() => {
+	updateProgress();
+});
 
 const startDrag = (e: MouseEvent) => {
 	if (!scrollContainer.value) return;

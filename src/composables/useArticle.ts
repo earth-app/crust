@@ -1,18 +1,8 @@
 import { type Article } from '~/shared/types/article';
+import type { SortingOption } from '~/shared/types/global';
 import type { User } from '~/shared/types/user';
 import * as util from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
-
-export async function getAllArticles(limit: number = 25, search: string = '') {
-	return await util.paginatedAPIRequest<Article>(
-		null,
-		'/v2/articles',
-		useCurrentSessionToken(),
-		{},
-		limit,
-		search
-	);
-}
 
 export async function getArticles(page: number = 1, limit: number = 25, search: string = '') {
 	return await util.makeClientAPIRequest<{ items: Article[]; total: number }>(
@@ -84,15 +74,33 @@ export async function getRandomArticles(count: number = 3) {
 	);
 }
 
-export async function getArticle(id: string) {
-	return await util.makeAPIRequest<Article>(
-		`article-${id}`,
-		`/v2/articles/${id}`,
-		useCurrentSessionToken()
-	);
+export function useArticle(id: string) {
+	const article = useState<Article | null>(`article-${id}`, () => null);
+
+	const fetch = async () => {
+		const res = await util.makeClientAPIRequest<Article>(`/v2/articles/${id}`);
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			article.value = res.data;
+		}
+
+		return res;
+	};
+
+	if (!article.value) {
+		fetch();
+	}
+
+	return {
+		article,
+		fetch
+	};
 }
 
-export async function newArticle(
+export async function createArticle(
 	article: Partial<Article> & { title: string; description: string; content: string }
 ) {
 	return await util.makeClientAPIRequest<Article>('/v2/articles', useCurrentSessionToken(), {
@@ -116,4 +124,45 @@ export async function deleteArticle(id: string) {
 	return await util.makeClientAPIRequest<void>(`/v2/articles/${id}`, useCurrentSessionToken(), {
 		method: 'DELETE'
 	});
+}
+
+export function useUserArticles(
+	identifier: string,
+	page: number = 1,
+	limit: number = 25,
+	sort: SortingOption = 'desc'
+) {
+	const total = useState<number>(`user-${identifier}-articles-total`, () => 0);
+	const articles = useState<Article[]>(`user-${identifier}-articles-${page}:${limit}`, () => []);
+
+	const fetch = async (newPage: number = page, newLimit: number = limit) => {
+		const res = await util.makeClientAPIRequest<{
+			items: Article[];
+			total: number;
+		}>(`/v2/users/${identifier}/articles?page=${newPage}&limit=${newLimit}&sort=${sort}`);
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			articles.value = res.data.items;
+			total.value = res.data.total;
+
+			// load individual articles into state
+			for (const a of res.data.items) {
+				useState<Article | null>(`article-${a.id}`, () => a);
+			}
+		}
+		return res;
+	};
+
+	if (articles.value.length === 0) {
+		fetch(page, limit);
+	}
+
+	return {
+		articles,
+		total,
+		fetch
+	};
 }

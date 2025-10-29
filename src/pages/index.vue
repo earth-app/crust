@@ -101,6 +101,9 @@ import type { Activity } from '~/shared/types/activity';
 import type { Article } from '~/shared/types/article';
 import type { Prompt } from '~/shared/types/prompts';
 
+const { setTitleSuffix } = useTitleSuffix();
+setTitleSuffix('Home');
+
 const { user, photo } = useAuth();
 const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
 watch(

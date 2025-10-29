@@ -1,4 +1,5 @@
 import type { com } from '@earth-app/ocean';
+import type { SortingOption } from '~/shared/types/global';
 import type { Prompt, PromptResponse } from '~/shared/types/prompts';
 import * as util from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
@@ -132,7 +133,12 @@ export async function removePromptResponse(promptId: string, id: string) {
 	);
 }
 
-export function useUserPrompts(identifier: string, page: number = 1, limit: number = 25) {
+export function useUserPrompts(
+	identifier: string,
+	page: number = 1,
+	limit: number = 25,
+	sort: SortingOption = 'desc'
+) {
 	const total = useState<number>(`user-${identifier}-prompts-total`, () => 0);
 	const prompts = useState<Prompt[]>(`user-${identifier}-prompts-${page}:${limit}`, () => []);
 
@@ -140,7 +146,7 @@ export function useUserPrompts(identifier: string, page: number = 1, limit: numb
 		const res = await util.makeClientAPIRequest<{
 			items: Prompt[];
 			total: number;
-		}>(`/v2/users/${identifier}/prompts?page=${newPage}&limit=${newLimit}`);
+		}>(`/v2/users/${identifier}/prompts?page=${newPage}&limit=${newLimit}&sort=${sort}`);
 		if (res.success && res.data) {
 			if ('message' in res.data) {
 				return res;

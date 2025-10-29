@@ -74,6 +74,40 @@
 		<div class="max-w-3xl mt-4">
 			<UserJourneys :user="props.user" />
 		</div>
+		<div class="flex flex-col items-center mt-12 mb-2 w-full">
+			<h1 class="text-2xl font-bold">{{ props.user?.username }}'s Content</h1>
+			<InfoCardGroup
+				v-if="prompts.length > 0"
+				:title="`Prompts by ${props.user.full_name || props.user.username}`"
+				:description="`${totalPrompts} Prompts created by ${props.user.username} (${Math.min(totalPrompts, 25)} shown here)`"
+				icon="mdi:pencil-circle-outline"
+				class="w-11/12 my-4"
+				show-progress
+			>
+				<PromptCard
+					v-for="prompt in prompts"
+					:key="prompt.id"
+					:prompt="prompt"
+				/>
+			</InfoCardGroup>
+			<InfoCardGroup
+				v-if="articles.length > 0"
+				:title="`Articles by ${props.user.full_name || props.user.username}`"
+				:description="`${totalArticles} Articles written by ${props.user.username} (${Math.min(totalArticles, 25)} shown here)`"
+				icon="mdi:newspaper-variant-multiple-outline"
+				class="w-11/12 my-4"
+				show-progress
+			>
+				<ArticleCard
+					v-for="article in articles"
+					:key="article.id"
+					:article="article"
+				/>
+			</InfoCardGroup>
+			<h2 v-if="prompts.length === 0 && articles.length === 0">
+				{{ props.user.username }} has not created any content.
+			</h2>
+		</div>
 	</div>
 </template>
 
@@ -86,7 +120,10 @@ const props = defineProps<{
 }>();
 
 const { user } = useAuth();
+
 const { photo } = useUser(props.user.id);
+const { prompts, total: totalPrompts } = useUserPrompts(props.user.id, 1, 25, 'rand');
+const { articles, total: totalArticles } = useUserArticles(props.user.id, 1, 25, 'rand');
 
 const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
 watch(
