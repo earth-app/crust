@@ -52,7 +52,7 @@
 						{{ step.footer }}
 					</p>
 					<span class="text-xs text-gray-500 text-center mx-4 w-1/4">
-						Step {{ index + 1 }}&nbsp;of&nbsp;{{ steps.length }}
+						Step {{ visibleStepIndex + 1 }}&nbsp;of&nbsp;{{ visibleSteps.length }}
 					</span>
 					<div class="flex gap-2">
 						<UButton
@@ -62,28 +62,18 @@
 							icon="i-heroicons-arrow-left"
 							variant="outline"
 							size="sm"
-							@click="
-								() => {
-									index--;
-									display();
-									emit('prev-step', index + 1);
-								}
-							"
+							@click="gotoPreviousStep"
 						/>
 						<UButton
-							:label="index >= steps.length - 1 ? 'Finish' : 'Next'"
+							:label="visibleStepIndex >= visibleSteps.length - 1 ? 'Finish' : 'Next'"
 							color="primary"
 							:trailing-icon="
-								index >= steps.length - 1 ? 'i-heroicons-flag' : 'i-heroicons-arrow-right'
+								visibleStepIndex >= visibleSteps.length - 1
+									? 'i-heroicons-flag'
+									: 'i-heroicons-arrow-right'
 							"
 							size="sm"
-							@click="
-								() => {
-									index++;
-									display();
-									emit('next-step', index - 1);
-								}
-							"
+							@click="gotoNextStep"
 						/>
 					</div>
 				</div>
@@ -118,7 +108,36 @@ const boxStyle = ref({
 	display: 'none'
 });
 
+let currentElementId: string | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let mutationObserver: MutationObserver | null = null;
+
 const isActive = computed(() => isActiveTour(props.tourId));
+const isLoggedIn = computed(() => !!useCurrentSessionToken());
+
+// Filter steps based on user login status
+const visibleSteps = computed(() => {
+	if (!isLoggedIn.value) {
+		return props.steps;
+	}
+	return props.steps.filter((step) => !step.anonymous);
+});
+
+// Get the current visible step index (0-based)
+const visibleStepIndex = computed(() => {
+	if (!isLoggedIn.value) {
+		return index.value;
+	}
+	// Count how many non-anonymous steps come before the current index
+	let count = 0;
+	for (let i = 0; i < index.value && i < props.steps.length; i++) {
+		const currentStep = props.steps[i];
+		if (currentStep && !currentStep.anonymous) {
+			count++;
+		}
+	}
+	return count;
+});
 
 async function display() {
 	if (index.value < 0 || index.value >= props.steps.length) {
@@ -130,6 +149,13 @@ async function display() {
 	if (step === null) {
 		// finished the tour
 		close();
+		return;
+	}
+
+	// Skip steps marked as anonymous if user is logged in
+	if (step.value?.anonymous && isLoggedIn.value) {
+		index.value++;
+		await display();
 		return;
 	}
 
@@ -150,6 +176,26 @@ async function display() {
 	}
 }
 
+async function gotoNextStep() {
+	const oldStep = index.value;
+	index.value++;
+	await display();
+	emit('next-step', oldStep);
+}
+
+async function gotoPreviousStep() {
+	const oldStep = index.value;
+	index.value--;
+
+	// Skip steps marked as anonymous if user is logged in (going backwards)
+	while (index.value >= 0 && props.steps[index.value]?.anonymous && isLoggedIn.value) {
+		index.value--;
+	}
+
+	await display();
+	emit('prev-step', oldStep);
+}
+
 function close() {
 	// Clean up highlight
 	destroyTourHighlight();
@@ -159,13 +205,12 @@ function close() {
 	index.value = 0;
 }
 
-function createTourHighlight(id: string) {
-	const element = document.getElementById(id);
-	if (element) {
-		element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-	}
+function updateBoxPosition() {
+	if (!currentElementId) return;
 
+	const element = document.getElementById(currentElementId);
 	const rect = element?.getBoundingClientRect();
+
 	if (rect) {
 		boxStyle.value = {
 			top: `${rect.top + window.scrollY - 8}px`,
@@ -175,13 +220,58 @@ function createTourHighlight(id: string) {
 			display: 'block'
 		};
 	} else {
-		console.warn(`Element with id "${id}" not found for tour highlight.`);
+		console.warn(`Element with id "${currentElementId}" not found for tour highlight.`);
 		boxStyle.value.display = 'none';
 	}
 }
 
+function createTourHighlight(id: string) {
+	currentElementId = id;
+	const element = document.getElementById(id);
+
+	if (element) {
+		element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+		// Set up ResizeObserver to track element size changes
+		resizeObserver = new ResizeObserver(() => {
+			updateBoxPosition();
+		});
+		resizeObserver.observe(element);
+
+		// Set up MutationObserver to track DOM changes that might affect position
+		mutationObserver = new MutationObserver(() => {
+			updateBoxPosition();
+		});
+		mutationObserver.observe(document.body, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			attributeFilter: ['style', 'class']
+		});
+
+		// Listen for scroll and resize events
+		window.addEventListener('scroll', updateBoxPosition, true);
+		window.addEventListener('resize', updateBoxPosition);
+	}
+
+	updateBoxPosition();
+}
+
 function destroyTourHighlight() {
 	boxStyle.value.display = 'none';
+	currentElementId = null;
+
+	// Clean up observers and listeners
+	if (resizeObserver) {
+		resizeObserver.disconnect();
+		resizeObserver = null;
+	}
+	if (mutationObserver) {
+		mutationObserver.disconnect();
+		mutationObserver = null;
+	}
+	window.removeEventListener('scroll', updateBoxPosition, true);
+	window.removeEventListener('resize', updateBoxPosition);
 }
 
 // Register/unregister tour
@@ -195,6 +285,7 @@ onMounted(() => {
 
 onUnmounted(() => {
 	unregisterTour(props.tourId);
+	destroyTourHighlight();
 });
 
 // Watch for tour activation

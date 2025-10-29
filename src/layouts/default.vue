@@ -61,7 +61,8 @@ const welcomeTour: SiteTourStep[] = [
 		title: 'Sign Up',
 		description:
 			'Create an account to unlock personalized features and connect with the community on the Earth App.',
-		footer: 'Thank you for taking the tour! Click Finish to get started.'
+		footer: 'Thank you for taking the tour! Click Finish to get started.',
+		anonymous: true
 	}
 ];
 </script>
