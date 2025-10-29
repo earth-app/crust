@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "bunx nuxi dev --dotenv .config/local.env --no-restart --host --port 3000",
-    "dev:remote": "bunx nuxi dev --dotenv .config/production.env --dotenv .env.local --no-restart --host --port 3000",
+    "dev:remote": "bunx nuxi dev --dotenv .config/production.env --dotenv .env --dotenv .env.local --no-restart --host --port 3000",
     "build": "nuxt build",
     "postinstall": "nuxt prepare",
     "prettier": "bunx prettier --write .",
