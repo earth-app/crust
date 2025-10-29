@@ -1,3 +1,4 @@
+import type { com } from '@earth-app/ocean';
 import type { Prompt, PromptResponse } from '~/shared/types/prompts';
 import * as util from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
@@ -6,6 +7,10 @@ export async function getRandomPrompts(count: number = 10) {
 	const res = await util.makeClientAPIRequest<Prompt[]>(`/v2/prompts/random?count=${count}`);
 
 	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
 		// load individual prompts into state
 		for (const p of res.data) {
 			useState<Prompt | null>(`prompt-${p.id}`, () => p);
@@ -21,6 +26,10 @@ export function usePrompt(id: string) {
 	const fetch = async () => {
 		const res = await util.makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`);
 		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
 			prompt.value = res.data;
 		}
 
@@ -62,6 +71,10 @@ export function usePromptResponses(id: string, page: number = 1, limit: number =
 			`/v2/prompts/${id}/responses?page=${newPage}&limit=${newLimit}`
 		);
 		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
 			responses.value = res.data.items;
 		}
 		return res;
@@ -75,6 +88,16 @@ export function usePromptResponses(id: string, page: number = 1, limit: number =
 		responses,
 		fetch
 	};
+}
+
+export async function createPrompt(
+	prompt: string,
+	visibility?: typeof com.earthapp.Visibility.prototype.name
+) {
+	return await util.makeClientAPIRequest<Prompt>('/v2/prompts', useCurrentSessionToken(), {
+		method: 'POST',
+		body: { prompt, visibility }
+	});
 }
 
 export async function createPromptResponse(promptId: string, content: string) {
@@ -107,4 +130,40 @@ export async function removePromptResponse(promptId: string, id: string) {
 			method: 'DELETE'
 		}
 	);
+}
+
+export function useUserPrompts(identifier: string, page: number = 1, limit: number = 25) {
+	const total = useState<number>(`user-${identifier}-prompts-total`, () => 0);
+	const prompts = useState<Prompt[]>(`user-${identifier}-prompts-${page}:${limit}`, () => []);
+
+	const fetch = async (newPage: number = page, newLimit: number = limit) => {
+		const res = await util.makeClientAPIRequest<{
+			items: Prompt[];
+			total: number;
+		}>(`/v2/users/${identifier}/prompts?page=${newPage}&limit=${newLimit}`);
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			prompts.value = res.data.items;
+			total.value = res.data.total;
+
+			// load individual prompts into state
+			for (const p of res.data.items) {
+				useState<Prompt | null>(`prompt-${p.id}`, () => p);
+			}
+		}
+		return res;
+	};
+
+	if (prompts.value.length === 0) {
+		fetch(page, limit);
+	}
+
+	return {
+		prompts,
+		total,
+		fetch
+	};
 }

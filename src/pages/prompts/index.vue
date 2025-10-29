@@ -6,16 +6,36 @@
 		>
 			Today's Prompts
 		</h2>
-		<UButton
-			title="Refresh"
-			icon="i-lucide-refresh-cw"
-			color="neutral"
-			variant="outline"
-			class="mt-2"
-			:loading="promptsLoading"
-			:disabled="promptsLoading"
-			@click="fetchPrompts"
-		/>
+		<div class="flex gap-x-2">
+			<UButton
+				title="Refresh"
+				icon="i-lucide-refresh-cw"
+				color="neutral"
+				variant="outline"
+				class="mt-2"
+				:loading="promptsLoading"
+				:disabled="promptsLoading"
+				@click="fetchPrompts"
+			/>
+			<UTooltip
+				arrow
+				:text="
+					newDisabled
+						? `You've reached your prompt limit. Upgrade to create more!`
+						: `Click to create a prompt`
+				"
+			>
+				<UButton
+					title="Create Prompt"
+					icon="mdi:plus"
+					color="neutral"
+					variant="outline"
+					class="mt-2"
+					:disabled="newDisabled"
+					@click="$router.push('/prompts/new')"
+				/>
+			</UTooltip>
+		</div>
 		<div
 			id="prompts"
 			class="mt-12 w-9/10 grid grid-cols-1 lg:grid-cols-2 gap-x-8"
@@ -46,6 +66,26 @@ const toast = useToast();
 
 const prompts = ref<Prompt[]>([]);
 const promptsLoading = ref(false);
+
+const { user, fetchUser } = useAuth();
+const total = ref(0);
+const newDisabled = computed(() => {
+	switch (user.value?.account.account_type) {
+		case 'ADMINISTRATOR':
+			return false;
+		case 'ORGANIZER':
+		case 'WRITER':
+			return total.value >= 10;
+		default:
+			return total.value >= 1;
+	}
+});
+onMounted(async () => {
+	await fetchUser(); // ensure user is loaded
+	if (!user.value) return;
+	const { total: total0 } = useUserPrompts(user.value.id);
+	total.value = total0.value;
+});
 
 async function fetchPrompts() {
 	promptsLoading.value = true;
