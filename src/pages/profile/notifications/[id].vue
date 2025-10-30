@@ -2,7 +2,7 @@
 	<ClientOnly>
 		<div
 			v-if="user && notification"
-			class="w-full px-4 py-8"
+			class="w-full px-4 py-8 mt-16 sm:mt-0"
 		>
 			<div class="flex flex-col items-center">
 				<h2 class="text-lg font-semibold">{{ notification.title }}</h2>

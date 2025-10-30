@@ -3,7 +3,7 @@
 		id="navbar"
 		class="bg-secondary-800 border-b-primary-500 border-b-8 text-white p-4 flex items-center"
 	>
-		<div class="flex items-center w-2/3">
+		<div class="flex items-center w-2/3 max-w-40 sm:max-w-60">
 			<NuxtLink to="/">
 				<img
 					src="/favicon.png"
@@ -68,7 +68,7 @@
 			<div class="ml-auto">
 				<div
 					v-if="user"
-					class="flex items-center space-x-1 sm:space-x-6"
+					class="flex items-center space-x-4 sm:space-x-6"
 				>
 					<div
 						class="flex items-center justify-center space-x-1 cursor-pointer hover:opacity-80 transition-opacity duration-250"
@@ -76,19 +76,19 @@
 					>
 						<UAvatar
 							:src="avatar"
-							class="size-4 sm:size-6 md:size-8 lg:size-12 rounded-full shadow-lg shadow-black/50"
+							class="size-6 sm:size-8 lg:size-12 rounded-full shadow-lg shadow-black/50"
 						/>
 
 						<span
-							class="font-title text-sm sm:text-lg md:text-xl text-shadow-2xs text-shadow-black"
+							class="font-title text-md sm:text-lg md:text-xl text-shadow-2xs text-shadow-black"
 							>{{ user.username }}</span
 						>
 					</div>
-					<div class="flex sm:space-x-2 md:space-x-4 items-center justify-center">
+					<div class="flex space-x-1 sm:space-x-2 md:space-x-4 items-center justify-center">
 						<UPopover mode="hover">
 							<NuxtLink
 								to="/profile/notifications"
-								class="size-4 lg:size-8 relative"
+								class="size-5 lg:size-8 relative"
 							>
 								<UChip
 									:color="chipColor"
@@ -98,7 +98,7 @@
 								>
 									<UIcon
 										name="mdi:bell"
-										class="size-4 lg:size-8 hover:cursor-pointer"
+										class="size-5 lg:size-8 hover:cursor-pointer"
 									/>
 								</UChip>
 							</NuxtLink>
@@ -110,21 +110,21 @@
 							</template>
 						</UPopover>
 						<NuxtLink
-							class="size-4 lg:size-8"
+							class="size-5 lg:size-8"
 							to="/profile"
 						>
 							<UIcon
 								name="material-symbols:settings-rounded"
-								class="size-4 lg:size-8 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-5 lg:size-8 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
 							/>
 						</NuxtLink>
 						<NuxtLink
-							class="size-4 lg:size-8"
+							class="size-5 lg:size-8"
 							to="/"
 						>
 							<UIcon
 								name="material-symbols:logout-rounded"
-								class="size-4 lg:size-8 ml-3 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-5 lg:size-8 ml-3 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
 								@click="logoutUser"
 							/>
 						</NuxtLink>

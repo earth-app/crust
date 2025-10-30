@@ -1,12 +1,12 @@
 <template>
 	<div
-		class="border border-gray-700 rounded-lg p-4 mb-4 bg-gray-800 hover:bg-gray-700 transition-colors"
+		class="min-w-60 border border-gray-700 rounded-lg p-4 mb-4 bg-gray-800 hover:bg-gray-700 transition-colors"
 	>
 		<div class="flex justify-between items-start">
 			<div>
 				<NuxtLink :to="`/profile/notifications/${notification.id}`">
 					<p
-						class="text-blue-400 light:text-gray-700 mb-2"
+						class="text-sm sm:text-md text-blue-400 light:text-gray-700 mb-2"
 						:style="{ fontWeight: notification.read ? 'normal' : 'bold' }"
 					>
 						{{ notification.title }}
@@ -14,15 +14,15 @@
 				</NuxtLink>
 
 				<p
-					class="text-gray-300 light:text-gray-700"
+					class="text-xs sm:text-sm md:text-md text-gray-300 light:text-gray-700"
 					:style="{ fontWeight: notification.read ? 'normal' : 'bold' }"
 				>
 					{{ trimString(notification.message, 50) }}
 				</p>
-				<p class="text-gray-400 light:text-gray-800 text-sm">
+				<p class="text-xs md:text-sm text-gray-400 light:text-gray-800">
 					{{ timestamp }} • {{ fullTimestamp }}
 				</p>
-				<p class="text-gray-600 light:text-gray-300 text-sm mt-2">
+				<p class="text-xs md:text-sm text-gray-600 light:text-gray-300 mt-2">
 					{{ notification.source }} | ID: {{ notification.id }}
 				</p>
 			</div>
@@ -30,21 +30,20 @@
 				<UIcon
 					v-if="notification.type === 'error'"
 					name="mdi:alert-circle-outline"
-					class="text-red-400"
-					size="20"
+					class="text-red-400 size-3 sm:size-6"
 					title="Error Notification"
 				/>
 				<UIcon
 					v-else-if="notification.type === 'warning'"
 					name="mdi:alert-outline"
-					class="text-yellow-400"
+					class="text-yellow-400 size-3 sm:size-6"
 					size="20"
 					title="Warning Notification"
 				/>
 				<UIcon
 					v-else-if="notification.type === 'success' && additional"
 					name="mdi:check-circle-outline"
-					class="text-green-400"
+					class="text-green-400 size-3 sm:size-6"
 					title="Success Notification"
 					size="20"
 				/>
@@ -53,7 +52,7 @@
 					class="mx-2"
 				>
 					<span
-						class="inline-block w-3 h-3 bg-blue-500 rounded-full hover:cursor-pointer"
+						class="inline-block size-3 bg-blue-500 rounded-full hover:cursor-pointer"
 						title="Mark as Read"
 						@click="markAsRead"
 					></span>
@@ -61,8 +60,7 @@
 				<UIcon
 					v-if="additional"
 					name="mdi:delete"
-					:size="24"
-					class="text-gray-500 hover:text-red-500 hover:cursor-pointer transition-colors duration-200"
+					class="size-4 sm:size-5 md:size-6 text-gray-500 hover:text-red-500 hover:cursor-pointer transition-colors duration-200"
 					title="Delete Notification"
 					@click="deleteNotification"
 				/>

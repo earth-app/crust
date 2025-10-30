@@ -1,8 +1,8 @@
 <template>
-	<div class="flex flex-col w-full h-full items-center justify-center px-60">
+	<div class="flex flex-col w-full h-full items-center justify-center sm:px-10 md:px-20 lg:px-60">
 		<h1
 			id="signup"
-			class="text-3xl font-semibold mb-4 mt-8"
+			class="text-3xl font-semibold mb-4 mt-24 sm:mt-8"
 		>
 			Sign Up
 		</h1>

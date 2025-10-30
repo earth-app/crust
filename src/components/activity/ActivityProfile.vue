@@ -6,12 +6,12 @@
 			size="6rem"
 			class="my-2"
 		/>
-		<div class="flex items-center justify-center">
+		<div class="flex flex-col sm:flex-row items-center justify-center">
 			<h1 class="text-4xl sm:text-5xl font-bold">{{ activity.name }}</h1>
 			<UButton
 				v-if="user && user.account.account_type === 'ADMINISTRATOR'"
 				color="primary"
-				class="ml-4"
+				class="ml-4 mt-2"
 				@click="editing = true"
 			>
 				Edit Activity

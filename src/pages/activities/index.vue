@@ -22,7 +22,7 @@
 	<div class="flex w-full justify-center my-4">
 		<h2
 			id="activities"
-			class="text-2xl text-center font-semibold"
+			class="text-2xl mt-24 sm:mt-0 text-center font-semibold"
 		>
 			All Activities
 		</h2>

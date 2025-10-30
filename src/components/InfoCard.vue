@@ -167,8 +167,12 @@
 				</div>
 			</div>
 			<div v-if="buttons">
-				<div class="flex flex-col">
-					<h2 class="text-center font-semibold text-gray-500 light:text-gray-800">Actions</h2>
+				<div class="flex flex-col ml-2">
+					<h2
+						class="text-sm md:text-md text-center font-semibold text-gray-500 light:text-gray-800"
+					>
+						Actions
+					</h2>
 					<UButton
 						v-for="(button, index) in buttons"
 						:key="`button-${index}`"

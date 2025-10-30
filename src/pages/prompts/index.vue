@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col items-center justify-center mt-4">
+	<div class="flex flex-col items-center justify-center mt-24 sm:mt-4">
 		<h2
 			class="text-2xl font-semibold mr-4"
 			id="prompts-title"
