@@ -1,10 +1,10 @@
 <template>
 	<ClientOnly>
 		<div
-			v-if="currentArticle"
-			class="flex flex-col items-center w-full h-full"
+			v-if="article"
+			class="flex flex-col items-center w-full h-full pt-12 sm:pt-0"
 		>
-			<ArticlePage :article="currentArticle" />
+			<ArticlePage :article="article" />
 			<USeparator
 				v-if="user"
 				class="my-2 w-3/4"
@@ -50,7 +50,6 @@ const toast = useToast();
 
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
-const currentArticle = ref<Article | null>(null);
 
 const relatedLoaded = ref(false);
 const relatedArticles = ref<Article[]>([]);

@@ -2,18 +2,20 @@
 	<ClientOnly>
 		<div
 			v-if="user"
-			class="flex flex-col w-full min-w-120 px-8"
+			class="flex flex-col w-full min-w-100 px-8"
 		>
 			<div class="flex flex-col w-full mb-4">
-				<strong class="text-md mb-2">@{{ user.username }}</strong>
-				<p>
+				<strong class="text-sm sm:text-md mb-2">@{{ user.username }}</strong>
+				<p class="text-xs sm:text-sm md:text-md">
 					Deleting your account is irreversible. Please make sure that this is something you want to
 					do before you proceed.
 				</p>
-				<p>To delete your account, please enter your password and confirm your choice.</p>
+				<p class="text-xs sm:text-sm md:text-md">
+					To delete your account, please enter your password and confirm your choice.
+				</p>
 			</div>
 
-			<div class="flex flex-col w-1/2">
+			<div class="flex flex-col min-w-50 w-1/2">
 				<UInput
 					v-model="password"
 					type="password"

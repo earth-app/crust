@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="w-full h-full overflow-y-auto p-4 bg-gray-800 border border-gray-700 rounded-lg shadow-lg"
+		class="min-w-90 w-full h-full overflow-y-auto p-4 bg-gray-800 border border-gray-700 rounded-lg shadow-lg"
 	>
 		<div
 			v-if="notifications.length === 0"
@@ -9,7 +9,7 @@
 			No notifications
 		</div>
 		<div v-else>
-			<h2 class="mb-4 text-gray-400">
+			<h2 class="text-sm sm:text-md mb-4 text-gray-400">
 				{{ notificationsCount }} Notifications
 				{{ displayed.length !== notificationsCount ? `(${displayed.length} shown)` : '' }}
 			</h2>

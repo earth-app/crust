@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col">
+	<div class="flex flex-col pt-20 sm:pt-0">
 		<ClientOnly>
 			<InfoCardGroup
 				v-if="user"

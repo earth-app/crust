@@ -2,7 +2,7 @@
 	<ClientOnly>
 		<div
 			v-if="user"
-			class="w-full h-full px-12 py-4"
+			class="w-full h-full px-2 sm:px-4 md:px-8 lg:px-12 py-4 mt-24 sm:mt-0"
 		>
 			<h1 class="text-2xl font-bold text-white">Notifications for @{{ user.username }}</h1>
 			<h5 class="text-md mb-4 text-gray-300 light:text-gray-500">{{ unreadCount }} unread</h5>

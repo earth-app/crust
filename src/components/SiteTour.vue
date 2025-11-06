@@ -17,15 +17,18 @@
 	/>
 	<div
 		v-if="isActive && boxStyle.display === 'block' && step"
+		ref="tooltipCard"
 		:style="{
 			position: 'absolute',
-			top: `calc(${boxStyle.top} + ${boxStyle.height} + 12px)`,
-			left: boxStyle.left,
+			top: tooltipStyle.top,
+			left: tooltipStyle.left,
+			right: tooltipStyle.right,
+			maxWidth: tooltipStyle.maxWidth,
 			zIndex: 9999,
 			pointerEvents: 'auto'
 		}"
 	>
-		<UCard class="shadow-lg w-[40vw] max-w-200">
+		<UCard class="shadow-lg min-w-80 w-[40vw] max-w-200">
 			<template #header>
 				<div class="flex justify-between items-center">
 					<h3 class="text-lg font-semibold">{{ step.title }}</h3>
@@ -54,7 +57,7 @@
 					<span class="text-xs text-gray-500 text-center mx-4 w-1/4">
 						Step {{ visibleStepIndex + 1 }}&nbsp;of&nbsp;{{ visibleSteps.length }}
 					</span>
-					<div class="flex gap-2">
+					<div class="flex flex-col sm:flex-row gap-2">
 						<UButton
 							v-if="index > 1"
 							label="Previous"
@@ -97,6 +100,7 @@ const emit = defineEmits<{
 
 const { registerTour, unregisterTour, isActiveTour, stopTour } = useSiteTour();
 const highlightBox = ref<HTMLElement | null>(null);
+const tooltipCard = ref<HTMLElement | null>(null);
 const router = useRouter();
 const index = ref(0);
 const step = computed(() => props.steps[index.value] || null);
@@ -106,6 +110,12 @@ const boxStyle = ref({
 	width: '0px',
 	height: '0px',
 	display: 'none'
+});
+const tooltipStyle = ref({
+	top: '0px',
+	left: 'auto',
+	right: 'auto',
+	maxWidth: 'none'
 });
 
 let currentElementId: string | null = null;
@@ -212,17 +222,90 @@ function updateBoxPosition() {
 	const rect = element?.getBoundingClientRect();
 
 	if (rect) {
+		// Calculate position with padding
+		const padding = 8;
+		let top = rect.top + window.scrollY - padding;
+		let left = rect.left + window.scrollX - padding;
+		let width = rect.width + padding * 2;
+		let height = rect.height + padding * 2;
+
+		// Ensure the box doesn't overflow off the left or right edge
+		const viewportWidth = window.innerWidth;
+		if (left < 0) {
+			width += left; // Reduce width by the overflow amount
+			left = 0;
+		}
+		if (left + width > viewportWidth) {
+			width = viewportWidth - left;
+		}
+
+		// Ensure the box doesn't overflow off the top
+		if (top < window.scrollY) {
+			const overflow = window.scrollY - top;
+			height -= overflow;
+			top = window.scrollY;
+		}
+
+		// Ensure minimum dimensions
+		width = Math.max(width, 0);
+		height = Math.max(height, 0);
+
 		boxStyle.value = {
-			top: `${rect.top + window.scrollY - 8}px`,
-			left: `${rect.left + window.scrollX - 8}px`,
-			width: `${rect.width + 16}px`,
-			height: `${rect.height + 16}px`,
+			top: `${top}px`,
+			left: `${left}px`,
+			width: `${width}px`,
+			height: `${height}px`,
 			display: 'block'
 		};
+
+		// Calculate tooltip position
+		updateTooltipPosition(top, left, width, height);
 	} else {
 		console.warn(`Element with id "${currentElementId}" not found for tour highlight.`);
 		boxStyle.value.display = 'none';
 	}
+}
+
+function updateTooltipPosition(
+	boxTop: number,
+	boxLeft: number,
+	boxWidth: number,
+	boxHeight: number
+) {
+	const viewportWidth = window.innerWidth;
+	const tooltipOffset = 12;
+	const padding = 16;
+
+	// Position tooltip below the box by default
+	const tooltipTop = boxTop + boxHeight + tooltipOffset;
+
+	// Try to get actual tooltip width, or use estimated width
+	let tooltipWidth = 0;
+	if (tooltipCard.value) {
+		tooltipWidth = tooltipCard.value.offsetWidth || Math.min(viewportWidth * 0.4, 800);
+	} else {
+		tooltipWidth = Math.min(viewportWidth * 0.4, 800);
+	}
+
+	// Calculate where the tooltip would end if positioned at boxLeft
+	const tooltipEndPosition = boxLeft + tooltipWidth;
+
+	// If tooltip would overflow, align it to the right edge instead
+	let tooltipLeft: number;
+	if (tooltipEndPosition > viewportWidth - padding) {
+		// Position from the right edge
+		tooltipLeft = Math.max(padding, viewportWidth - tooltipWidth - padding);
+	} else {
+		// Normal positioning aligned with box
+		tooltipLeft = Math.max(padding, boxLeft);
+	}
+
+	tooltipStyle.value = {
+		top: `${tooltipTop}px`,
+		left: `${tooltipLeft}px`,
+		right: 'auto',
+		maxWidth: 'none'
+	};
 }
 
 function createTourHighlight(id: string) {

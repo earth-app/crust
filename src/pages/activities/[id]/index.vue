@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="currentActivity"
-		class="flex flex-row items-center justify-between w-full"
+		class="flex flex-row items-center justify-between w-full pt-20 sm:pt-0"
 	>
 		<ActivityProfile :activity="currentActivity" />
 	</div>

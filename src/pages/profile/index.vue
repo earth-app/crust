@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="user"
-		class="flex flex-row items-center justify-between w-full"
+		class="flex flex-row items-center justify-between w-full pt-24 sm:pt-0"
 	>
 		<UserProfileEditor :user="user" />
 	</div>
