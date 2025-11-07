@@ -92,8 +92,10 @@
 					/>
 					<iframe
 						v-if="youtubeId"
-						:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1`"
+						:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1&origin=${origin}`"
 						class="w-full h-48 object-cover rounded-lg mb-2"
+						allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+						allowfullscreen
 					></iframe>
 					<span
 						v-if="content"
@@ -251,5 +253,12 @@ const rgb = computed<[number, number, number]>(() => {
 	const g = (props.color >> 8) & 0xff;
 	const b = props.color & 0xff;
 	return [r, g, b];
+});
+
+const origin = computed(() => {
+	if (import.meta.client) {
+		return encodeURIComponent(window.location.origin);
+	}
+	return encodeURIComponent('https://earth-app.com');
 });
 </script>
