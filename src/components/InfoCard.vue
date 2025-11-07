@@ -90,13 +90,16 @@
 						:title="`Retrieved from ${link}`"
 						class="w-full h-48 object-cover rounded-lg mb-2"
 					/>
-					<iframe
-						v-if="youtubeId"
-						:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1&origin=${origin}`"
-						class="w-full h-48 object-cover rounded-lg mb-2"
-						allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-						allowfullscreen
-					></iframe>
+					<ClientOnly>
+						<iframe
+							v-if="youtubeId"
+							:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1&origin=${origin}`"
+							class="w-full h-48 object-cover rounded-lg mb-2"
+							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+							allowfullscreen
+							referrerpolicy="strict-origin-when-cross-origin"
+						></iframe>
+					</ClientOnly>
 					<span
 						v-if="content"
 						class="text-xs sm:text-sm md:text-md text-gray-300 light:text-gray-700 hover:cursor-text"
@@ -259,6 +262,7 @@ const origin = computed(() => {
 	if (import.meta.client) {
 		return encodeURIComponent(window.location.origin);
 	}
-	return encodeURIComponent('https://earth-app.com');
+	// Fallback to production URL for SSR
+	return encodeURIComponent('https://app.earth-app.com');
 });
 </script>
