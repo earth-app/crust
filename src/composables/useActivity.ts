@@ -17,10 +17,23 @@ export async function getAllActivities(limit: number = 25, search: string = '') 
 }
 
 export async function getActivities(page: number = 1, limit: number = 25, search: string = '') {
-	return await util.makeClientAPIRequest<{ items: Activity[]; total: number }>(
+	const res = await util.makeClientAPIRequest<{ items: Activity[]; total: number }>(
 		`/v2/activities?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
 		useCurrentSessionToken()
 	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load individual activities into state
+		for (const activity of res.data.items) {
+			useState<Activity | null>(`activity-${activity.id}`, () => activity);
+		}
+	}
+
+	return res;
 }
 
 export async function getActivitiesList(
@@ -58,10 +71,23 @@ export function useActivitiesCount() {
 }
 
 export async function getRandomActivities(count: number = 3) {
-	return await util.makeClientAPIRequest<Activity[]>(
+	const res = await util.makeClientAPIRequest<Activity[]>(
 		`/v2/activities/random?count=${count}`,
 		useCurrentSessionToken()
 	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load individual activities into state
+		for (const activity of res.data) {
+			useState<Activity | null>(`activity-${activity.id}`, () => activity);
+		}
+	}
+
+	return res;
 }
 
 export async function getActivity(id: string) {

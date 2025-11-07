@@ -5,10 +5,23 @@ import * as util from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 export async function getArticles(page: number = 1, limit: number = 25, search: string = '') {
-	return await util.makeClientAPIRequest<{ items: Article[]; total: number }>(
+	const res = await util.makeClientAPIRequest<{ items: Article[]; total: number }>(
 		`/v2/articles?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
 		useCurrentSessionToken()
 	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load individual articles into state
+		for (const article of res.data.items) {
+			useState<Article | null>(`article-${article.id}`, () => article);
+		}
+	}
+
+	return res;
 }
 
 export async function getRecommendedArticles(user: User, count: number = 3) {
@@ -28,7 +41,7 @@ export async function getRecommendedArticles(user: User, count: number = 3) {
 		return { success: true, data: [] };
 	}
 
-	return await util.makeServerRequest<Article[]>(
+	const res = await util.makeServerRequest<Article[]>(
 		`user-${user.id}-article_recommendations`,
 		`/api/article/recommendArticles`,
 		useCurrentSessionToken(),
@@ -37,6 +50,19 @@ export async function getRecommendedArticles(user: User, count: number = 3) {
 			body: { user, count, pool }
 		}
 	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load recommended articles into state
+		for (const article of res.data) {
+			useState<Article | null>(`article-${article.id}`, () => article);
+		}
+	}
+
+	return res;
 }
 
 export async function getSimilarArticles(article: Article, count: number = 5) {
@@ -56,7 +82,7 @@ export async function getSimilarArticles(article: Article, count: number = 5) {
 		return { success: true, data: [] };
 	}
 
-	return await util.makeServerRequest<Article[]>(
+	const res = await util.makeServerRequest<Article[]>(
 		`article-${article.id}-similar_articles`,
 		`/api/article/similarArticles`,
 		useCurrentSessionToken(),
@@ -65,26 +91,56 @@ export async function getSimilarArticles(article: Article, count: number = 5) {
 			body: { article, count, pool }
 		}
 	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load similar articles into state
+		for (const similarArticle of res.data) {
+			useState<Article | null>(`article-${similarArticle.id}`, () => similarArticle);
+		}
+	}
+
+	return res;
 }
 
 export async function getRandomArticles(count: number = 3) {
-	return await util.makeClientAPIRequest<Article[]>(
+	const res = await util.makeClientAPIRequest<Article[]>(
 		`/v2/articles/random?count=${count}`,
 		useCurrentSessionToken()
 	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load individual articles into state
+		for (const article of res.data) {
+			useState<Article | null>(`article-${article.id}`, () => article);
+		}
+	}
+
+	return res;
 }
 
 export function useArticle(id: string) {
-	const article = useState<Article | null>(`article-${id}`, () => null);
+	const article = useState<Article | null | undefined>(`article-${id}`, () => undefined);
 
 	const fetch = async () => {
+		if (article.value !== undefined) return;
 		const res = await util.makeClientAPIRequest<Article>(`/v2/articles/${id}`);
 		if (res.success && res.data) {
 			if ('message' in res.data) {
+				article.value = null;
 				return res;
 			}
 
 			article.value = res.data;
+		} else {
+			article.value = null;
 		}
 
 		return res;

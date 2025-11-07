@@ -38,13 +38,13 @@
 							:to="`${link}?utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`"
 							target="_blank"
 							rel="noopener noreferrer"
-							class="text-md sm:text-md md:text-lg font-semibold text-blue-500 hover:underline"
+							class="text-md sm:text-md md:text-lg font-semibold text-blue-500 light:text-blue-600 hover:underline"
 							>{{ title }}</NuxtLink
 						>
 						<NuxtLink
 							v-else-if="link"
 							:to="link"
-							class="text-sm sm:text-md md:text-lg font-semibold text-blue-500 hover:underline"
+							class="text-sm sm:text-md md:text-lg font-semibold text-blue-500 light:text-blue-600 hover:underline"
 							>{{ title }}</NuxtLink
 						>
 						<h4
@@ -76,13 +76,13 @@
 					</div>
 					<p
 						v-if="description"
-						class="text-sm md:text-md lg:text-base text-gray-600 hover:cursor-text"
+						class="text-sm md:text-md lg:text-base text-gray-600 light:text-gray-900 hover:cursor-text"
 					>
 						{{ description }}
 					</p>
 					<USeparator
 						v-if="content || image || youtubeId"
-						class="border-gray-500 my-2 w-11/12"
+						class="border-gray-500 light:border-black my-2 w-11/12"
 					/>
 					<img
 						v-if="image"
@@ -97,7 +97,7 @@
 					></iframe>
 					<span
 						v-if="content"
-						class="text-xs sm:text-sm md:text-md text-gray-300 hover:cursor-text"
+						class="text-xs sm:text-sm md:text-md text-gray-300 light:text-gray-700 hover:cursor-text"
 						>{{ content }}</span
 					>
 					<div
@@ -154,13 +154,13 @@
 					</div>
 					<p
 						v-else-if="footer"
-						class="text-gray-500 text-xs sm:text-sm"
+						class="text-gray-500 light:text-gray-800 text-xs sm:text-sm"
 					>
 						{{ footer }}
 					</p>
 					<p
 						v-if="secondaryFooter"
-						class="mt-2 text-gray-600 text-xs"
+						class="mt-2 text-gray-600 light:text-gray-800 text-xs"
 					>
 						{{ secondaryFooter }}
 					</p>

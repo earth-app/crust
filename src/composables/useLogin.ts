@@ -115,12 +115,21 @@ export function useCurrentSessionToken(value?: string | null) {
 			console.warn('Setting session token on server is not supported.');
 		}
 
-		const headers = useRequestHeaders(['cookie']);
-		const cookieHeader = headers.cookie || '';
-		const match = cookieHeader.match(/session_token=([^;]+)/);
-		const token = match?.[1] || null;
+		const cachedToken = useState<string | null>('session_token_cache', () => null);
+		try {
+			if (!cachedToken.value) {
+				const headers = useRequestHeaders(['cookie']);
+				const cookieHeader = headers.cookie || '';
+				const match = cookieHeader.match(/session_token=([^;]+)/);
+				const token = match?.[1] || null;
+				cachedToken.value = token;
+			}
+		} catch (e) {
+			// If we can't access the Nuxt instance, return the cached value or null
+			// This happens when called in async contexts
+		}
 
-		return token;
+		return cachedToken.value;
 	} else {
 		const sessionCookie = useCookie('session_token', {
 			maxAge: 60 * 60 * 24 * 14,

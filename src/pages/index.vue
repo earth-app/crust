@@ -24,11 +24,11 @@
 			>
 				<UAvatar
 					:src="avatar"
-					class="size-8 min-w-4 h-auto mr-2"
+					class="size-8 min-w-4 h-auto mr-2 border border-white/50 light:border-black/50 shadow-lg shadow-black/50"
 				/>
 				<p class="text-lg font-semibold">Welcome, @{{ user.username }}</p>
 			</div>
-			<div class="flex my-3 gap-x-2">
+			<div class="flex flex-col sm:flex-row my-3 gap-x-2 gap-y-2">
 				<UButton
 					icon="mdi:account-arrow-right"
 					color="success"

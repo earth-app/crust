@@ -32,25 +32,17 @@ const props = defineProps<{
 }>();
 
 const { notifications } = useNotifications();
-const notificationsCount = ref(notifications.value.length);
-watch(
-	() => notifications.value.length,
-	(newLength) => {
-		notificationsCount.value = newLength;
-	}
-);
 
-const displayed = ref<UserNotification[]>([]);
+const displayed = computed(() => {
+	return props.additional ? notifications.value : notifications.value.slice(0, 4);
+});
 
-// Limit to 4 if not additional
-if (!props.additional) {
-	displayed.value = notifications.value.slice(0, 4);
-} else {
-	displayed.value = notifications.value;
-}
+const notificationsCount = computed(() => notifications.value.length);
 
 function handleDelete(notification: UserNotification) {
-	notifications.value = notifications.value.filter((n) => n.id !== notification.id);
-	displayed.value = displayed.value.filter((n) => n.id !== notification.id);
+	const index = notifications.value.findIndex((n) => n.id === notification.id);
+	if (index !== -1) {
+		notifications.value.splice(index, 1);
+	}
 }
 </script>

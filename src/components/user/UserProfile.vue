@@ -71,7 +71,7 @@
 				class="hover:cursor-pointer transition-all duration-500 ml-2 mb-2 sm:mb-3"
 			/>
 		</div>
-		<div class="max-w-3xl mt-4">
+		<div class="min-w-80 max-w-3xl mt-4">
 			<UserJourneys :user="props.user" />
 		</div>
 		<div class="flex flex-col items-center mt-12 mb-2 w-full">

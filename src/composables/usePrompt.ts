@@ -66,28 +66,37 @@ export async function removePrompt(id: string) {
 
 export function usePromptResponses(id: string, page: number = 1, limit: number = 25) {
 	const responses = useState<PromptResponse[]>(`prompt-${id}-responses-page-${page}`, () => []);
+	const loading = useState<boolean>(`prompt-${id}-responses-loading`, () => false);
 
 	const fetch = async (newPage: number = page, newLimit: number = limit) => {
+		if (loading.value) return { success: false, message: 'Already loading' };
+
+		loading.value = true;
 		const res = await util.makeClientAPIRequest<{ items: PromptResponse[] }>(
 			`/v2/prompts/${id}/responses?page=${newPage}&limit=${newLimit}`
 		);
+
 		if (res.success && res.data) {
 			if ('message' in res.data) {
+				loading.value = false;
 				return res;
 			}
 
 			responses.value = res.data.items;
 		}
+
+		loading.value = false;
 		return res;
 	};
 
-	if (responses.value.length === 0) {
+	if (responses.value.length === 0 && !loading.value) {
 		fetch(page, limit);
 	}
 
 	return {
 		responses,
-		fetch
+		fetch,
+		loading
 	};
 }
 

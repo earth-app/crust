@@ -29,6 +29,7 @@
 				{{ paragraph }}
 			</p>
 		</div>
+		<h3 class="text-xs sm:text-sm text-gray-400">{{ time }}</h3>
 		<div
 			v-if="article.ocean"
 			class="flex flex-col items-center my-8"
@@ -45,19 +46,9 @@
 				"
 				:footer="oceanTime"
 				:secondary-footer="article.ocean.source"
-				:badges="
-					article.ocean.keywords
-						?.slice(0, 10)
-						.map((k) => ({ text: k.toLowerCase(), color: 'info' }))
-				"
+				:badges="oceanBadges"
 				:color="oceanColor"
-				:additional-links="
-					Object.entries(article.ocean.links || {}).map(([k, v]) => ({
-						text: k,
-						link: v,
-						external: true
-					}))
-				"
+				:additional-links="oceanLinks"
 				class="my-6 w-2/3"
 			/>
 		</div>
@@ -75,6 +66,22 @@ const props = defineProps<{
 
 const contentParagraphs = computed(() => {
 	return props.article.content.split('\n').filter((p) => p.trim().length > 0);
+});
+
+const oceanBadges = computed(() => {
+	return (
+		props.article.ocean?.keywords
+			?.slice(0, 10)
+			.map((k) => ({ text: k.toLowerCase(), color: 'info' as const })) || []
+	);
+});
+
+const oceanLinks = computed(() => {
+	return Object.entries(props.article.ocean?.links || {}).map(([k, v]) => ({
+		text: k,
+		link: v,
+		external: true
+	}));
 });
 
 const authorAvatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
@@ -119,5 +126,32 @@ const oceanTime = computed(() => {
 const oceanColor = computed(() => {
 	if (!props.article.ocean?.theme_color) return 0xffffff;
 	return parseInt(props.article.ocean.theme_color.replace('#', ''), 16);
+});
+
+useHead({
+	meta: [
+		{
+			name: 'citation_title',
+			content: props.article.title
+		},
+		{
+			name: 'citation_author',
+			content: props.article.author.username
+		},
+		{
+			name: 'citation_publication_date',
+			content: props.article.created_at
+				? DateTime.fromISO(props.article.created_at).toISODate()
+				: undefined
+		},
+		{
+			name: 'citation_journal_title',
+			content: 'Earth App'
+		},
+		{
+			name: 'citation_abstract',
+			content: props.article.description
+		}
+	]
 });
 </script>

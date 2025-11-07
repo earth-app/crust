@@ -65,7 +65,13 @@
 				variant="subtle"
 				block
 				@click="newPrompt"
-				:disabled="disabled || loading || newDisabled"
+				:disabled="
+					disabled ||
+					loading ||
+					newDisabled ||
+					prompt.trim().length < 10 ||
+					prompt.trim().length > 100
+				"
 				:loading="loading"
 				>Create</UButton
 			>

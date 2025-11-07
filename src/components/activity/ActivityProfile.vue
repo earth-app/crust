@@ -22,17 +22,17 @@
 				v-model:open="editing"
 			/>
 		</div>
-		<h3 class="text-xl min-w-75 w-3/5 mt-8">{{ activity.description }}</h3>
+		<h3 class="text-md sm:text-lg md:text-xl min-w-75 w-3/5 mt-8">{{ activity.description }}</h3>
 		<!-- Icon Islands -->
 		<UIcon
 			v-for="island in islands"
 			:key="island.name"
 			:name="island.icon"
-			class="absolute top-0 hidden md:inline-block md:size-8 lg:size-12 z-10 shadow-2xl shadow-gray-950 duration-300 motion-preset-fade-lg"
+			class="absolute top-0 hidden md:inline-block md:size-8 lg:size-12 z-10duration-300 motion-preset-fade-lg"
 			:style="{ transform: `translate(${island.x}vw, ${island.y}vh)` }"
 		/>
 		<div
-			class="grid grid-cols-1 xl:grid-cols-2 justify-items-center items-start w-2/3 min-w-80 mt-6 sm:px-4 gap-y-8"
+			class="grid grid-cols-1 xl:grid-cols-2 justify-items-center items-start w-2/3 min-w-100 xl:min-w-260 mt-6 sm:px-4 gap-y-8"
 		>
 			<!-- Skeleton Loading Cards -->
 			<InfoCardSkeleton
@@ -44,6 +44,7 @@
 			<!-- Card Data Entries -->
 			<InfoCard
 				v-for="(card, index) in cards"
+				class="z-20"
 				:key="`card-${index}`"
 				:icon="card.icon"
 				:external="true"
@@ -196,7 +197,7 @@ async function loadCardsForActivity(activity: Activity) {
 
 // Reload when the activity changes (name or aliases)
 watch(
-	() => [props.activity?.name, JSON.stringify(props.activity?.aliases || [])],
+	() => [props.activity?.name, props.activity?.aliases?.join(',') || ''],
 	() => {
 		loadCardsForActivity(props.activity);
 		loadIslandsForActivity(props.activity);

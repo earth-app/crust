@@ -19,3 +19,7 @@ html,
 body {
 	overflow-x: hidden;
 }
+
+html.light {
+	background-color: #f0f0f0;
+}

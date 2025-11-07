@@ -120,7 +120,15 @@ async function loadActivities() {
 			return;
 		}
 
-		allActivities.value.push(...res.data.items.sort(() => Math.random() - 0.5)); // Shuffle the activities
+		// Shuffle only the new items before adding them (Fisher-Yates shuffle)
+		const newItems = res.data.items;
+		for (let i = newItems.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			const temp = newItems[i];
+			newItems[i] = newItems[j]!;
+			newItems[j] = temp!;
+		}
+		allActivities.value.push(...newItems);
 		hasMore.value = allActivities.value.length < res.data.total;
 		page.value++;
 	} else {

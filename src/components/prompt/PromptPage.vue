@@ -144,13 +144,23 @@ async function loadResponses() {
 	if (isLoading.value || !hasMore.value) return;
 
 	isLoading.value = true;
-	const { responses } = usePromptResponses(props.prompt.id);
-	if (responses.value.length > 0) {
-		responses.value.push(...responses.value);
-		page.value++;
+	const { responses: newResponses, fetch } = usePromptResponses(props.prompt.id, page.value);
+
+	const result = await fetch(page.value);
+
+	if (result.success && result.data && !('message' in result.data)) {
+		const newItems = result.data.items;
+		if (newItems.length > 0) {
+			responses.value.push(...newItems);
+			page.value++;
+		} else {
+			hasMore.value = false;
+		}
 	} else {
 		hasMore.value = false;
 	}
+
+	isLoading.value = false;
 }
 
 onMounted(async () => {

@@ -2,7 +2,7 @@
 	<ClientOnly>
 		<div
 			v-if="currentUser"
-			class="flex flex-row items-center justify-between w-full"
+			class="flex flex-row items-center justify-between w-full mt-16 sm:mt-0"
 		>
 			<UserProfile :user="currentUser" />
 		</div>

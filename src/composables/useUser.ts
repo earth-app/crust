@@ -78,9 +78,20 @@ export const useAuth = () => {
 		}
 	};
 
-	// If user is not loaded, fetch it
+	// If user is not loaded, fetch it in the next tick to avoid async context issues
 	if (!user.value) {
-		fetchUser();
+		if (import.meta.server) {
+			// On server, we can call it synchronously during SSR
+			// But wrap in try-catch to handle potential issues
+			try {
+				fetchUser();
+			} catch (e) {
+				console.error('Error fetching user on server:', e);
+			}
+		} else {
+			// On client, use nextTick or just call it
+			fetchUser();
+		}
 	}
 
 	const fetchPhoto = async () => {
@@ -167,12 +178,25 @@ export async function setAccountType(id: string, type: User['account']['account_
 // Ocean
 
 export async function getRecommendedActivities(poolLimit: number = 25) {
-	return await makeAPIRequest<Activity[]>(
+	const res = await makeAPIRequest<Activity[]>(
 		null,
 		`/v2/users/current/activities/recommend?pool_limit=${poolLimit}`,
 		useCurrentSessionToken(),
 		{}
 	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load recommended activities into state
+		for (const activity of res.data) {
+			useState<Activity | null>(`activity-${activity.id}`, () => activity);
+		}
+	}
+
+	return res;
 }
 
 // Other Users
@@ -295,11 +319,12 @@ export function useNotifications() {
 		if (res.success && res.data && 'items' in res.data) {
 			notifications.value = res.data.items;
 
-			// load individual notifications
-			if (import.meta.client)
-				notifications.value.forEach((n) => {
-					useNotification(n.id);
-				});
+			// load individual notifications into state cache
+			if (import.meta.client) {
+				for (const n of res.data.items) {
+					useState<UserNotification>(`notification-${n.id}`, () => n);
+				}
+			}
 
 			unreadCount.value = res.data.unread_count;
 			hasWarnings.value = res.data.has_warnings;
@@ -340,13 +365,11 @@ export async function markNotificationRead(id: string) {
 
 	if (res.success) {
 		const { notifications, unreadCount } = useNotifications();
-		notifications.value = notifications.value.map((n) => {
-			if (n.id === id) {
-				n.read = true;
-			}
-			return n;
-		});
-		unreadCount.value = Math.max(0, unreadCount.value - 1);
+		const notification = notifications.value.find((n) => n.id === id);
+		if (notification) {
+			notification.read = true;
+			unreadCount.value = Math.max(0, unreadCount.value - 1);
+		}
 	}
 
 	return res;
@@ -363,13 +386,11 @@ export async function markNotificationUnread(id: string) {
 
 	if (res.success) {
 		const { notifications, unreadCount } = useNotifications();
-		notifications.value = notifications.value.map((n) => {
-			if (n.id === id) {
-				n.read = false;
-			}
-			return n;
-		});
-		unreadCount.value += 1;
+		const notification = notifications.value.find((n) => n.id === id);
+		if (notification) {
+			notification.read = false;
+			unreadCount.value += 1;
+		}
 	}
 
 	return res;
@@ -386,10 +407,9 @@ export async function markAllNotificationsRead() {
 
 	if (res.success) {
 		const { notifications, unreadCount } = useNotifications();
-		notifications.value = notifications.value.map((n) => {
+		for (const n of notifications.value) {
 			n.read = true;
-			return n;
-		});
+		}
 		unreadCount.value = 0;
 	}
 
@@ -407,10 +427,9 @@ export async function markAllNotificationsUnread() {
 
 	if (res.success) {
 		const { notifications, unreadCount } = useNotifications();
-		notifications.value = notifications.value.map((n) => {
+		for (const n of notifications.value) {
 			n.read = false;
-			return n;
-		});
+		}
 		unreadCount.value = notifications.value.length;
 	}
 

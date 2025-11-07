@@ -34,10 +34,19 @@
 			</div> -->
 		</div>
 		<div
-			v-else
+			v-else-if="article === null"
 			class="flex w-full h-full items-center justify-center text-center"
 		>
 			<p>Article not found.</p>
+		</div>
+		<div
+			v-else
+			class="flex w-full h-full items-center justify-center text-center"
+		>
+			<UIcon
+				name="mdi:loading"
+				class="animate-spin size-8 sm:size-16 mt-4"
+			/>
 		</div>
 	</ClientOnly>
 </template>
@@ -59,7 +68,8 @@ watch(
 	() => article.value,
 	(article) => {
 		setTitleSuffix(article ? article.title : 'Article');
-	}
+	},
+	{ immediate: true }
 );
 
 useSeoMeta({

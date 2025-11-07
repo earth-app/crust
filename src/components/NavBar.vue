@@ -85,30 +85,22 @@
 						>
 					</div>
 					<div class="flex space-x-1 sm:space-x-2 md:space-x-4 items-center justify-center">
-						<UPopover mode="hover">
-							<NuxtLink
-								to="/profile/notifications"
-								class="size-5 lg:size-8 relative"
+						<NuxtLink
+							to="/profile/notifications"
+							class="size-5 lg:size-8 relative"
+						>
+							<UChip
+								:color="chipColor"
+								:show="unreadCount > 0"
+								:ui="{ base: 'size-2 lg:size-3' }"
+								class="m-0"
 							>
-								<UChip
-									:color="chipColor"
-									:show="unreadCount > 0"
-									:ui="{ base: 'size-2 lg:size-3' }"
-									class="m-0"
-								>
-									<UIcon
-										name="mdi:bell"
-										class="size-5 lg:size-8 hover:cursor-pointer"
-									/>
-								</UChip>
-							</NuxtLink>
-
-							<template #content>
-								<div class="w-85 max-h-96">
-									<UserNotificationList />
-								</div>
-							</template>
-						</UPopover>
+								<UIcon
+									name="mdi:bell"
+									class="size-5 lg:size-8 hover:cursor-pointer"
+								/>
+							</UChip>
+						</NuxtLink>
 						<NuxtLink
 							class="size-5 lg:size-8"
 							to="/profile"

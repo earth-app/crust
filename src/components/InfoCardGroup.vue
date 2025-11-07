@@ -1,6 +1,6 @@
 <template>
 	<UCard
-		class="ml-2 sm:ml-4 md:ml-6 lg:ml-8 mt-6 shadow-xl rounded-lg min-w-70 max-w-11/12"
+		class="ml-2 sm:ml-4 md:ml-6 lg:ml-8 mt-6 shadow-xl rounded-lg min-w-70 max-w-11/12 light:border-2 light:border-black/10"
 		variant="soft"
 	>
 		<div class="flex space-x-1 items-start mb-4">
@@ -13,11 +13,11 @@
 					class="size-4 md:size-8 mr-2 mt-0.5"
 				/>
 			</div>
-			<div class="flex flex-col items-start text-white min-w-1/4">
+			<div class="flex flex-col items-start text-white light:text-gray-800 min-w-1/4">
 				<h1 class="text-2xl font-semibold">{{ title }}</h1>
 				<p
 					v-if="description"
-					class="text-gray-400 text-sm mt-1"
+					class="text-gray-400 light:text-gray-700 text-sm mt-1"
 				>
 					{{ description }}
 				</p>
