@@ -13,6 +13,9 @@
 </template>
 
 <script setup lang="ts">
+const { setTitleSuffix } = useTitleSuffix();
+setTitleSuffix('Sign Up');
+
 const { user } = useAuth();
 
 const toast = useToast();

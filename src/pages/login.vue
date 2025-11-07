@@ -8,6 +8,9 @@
 </template>
 
 <script setup lang="ts">
+const { setTitleSuffix } = useTitleSuffix();
+setTitleSuffix('Login');
+
 const { user } = useAuth();
 const toast = useToast();
 const router = useRouter();

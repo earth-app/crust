@@ -54,3 +54,8 @@
 		</div>
 	</div>
 </template>
+
+<script setup lang="ts">
+const { setTitleSuffix } = useTitleSuffix();
+setTitleSuffix('About');
+</script>
