@@ -7,8 +7,6 @@
 </template>
 
 <script setup>
-import { SITE_DESCRIPTION, SITE_NAME, THEME_COLOR } from './composables/useConstants';
-
 useSeoMeta({
 	charset: 'utf-8',
 	viewport: {

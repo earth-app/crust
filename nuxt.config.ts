@@ -1,4 +1,5 @@
 import tailwindcss from '@tailwindcss/vite';
+import { defineOrganization } from 'nuxt-schema-org/schema';
 import { defineNuxtConfig } from 'nuxt/config';
 
 export default defineNuxtConfig({
@@ -107,6 +108,7 @@ export default defineNuxtConfig({
 		'@nuxtjs/robots',
 		'@nuxtjs/sitemap',
 		'@nuxt/image',
+		'nuxt-schema-org',
 		[
 			'@nuxtjs/google-fonts',
 			{
@@ -136,5 +138,12 @@ export default defineNuxtConfig({
 	},
 	experimental: {
 		renderJsonPayloads: true
+	},
+	schemaOrg: {
+		identity: defineOrganization({
+			name: 'The Earth App',
+			logo: '/earth-app.png',
+			url: 'https://earth-app.com'
+		})
 	}
 });
