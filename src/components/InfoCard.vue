@@ -1,7 +1,11 @@
 <template>
 	<UCard
 		:variant="variant || 'outline'"
-		class="relative min-w-65 lg:min-w-100 xl:min-w-120 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-4 transition-all duration-600 motion-preset-fade motion-duration-1000"
+		:class="[
+			'relative min-w-65 lg:min-w-100 xl:min-w-120 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl transition-all duration-600',
+			isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
+			'will-change-[opacity,transform]'
+		]"
 	>
 		<div class="flex flex-row h-full justify-between">
 			<div class="flex items-center space-x-4 h-full">
@@ -84,11 +88,18 @@
 						v-if="content || image || youtubeId"
 						class="border-gray-500 light:border-black my-2 w-11/12"
 					/>
-					<img
+					<NuxtImg
 						v-if="image"
 						:src="image"
+						:alt="title"
 						:title="`Retrieved from ${link}`"
+						format="webp"
+						width="800"
+						height="400"
 						class="w-full h-48 object-cover rounded-lg mb-2"
+						loading="lazy"
+						decoding="async"
+						fetchpriority="low"
 					/>
 					<ClientOnly>
 						<iframe
@@ -97,6 +108,7 @@
 							class="w-full h-48 object-cover rounded-lg mb-2"
 							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
 							allowfullscreen
+							loading="lazy"
 							referrerpolicy="strict-origin-when-cross-origin"
 						></iframe>
 					</ClientOnly>
@@ -199,6 +211,7 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick, onMounted, ref } from 'vue';
 const props = defineProps<{
 	external?: boolean;
 	variant?: 'outline' | 'subtle' | 'solid' | 'soft';
@@ -256,6 +269,22 @@ const rgb = computed<[number, number, number]>(() => {
 	const g = (props.color >> 8) & 0xff;
 	const b = props.color & 0xff;
 	return [r, g, b];
+});
+
+// Ensure fade/translate animation reliably completes and final state sticks
+const isVisible = ref(false);
+
+onMounted(async () => {
+	// Respect prefers-reduced-motion
+	const prefersReduced =
+		typeof window !== 'undefined' &&
+		window.matchMedia &&
+		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	await nextTick();
+	requestAnimationFrame(() => {
+		isVisible.value = !prefersReduced;
+	});
 });
 
 const origin = computed(() => {

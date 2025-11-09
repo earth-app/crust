@@ -80,13 +80,27 @@ function updateProgress() {
 
 onMounted(() => {
 	if (scrollContainer.value) {
-		scrollContainer.value.addEventListener('scroll', updateProgress);
+		// Throttle scroll updates to animation frame
+		let ticking = false;
+		const onScroll = () => {
+			if (!ticking) {
+				ticking = true;
+				requestAnimationFrame(() => {
+					updateProgress();
+					ticking = false;
+				});
+			}
+		};
+		scrollContainer.value.addEventListener('scroll', onScroll, { passive: true });
+		// Store listener for cleanup
+		(scrollContainer.value as any)._onScroll = onScroll;
 	}
 });
 
 onUnmounted(() => {
 	if (scrollContainer.value) {
-		scrollContainer.value.removeEventListener('scroll', updateProgress);
+		const onScroll = (scrollContainer.value as any)._onScroll || updateProgress;
+		scrollContainer.value.removeEventListener('scroll', onScroll as any);
 	}
 });
 

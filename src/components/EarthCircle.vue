@@ -1,9 +1,15 @@
 <template>
-	<img
+	<NuxtImg
 		src="/earth-app.png"
 		alt="Earth App Logo"
+		format="webp"
+		width="512"
+		height="512"
 		class="absolute h-full w-full rounded-full"
 		id="earth-circle"
+		loading="eager"
+		decoding="async"
+		fetchpriority="high"
 	/>
 
 	<UIcon

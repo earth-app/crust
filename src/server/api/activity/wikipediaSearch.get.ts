@@ -42,13 +42,6 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
-	if (typeof search !== 'string' || search.trim() === '') {
-		throw createError({
-			statusCode: 400,
-			statusMessage: 'Search must be a non-empty string'
-		});
-	}
-
 	try {
 		const response = await $fetch<{ query: { search: { title: string; snippet: string }[] } }>(
 			`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(

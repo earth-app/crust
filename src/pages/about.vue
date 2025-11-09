@@ -25,9 +25,15 @@
 						class="text-blue-500 font-semibold"
 						>@gmitch215</NuxtLink
 					>
-					<img
+					<NuxtImg
 						src="/gregory.jpg"
+						alt="Gregory R. Mitchell"
+						format="webp"
+						width="480"
+						height="480"
 						class="h-1/2 max-h-240 w-auto mt-4 mr-4 object-contain border-2 border-gray-300 rounded-md hover:scale-105 transition-transform duration-200 shadow-lg shadow-gray-700"
+						loading="lazy"
+						decoding="async"
 					/>
 				</div>
 				<div class="flex flex-col items-center max-w-3xl ml-8 mt-12 w-1/2">

@@ -131,11 +131,16 @@ const randomActivities = ref<Activity[]>([]);
 const randomArticles = ref<Article[]>([]);
 
 onMounted(async () => {
-	const resPrompt = await getRandomPrompts(3);
+	// Fetch all random content in parallel to reduce total latency
+	const [resPrompt, resActivities, resArticles] = await Promise.all([
+		getRandomPrompts(3),
+		getRandomActivities(5),
+		getRandomArticles(4)
+	]);
+
 	if (resPrompt.success && resPrompt.data) {
 		if ('message' in resPrompt.data) {
 			randomPrompts.value = [];
-
 			toast.add({
 				title: 'Error Fetching Prompts',
 				description: resPrompt.data.message || 'An unknown error occurred.',
@@ -148,11 +153,9 @@ onMounted(async () => {
 		}
 	}
 
-	const resActivities = await getRandomActivities(5);
 	if (resActivities.success && resActivities.data) {
 		if ('message' in resActivities.data) {
 			randomActivities.value = [];
-
 			toast.add({
 				title: 'Error Fetching Activities',
 				description: resActivities.data.message || 'An unknown error occurred.',
@@ -165,11 +168,9 @@ onMounted(async () => {
 		}
 	}
 
-	const resArticles = await getRandomArticles(4);
 	if (resArticles.success && resArticles.data) {
 		if ('message' in resArticles.data) {
 			randomArticles.value = [];
-
 			toast.add({
 				title: 'Error Fetching Articles',
 				description: resArticles.data.message || 'An unknown error occurred.',

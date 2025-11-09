@@ -39,6 +39,7 @@
 			/>
 			<ActivityCard
 				v-for="activity in allActivities"
+				:key="activity.id"
 				:activity="activity"
 			/>
 		</div>

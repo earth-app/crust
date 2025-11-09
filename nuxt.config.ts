@@ -1,6 +1,5 @@
-import { defineNuxtConfig } from 'nuxt/config';
-
 import tailwindcss from '@tailwindcss/vite';
+import { defineNuxtConfig } from 'nuxt/config';
 
 export default defineNuxtConfig({
 	runtimeConfig: {
@@ -17,10 +16,26 @@ export default defineNuxtConfig({
 	},
 	ssr: true,
 	compatibilityDate: '2025-06-20',
-	devtools: { enabled: true },
+	// Disable devtools in production to reduce client bundle size and overhead
+	devtools: { enabled: process.env.NODE_ENV !== 'production' },
 	srcDir: 'src',
 	serverDir: 'src/server',
 	css: ['~/assets/css/main.css'],
+	// Add global head optimizations (preconnect + dns-prefetch) for critical external domains
+	app: {
+		head: {
+			link: [
+				{ rel: 'preconnect', href: 'https://cdn.earth-app.com' },
+				{ rel: 'dns-prefetch', href: 'https://cdn.earth-app.com' },
+				{ rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+				{ rel: 'dns-prefetch', href: 'https://fonts.gstatic.com' },
+				{ rel: 'preconnect', href: 'https://www.youtube.com' },
+				{ rel: 'dns-prefetch', href: 'https://www.youtube.com' },
+				{ rel: 'preconnect', href: 'https://api.earth-app.com' },
+				{ rel: 'dns-prefetch', href: 'https://api.earth-app.com' }
+			]
+		}
+	},
 	vite: {
 		plugins: [tailwindcss()]
 	},
@@ -91,6 +106,7 @@ export default defineNuxtConfig({
 		'nuxt-viewport',
 		'@nuxtjs/robots',
 		'@nuxtjs/sitemap',
+		'@nuxt/image',
 		[
 			'@nuxtjs/google-fonts',
 			{
@@ -117,5 +133,8 @@ export default defineNuxtConfig({
 	turnstile: {
 		siteKey: process.env.NUXT_PUBLIC_TURNSTILE_SITE_KEY || '',
 		addValidateEndpoint: true
+	},
+	experimental: {
+		renderJsonPayloads: true
 	}
 });

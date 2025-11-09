@@ -32,6 +32,7 @@ const props = defineProps<{
 }>();
 
 const user = props.user;
+const router = useRouter();
 
 const editUserOpen = ref(false);
 
@@ -50,7 +51,13 @@ const items = ref<DropdownMenuItem[][]>([
 			icon: 'flowbite:profile-card-solid'
 		}
 	],
-	[]
+	[
+		{
+			label: 'View Profile',
+			icon: 'mdi:account',
+			onSelect: () => router.push(`/profile/${user.id}`)
+		}
+	]
 ]);
 
 if (props.admin) {

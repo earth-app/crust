@@ -5,10 +5,15 @@
 	>
 		<div class="flex items-center w-2/3 max-w-40 sm:max-w-60">
 			<NuxtLink to="/">
-				<img
+				<NuxtImg
 					src="/favicon.png"
 					alt="Earth App Logo"
+					format="webp"
+					width="48"
+					height="48"
 					class="min-w-8 w-8 h-auto xl:w-12 inline-block mr-2 shadow-lg shadow-black/50 rounded-full hover:scale-105 transition-transform duration-300"
+					loading="eager"
+					decoding="async"
 				/>
 			</NuxtLink>
 			<div class="flex min-w-30 sm:min-w-70 md:min-w-60 w-3/5 max-w-120">

@@ -44,14 +44,14 @@
 					v-if="total"
 					class="text-sm text-gray-700 dark:text-gray-300"
 				>
-					You have found {{ count }} out of {{ total }} activities on this journey.
+					{{ count }} out of {{ total }} activities have been found on this journey.
 				</p>
 				<p
 					v-else
 					class="text-sm text-gray-700 dark:text-gray-300"
 				>
-					You have found {{ count }} {{ title?.toLowerCase() || 'items' }} so far. Make sure you
-					keep going at least every two days to keep up this streak!
+					{{ count }} {{ title?.toLowerCase() || 'items' }} so far. Streaks only last every 48
+					hours, so keep going!
 				</p>
 				<p
 					v-if="help"

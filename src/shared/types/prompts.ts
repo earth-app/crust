@@ -6,6 +6,7 @@ export type Prompt = {
 	owner_id: string;
 	owner: User;
 	responses_count: number;
+	has_responded: boolean;
 	prompt: string;
 	visibility: typeof com.earthapp.account.Privacy.prototype.name;
 	created_at: string;

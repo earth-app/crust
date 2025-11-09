@@ -15,6 +15,7 @@
   "dependencies": {
     "@earth-app/ocean": "1.0.0-a752a2e",
     "@nuxt/icon": "^2.1.0",
+    "@nuxt/image": "^2.0.0",
     "@nuxt/kit": "^4.2.0",
     "@nuxt/scripts": "^0.13.0",
     "@nuxt/ui": "^4.1.0",
