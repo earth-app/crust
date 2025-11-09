@@ -114,6 +114,13 @@ async function markAsRead() {
 		const res = await markNotificationRead(notification.value.id);
 		if (res.success) {
 			notification.value.read = true;
+
+			const { notifications, unreadCount } = useNotifications();
+			const n = notifications.value.find((n) => n.id === notification.value!.id);
+			if (n) {
+				n.read = true;
+				unreadCount.value = Math.max(0, unreadCount.value - 1);
+			}
 		} else {
 			console.error('Failed to mark notification as read:', res.message);
 
