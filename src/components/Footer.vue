@@ -52,7 +52,7 @@
 					/>
 				</NuxtLink>
 				<NuxtLink
-					to="https://patreon.com/theearthapp"
+					to="https://patreon.com/gmitch215"
 					target="_blank"
 				>
 					<UIcon
