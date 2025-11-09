@@ -1,9 +1,6 @@
-import { ensureLoggedIn } from '~/server/utils';
-
 const validJournies = ['activity', 'prompt', 'article'];
 
 export default defineEventHandler(async (event) => {
-	await ensureLoggedIn(event);
 	const { type, id } = getQuery(event);
 
 	if (!type || typeof type !== 'string' || !validJournies.includes(type)) {
