@@ -9,6 +9,7 @@
 				:avatar-chip="authorAvatarChipColor ? true : false"
 				:avatar-chip-color="authorAvatarChipColor"
 				avatar-chip-size="xl"
+				:link="noLink ? undefined : `/prompts/${prompt.id}`"
 				:footer="`${footer} • ${prompt.responses_count ? withSuffix(prompt.responses_count) + ' Responses' : 'No Responses'}`"
 				:secondary-footer="secondaryFooter"
 				:buttons="
