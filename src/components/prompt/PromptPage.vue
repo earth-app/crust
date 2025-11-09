@@ -12,7 +12,7 @@
 						user
 							? {
 									src: avatar,
-									alt: user?.full_name || `@${user?.username || 'anonymous'}`
+									alt: handle
 								}
 							: undefined
 					"
@@ -60,6 +60,7 @@
 import { type Prompt, type PromptResponse } from '~/shared/types/prompts';
 
 const { user, photo } = useAuth();
+const { handle } = useDisplayName(user);
 const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
 watch(
 	() => photo.value,

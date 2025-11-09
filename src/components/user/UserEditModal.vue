@@ -1,6 +1,6 @@
 <template>
 	<UModal
-		:title="title || `Edit ${user.full_name || user.username}'s Profile`"
+		:title="title || `Edit ${name}'s Profile`"
 		:description="description"
 		:close="{
 			color: 'primary',
@@ -30,4 +30,5 @@ const props = defineProps<{
 }>();
 
 const user = props.user;
+const { name } = useDisplayName(user);
 </script>

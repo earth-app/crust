@@ -13,8 +13,6 @@
 </template>
 
 <script setup lang="ts">
-import type { SiteTourStep } from '~/composables/useSiteTour';
-
 const welcomeTour: SiteTourStep[] = [
 	{
 		id: 'title',

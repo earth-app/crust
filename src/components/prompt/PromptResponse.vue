@@ -80,9 +80,7 @@ const emit = defineEmits<{
 const i18n = useI18n();
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const user = ref<User | null>(null);
-const identifier = computed(
-	() => user.value?.full_name || `@${user.value?.username || 'anonymous'}`
-);
+const { handle: identifier } = useDisplayName(user);
 
 const authorAvatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
 const { photo } = useUser(props.response.owner.id);

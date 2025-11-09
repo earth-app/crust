@@ -3,13 +3,12 @@
 		<div class="w-full flex items-center justify-center my-2 sm:my-4 md:my-6 lg:my-8">
 			<InfoCard
 				:title="promptText"
-				:description="prompt.owner.full_name || `@${prompt.owner.username}`"
+				:description="ownerHandle"
 				:avatar="authorAvatar"
 				avatar-size="xl"
 				:avatar-chip="authorAvatarChipColor ? true : false"
 				:avatar-chip-color="authorAvatarChipColor"
 				avatar-chip-size="xl"
-				:link="noLink ? undefined : `/prompts/${prompt.id}`"
 				:footer="`${footer} • ${prompt.responses_count ? withSuffix(prompt.responses_count) + ' Responses' : 'No Responses'}`"
 				:secondary-footer="secondaryFooter"
 				:buttons="
@@ -66,6 +65,8 @@ const props = defineProps<{
 	prompt: Prompt;
 	noLink?: boolean;
 }>();
+
+const { handle: ownerHandle } = useDisplayName(() => props.prompt.owner);
 
 const promptText = ref(props.prompt.prompt);
 watch(

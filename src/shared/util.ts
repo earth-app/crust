@@ -1,5 +1,7 @@
 import { useRuntimeConfig } from '#imports';
 import { DateTime } from 'luxon';
+import type { User } from './types/user';
+import { DEFAULT_FULL_NAME } from './types/user';
 
 export async function makeRequest<T>(
 	key: string | null,
@@ -258,4 +260,29 @@ export function parseLooseDate(input: string): DateTime | string {
 	}
 
 	return input;
+}
+
+// User helpers
+
+export function getUserDisplayName(
+	user:
+		| Pick<User, 'full_name' | 'username'>
+		| { full_name?: string; username?: string }
+		| null
+		| undefined,
+	opts?: { at?: boolean; anonymous?: string }
+): string {
+	const at = opts?.at ?? false;
+	const anonymous = opts?.anonymous ?? 'anonymous';
+
+	const full = user?.full_name && user.full_name !== DEFAULT_FULL_NAME ? user.full_name : undefined;
+	if (full) return full;
+
+	const base = user?.username ?? anonymous;
+	return at ? `@${base}` : base;
+}
+
+export function realFullName(fullName?: string): string | undefined {
+	if (!fullName) return undefined;
+	return fullName !== DEFAULT_FULL_NAME ? fullName : undefined;
 }

@@ -7,7 +7,7 @@
 			/>
 			<div class="flex flex-col md:flex-row">
 				<h1 class="text-3xl font-semibold">
-					{{ props.user.full_name || `@${props.user.username}` }}
+					{{ handle }}
 				</h1>
 				<UserTypeBadge
 					:user="props.user"
@@ -16,7 +16,7 @@
 				/>
 			</div>
 			<h2
-				v-if="props.user.full_name"
+				v-if="hasFullName"
 				class="text-xl ml-2 text-gray-400"
 			>
 				@{{ props.user.username }}
@@ -78,7 +78,7 @@
 			<h1 class="text-2xl font-bold">{{ props.user?.username }}'s Content</h1>
 			<InfoCardGroup
 				v-if="prompts.length > 0"
-				:title="`Prompts by ${props.user.full_name || props.user.username}`"
+				:title="`Prompts by ${displayName}`"
 				:description="`${totalPrompts} Prompts created by ${props.user.username} (${Math.min(totalPrompts, 25)} shown here)`"
 				icon="mdi:pencil-circle-outline"
 				class="w-11/12 my-4"
@@ -92,7 +92,7 @@
 			</InfoCardGroup>
 			<InfoCardGroup
 				v-if="articles.length > 0"
-				:title="`Articles by ${props.user.full_name || props.user.username}`"
+				:title="`Articles by ${displayName}`"
 				:description="`${totalArticles} Articles written by ${props.user.username} (${Math.min(totalArticles, 25)} shown here)`"
 				icon="mdi:newspaper-variant-multiple-outline"
 				class="w-11/12 my-4"
@@ -120,6 +120,7 @@ const props = defineProps<{
 }>();
 
 const { user } = useAuth();
+const { name: displayName, handle, hasFullName } = useDisplayName(() => props.user);
 
 const { photo } = useUser(props.user.id);
 const { prompts, total: totalPrompts } = useUserPrompts(props.user.id, 1, 25, 'rand');

@@ -1,10 +1,13 @@
+import { computed, toValue, type MaybeRefOrGetter } from 'vue';
 import type { Activity } from '~/shared/types/activity';
 import type { User, UserNotification } from '~/shared/types/user';
 import {
+	getUserDisplayName,
 	makeAPIRequest,
 	makeClientAPIRequest,
 	makeServerRequest,
-	paginatedAPIRequest
+	paginatedAPIRequest,
+	realFullName
 } from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
@@ -19,6 +22,26 @@ export function useVisitedSite() {
 		visitedSite,
 		markVisited
 	};
+}
+
+// Display name composable (moved from src/composables/useDisplayName.ts)
+export function useDisplayName(
+	user: MaybeRefOrGetter<
+		| Pick<User, 'full_name' | 'username'>
+		| { full_name?: string; username?: string }
+		| null
+		| undefined
+	>,
+	opts?: { anonymous?: string }
+) {
+	const name = computed(() => getUserDisplayName(toValue(user), { anonymous: opts?.anonymous }));
+	const handle = computed(() =>
+		getUserDisplayName(toValue(user), { at: true, anonymous: opts?.anonymous })
+	);
+	const fullName = computed(() => realFullName(toValue(user)?.full_name));
+	const hasFullName = computed(() => !!fullName.value);
+
+	return { name, handle, fullName, hasFullName };
 }
 
 export async function useCurrentUser() {

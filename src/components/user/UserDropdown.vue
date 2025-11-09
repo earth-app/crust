@@ -34,6 +34,8 @@ const props = defineProps<{
 const user = props.user;
 const router = useRouter();
 
+const { name } = useDisplayName(user);
+
 const editUserOpen = ref(false);
 
 let adminItems: DropdownMenuItem[] = [
@@ -41,13 +43,22 @@ let adminItems: DropdownMenuItem[] = [
 		label: 'Edit Profile',
 		icon: 'flowbite:edit-solid',
 		onSelect: () => (editUserOpen.value = true)
+	},
+	{
+		label: 'Send Email',
+		icon: 'mdi:email-outline',
+		onSelect: () => navigateTo(`mailto:${user.account.email}`)
+	},
+	{
+		label: `Email ${user.account.email_verified ? 'Verified' : 'Unverified'}`,
+		icon: user.account.email_verified ? 'mdi:email-check-outline' : 'mdi:email-alert-outline'
 	}
 ];
 
 const items = ref<DropdownMenuItem[][]>([
 	[
 		{
-			label: user.full_name || user.username,
+			label: name.value,
 			icon: 'flowbite:profile-card-solid'
 		}
 	],

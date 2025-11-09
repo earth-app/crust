@@ -1,6 +1,8 @@
 import { com } from '@earth-app/ocean';
 import type { Activity } from './activity';
 
+export const DEFAULT_FULL_NAME = 'John Doe';
+
 export type User = {
 	id: string;
 	username: string;
