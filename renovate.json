@@ -5,20 +5,10 @@
 	"packageRules": [
 		{
 			"matchUpdateTypes": ["minor", "patch", "pin", "digest"]
-		}
-	],
-	"customManagers": [
+		},
 		{
-			"customType": "regex",
-			"managerFilePatterns": ["/^package\\.json$/"],
-			"matchStrings": ["\"@earth-app/ocean\":\\s*\"1\\.0\\.0-(?<currentDigest>[0-9a-f]{7,40})\""],
-			"packageNameTemplate": "https://github.com/earth-app/ocean",
-			"depNameTemplate": "@earth-app/ocean",
-			"datasourceTemplate": "git-refs",
-			"versioningTemplate": "git",
-			"currentValueTemplate": "master",
-			"extractVersionTemplate": "1.0.0-{{digestShort}}",
-			"autoReplaceStringTemplate": "\"@earth-app/ocean\": \"1.0.0-{{{newDigestShort}}}\""
+			"matchPackageNames": ["@earth-app/ocean"],
+			"followTag": "latest"
 		}
 	],
 	"hostRules": [
