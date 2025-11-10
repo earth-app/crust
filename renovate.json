@@ -11,7 +11,7 @@
 		{
 			"customType": "regex",
 			"managerFilePatterns": ["/^package\\.json$/"],
-			"matchStrings": ["\"@earth-app/ocean\":\\s*\"1\\.0\\.0-(?<currentDigest>[0-9a-f]{7})\""],
+			"matchStrings": ["\"@earth-app/ocean\":\\s*\"1\\.0\\.0-(?<currentDigest>[0-9a-f]{7,40})\""],
 			"packageNameTemplate": "https://github.com/earth-app/ocean",
 			"depNameTemplate": "@earth-app/ocean",
 			"datasourceTemplate": "git-refs",
