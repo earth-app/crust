@@ -13,7 +13,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@earth-app/ocean": "1.0.0-a752a2e",
+    "@earth-app/ocean": "1.0.0-b45b54a",
     "@nuxt/icon": "^2.1.0",
     "@nuxt/image": "^2.0.0",
     "@nuxt/kit": "^4.2.1",
