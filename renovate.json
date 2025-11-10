@@ -17,7 +17,7 @@
 			"versioningTemplate": "git",
 			"currentValueTemplate": "master",
 			"extractVersionTemplate": "1.0.0-{{digestShort}}",
-			"autoReplaceStringTemplate": "\"@earth-app/ocean\": \"1.0.0-{{digestShort}}\""
+			"autoReplaceStringTemplate": "1.0.0-{{digestShort}}"
 		}
 	],
 	"hostRules": [
