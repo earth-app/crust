@@ -4,16 +4,34 @@
 			:state="{ email, username, password }"
 			@submit="handleSignup"
 			class="space-x-6 *:mb-4"
-			:schema="z.object({ email: emailSchema, username: usernameSchema, password: passwordSchema })"
+			:schema="
+				z.object({
+					email: emailSchema,
+					username: usernameSchema,
+					password: passwordSchema,
+					fullName: fullNameSchema
+				})
+			"
 		>
 			<UFormField
-				label="Email"
+				label="Email Address (optional)"
 				name="email"
 			>
 				<UInput
 					v-model="email"
-					placeholder="Email"
+					placeholder="me@example.com"
 					type="email"
+					class="min-w-60 w-2/5 max-w-120"
+				/>
+			</UFormField>
+
+			<UFormField
+				label="Name (optional)"
+				name="fullName"
+			>
+				<UInput
+					v-model="fullName"
+					placeholder="John Doe"
 					class="min-w-60 w-2/5 max-w-120"
 				/>
 			</UFormField>
@@ -87,14 +105,15 @@
 
 <script setup lang="ts">
 import z from 'zod';
-import { emailSchema, passwordSchema, usernameSchema } from '~/shared/schemas';
+import { emailSchema, fullNameSchema, passwordSchema, usernameSchema } from '~/shared/schemas';
 
+const fullName = ref('');
 const email = ref('');
 const username = ref('');
 const password = ref('');
+
 const loading = ref(false);
 const disabled = ref(true);
-
 const error = ref('');
 const message = ref('');
 
@@ -111,10 +130,21 @@ async function handleSignup() {
 
 	const toast = useToast();
 
+	const firstName = fullName.value.trim() ? fullName.value.trim().split(' ')[0] : '';
+	const lastName = fullName.value.trim() ? fullName.value.trim().split(' ').slice(1).join(' ') : '';
+
+	if (fullName.value.trim() && !firstName) {
+		error.value = 'Please enter a valid name.';
+		loading.value = false;
+		return;
+	}
+
 	const result = await signup(
 		username.value,
 		password.value,
-		email.value.trim() ? email.value : undefined
+		email.value.trim() ? email.value : undefined,
+		firstName || undefined,
+		lastName || undefined
 	);
 
 	if (result.success) {

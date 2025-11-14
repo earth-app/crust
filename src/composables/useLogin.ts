@@ -3,7 +3,13 @@ import { sendVerificationEmail } from './useUser';
 export function useSignup() {
 	const config = useRuntimeConfig();
 
-	return async function signup(username: string, password: string, email?: string) {
+	return async function signup(
+		username: string,
+		password: string,
+		email?: string,
+		first_name?: string,
+		last_name?: string
+	) {
 		try {
 			const response = await $fetch<{ session_token: string }>(
 				`${config.public.apiBaseUrl}/v2/users/create`,
@@ -15,7 +21,9 @@ export function useSignup() {
 					body: {
 						username,
 						password,
-						email
+						email,
+						first_name,
+						last_name
 					}
 				}
 			);

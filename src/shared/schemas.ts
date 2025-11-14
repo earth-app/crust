@@ -18,4 +18,12 @@ export const passwordSchema = z
 export const emailSchema = z
 	.email('Invalid email address')
 	.min(5, 'Must be at least 5 characters')
-	.max(100, 'Must be at most 100 characters');
+	.max(100, 'Must be at most 100 characters')
+	.optional();
+
+export const fullNameSchema = z
+	.string()
+	.min(1, 'Name cannot be empty')
+	.max(100, 'Must be at most 100 characters')
+	.regex(/^[a-zA-Z'-]+(\s+[a-zA-Z'-]+)*$/, 'Must be a valid full name (e.g., "John" or "John Doe")')
+	.optional();
