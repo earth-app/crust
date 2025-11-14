@@ -5,6 +5,7 @@ export type SiteTourStep = {
 	footer?: string;
 	url?: string;
 	anonymous?: boolean;
+	prerendered?: boolean;
 };
 
 export type SiteTour = {

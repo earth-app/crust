@@ -4,6 +4,7 @@
 			<UAvatar
 				:src="avatar"
 				class="w-32 h-32 rounded-full shadow-lg shadow-black/50 mb-4 hover:scale-110 transition-transform duration-300 hover:cursor-pointer"
+				id="avatar"
 				title="Click to Preview Profile"
 				@click="navigateTo(`/profile/@${user.username}`)"
 			/>
@@ -50,7 +51,12 @@
 			:onFinish="updateUser"
 		/>
 
-		<h3 class="text-2xl font-semibold text-gray-200 mt-8">Activities</h3>
+		<h3
+			class="text-2xl font-semibold text-gray-200 mt-8"
+			id="activities"
+		>
+			Activities
+		</h3>
 		<ClientOnly>
 			<UInputMenu
 				placeholder="Select your activities..."
@@ -71,7 +77,12 @@
 			</template>
 		</ClientOnly>
 
-		<h3 class="text-2xl font-semibold text-gray-200 mt-10">Settings</h3>
+		<h3
+			class="text-2xl font-semibold text-gray-200 mt-10"
+			id="settings"
+		>
+			Settings
+		</h3>
 		<div class="px-4 mt-2 border-t-4 border-black dark:border-white w-full max-w-4xl">
 			<div class="mt-4 w-full flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-x-4">
 				<h2 class="text-xl font-medium">Account Visibility</h2>

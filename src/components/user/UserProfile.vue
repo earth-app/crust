@@ -3,6 +3,7 @@
 		<div class="flex flex-col items-center mb-8">
 			<UAvatar
 				:src="avatar"
+				id="avatar"
 				class="size-20 sm:size-24 md:size-28 lg:size-32 rounded-full shadow-lg shadow-black/50 mb-4 hover:scale-110 transition-transform duration-300"
 			/>
 			<div class="flex flex-col md:flex-row">
@@ -71,10 +72,16 @@
 				class="hover:cursor-pointer transition-all duration-500 ml-2 mb-2 sm:mb-3"
 			/>
 		</div>
-		<div class="min-w-80 max-w-3xl mt-4">
+		<div
+			class="min-w-80 max-w-3xl mt-4"
+			id="user-journeys"
+		>
 			<UserJourneys :user="props.user" />
 		</div>
-		<div class="flex flex-col items-center mt-12 mb-2 w-full">
+		<div
+			class="flex flex-col items-center mt-12 mb-2 w-full"
+			id="user-content"
+		>
 			<h1 class="text-2xl font-bold">{{ props.user?.username }}'s Content</h1>
 			<InfoCardGroup
 				v-if="prompts.length > 0"

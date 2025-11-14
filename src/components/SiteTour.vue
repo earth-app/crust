@@ -16,7 +16,7 @@
 		}"
 	/>
 	<div
-		v-if="isActive && boxStyle.display === 'block' && step"
+		v-if="isActive && step"
 		ref="tooltipCard"
 		:style="{
 			position: 'absolute',
@@ -24,6 +24,7 @@
 			left: tooltipStyle.left,
 			right: tooltipStyle.right,
 			maxWidth: tooltipStyle.maxWidth,
+			transform: tooltipStyle.transform,
 			zIndex: 9999,
 			pointerEvents: 'auto'
 		}"
@@ -115,7 +116,8 @@ const tooltipStyle = ref({
 	top: '0px',
 	left: 'auto',
 	right: 'auto',
-	maxWidth: 'none'
+	maxWidth: 'none',
+	transform: 'none'
 });
 
 let currentElementId: string | null = null;
@@ -127,10 +129,15 @@ const isLoggedIn = computed(() => !!useCurrentSessionToken());
 
 // Filter steps based on user login status
 const visibleSteps = computed(() => {
-	if (!isLoggedIn.value) {
-		return props.steps;
-	}
-	return props.steps.filter((step) => !step.anonymous);
+	return props.steps.filter((step) => {
+		// If anonymous is undefined/blank, don't skip
+		if (step.anonymous === undefined) return true;
+		// If anonymous is true, skip if logged in
+		if (step.anonymous === true) return !isLoggedIn.value;
+		// If anonymous is false, skip if not logged in
+		if (step.anonymous === false) return isLoggedIn.value;
+		return true;
+	});
 });
 
 // Get the current visible step index (0-based)
@@ -162,11 +169,16 @@ async function display() {
 		return;
 	}
 
-	// Skip steps marked as anonymous if user is logged in
-	if (step.value?.anonymous && isLoggedIn.value) {
-		index.value++;
-		await display();
-		return;
+	// Skip steps based on anonymous property and login status
+	if (step.value?.anonymous !== undefined) {
+		const shouldSkip =
+			(step.value.anonymous === true && isLoggedIn.value) ||
+			(step.value.anonymous === false && !isLoggedIn.value);
+		if (shouldSkip) {
+			index.value++;
+			await display();
+			return;
+		}
 	}
 
 	// Clean up previous highlight
@@ -188,6 +200,16 @@ async function display() {
 
 async function gotoNextStep() {
 	const oldStep = index.value;
+
+	// Prerender next step's URL if marked as prerendered
+	const nextIndex = index.value + 1;
+	if (nextIndex < props.steps.length) {
+		const nextStep = props.steps[nextIndex];
+		if (nextStep?.prerendered && nextStep?.url) {
+			prerenderRoutes(nextStep.url);
+		}
+	}
+
 	index.value++;
 	await display();
 	emit('next-step', oldStep);
@@ -197,9 +219,21 @@ async function gotoPreviousStep() {
 	const oldStep = index.value;
 	index.value--;
 
-	// Skip steps marked as anonymous if user is logged in (going backwards)
-	while (index.value >= 0 && props.steps[index.value]?.anonymous && isLoggedIn.value) {
-		index.value--;
+	// Skip steps based on anonymous property and login status (going backwards)
+	while (index.value >= 0) {
+		const currentStep = props.steps[index.value];
+		if (currentStep?.anonymous !== undefined) {
+			const shouldSkip =
+				(currentStep.anonymous === true && isLoggedIn.value) ||
+				(currentStep.anonymous === false && !isLoggedIn.value);
+			if (shouldSkip) {
+				index.value--;
+			} else {
+				break;
+			}
+		} else {
+			break;
+		}
 	}
 
 	await display();
@@ -261,8 +295,20 @@ function updateBoxPosition() {
 		// Calculate tooltip position
 		updateTooltipPosition(top, left, width, height);
 	} else {
+		// Element not found - hide highlight box and center the tooltip
 		console.warn(`Element with id "${currentElementId}" not found for tour highlight.`);
 		boxStyle.value.display = 'none';
+
+		const viewportHeight = window.innerHeight;
+		const tooltipTop = window.scrollY + viewportHeight / 2 - 100; // Offset to center vertically
+
+		tooltipStyle.value = {
+			top: `${tooltipTop}px`,
+			left: '50%',
+			right: 'auto',
+			maxWidth: 'none',
+			transform: 'translateX(-50%)'
+		};
 	}
 }
 
@@ -304,7 +350,8 @@ function updateTooltipPosition(
 		top: `${tooltipTop}px`,
 		left: `${tooltipLeft}px`,
 		right: 'auto',
-		maxWidth: 'none'
+		maxWidth: 'none',
+		transform: 'none'
 	};
 }
 
