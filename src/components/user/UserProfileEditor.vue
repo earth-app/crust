@@ -63,15 +63,26 @@
 				v-model="currentActivities"
 				:items="allActivities"
 				size="xl"
-				class="min-w-65 w-2/7 max-w-110 mt-2"
+				class="min-w-105 w-3/7 max-w-140 mt-2"
 				multiple
 				deleteIcon="i-lucide-trash"
 				:loading="activitiesLoading"
 				@update:modelValue="updateActivities"
 				@update:searchTerm="updateActivitiesList"
-			/>
+				:ui="{ tagsItemDeleteIcon: 'text-red-500' }"
+			>
+				<template #tags-item-text="{ item, index }">
+					<div class="flex items-center justify-center">
+						<UIcon
+							:name="item.icon || 'material-symbols:activity-zone'"
+							class="inline-block mr-1 size-4 md:size-5 lg:size-6"
+						/>
+						<span class="mr-1">{{ item.label }}</span>
+					</div>
+				</template>
+			</UInputMenu>
 			<template #fallback>
-				<div class="min-w-65 w-2/7 max-w-110 mt-2 p-2 border rounded-md text-gray-500">
+				<div class="min-w-105 w-3/7 max-w-140 mt-2 p-2 border rounded-md text-gray-500">
 					Loading activities...
 				</div>
 			</template>
@@ -172,31 +183,35 @@
 							:disabled="prop.disabled"
 						/>
 						<ClientOnly>
-							<UDropdownMenu
+							<UInputMenu
 								v-if="prop.type === 'dropdown' && prop.computed"
+								:model-value="
+									prop.dropdownItems?.find((item) => item.value === prop.computed!.value)
+								"
+								@update:model-value="(item: any) => (prop.computed!.value = item?.value || '')"
 								:items="prop.dropdownItems"
-								:value="prop.computed.value"
-								@update:value="(value: string) => (prop.computed!.value = value)"
+								placeholder="Select a country..."
+								class="w-full sm:w-auto min-w-48"
+								size="lg"
+								searchable
+								:loading="countriesLoading"
 								:ui="{
-									content: 'h-48 overflow-y-auto'
+									content: 'h-48 overflow-y-auto',
+									trailingIcon: 'text-primary'
 								}"
 							>
-								<UButton
-									class="w-full sm:w-auto min-w-48 text-left"
-									:icon="prop.computed.value ? 'mdi:building' : 'mdi:chevron-down'"
-									:label="prop.computed.value?.toString() || prop.name"
-									color="primary"
-									variant="outline"
-								/>
-								<template #item="{ item }">
-									<UButton
-										:label="item.label"
-										class="w-full text-left font-bold"
-										color="secondary"
-										@click="prop.computed.value = item.value"
-									/>
+								<template #leading>
+									<span class="text-xl">{{
+										prop.dropdownItems?.find((item) => item.value === prop.computed!.value)?.icon
+									}}</span>
 								</template>
-							</UDropdownMenu>
+								<template #item="{ item }">
+									<div class="flex items-center gap-2">
+										<span class="text-xl">{{ item.icon }}</span>
+										<span>{{ item.label }}</span>
+									</div>
+								</template>
+							</UInputMenu>
 							<template #fallback>
 								<UButton
 									v-if="prop.type === 'dropdown' && prop.computed"
@@ -233,6 +248,16 @@
 				<div class="flex flex-col w-full max-w-3xl items-center my-6">
 					<USeparator class="my-4" />
 					<div class="flex items-center justify-center gap-4 w-full">
+						<USwitch
+							v-model="subscribed"
+							:loading="subscribedLoading"
+							color="info"
+							checked-icon="mdi:email-check"
+							unchecked-icon="mdi:email-off"
+							label="Email Notifications"
+							class="py-1 px-2 border rounded-md border-blue-500"
+							:ui="{ label: 'font-semibold text-blue-400', base: 'hover:cursor-pointer' }"
+						/>
 						<UserPasswordChangeModal
 							ref="passwordChangeModal"
 							@changed="handlePasswordChange"
@@ -310,11 +335,13 @@ const address = createAccountProp('address');
 const phoneNumber = createAccountProp('phone_number');
 const country = createAccountProp('country');
 
+const countriesLoading = ref(true);
+
 const props: {
 	name: string;
 	id: keyof User['account']['field_privacy'];
 	type?: InputTypeHTMLAttribute | 'dropdown';
-	dropdownItems?: { label: string; value: string }[];
+	dropdownItems?: { label: string; value: string; icon?: string }[];
 	computed?: globalThis.Ref<string | number>;
 	disabled?: boolean;
 	unverified?: boolean;
@@ -351,10 +378,15 @@ const props: {
 		name: 'Country',
 		id: 'country',
 		type: 'dropdown',
-		dropdownItems: com.earthapp.account.Country.values().map((country) => ({
-			label: `${country.flagEmoji} ${country.countryName}`,
-			value: country.code
-		})),
+		get dropdownItems() {
+			const countries = com.earthapp.account.Country.values().map((country) => ({
+				label: country.countryName,
+				value: country.code,
+				icon: country.flagEmoji
+			}));
+			countriesLoading.value = false;
+			return countries;
+		},
 		computed: country
 	},
 	{
@@ -734,6 +766,41 @@ function handlePasswordChange() {
 
 	passwordChangeModal.value?.close();
 }
+
+// Email Newsletter Subscription
+const subscribed = computed({
+	get: () => user.value.account.subscribed || false,
+	set: (value) => {
+		user.value.account.subscribed = value;
+	}
+});
+
+const subscribedLoading = ref(false);
+
+watch(subscribed, async (newValue) => {
+	subscribedLoading.value = true;
+	const res = await updateAccount({ subscribed: newValue });
+	if (res.success) {
+		toast.add({
+			title: 'Subscription Updated',
+			description: `Email notifications ${newValue ? 'enabled' : 'disabled'}.`,
+			color: 'success',
+			icon: 'mdi:check-circle',
+			duration: 3000
+		});
+	} else {
+		console.error(res.message || 'Failed to update subscription.');
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to update subscription.',
+			color: 'error',
+			icon: 'mdi:alert-circle',
+			duration: 5000
+		});
+	}
+
+	subscribedLoading.value = false;
+});
 
 // Account Deletion
 function handleAccountDeletion() {

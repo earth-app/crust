@@ -19,6 +19,7 @@ export type User = {
 		bio?: string;
 		email?: string;
 		email_verified?: boolean;
+		subscribed?: boolean;
 		address?: string;
 		country?: string;
 		phone_number?: number;
