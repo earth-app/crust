@@ -445,24 +445,16 @@ function getLabel(key: keyof User['account']['field_privacy']): string {
 
 // Profile Photo
 
-const { photo } = useUser(user.value.id);
-const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
+const { avatar: oldAvatar, fetchUser: refetchUser } = useUser(user.value.id);
 const avatarLoading = ref(false);
-watch(
-	() => photo.value,
-	(photo) => {
-		if (photo) {
-			if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
+const avatarOverride = ref<string | null>(null);
 
-			const blob = URL.createObjectURL(photo);
-			avatar.value = blob;
-		}
-	},
-	{ immediate: true }
-);
+const avatar = computed(() => avatarOverride.value || oldAvatar.value);
 
 onBeforeUnmount(() => {
-	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
+	if (avatarOverride.value && avatarOverride.value.startsWith('blob:')) {
+		URL.revokeObjectURL(avatarOverride.value);
+	}
 });
 
 async function regenerateProfilePhoto() {
@@ -471,17 +463,20 @@ async function regenerateProfilePhoto() {
 	avatarLoading.value = true;
 
 	const res = await regenerateAvatar();
-	if (res.data && res.data instanceof Blob) {
-		if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
-		const blob = URL.createObjectURL(res.data);
-		avatar.value = blob;
-		avatarLoading.value = false;
+	if (res.success && res.data && res.data instanceof Blob) {
+		if (avatarOverride.value && avatarOverride.value.startsWith('blob:')) {
+			URL.revokeObjectURL(avatarOverride.value);
+		}
 
+		avatarOverride.value = URL.createObjectURL(res.data);
+		refetchUser();
+
+		avatarLoading.value = false;
 		toast.add({
 			title: 'Avatar Regenerated',
 			description: 'Your profile photo has been successfully regenerated.',
 			color: 'success',
-			icon: 'mdi:check-circle',
+			icon: 'mdi:account-box-plus-outline',
 			duration: 3000
 		});
 	} else {

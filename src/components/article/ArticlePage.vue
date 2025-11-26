@@ -1,6 +1,6 @@
 <template>
 	<div class="flex flex-col items-center w-full px-12">
-		<div class="my-8">
+		<div class="mt-8 mb-4">
 			<div class="flex justify-center mb-4">
 				<UAvatar
 					:src="authorAvatar"
@@ -20,7 +20,19 @@
 			</UTooltip>
 			<USeparator class="my-2" />
 		</div>
-		<div class="prose min-w-67 max-w-4/7 items-center">
+		<div
+			v-if="isAdmin"
+			class="mb-4"
+		>
+			<UButton
+				color="error"
+				icon="mdi:delete"
+				variant="subtle"
+				@click="removeArticle"
+				>Delete</UButton
+			>
+		</div>
+		<div class="mt-2 prose min-w-67 max-w-5/7 items-center">
 			<p
 				v-for="(paragraph, index) in contentParagraphs"
 				:key="index"
@@ -49,7 +61,7 @@
 				:badges="oceanBadges"
 				:color="oceanColor"
 				:additional-links="oceanLinks"
-				class="my-6 w-2/3"
+				class="my-6 min-w-140 w-2/3"
 			/>
 		</div>
 	</div>
@@ -64,10 +76,12 @@ const props = defineProps<{
 	article: Article;
 }>();
 
+const toast = useToast();
+const router = useRouter();
+
 const contentParagraphs = computed(() => {
 	return props.article.content.split('\n').filter((p) => p.trim().length > 0);
 });
-
 const oceanBadges = computed(() => {
 	return (
 		props.article.ocean?.keywords
@@ -75,7 +89,6 @@ const oceanBadges = computed(() => {
 			.map((k) => ({ text: k.toLowerCase(), color: 'info' as const })) || []
 	);
 });
-
 const oceanLinks = computed(() => {
 	return Object.entries(props.article.ocean?.links || {}).map(([k, v]) => ({
 		text: k,
@@ -84,26 +97,7 @@ const oceanLinks = computed(() => {
 	}));
 });
 
-const authorAvatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
-const { photo } = useUser(props.article.author_id);
-watch(
-	() => photo.value,
-	(photo) => {
-		if (photo) {
-			if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
-				URL.revokeObjectURL(authorAvatar.value);
-
-			const blob = URL.createObjectURL(photo);
-			authorAvatar.value = blob;
-		}
-	},
-	{ immediate: true }
-);
-
-onBeforeUnmount(() => {
-	if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
-		URL.revokeObjectURL(authorAvatar.value);
-});
+const { avatar128: authorAvatar } = useUser(props.article.author_id);
 
 const i18n = useI18n();
 const time = computed(() => {
@@ -154,4 +148,49 @@ useHead({
 		}
 	]
 });
+
+// Admin Actions
+
+const { user } = useAuth();
+const isAdmin = computed(() => {
+	return user.value?.account.account_type === 'ADMINISTRATOR';
+});
+
+async function removeArticle() {
+	const yes = confirm(
+		'Are you sure you want to delete this article? This action cannot be undone.'
+	);
+
+	if (yes) {
+		const res = await deleteArticle(props.article.id);
+		if (res.success) {
+			toast.add({
+				title: 'Article Deleted',
+				description: 'The article has been successfully deleted.',
+				icon: 'mdi:check',
+				color: 'success',
+				duration: 5000
+			});
+
+			refreshNuxtData(`article-${props.article.id}`);
+			router.push('/articles');
+		} else {
+			toast.add({
+				title: 'Error',
+				description: res.message || 'An unknown error occurred while deleting your article.',
+				icon: 'mdi:alert-circle',
+				color: 'error',
+				duration: 7000
+			});
+		}
+	} else {
+		toast.add({
+			title: 'Cancelled',
+			description: 'Article deletion has been cancelled.',
+			icon: 'mdi:cancel',
+			color: 'info',
+			duration: 5000
+		});
+	}
+}
 </script>

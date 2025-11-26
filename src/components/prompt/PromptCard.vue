@@ -80,26 +80,7 @@ watch(
 const footer = ref<string | undefined>(undefined);
 const secondaryFooter = ref<string | undefined>(undefined);
 
-const authorAvatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
-const { photo } = useUser(props.prompt.owner_id);
-watch(
-	() => photo.value,
-	(photo) => {
-		if (photo) {
-			if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
-				URL.revokeObjectURL(authorAvatar.value);
-
-			const blob = URL.createObjectURL(photo);
-			authorAvatar.value = blob;
-		}
-	},
-	{ immediate: true }
-);
-
-onBeforeUnmount(() => {
-	if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
-		URL.revokeObjectURL(authorAvatar.value);
-});
+const { avatar128: authorAvatar } = useUser(props.prompt.owner_id);
 
 const authorAvatarChipColor = ref<any | null>(null);
 const { user } = useAuth();

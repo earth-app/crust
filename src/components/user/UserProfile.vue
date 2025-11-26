@@ -129,27 +129,9 @@ const props = defineProps<{
 const { user } = useAuth();
 const { name: displayName, handle, hasFullName } = useDisplayName(() => props.user);
 
-const { photo } = useUser(props.user.id);
+const { avatar } = useUser(props.user.id);
 const { prompts, total: totalPrompts } = useUserPrompts(props.user.id, 1, 25, 'rand');
 const { articles, total: totalArticles } = useUserArticles(props.user.id, 1, 25, 'rand');
-
-const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
-watch(
-	() => photo.value,
-	(photo) => {
-		if (photo) {
-			if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
-
-			const blob = URL.createObjectURL(photo);
-			avatar.value = blob;
-		}
-	},
-	{ immediate: true }
-);
-
-onBeforeUnmount(() => {
-	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
-});
 
 const badgeVariants = ref<('outline' | 'solid')[]>([]);
 

@@ -80,7 +80,7 @@
 						@click="$router.push(`/profile/@${user.username}`)"
 					>
 						<UAvatar
-							:src="avatar"
+							:src="avatar128"
 							class="size-6 sm:size-8 lg:size-12 rounded-full shadow-lg shadow-black/50"
 						/>
 
@@ -165,27 +165,10 @@
 </template>
 
 <script setup lang="ts">
-const { user, photo } = useAuth();
+const { user, avatar128 } = useAuth();
 const toast = useToast();
 const router = useRouter();
 const logout = useLogout();
-const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
-watch(
-	() => photo.value,
-	(photo) => {
-		if (photo) {
-			if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
-
-			const blob = URL.createObjectURL(photo);
-			avatar.value = blob;
-		}
-	},
-	{ immediate: true }
-);
-
-onBeforeUnmount(() => {
-	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
-});
 
 const isNavbarVisible = ref(true);
 
@@ -223,9 +206,7 @@ onMounted(() => {
 async function logoutUser() {
 	await logout();
 
-	avatar.value = 'https://cdn.earth-app.com/earth-app.png';
 	user.value = null;
-	photo.value = null;
 	refreshNuxtData(['user-current', 'avatar-current']); // Invalidate user and avatar data
 
 	toast.add({

@@ -11,7 +11,7 @@
 					:avatar="
 						user
 							? {
-									src: avatar,
+									src: avatar128,
 									alt: handle
 								}
 							: undefined
@@ -59,25 +59,8 @@
 <script setup lang="ts">
 import { type Prompt, type PromptResponse } from '~/shared/types/prompts';
 
-const { user, photo } = useAuth();
+const { user, avatar128 } = useAuth();
 const { handle } = useDisplayName(user);
-const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
-watch(
-	() => photo.value,
-	(photo) => {
-		if (photo) {
-			if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
-
-			const blob = URL.createObjectURL(photo);
-			avatar.value = blob;
-		}
-	},
-	{ immediate: true }
-);
-
-onBeforeUnmount(() => {
-	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
-});
 
 const toast = useToast();
 

@@ -30,26 +30,7 @@ const props = defineProps<{
 
 const footer = ref<string | undefined>(undefined);
 
-const authorAvatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
-const { photo } = useUser(props.article.author_id);
-watch(
-	() => photo.value,
-	(photo) => {
-		if (photo) {
-			if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
-				URL.revokeObjectURL(authorAvatar.value);
-
-			const blob = URL.createObjectURL(photo);
-			authorAvatar.value = blob;
-		}
-	},
-	{ immediate: true }
-);
-
-onBeforeUnmount(() => {
-	if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
-		URL.revokeObjectURL(authorAvatar.value);
-});
+const { avatar128: authorAvatar } = useUser(props.article.author_id);
 
 const authorAvatarChipColor = ref<any | null>(null);
 

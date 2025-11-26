@@ -86,7 +86,7 @@ const error = ref('');
 const message = ref('');
 
 const login = useLogin();
-const { fetchUser, fetchPhoto } = useAuth();
+const { fetchUser } = useAuth();
 
 const emit = defineEmits<{
 	loginSuccess: [];
@@ -102,7 +102,7 @@ async function handleLogin() {
 
 	if (result.success) {
 		// Fetch user data to update the auth state
-		Promise.all([fetchUser(), fetchPhoto()]).then(() => {
+		fetchUser().then(() => {
 			emit('loginSuccess');
 		});
 		message.value = 'Welcome!';
@@ -115,7 +115,7 @@ async function handleLogin() {
 			duration: 3000
 		});
 
-		refreshNuxtData(['user-current', 'avatar-current']); // Refresh user data
+		refreshNuxtData(['user-current']); // Refresh user data
 	} else {
 		if (result.message.includes('401')) {
 			error.value = 'Invalid username or password.';

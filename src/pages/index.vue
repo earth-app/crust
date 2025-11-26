@@ -20,11 +20,11 @@
 			</p>
 			<div
 				v-else
-				class="flex justify-center mt-3 motion-preset-fade-lg"
+				class="flex items-center justify-center mt-3 motion-preset-fade-lg"
 			>
 				<UAvatar
-					:src="avatar"
-					class="size-8 min-w-4 h-auto mr-2 border border-white/50 light:border-black/50 shadow-lg shadow-black/50"
+					:src="avatar128"
+					class="size-8 mr-2 border border-white/50 light:border-black/50 shadow-lg shadow-black/50"
 				/>
 				<p class="text-lg font-semibold">Welcome, @{{ user.username }}</p>
 			</div>
@@ -104,24 +104,7 @@ import type { Prompt } from '~/shared/types/prompts';
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Home');
 
-const { user, photo } = useAuth();
-const avatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
-watch(
-	() => photo.value,
-	(photo) => {
-		if (photo) {
-			if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
-
-			const blob = URL.createObjectURL(photo);
-			avatar.value = blob;
-		}
-	},
-	{ immediate: true }
-);
-
-onBeforeUnmount(() => {
-	if (avatar.value && avatar.value.startsWith('blob:')) URL.revokeObjectURL(avatar.value);
-});
+const { user, avatar128 } = useAuth();
 
 const toast = useToast();
 const tours = useSiteTour();

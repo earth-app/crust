@@ -82,26 +82,7 @@ const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const user = ref<User | null>(null);
 const { handle: identifier } = useDisplayName(user);
 
-const authorAvatar = ref<string>('https://cdn.earth-app.com/earth-app.png');
-const { photo } = useUser(props.response.owner.id);
-watch(
-	() => photo.value,
-	(photo) => {
-		if (photo) {
-			if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
-				URL.revokeObjectURL(authorAvatar.value);
-
-			const blob = URL.createObjectURL(photo);
-			authorAvatar.value = blob;
-		}
-	},
-	{ immediate: true }
-);
-
-onBeforeUnmount(() => {
-	if (authorAvatar.value && authorAvatar.value.startsWith('blob:'))
-		URL.revokeObjectURL(authorAvatar.value);
-});
+const { avatar128: authorAvatar } = useUser(props.response.owner.id);
 
 const time = computed(() => {
 	const created = DateTime.fromISO(props.response.created_at, {
