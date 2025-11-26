@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { type CommandPaletteGroup, type CommandPaletteItem } from '@nuxt/ui';
+import type { CommandPaletteGroup, CommandPaletteItem } from '#ui/types';
 import { getUserDisplayName } from '~/shared/util';
 
 const { user } = useAuth();
