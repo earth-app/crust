@@ -1,27 +1,23 @@
 import { type Article } from '~/shared/types/article';
 import type { SortingOption } from '~/shared/types/global';
 import type { User } from '~/shared/types/user';
-import * as util from '~/shared/util';
+import { makeClientAPIRequest, makeServerRequest, paginatedAPIRequest } from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
-export async function getArticles(page: number = 1, limit: number = 25, search: string = '') {
-	const res = await util.makeClientAPIRequest<{ items: Article[]; total: number }>(
-		`/v2/articles?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
-		useCurrentSessionToken()
+export async function getArticles(
+	limit: number = 25,
+	search: string = '',
+	sort: SortingOption = 'desc'
+) {
+	return await paginatedAPIRequest<Article>(
+		`articles-${search}-${limit}`,
+		`/v2/articles`,
+		useCurrentSessionToken(),
+		{},
+		limit,
+		search,
+		sort
 	);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
-		}
-
-		// load individual articles into state
-		for (const article of res.data.items) {
-			useState<Article | null>(`article-${article.id}`, () => article);
-		}
-	}
-
-	return res;
 }
 
 export async function getRecommendedArticles(user: User, count: number = 3) {
@@ -41,9 +37,9 @@ export async function getRecommendedArticles(user: User, count: number = 3) {
 		return { success: true, data: [] };
 	}
 
-	const res = await util.makeServerRequest<Article[]>(
+	const res = await makeServerRequest<Article[]>(
 		`user-${user.id}-article_recommendations`,
-		`/api/article/recommendArticles`,
+		`/api/article/recommend`,
 		useCurrentSessionToken(),
 		{
 			method: 'POST',
@@ -82,9 +78,9 @@ export async function getSimilarArticles(article: Article, count: number = 5) {
 		return { success: true, data: [] };
 	}
 
-	const res = await util.makeServerRequest<Article[]>(
+	const res = await makeServerRequest<Article[]>(
 		`article-${article.id}-similar_articles`,
-		`/api/article/similarArticles`,
+		`/api/article/similar`,
 		useCurrentSessionToken(),
 		{
 			method: 'POST',
@@ -107,7 +103,7 @@ export async function getSimilarArticles(article: Article, count: number = 5) {
 }
 
 export async function getRandomArticles(count: number = 3) {
-	const res = await util.makeClientAPIRequest<Article[]>(
+	const res = await makeClientAPIRequest<Article[]>(
 		`/v2/articles/random?count=${count}`,
 		useCurrentSessionToken()
 	);
@@ -131,7 +127,7 @@ export function useArticle(id: string) {
 
 	const fetch = async () => {
 		if (article.value !== undefined) return;
-		const res = await util.makeClientAPIRequest<Article>(`/v2/articles/${id}`);
+		const res = await makeClientAPIRequest<Article>(`/v2/articles/${id}`);
 		if (res.success && res.data) {
 			if ('message' in res.data) {
 				article.value = null;
@@ -159,14 +155,14 @@ export function useArticle(id: string) {
 export async function createArticle(
 	article: Partial<Article> & { title: string; description: string; content: string }
 ) {
-	return await util.makeClientAPIRequest<Article>('/v2/articles', useCurrentSessionToken(), {
+	return await makeClientAPIRequest<Article>('/v2/articles', useCurrentSessionToken(), {
 		method: 'POST',
 		body: article
 	});
 }
 
 export async function editArticle(article: Partial<Article> & { id: string }) {
-	return await util.makeClientAPIRequest<Article>(
+	return await makeClientAPIRequest<Article>(
 		`/v2/articles/${article.id}`,
 		useCurrentSessionToken(),
 		{
@@ -177,7 +173,7 @@ export async function editArticle(article: Partial<Article> & { id: string }) {
 }
 
 export async function deleteArticle(id: string) {
-	return await util.makeClientAPIRequest<void>(`/v2/articles/${id}`, useCurrentSessionToken(), {
+	return await makeClientAPIRequest<void>(`/v2/articles/${id}`, useCurrentSessionToken(), {
 		method: 'DELETE'
 	});
 }
@@ -192,7 +188,7 @@ export function useUserArticles(
 	const articles = useState<Article[]>(`user-${identifier}-articles-${page}:${limit}`, () => []);
 
 	const fetch = async (newPage: number = page, newLimit: number = limit) => {
-		const res = await util.makeClientAPIRequest<{
+		const res = await makeClientAPIRequest<{
 			items: Article[];
 			total: number;
 		}>(`/v2/users/${identifier}/articles?page=${newPage}&limit=${newLimit}&sort=${sort}`);

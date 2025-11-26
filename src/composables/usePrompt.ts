@@ -1,11 +1,27 @@
 import type { com } from '@earth-app/ocean';
 import type { SortingOption } from '~/shared/types/global';
 import type { Prompt, PromptResponse } from '~/shared/types/prompts';
-import * as util from '~/shared/util';
+import { makeClientAPIRequest, paginatedAPIRequest } from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
+export async function getPrompts(
+	limit: number = 25,
+	search: string = '',
+	sort: SortingOption = 'desc'
+) {
+	return await paginatedAPIRequest<Prompt>(
+		`prompts-${search}-${limit}`,
+		`/v2/prompts`,
+		useCurrentSessionToken(),
+		{},
+		limit,
+		search,
+		sort
+	);
+}
+
 export async function getRandomPrompts(count: number = 10) {
-	const res = await util.makeClientAPIRequest<Prompt[]>(`/v2/prompts/random?count=${count}`);
+	const res = await makeClientAPIRequest<Prompt[]>(`/v2/prompts/random?count=${count}`);
 
 	if (res.success && res.data) {
 		if ('message' in res.data) {
@@ -25,7 +41,7 @@ export function usePrompt(id: string) {
 	const prompt = useState<Prompt | null>(`prompt-${id}`, () => null);
 
 	const fetch = async () => {
-		const res = await util.makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`);
+		const res = await makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`);
 		if (res.success && res.data) {
 			if ('message' in res.data) {
 				return res;
@@ -48,14 +64,14 @@ export function usePrompt(id: string) {
 }
 
 export async function updatePrompt(id: string, prompt: string) {
-	return await util.makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`, useCurrentSessionToken(), {
+	return await makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`, useCurrentSessionToken(), {
 		method: 'PATCH',
 		body: { prompt }
 	});
 }
 
 export async function removePrompt(id: string) {
-	return await util.makeClientAPIRequest<{ message: string }>(
+	return await makeClientAPIRequest<{ message: string }>(
 		`/v2/prompts/${id}`,
 		useCurrentSessionToken(),
 		{
@@ -72,7 +88,7 @@ export function usePromptResponses(id: string, page: number = 1, limit: number =
 		if (loading.value) return { success: false, message: 'Already loading' };
 
 		loading.value = true;
-		const res = await util.makeClientAPIRequest<{ items: PromptResponse[] }>(
+		const res = await makeClientAPIRequest<{ items: PromptResponse[] }>(
 			`/v2/prompts/${id}/responses?page=${newPage}&limit=${newLimit}`
 		);
 
@@ -104,14 +120,14 @@ export async function createPrompt(
 	prompt: string,
 	visibility?: typeof com.earthapp.Visibility.prototype.name
 ) {
-	return await util.makeClientAPIRequest<Prompt>('/v2/prompts', useCurrentSessionToken(), {
+	return await makeClientAPIRequest<Prompt>('/v2/prompts', useCurrentSessionToken(), {
 		method: 'POST',
 		body: { prompt, visibility }
 	});
 }
 
 export async function createPromptResponse(promptId: string, content: string) {
-	return await util.makeClientAPIRequest<PromptResponse>(
+	return await makeClientAPIRequest<PromptResponse>(
 		`/v2/prompts/${promptId}/responses`,
 		useCurrentSessionToken(),
 		{
@@ -122,7 +138,7 @@ export async function createPromptResponse(promptId: string, content: string) {
 }
 
 export async function updatePromptResponse(promptId: string, id: string, content: string) {
-	return await util.makeClientAPIRequest<PromptResponse>(
+	return await makeClientAPIRequest<PromptResponse>(
 		`/v2/prompts/${promptId}/responses/${id}`,
 		useCurrentSessionToken(),
 		{
@@ -133,7 +149,7 @@ export async function updatePromptResponse(promptId: string, id: string, content
 }
 
 export async function removePromptResponse(promptId: string, id: string) {
-	return await util.makeClientAPIRequest<{ message: string }>(
+	return await makeClientAPIRequest<{ message: string }>(
 		`/v2/prompts/${promptId}/responses/${id}`,
 		useCurrentSessionToken(),
 		{
@@ -152,7 +168,7 @@ export function useUserPrompts(
 	const prompts = useState<Prompt[]>(`user-${identifier}-prompts-${page}:${limit}`, () => []);
 
 	const fetch = async (newPage: number = page, newLimit: number = limit) => {
-		const res = await util.makeClientAPIRequest<{
+		const res = await makeClientAPIRequest<{
 			items: Prompt[];
 			total: number;
 		}>(`/v2/users/${identifier}/prompts?page=${newPage}&limit=${newLimit}&sort=${sort}`);

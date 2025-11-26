@@ -1,5 +1,6 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue';
 import type { Activity } from '~/shared/types/activity';
+import type { SortingOption } from '~/shared/types/global';
 import type { User, UserNotification } from '~/shared/types/user';
 import {
 	getUserDisplayName,
@@ -59,28 +60,19 @@ export async function useCurrentUser() {
 	return result;
 }
 
-export async function useCurrentAvatar() {
-	const token = useCurrentSessionToken();
-	if (!token) {
-		return { success: false, message: 'Unauthenticated. Please log in to continue.' };
-	}
-
-	return await makeAPIRequest<Blob>('avatar-current', '/v2/users/current/profile_photo', token, {
-		responseType: 'blob'
-	});
-}
-
 export const useAuth = () => {
 	const user = useState<User | null | undefined>('user', () => undefined);
-	const photo = import.meta.client
-		? useState<Blob | null | undefined>('avatar', () => undefined)
-		: ref<Blob | null>(null);
 
 	const token = useCurrentSessionToken();
 	if (!token) {
 		user.value = null;
-		photo.value = null;
-		return { user, photo, fetchUser: async () => {}, fetchPhoto: async () => {} };
+		return {
+			user,
+			fetchUser: async () => {},
+			avatar: computed(() => undefined),
+			avatar32: computed(() => undefined),
+			avatar128: computed(() => undefined)
+		};
 	}
 
 	const fetchUser = async () => {
@@ -117,34 +109,20 @@ export const useAuth = () => {
 		}
 	}
 
-	const fetchPhoto = async () => {
-		if (photo.value) return;
-
-		const res = await useCurrentAvatar();
-		if (res.success && res.data) {
-			if (!(res.data instanceof Blob)) {
-				// API returned an error message
-				photo.value = null;
-				console.error('Failed to fetch current avatar:', res.data.message);
-				return;
-			}
-
-			photo.value = res.data;
-		} else {
-			photo.value = null;
-		}
-	};
-
-	// If photo is not loaded, fetch it
-	if (!photo.value) {
-		fetchPhoto();
-	}
+	const avatar = computed(() => user.value?.account?.avatar_url);
+	const avatar32 = computed(() =>
+		user.value?.account?.avatar_url ? `${user.value.account.avatar_url}?size=32` : undefined
+	);
+	const avatar128 = computed(() =>
+		user.value?.account?.avatar_url ? `${user.value.account.avatar_url}?size=128` : undefined
+	);
 
 	return {
 		user,
 		fetchUser,
-		photo,
-		fetchPhoto
+		avatar,
+		avatar32,
+		avatar128
 	};
 };
 
@@ -224,18 +202,23 @@ export async function getRecommendedActivities(poolLimit: number = 25) {
 
 // Other Users
 
-export async function getUsers(limit: number = 25, search: string = '') {
+export async function getUsers(
+	limit: number = 25,
+	search: string = '',
+	sort: SortingOption = 'desc'
+) {
 	return await paginatedAPIRequest<User>(
 		`users-${search}-${limit}`,
 		`/v2/users`,
 		useCurrentSessionToken(),
 		{},
 		limit,
-		search
+		search,
+		sort
 	);
 }
 
-export async function getUser(identifier?: string) {
+async function getUser(identifier?: string) {
 	if (!identifier) return { success: true, data: undefined };
 
 	if (identifier === 'current') {
@@ -249,28 +232,8 @@ export async function getUser(identifier?: string) {
 	);
 }
 
-export async function getUserAvatar(identifier?: string) {
-	if (!identifier) return { success: true, data: undefined };
-
-	if (identifier === 'current') {
-		return await useCurrentAvatar();
-	}
-
-	return await makeAPIRequest<Blob>(
-		`avatar-${identifier}`,
-		`/v2/users/${identifier}/profile_photo`,
-		useCurrentSessionToken(),
-		{
-			responseType: 'blob'
-		}
-	);
-}
-
 export function useUser(identifier: string) {
 	const user = useState<User | null | undefined>(`user-${identifier}`, () => undefined);
-	const photo = import.meta.client
-		? useState<Blob | null>(`photo-${identifier}`, () => null)
-		: ref<Blob | null>(null);
 
 	const fetchUser = async () => {
 		if (!identifier) return;
@@ -293,30 +256,20 @@ export function useUser(identifier: string) {
 		fetchUser();
 	}
 
-	const fetchPhoto = async () => {
-		if (!identifier) return;
-		if (photo.value) return;
-
-		try {
-			const res = await getUserAvatar(identifier);
-			if (res.success && res.data && res.data instanceof Blob) {
-				photo.value = res.data;
-			}
-		} catch (error) {
-			console.warn(`Failed to fetch photo for user ${identifier}:`, error);
-		}
-	};
-
-	// If photo is not loaded, fetch it
-	if (!photo.value) {
-		fetchPhoto();
-	}
+	const avatar = computed(() => user.value?.account?.avatar_url);
+	const avatar32 = computed(() =>
+		user.value?.account?.avatar_url ? `${user.value.account.avatar_url}?size=32` : undefined
+	);
+	const avatar128 = computed(() =>
+		user.value?.account?.avatar_url ? `${user.value.account.avatar_url}?size=128` : undefined
+	);
 
 	return {
 		user,
 		fetchUser,
-		photo,
-		fetchPhoto
+		avatar,
+		avatar32,
+		avatar128
 	};
 }
 
