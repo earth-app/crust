@@ -1,5 +1,6 @@
 import { useRuntimeConfig } from '#imports';
 import { DateTime } from 'luxon';
+import type { SortingOption } from './types/global';
 import type { User } from './types/user';
 import { DEFAULT_FULL_NAME } from './types/user';
 
@@ -181,7 +182,8 @@ export async function paginatedAPIRequest<T>(
 	token: string | null | undefined = null,
 	options: any = {},
 	limit: number = -1,
-	search: string = ''
+	search: string = '',
+	sort: SortingOption = 'desc'
 ) {
 	const allItems: T[] = [];
 	let currentPage = 1;
@@ -190,12 +192,12 @@ export async function paginatedAPIRequest<T>(
 		const res = key
 			? await makeAPIRequest<{ items: T[]; total: number }>(
 					`${key}-page-${currentPage}`,
-					`${url}?page=${currentPage}&limit=100&search=${search}`,
+					`${url}?page=${currentPage}&limit=100&search=${search}&sort=${sort}`,
 					token,
 					options
 				)
 			: await makeClientAPIRequest<{ items: T[]; total: number }>(
-					`${url}?page=${currentPage}&limit=100&search=${search}`,
+					`${url}?page=${currentPage}&limit=100&search=${search}&sort=${sort}`,
 					token,
 					options
 				);
