@@ -10,7 +10,7 @@
 				class="my-2 w-3/4"
 			/>
 
-			<!-- <div
+			<div
 				v-if="user"
 				class="flex items-center w-screen"
 			>
@@ -31,7 +31,7 @@
 						:article="article"
 					/>
 				</InfoCardGroup>
-			</div> -->
+			</div>
 		</div>
 		<div
 			v-else-if="article === null"
@@ -68,8 +68,20 @@ watch(
 	() => article.value,
 	(article) => {
 		setTitleSuffix(article ? article.title : 'Article');
+
+		if (article) {
+			loadSimilar(article);
+		}
 	},
 	{ immediate: true }
+);
+watch(
+	() => user.value,
+	() => {
+		if (user.value && article.value) {
+			loadSimilar(article.value);
+		}
+	}
 );
 
 useSeoMeta({
@@ -78,10 +90,7 @@ useSeoMeta({
 });
 
 onMounted(async () => {
-	// if (currentArticle.value) {
-	// 	await loadSimilar(currentArticle.value);
-	// }
-
+	if (!article.value) return;
 	if (user.value) {
 		const count = await getCurrentJourney('article', user.value.id);
 		if (!count.success || !count.data) return; // silently ignore errors
@@ -112,7 +121,6 @@ async function loadSimilar(article?: Article) {
 	if (res.success && res.data) {
 		relatedArticles.value = res.data;
 		relatedLoaded.value = true;
-		console.log('Related articles loaded:', relatedArticles.value);
 	} else {
 		console.error('Failed to load similar articles:', res.message);
 		relatedLoaded.value = true;
