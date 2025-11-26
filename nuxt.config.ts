@@ -91,12 +91,12 @@ export default defineNuxtConfig({
 		// No-cache API routes
 		'/api/user/journey': { cors: true, cache: false },
 		'/api/turnstile': { cors: true, cache: false },
-		'/api/article/recommendArticles': { cors: true, cache: false }, // User-specific
+		'/api/article/recommend': { cors: true, cache: false }, // User-specific
+		'/api/article/similar': { cors: true, cache: false }, // Article-specific
 		'/api/admin/**': { cors: true, cache: false },
 
 		// Cached API routes
-		'/api/activity/**': { cors: true, cache: { maxAge: 3600 } }, // 1 hour cache
-		'/api/article/similarArticles': { cors: true, cache: { maxAge: 600 } } // 10 min cache
+		'/api/activity/**': { cors: true, cache: { maxAge: 3600 } } // 1 hour cache
 	},
 
 	modules: [
