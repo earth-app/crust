@@ -1,264 +1,255 @@
 <template>
-	<div class="relative w-full">
-		<!-- Command shield container -->
-		<div
-			v-if="activeCommand"
-			class="flex items-center gap-2 mb-2"
-		>
-			<div
-				class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-md text-sm"
-			>
-				<span>{{ activeCommand.label }}</span>
-				<button
-					@click="clearActiveCommand"
-					class="ml-1 text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100"
-				>
-					×
-				</button>
-			</div>
-		</div>
-
-		<UInput
-			v-model="query"
-			:placeholder="
-				activeCommand
-					? `Enter ${activeCommand.label.split(' ')[1] || 'query'}...`
-					: 'Coming Soon...'
-			"
+	<UModal v-model:open="open">
+		<UButton
+			label="Discover"
+			color="neutral"
+			icon="mdi:compass"
+			variant="outline"
 			class="w-full"
-			@focus="handleFocus"
-			@blur="handleBlur"
-			@keydown="handleKeydown"
-			:ui="{ base: 'text-xs sm:text-sm', leadingIcon: 'size-4 sm:size-5' }"
-			ref="inputRef"
-			disabled
-			icon="mdi:compass-outline"
 		/>
 
-		<transition name="fade">
-			<div
-				v-if="showDropdown && filteredCommands.length > 0"
-				class="absolute w-full z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-auto"
-				ref="dropdownRef"
-			>
-				<div
-					v-for="(command, index) in filteredCommands"
-					:key="command.value"
-					class="px-3 py-2 cursor-pointer text-sm transition-colors"
-					:class="{
-						'bg-gray-100 dark:bg-gray-700': index === selectedIndex,
-						'hover:bg-gray-50 dark:hover:bg-gray-600': index !== selectedIndex
-					}"
-					@click="selectCommand(command)"
-					@mouseenter="selectedIndex = index"
-				>
-					{{ command.label }}
-				</div>
-			</div>
-		</transition>
-	</div>
+		<template #content>
+			<UCommandPalette
+				v-model:search-term="search"
+				close
+				:loading="loading"
+				:groups="filteredGroups"
+				@update:open="open = $event"
+				:ui="{ itemDescription: 'text-[10px]' }"
+			/>
+		</template>
+	</UModal>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { type CommandPaletteGroup, type CommandPaletteItem } from '@nuxt/ui';
+import { getUserDisplayName } from '~/shared/util';
 
-const query = ref('');
-const showDropdown = ref(false);
-const selectedIndex = ref(-1);
+const { user } = useAuth();
+const router = useRouter();
+const open = ref(false);
 
-interface Command {
-	label: string;
-	value: string;
-	type: 'action' | 'search';
-	action: (query: string) => void;
+const users = ref<CommandPaletteItem[]>([]);
+const usersLoading = ref(false);
+const prompts = ref<CommandPaletteItem[]>([]);
+const promptsLoading = ref(false);
+const articles = ref<CommandPaletteItem[]>([]);
+const articlesLoading = ref(false);
+
+const loading = computed(() => usersLoading.value || promptsLoading.value || articlesLoading.value);
+const search = ref('');
+
+const filteredGroups = computed(() => {
+	const result = [];
+	for (const group of groups.value) {
+		if (!group.items) {
+			result.push(group);
+			continue;
+		}
+
+		const filteredItems = [];
+		for (const item of group.items) {
+			if ('auth' in item && (item as any).auth === true) {
+				if (user.value !== null) {
+					filteredItems.push(item);
+				}
+			} else {
+				filteredItems.push(item);
+			}
+		}
+
+		result.push({
+			...group,
+			items: filteredItems
+		});
+	}
+	return result;
+});
+
+watch(search, (newSearch: string) => populate(newSearch), { immediate: true });
+onMounted(() => populate(''));
+
+function populate(searchTerm: string) {
+	const empty = searchTerm.length === 0;
+	const sort = empty ? 'rand' : 'desc';
+
+	// populate users
+	usersLoading.value = true;
+	getUsers(empty ? 5 : 150, searchTerm, sort).then((res) => {
+		if (res.success && res.data) {
+			const items = res.data;
+
+			users.value = items.map((user) => ({
+				id: `user-${user.id}`,
+				label: getUserDisplayName(user),
+				suffix: `@${user.username}`,
+				avatar: {
+					src: `${user.account.avatar_url}?size=32`,
+					icon: 'mdi:account'
+				},
+				to: `/profile/@${user.username}`,
+				onSelect: close
+			}));
+
+			groups.value = groups.value.map((group) =>
+				group.id === 'users' ? { ...group, items: users.value } : group
+			);
+		} else {
+			users.value = [];
+		}
+
+		usersLoading.value = false;
+	});
+
+	// populate prompts
+	promptsLoading.value = true;
+	getPrompts(empty ? 5 : 25, searchTerm, sort).then((res) => {
+		if (res.success && res.data) {
+			const items = res.data;
+			prompts.value = items.map((prompt) => {
+				const owner = prompt.owner;
+				const type = owner.account.account_type;
+				const isChipShown = type === 'ADMINISTRATOR' || type === 'ORGANIZER';
+
+				return {
+					id: `prompt-${prompt.id}`,
+					label: prompt.prompt,
+					description: `by ${getUserDisplayName(owner)}`,
+					avatar: {
+						src: `${owner.account.avatar_url}?size=32`,
+						icon: 'mdi:lightbulb-outline',
+						chip: {
+							color: type === 'ADMINISTRATOR' ? 'error' : 'warning',
+							ui: { root: isChipShown ? 'visible' : 'hidden' }
+						}
+					},
+					to: `/prompts/${prompt.id}`,
+					onSelect: close
+				};
+			});
+
+			groups.value = groups.value.map((group) =>
+				group.id === 'prompts' ? { ...group, items: prompts.value } : group
+			);
+		} else {
+			prompts.value = [];
+		}
+
+		promptsLoading.value = false;
+	});
+
+	// populate articles
+	articlesLoading.value = true;
+	getArticles(empty ? 5 : 25, searchTerm, sort).then((res) => {
+		if (res.success && res.data) {
+			const items = res.data;
+			articles.value = items.map((article) => {
+				const owner = article.author;
+				const type = owner.account.account_type;
+				const isChipShown = type === 'ADMINISTRATOR' || type === 'ORGANIZER';
+
+				return {
+					id: `article-${article.id}`,
+					label: article.title,
+					description: `by ${getUserDisplayName(owner)} • ${article.tags
+						.slice(0, 3)
+						.map((tag) => `#${tag}`)
+						.join(' ')}`,
+					avatar: {
+						src: `${owner.account.avatar_url}?size=32`,
+						icon: 'mdi:file-document-outline',
+						chip: {
+							color: type === 'ADMINISTRATOR' ? 'error' : 'warning',
+							ui: { root: isChipShown ? 'visible' : 'hidden' }
+						}
+					},
+					to: `/articles/${article.id}`,
+					onSelect: close,
+					ui: { itemLabel: 'font-semibold' }
+				};
+			});
+
+			groups.value = groups.value.map((group) =>
+				group.id === 'articles' ? { ...group, items: articles.value } : group
+			);
+		} else {
+			articles.value = [];
+		}
+
+		articlesLoading.value = false;
+	});
 }
 
-// Active command state
-const activeCommand = ref<Command | null>(null);
-
-const commands = ref<Command[]>([
+const groups = ref<CommandPaletteGroup<CommandPaletteItem>[]>([
 	{
-		label: 'randomize',
-		value: 'randomize',
-		type: 'action',
-		action: () => executeRandomize()
+		id: 'main',
+		items: [
+			{
+				id: 'home',
+				label: 'Home',
+				icon: 'mdi:home',
+				to: '/',
+				onSelect: close
+			},
+			{
+				id: 'profile',
+				label: 'Profile',
+				icon: 'mdi:account',
+				to: '/profile',
+				auth: true,
+				onSelect: close
+			},
+			{
+				id: 'randomize',
+				label: "I'm Feeling Novel",
+				icon: 'mdi:dice-multiple',
+				onSelect: randomize,
+				ui: { itemLabelBase: 'text-primary font-semibold' }
+			}
+		]
 	},
 	{
-		label: 'search users',
-		value: 'search_users',
-		type: 'search',
-		action: (query: string) => executeUserSearch(query)
+		id: 'users',
+		label: 'Users'
 	},
 	{
-		label: 'search articles',
-		value: 'search_articles',
-		type: 'search',
-		action: (query: string) => executeArticleSearch(query)
+		id: 'prompts',
+		label: 'Prompts'
+	},
+	{
+		id: 'articles',
+		label: 'Articles'
 	}
 ]);
 
-const filteredCommands = computed(() => {
-	// Don't show commands if one is already active
-	if (activeCommand.value) return [];
-
-	if (!query.value) return commands.value;
-	return commands.value.filter((cmd) =>
-		cmd.label.toLowerCase().includes(query.value.toLowerCase())
-	);
-});
-
-// Reset selected index when filtered commands change
-watch(filteredCommands, () => {
-	selectedIndex.value = -1;
-});
-
-// Command execution functions
-function executeRandomize() {
-	console.log('Executing randomize command');
-	// TODO: Implement random content generation
+function close() {
+	open.value = false;
 }
 
-function executeUserSearch(queryText: string) {
-	console.log('Searching users with query:', queryText);
-	// TODO: Implement user search
-}
+function randomize() {
+	close();
 
-function executeArticleSearch(queryText: string) {
-	console.log('Searching articles with query:', queryText);
-	// TODO: Implement article search
-}
-
-// Active command management
-function setActiveCommand(command: Command) {
-	activeCommand.value = command;
-	query.value = '';
-	showDropdown.value = false;
-	selectedIndex.value = -1;
-}
-
-function clearActiveCommand() {
-	activeCommand.value = null;
-	query.value = '';
-}
-
-function selectCommand(item: Command) {
-	if (item.type === 'action') {
-		// Execute immediately for action commands
-		item.action('');
-		query.value = '';
-		showDropdown.value = false;
-		selectedIndex.value = -1;
-	} else {
-		// Create shield for search commands
-		setActiveCommand(item);
-	}
-}
-
-function handleFocus() {
-	// Only show dropdown if no active command
-	if (!activeCommand.value) {
-		showDropdown.value = true;
-		selectedIndex.value = -1;
-	}
-}
-
-function handleKeydown(event: KeyboardEvent) {
-	// Handle backspace to remove active command when input is empty
-	if (event.key === 'Backspace' && activeCommand.value && !query.value) {
-		event.preventDefault();
-		clearActiveCommand();
-		return;
-	}
-
-	// Handle enter to execute search command with query
-	if (event.key === 'Enter' && activeCommand.value && activeCommand.value.type === 'search') {
-		event.preventDefault();
-		activeCommand.value.action(query.value);
-		clearActiveCommand();
-		return;
-	}
-
-	// Handle escape to clear active command or close dropdown
-	if (event.key === 'Escape') {
-		event.preventDefault();
-		if (activeCommand.value) {
-			clearActiveCommand();
-		} else {
-			showDropdown.value = false;
-			selectedIndex.value = -1;
-		}
-		return;
-	}
-
-	// Regular dropdown navigation (only when no active command)
-	if (!activeCommand.value && showDropdown.value && filteredCommands.value.length > 0) {
-		switch (event.key) {
-			case 'ArrowDown':
-				event.preventDefault();
-				selectedIndex.value = Math.min(selectedIndex.value + 1, filteredCommands.value.length - 1);
-				break;
-			case 'ArrowUp':
-				event.preventDefault();
-				selectedIndex.value = Math.max(selectedIndex.value - 1, -1);
-				break;
-			case 'Enter':
-				event.preventDefault();
-				if (selectedIndex.value >= 0 && selectedIndex.value < filteredCommands.value.length) {
-					const selectedCommand = filteredCommands.value[selectedIndex.value];
-					if (selectedCommand) {
-						selectCommand(selectedCommand);
-					}
+	const choice = Math.floor(Math.random() * 2);
+	if (choice === 0) {
+		// Random Prompt
+		getRandomPrompts(1).then((res) => {
+			if (res.success && res.data && !('message' in res.data)) {
+				const prompt = res.data[0];
+				if (prompt) {
+					router.push(`/prompts/${prompt.id}`);
 				}
-				break;
-		}
+			}
+		});
+	} else {
+		// Random Article
+		getRandomArticles(1).then((res) => {
+			if (res.success && res.data && !('message' in res.data)) {
+				const article = res.data[0];
+				if (article) {
+					router.push(`/articles/${article.id}`);
+				}
+			}
+		});
 	}
 }
-
-const inputRef = ref();
-const dropdownRef = ref();
-let blurTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-function handleBlur(event: FocusEvent) {
-	// Check if the focus is moving to the dropdown
-	blurTimeoutId = setTimeout(() => {
-		const relatedTarget = event.relatedTarget as HTMLElement;
-		if (dropdownRef.value && relatedTarget && dropdownRef.value.contains(relatedTarget)) {
-			return; // Don't hide dropdown if focus is moving to dropdown
-		}
-		showDropdown.value = false;
-		selectedIndex.value = -1;
-	}, 150);
-}
-
-function handleClickOutside(event: MouseEvent) {
-	const target = event.target as HTMLElement;
-	if (
-		inputRef.value &&
-		dropdownRef.value &&
-		!inputRef.value.$el.contains(target) &&
-		!dropdownRef.value.contains(target)
-	) {
-		showDropdown.value = false;
-		selectedIndex.value = -1;
-	}
-}
-
-onMounted(() => {
-	document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-	document.removeEventListener('click', handleClickOutside);
-});
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-	transition: opacity 0.2s;
-}
-.fade-enter-from,
-.fade-leave-to {
-	opacity: 0;
-}
-</style>
