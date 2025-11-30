@@ -102,7 +102,7 @@ async function handleLogin() {
 
 	if (result.success) {
 		// Fetch user data to update the auth state
-		fetchUser().then(() => {
+		fetchUser(true).then(() => {
 			emit('loginSuccess');
 		});
 		message.value = 'Welcome!';

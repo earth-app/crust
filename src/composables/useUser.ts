@@ -61,10 +61,14 @@ export async function useCurrentUser() {
 
 export const useAuth = () => {
 	const user = useState<User | null | undefined>('user', () => undefined);
-
 	const token = useCurrentSessionToken();
+
 	if (!token) {
-		user.value = null;
+		// only set to null if it hasn't been initialized yet to avoid flashing
+		if (user.value === undefined) {
+			user.value = null;
+		}
+
 		return {
 			user,
 			fetchUser: async () => {},
@@ -74,8 +78,8 @@ export const useAuth = () => {
 		};
 	}
 
-	const fetchUser = async () => {
-		if (user.value) return;
+	const fetchUser = async (force: boolean = false) => {
+		if (!force && user.value !== undefined) return; // only fetch if truly uninitialized or forced
 
 		const res = await useCurrentUser();
 		if (res.success && res.data) {
@@ -88,22 +92,20 @@ export const useAuth = () => {
 
 			user.value = res.data;
 		} else {
+			console.error('Failed to fetch current user:', res.message);
 			user.value = null;
 		}
 	};
 
-	// If user is not loaded, fetch it in the next tick to avoid async context issues
-	if (!user.value) {
+	// if user is not loaded, fetch it in the next tick to avoid async context issues
+	if (user.value === undefined) {
 		if (import.meta.server) {
-			// On server, we can call it synchronously during SSR
-			// But wrap in try-catch to handle potential issues
 			try {
 				fetchUser();
 			} catch (e) {
 				console.error('Error fetching user on server:', e);
 			}
 		} else {
-			// On client, use nextTick or just call it
 			fetchUser();
 		}
 	}
@@ -257,7 +259,7 @@ export async function getUsers(
 	sort: SortingOption = 'desc'
 ) {
 	return await paginatedAPIRequest<User>(
-		`users-${search}-${limit}`,
+		null,
 		`/v2/users`,
 		useCurrentSessionToken(),
 		{},
@@ -286,7 +288,7 @@ export function useUser(identifier: string) {
 
 	const fetchUser = async () => {
 		if (!identifier) return;
-		if (user.value) return;
+		if (user.value !== undefined) return; // Only fetch if truly uninitialized
 
 		try {
 			const res = await getUser(identifier);
@@ -297,11 +299,12 @@ export function useUser(identifier: string) {
 			}
 		} catch (error) {
 			console.warn(`Failed to fetch user ${identifier}:`, error);
+			user.value = null; // Set to null on error
 		}
 	};
 
 	// If user is not loaded, fetch it
-	if (!user.value) {
+	if (user.value === undefined) {
 		fetchUser();
 	}
 

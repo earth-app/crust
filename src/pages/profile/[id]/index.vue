@@ -1,12 +1,6 @@
 <template>
 	<ClientOnly>
 		<div
-			v-if="currentUser"
-			class="flex flex-row items-center justify-between w-full mt-16 sm:mt-0"
-		>
-			<UserProfile :user="currentUser" />
-		</div>
-		<div
 			v-if="currentUser === undefined"
 			class="flex flex-col items-center justify-center h-screen"
 		>
@@ -19,6 +13,12 @@
 		>
 			<!-- User not found -->
 			<p class="text-gray-600">User doesn't exist. Maybe look at the URL again?</p>
+		</div>
+		<div
+			v-else
+			class="flex flex-row items-center justify-between w-full mt-16 sm:mt-0"
+		>
+			<UserProfile :user="currentUser" />
 		</div>
 	</ClientOnly>
 </template>

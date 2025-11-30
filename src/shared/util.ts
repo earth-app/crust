@@ -32,40 +32,35 @@ export async function makeRequest<T>(
 			};
 		}
 
-		// Handle regular JSON requests
-		const { data, error } = key
-			? await useAsyncData<T>(
-					key,
-					() =>
-						$fetch<T>(url, {
-							headers: {
-								Authorization: `Bearer ${token}`
-							},
-							...options
-						}) as Promise<T>
-				)
-			: {
-					data: {
-						value: await $fetch<T>(url, {
-							headers: {
-								Authorization: `Bearer ${token}`
-							},
-							...options
-						})
-					},
-					error: { value: undefined }
-				};
+		// Use state for keys
+		let cached: ReturnType<typeof useState<T | null | undefined>> | null = null;
+		if (key) {
+			cached = useState<T | null | undefined>(key, () => undefined);
 
-		if (error.value) {
-			throw {
-				message: `Error fetching ${key} from ${url}: ${error.value.message || error.value}`,
-				data: data.value,
-				value: error.value,
-				toString: () => error.value?.toString()
-			};
+			if (cached.value) {
+				return {
+					success: true,
+					data: cached.value
+				};
+			}
 		}
 
-		if (!data.value && key) {
+		// Handle regular JSON requests
+		const data = await $fetch<T>(url, {
+			headers: {
+				Authorization: `Bearer ${token}`
+			},
+			...options
+		}).catch((error) => {
+			throw {
+				message: `Error fetching ${key} from ${url}: ${error}`,
+				data,
+				error,
+				toString: () => error.toString()
+			};
+		});
+
+		if (!data) {
 			return {
 				success: false,
 				data: { code: 404, message: 'Not Found' },
@@ -73,9 +68,22 @@ export async function makeRequest<T>(
 			};
 		}
 
+		if (typeof data === 'object' && 'message' in data) {
+			return {
+				success: false,
+				data: data as any,
+				message: (data as any).message || `Error fetching ${key} from ${url}`
+			};
+		}
+
+		// Update cache with fetched data
+		if (cached) {
+			cached.value = data as T;
+		}
+
 		return {
 			success: true,
-			data: data.value as T
+			data: data as T
 		};
 	} catch (error: any) {
 		const value: string = error.toString();
@@ -90,7 +98,7 @@ export async function makeRequest<T>(
 		if (value.includes('400')) {
 			return {
 				success: false,
-				message: `Bad request: ${error?.value?.statusMessage || value}`,
+				message: `Bad request: ${data?.message || 'The request was invalid.'}`,
 				data: data || { code: 400, message: 'Bad Request' }
 			};
 		}
@@ -111,7 +119,7 @@ export async function makeRequest<T>(
 			};
 		}
 
-		console.error(`Failed to fetch ${key}:`, error);
+		console.error(`Failed to fetch ${key || url}:`, error);
 		return {
 			success: false,
 			message: 'An error occurred while fetching data.',
@@ -171,7 +179,7 @@ export async function makeServerRequest<T>(
 		console.error(`Failed to fetch ${key}:`, error);
 		return {
 			success: false,
-			message: error.message || 'An error occurred while fetching data.'
+			message: error.message || 'An error occurred while fetching server data.'
 		};
 	}
 }

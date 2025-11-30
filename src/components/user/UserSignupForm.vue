@@ -149,7 +149,7 @@ async function handleSignup() {
 
 	if (result.success) {
 		// Fetch user data to update the auth state
-		fetchUser().then(() => {
+		fetchUser(true).then(() => {
 			emit('signupSuccess', !!email.value.trim());
 		});
 		message.value = 'Welcome!';
