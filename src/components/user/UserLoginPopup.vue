@@ -1,6 +1,6 @@
 <template>
 	<UPopover
-		v-model="isOpen"
+		v-model:open="isOpen"
 		mode="hover"
 		:popper="{ placement: 'bottom-end' }"
 	>
