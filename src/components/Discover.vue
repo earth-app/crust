@@ -31,12 +31,17 @@ const open = ref(false);
 
 const users = ref<CommandPaletteItem[]>([]);
 const usersLoading = ref(false);
+const activities = ref<CommandPaletteItem[]>([]);
+const activitiesLoading = ref(false);
 const prompts = ref<CommandPaletteItem[]>([]);
 const promptsLoading = ref(false);
 const articles = ref<CommandPaletteItem[]>([]);
 const articlesLoading = ref(false);
 
-const loading = computed(() => usersLoading.value || promptsLoading.value || articlesLoading.value);
+const loading = computed(
+	() =>
+		usersLoading.value || activitiesLoading.value || promptsLoading.value || articlesLoading.value
+);
 const search = ref('');
 
 const filteredGroups = computed(() => {
@@ -99,6 +104,30 @@ function populate(searchTerm: string) {
 		}
 
 		usersLoading.value = false;
+	});
+
+	// populate activities
+	activitiesLoading.value = true;
+	getAllActivities(empty ? 5 : 150, searchTerm, sort).then((res) => {
+		if (res.success && res.data) {
+			const items = res.data;
+			activities.value = items.map((activity) => ({
+				id: `activity-${activity.id}`,
+				label: activity.name,
+				description: activity.description,
+				icon: activity.fields['icon'] || 'mdi:earth',
+				to: `/activities/${activity.id}`,
+				onSelect: close
+			}));
+
+			groups.value = groups.value.map((group) =>
+				group.id === 'activities' ? { ...group, items: activities.value } : group
+			);
+		} else {
+			activities.value = [];
+		}
+
+		activitiesLoading.value = false;
 	});
 
 	// populate prompts
@@ -209,6 +238,10 @@ const groups = ref<CommandPaletteGroup<CommandPaletteItem>[]>([
 		]
 	},
 	{
+		id: 'activities',
+		label: 'Activities'
+	},
+	{
 		id: 'users',
 		label: 'Users'
 	},
@@ -229,7 +262,7 @@ function close() {
 function randomize() {
 	close();
 
-	const choice = Math.floor(Math.random() * 2);
+	const choice = Math.floor(Math.random() * 3);
 	if (choice === 0) {
 		// Random Prompt
 		getRandomPrompts(1).then((res) => {
@@ -240,13 +273,23 @@ function randomize() {
 				}
 			}
 		});
-	} else {
+	} else if (choice === 1) {
 		// Random Article
 		getRandomArticles(1).then((res) => {
 			if (res.success && res.data && !('message' in res.data)) {
 				const article = res.data[0];
 				if (article) {
 					router.push(`/articles/${article.id}`);
+				}
+			}
+		});
+	} else {
+		// Random Activity
+		getRandomActivities(1).then((res) => {
+			if (res.success && res.data && !('message' in res.data)) {
+				const activity = res.data[0];
+				if (activity) {
+					router.push(`/activities/${activity.id}`);
 				}
 			}
 		});

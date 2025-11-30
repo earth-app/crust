@@ -1,7 +1,12 @@
 import { type Article } from '~/shared/types/article';
 import type { SortingOption } from '~/shared/types/global';
 import type { User } from '~/shared/types/user';
-import { makeClientAPIRequest, makeServerRequest, paginatedAPIRequest } from '~/shared/util';
+import {
+	makeAPIRequest,
+	makeClientAPIRequest,
+	makeServerRequest,
+	paginatedAPIRequest
+} from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 export async function getArticles(
@@ -127,7 +132,7 @@ export function useArticle(id: string) {
 
 	const fetch = async () => {
 		if (article.value !== undefined) return;
-		const res = await makeClientAPIRequest<Article>(`/v2/articles/${id}`);
+		const res = await makeAPIRequest<Article>(`article-${id}`, `/v2/articles/${id}`);
 		if (res.success && res.data) {
 			if ('message' in res.data) {
 				article.value = null;
@@ -188,10 +193,13 @@ export function useUserArticles(
 	const articles = useState<Article[]>(`user-${identifier}-articles-${page}:${limit}`, () => []);
 
 	const fetch = async (newPage: number = page, newLimit: number = limit) => {
-		const res = await makeClientAPIRequest<{
+		const res = await makeAPIRequest<{
 			items: Article[];
 			total: number;
-		}>(`/v2/users/${identifier}/articles?page=${newPage}&limit=${newLimit}&sort=${sort}`);
+		}>(
+			`articles-${identifier}-${newPage}-${newLimit}`,
+			`/v2/users/${identifier}/articles?page=${newPage}&limit=${newLimit}&sort=${sort}`
+		);
 		if (res.success && res.data) {
 			if ('message' in res.data) {
 				return res;

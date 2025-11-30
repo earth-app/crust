@@ -1,7 +1,7 @@
 import type { com } from '@earth-app/ocean';
 import type { SortingOption } from '~/shared/types/global';
 import type { Prompt, PromptResponse } from '~/shared/types/prompts';
-import { makeClientAPIRequest, paginatedAPIRequest } from '~/shared/util';
+import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 export async function getPrompts(
@@ -81,14 +81,18 @@ export async function removePrompt(id: string) {
 }
 
 export function usePromptResponses(id: string, page: number = 1, limit: number = 25) {
-	const responses = useState<PromptResponse[]>(`prompt-${id}-responses-page-${page}`, () => []);
+	const responses = useState<PromptResponse[]>(
+		`prompt-${id}-responses-page-${page}-${limit}`,
+		() => []
+	);
 	const loading = useState<boolean>(`prompt-${id}-responses-loading`, () => false);
 
 	const fetch = async (newPage: number = page, newLimit: number = limit) => {
 		if (loading.value) return { success: false, message: 'Already loading' };
 
 		loading.value = true;
-		const res = await makeClientAPIRequest<{ items: PromptResponse[] }>(
+		const res = await makeAPIRequest<{ items: PromptResponse[] }>(
+			`prompt-${id}-responses-page-${newPage}-${newLimit}`,
 			`/v2/prompts/${id}/responses?page=${newPage}&limit=${newLimit}`
 		);
 
@@ -168,10 +172,13 @@ export function useUserPrompts(
 	const prompts = useState<Prompt[]>(`user-${identifier}-prompts-${page}:${limit}`, () => []);
 
 	const fetch = async (newPage: number = page, newLimit: number = limit) => {
-		const res = await makeClientAPIRequest<{
+		const res = await makeAPIRequest<{
 			items: Prompt[];
 			total: number;
-		}>(`/v2/users/${identifier}/prompts?page=${newPage}&limit=${newLimit}&sort=${sort}`);
+		}>(
+			`user-prompts-${identifier}-${newPage}-${newLimit}`,
+			`/v2/users/${identifier}/prompts?page=${newPage}&limit=${newLimit}&sort=${sort}`
+		);
 		if (res.success && res.data) {
 			if ('message' in res.data) {
 				return res;

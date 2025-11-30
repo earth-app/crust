@@ -231,7 +231,7 @@ export async function setAccountType(id: string, type: User['account']['account_
 
 export async function getRecommendedActivities(poolLimit: number = 25) {
 	const res = await makeAPIRequest<Activity[]>(
-		null,
+		'recommended_activities',
 		`/v2/users/current/activities/recommend?pool_limit=${poolLimit}`,
 		useCurrentSessionToken(),
 		{}
@@ -259,7 +259,7 @@ export async function getUsers(
 	sort: SortingOption = 'desc'
 ) {
 	return await paginatedAPIRequest<User>(
-		null,
+		`users-${search}-${limit}`,
 		`/v2/users`,
 		useCurrentSessionToken(),
 		{},
@@ -292,9 +292,16 @@ export function useUser(identifier: string) {
 
 		try {
 			const res = await getUser(identifier);
-			if (res.success && res.data && 'id' in res.data) {
+			if (res.success && res.data) {
+				if ('message' in res.data) {
+					console.warn(`Failed to fetch user ${identifier}:`, res.data.message);
+					user.value = null;
+					return;
+				}
+
 				user.value = res.data;
 			} else {
+				console.warn(`Failed to fetch user ${identifier}:`, res.message);
 				user.value = null;
 			}
 		} catch (error) {

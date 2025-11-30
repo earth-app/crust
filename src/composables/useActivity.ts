@@ -1,24 +1,41 @@
 import { type Activity, type WikipediaSummary, type YouTubeVideo } from '~/shared/types/activity';
-import * as util from '~/shared/util';
+import type { SortingOption } from '~/shared/types/global';
+import {
+	makeAPIRequest,
+	makeClientAPIRequest,
+	makeServerRequest,
+	paginatedAPIRequest
+} from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 // mantle - /v2/activities
 // cloud - /v1/activity
 
-export async function getAllActivities(limit: number = 25, search: string = '') {
-	return await util.paginatedAPIRequest<Activity>(
-		null,
+export async function getAllActivities(
+	limit: number = 25,
+	search: string = '',
+	sort: SortingOption = 'desc'
+) {
+	return await paginatedAPIRequest<Activity>(
+		`activities-${search}-${limit}`,
 		'/v2/activities',
 		useCurrentSessionToken(),
 		{},
 		limit,
-		search
+		search,
+		sort
 	);
 }
 
-export async function getActivities(page: number = 1, limit: number = 25, search: string = '') {
-	const res = await util.makeClientAPIRequest<{ items: Activity[]; total: number }>(
-		`/v2/activities?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
+export async function getActivities(
+	page: number = 1,
+	limit: number = 25,
+	search: string = '',
+	sort: SortingOption = 'desc'
+) {
+	const res = await makeAPIRequest<{ items: Activity[]; total: number }>(
+		`activities-${search}-${page}-${limit}-${sort}`,
+		`/v2/activities?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sort=${sort}`,
 		useCurrentSessionToken()
 	);
 
@@ -41,7 +58,7 @@ export async function getActivitiesList(
 	limit: number = 100,
 	search: string = ''
 ) {
-	return await util.makeClientAPIRequest<{ items: string[]; total: number }>(
+	return await makeClientAPIRequest<{ items: string[]; total: number }>(
 		`/v2/activities/list?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
 		useCurrentSessionToken()
 	);
@@ -71,7 +88,7 @@ export function useActivitiesCount() {
 }
 
 export async function getRandomActivities(count: number = 3) {
-	const res = await util.makeClientAPIRequest<Activity[]>(
+	const res = await makeClientAPIRequest<Activity[]>(
 		`/v2/activities/random?count=${count}`,
 		useCurrentSessionToken()
 	);
@@ -91,7 +108,7 @@ export async function getRandomActivities(count: number = 3) {
 }
 
 export async function getActivity(id: string) {
-	return await util.makeAPIRequest<Activity>(
+	return await makeAPIRequest<Activity>(
 		`activity-${id}`,
 		`/v2/activities/${id}?include_aliases=true`,
 		useCurrentSessionToken()
@@ -99,7 +116,7 @@ export async function getActivity(id: string) {
 }
 
 export async function draftActivity(id: string) {
-	return await util.makeServerRequest<Activity>(
+	return await makeServerRequest<Activity>(
 		`draft-activity-${id}`,
 		`/api/admin/draftActivity?id=${id}`,
 		useCurrentSessionToken()
@@ -107,14 +124,14 @@ export async function draftActivity(id: string) {
 }
 
 export async function newActivity(activity: Activity) {
-	return await util.makeClientAPIRequest<Activity>('/v2/activities', useCurrentSessionToken(), {
+	return await makeClientAPIRequest<Activity>('/v2/activities', useCurrentSessionToken(), {
 		method: 'POST',
 		body: activity
 	});
 }
 
 export async function editActivity(activity: Activity) {
-	return await util.makeClientAPIRequest<Activity>(
+	return await makeClientAPIRequest<Activity>(
 		`/v2/activities/${activity.id}`,
 		useCurrentSessionToken(),
 		{
@@ -125,7 +142,7 @@ export async function editActivity(activity: Activity) {
 }
 
 export async function deleteActivity(id: string) {
-	return await util.makeClientAPIRequest<void>(`/v2/activities/${id}`, useCurrentSessionToken(), {
+	return await makeClientAPIRequest<void>(`/v2/activities/${id}`, useCurrentSessionToken(), {
 		method: 'DELETE'
 	});
 }
@@ -133,7 +150,7 @@ export async function deleteActivity(id: string) {
 // Activity Information Extensions
 
 export async function getActivityWikipediaSummary(title: string) {
-	return await util.makeServerRequest<WikipediaSummary>(
+	return await makeServerRequest<WikipediaSummary>(
 		`wikipedia-summary-${title}`,
 		`/api/activity/wikipedia?title=${encodeURIComponent(title)}`,
 		useCurrentSessionToken()
@@ -141,7 +158,7 @@ export async function getActivityWikipediaSummary(title: string) {
 }
 
 export async function getActivityYouTubeSearch(query: string) {
-	return await util.makeServerRequest<YouTubeVideo[]>(
+	return await makeServerRequest<YouTubeVideo[]>(
 		`youtube-search-${query}`,
 		`/api/activity/youtubeSearch?query=${encodeURIComponent(query)}`,
 		useCurrentSessionToken()
@@ -155,21 +172,19 @@ export async function getActivityWikipediaSearches(
 	const results: Record<string, WikipediaSummary> = {};
 	const responses = await Promise.all(
 		queries.map(async (query) => {
-			return await util
-				.makeServerRequest<{
-					query: { search: { title: string; snippet: string }[] };
-				}>(
-					`wikipedia-search-${query}`,
-					`/api/activity/wikipediaSearch?search=${encodeURIComponent(query)}`,
-					useCurrentSessionToken()
-				)
-				.then((res) => {
-					if (res.success) {
-						return res.data?.query.search || [];
-					}
+			return await makeServerRequest<{
+				query: { search: { title: string; snippet: string }[] };
+			}>(
+				`wikipedia-search-${query}`,
+				`/api/activity/wikipediaSearch?search=${encodeURIComponent(query)}`,
+				useCurrentSessionToken()
+			).then((res) => {
+				if (res.success) {
+					return res.data?.query.search || [];
+				}
 
-					return [];
-				});
+				return [];
+			});
 		})
 	)
 		.then((res) => res.flat())
@@ -224,7 +239,7 @@ export async function getActivityIconSearches(queries: string[]) {
 			if (results[query]) return; // Already fetched
 
 			try {
-				const res = await util.makeServerRequest<{ icons: string[]; total: number }>(
+				const res = await makeServerRequest<{ icons: string[]; total: number }>(
 					`icon-search-${query}`,
 					`/api/activity/iconSearch?search=${encodeURIComponent(query)}`,
 					useCurrentSessionToken()
