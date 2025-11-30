@@ -107,7 +107,7 @@ export function useLogout() {
 			});
 
 			sessionCookie.value = null; // Clear the session cookie
-			refreshNuxtData(['user-current', 'avatar-current']); // Refresh user data
+			refreshNuxtData('user-current'); // Refresh user data
 			return { success: true, message: 'Logout successful' };
 		} catch (error) {
 			console.error('Logout failed:', error);

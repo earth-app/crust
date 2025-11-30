@@ -804,7 +804,7 @@ function handleAccountDeletion() {
 	sessionCookie.value = null;
 
 	// Clear user state
-	refreshNuxtData(['user-current', 'avatar-current']);
+	refreshNuxtData('user-current');
 
 	// Redirect to homepage
 	router.push('/');

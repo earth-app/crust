@@ -207,7 +207,7 @@ async function logoutUser() {
 	await logout();
 
 	user.value = null;
-	refreshNuxtData(['user-current', 'avatar-current']); // Invalidate user and avatar data
+	refreshNuxtData('user-current'); // Invalidate user data
 
 	toast.add({
 		title: 'Logged out',

@@ -1,4 +1,3 @@
-import { computed, toValue, type MaybeRefOrGetter } from 'vue';
 import type { Activity } from '~/shared/types/activity';
 import type { SortingOption } from '~/shared/types/global';
 import type { User, UserNotification } from '~/shared/types/user';
@@ -69,9 +68,9 @@ export const useAuth = () => {
 		return {
 			user,
 			fetchUser: async () => {},
-			avatar: computed(() => undefined),
-			avatar32: computed(() => undefined),
-			avatar128: computed(() => undefined)
+			avatar: computed(() => '/earth-app.png'),
+			avatar32: computed(() => '/favicon.png'),
+			avatar128: computed(() => '/earth-app.png')
 		};
 	}
 
@@ -109,13 +108,63 @@ export const useAuth = () => {
 		}
 	}
 
-	const avatar = computed(() => user.value?.account?.avatar_url);
-	const avatar32 = computed(() =>
-		user.value?.account?.avatar_url ? `${user.value.account.avatar_url}?size=32` : undefined
-	);
-	const avatar128 = computed(() =>
-		user.value?.account?.avatar_url ? `${user.value.account.avatar_url}?size=128` : undefined
-	);
+	const avatarUrl = computed(() => user.value?.account?.avatar_url);
+	const validatedUrls = ref<{ avatar: string; avatar32: string; avatar128: string } | null>(null);
+
+	if (import.meta.client) {
+		watch(
+			avatarUrl,
+			async (url) => {
+				if (!url) {
+					validatedUrls.value = {
+						avatar: '/earth-app.png',
+						avatar32: '/favicon.png',
+						avatar128: '/favicon.png'
+					};
+					return;
+				}
+
+				try {
+					const response = await fetch(url, { method: 'HEAD' });
+					if (response.ok) {
+						validatedUrls.value = {
+							avatar: url,
+							avatar32: `${url}?size=32`,
+							avatar128: `${url}?size=128`
+						};
+					} else {
+						// 404 or other error - use fallbacks
+						validatedUrls.value = {
+							avatar: '/earth-app.png',
+							avatar32: '/favicon.png',
+							avatar128: '/favicon.png'
+						};
+					}
+				} catch {
+					// network error - use fallbacks
+					validatedUrls.value = {
+						avatar: '/earth-app.png',
+						avatar32: '/favicon.png',
+						avatar128: '/favicon.png'
+					};
+				}
+			},
+			{ immediate: true }
+		);
+	}
+
+	const avatar = computed(() => {
+		if (validatedUrls.value) return validatedUrls.value.avatar;
+		return avatarUrl.value || '/earth-app.png';
+	});
+	const avatar32 = computed(() => {
+		if (validatedUrls.value) return validatedUrls.value.avatar32;
+		return avatarUrl.value ? `${avatarUrl.value}?size=32` : '/favicon.png';
+	});
+	const avatar128 = computed(() => {
+		if (validatedUrls.value) return validatedUrls.value.avatar128;
+		return avatarUrl.value ? `${avatarUrl.value}?size=128` : '/earth-app.png';
+	});
 
 	return {
 		user,
@@ -256,13 +305,63 @@ export function useUser(identifier: string) {
 		fetchUser();
 	}
 
-	const avatar = computed(() => user.value?.account?.avatar_url);
-	const avatar32 = computed(() =>
-		user.value?.account?.avatar_url ? `${user.value.account.avatar_url}?size=32` : undefined
-	);
-	const avatar128 = computed(() =>
-		user.value?.account?.avatar_url ? `${user.value.account.avatar_url}?size=128` : undefined
-	);
+	const avatarUrl = computed(() => user.value?.account?.avatar_url);
+	const validatedUrls = ref<{ avatar: string; avatar32: string; avatar128: string } | null>(null);
+
+	if (import.meta.client) {
+		watch(
+			avatarUrl,
+			async (url) => {
+				if (!url) {
+					validatedUrls.value = {
+						avatar: '/earth-app.png',
+						avatar32: '/favicon.png',
+						avatar128: '/favicon.png'
+					};
+					return;
+				}
+
+				try {
+					const response = await fetch(url, { method: 'HEAD' });
+					if (response.ok) {
+						validatedUrls.value = {
+							avatar: url,
+							avatar32: `${url}?size=32`,
+							avatar128: `${url}?size=128`
+						};
+					} else {
+						// 404 or other error - use fallbacks
+						validatedUrls.value = {
+							avatar: '/earth-app.png',
+							avatar32: '/favicon.png',
+							avatar128: '/favicon.png'
+						};
+					}
+				} catch {
+					// network error - use fallbacks
+					validatedUrls.value = {
+						avatar: '/earth-app.png',
+						avatar32: '/favicon.png',
+						avatar128: '/favicon.png'
+					};
+				}
+			},
+			{ immediate: true }
+		);
+	}
+
+	const avatar = computed(() => {
+		if (validatedUrls.value) return validatedUrls.value.avatar;
+		return avatarUrl.value || '/earth-app.png';
+	});
+	const avatar32 = computed(() => {
+		if (validatedUrls.value) return validatedUrls.value.avatar32;
+		return avatarUrl.value ? `${avatarUrl.value}?size=32` : '/favicon.png';
+	});
+	const avatar128 = computed(() => {
+		if (validatedUrls.value) return validatedUrls.value.avatar128;
+		return avatarUrl.value ? `${avatarUrl.value}?size=128` : '/earth-app.png';
+	});
 
 	return {
 		user,

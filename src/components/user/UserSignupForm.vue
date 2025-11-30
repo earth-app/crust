@@ -118,7 +118,7 @@ const error = ref('');
 const message = ref('');
 
 const signup = useSignup();
-const { fetchUser, fetchPhoto } = useAuth();
+const { fetchUser } = useAuth();
 
 const emit = defineEmits<{
 	(event: 'signupSuccess', hasEmail: boolean): void;
@@ -149,7 +149,7 @@ async function handleSignup() {
 
 	if (result.success) {
 		// Fetch user data to update the auth state
-		Promise.all([fetchUser(), fetchPhoto()]).then(() => {
+		fetchUser().then(() => {
 			emit('signupSuccess', !!email.value.trim());
 		});
 		message.value = 'Welcome!';
@@ -162,7 +162,7 @@ async function handleSignup() {
 			duration: 3000
 		});
 
-		refreshNuxtData(['user-current', 'avatar-current']); // Refresh user data
+		refreshNuxtData('user-current'); // Refresh user data
 	} else {
 		if (result.message.includes('409')) {
 			error.value = 'Username already exists. Please choose another.';
