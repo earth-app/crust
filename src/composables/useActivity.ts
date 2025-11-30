@@ -148,7 +148,10 @@ export async function getActivityYouTubeSearch(query: string) {
 	);
 }
 
-export async function getActivityWikipediaSearches(queries: string[]) {
+export async function getActivityWikipediaSearches(
+	queries: string[],
+	onArticleLoaded?: (title: string, summary: WikipediaSummary) => void
+) {
 	const results: Record<string, WikipediaSummary> = {};
 	const responses = await Promise.all(
 		queries.map(async (query) => {
@@ -172,12 +175,17 @@ export async function getActivityWikipediaSearches(queries: string[]) {
 		.then((res) => res.flat())
 		.then((responses) => responses.filter((r) => r.title?.trim() !== ''));
 
-	for (const r of responses) {
-		if (r.title && !results[r.title]) {
+	// fetch all summaries in parallel instead of sequentially
+	const seenTitles = new Set<string>();
+	await Promise.allSettled(
+		responses.map(async (r) => {
+			if (!r.title || seenTitles.has(r.title)) return;
+			seenTitles.add(r.title);
+
 			try {
 				const res = await getActivityWikipediaSummary(r.title);
 				if (res.success && res.data) {
-					if (res.data.type === 'disambiguation') continue; // Skip disambiguation pages
+					if (res.data.type === 'disambiguation') return;
 
 					res.data.summarySnippet =
 						'...' +
@@ -194,12 +202,17 @@ export async function getActivityWikipediaSearches(queries: string[]) {
 						'...';
 
 					results[r.title] = res.data;
+
+					// call callback immediately when article loads (for incremental display)
+					if (onArticleLoaded) {
+						onArticleLoaded(r.title, res.data);
+					}
 				}
 			} catch (error) {
 				// Ignore errors for individual summaries
 			}
-		}
-	}
+		})
+	);
 
 	return results;
 }

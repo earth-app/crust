@@ -172,13 +172,12 @@ async function loadCardsForActivity(activity: Activity) {
 	);
 	await Promise.allSettled(ytPromises);
 
-	// Wikipedia searches (name + aliases)
+	// Wikipedia searches (name + aliases) - load incrementally as they arrive
 	try {
 		const terms = [activity.name, ...(activity.aliases || [])];
-		const res = await getActivityWikipediaSearches(terms);
-		for (const entry of Object.values(res)) {
+		await getActivityWikipediaSearches(terms, (_, entry) => {
 			const key = `wp:${entry.pageid}`;
-			if (seen.has(key)) continue;
+			if (seen.has(key)) return;
 			seen.add(key);
 			safePush({
 				title: entry.title,
@@ -189,7 +188,7 @@ async function loadCardsForActivity(activity: Activity) {
 				image: entry.originalimage?.source,
 				footer: entry.summarySnippet
 			});
-		}
+		});
 	} catch (e) {
 		// ignore
 	}

@@ -39,7 +39,7 @@
 				<UButton
 					v-if="user && user.account.account_type === 'ADMINISTRATOR'"
 					icon="mdi:cog-outline"
-					color="secondary"
+					color="error"
 					variant="soft"
 					@click="$router.push('/admin')"
 					>Admin Panel</UButton
