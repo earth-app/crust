@@ -1,3 +1,4 @@
+import type { User } from '~/shared/types/user';
 import { sendVerificationEmail } from './useUser';
 
 export function useSignup() {
@@ -11,7 +12,7 @@ export function useSignup() {
 		last_name?: string
 	) {
 		try {
-			const response = await $fetch<{ session_token: string }>(
+			const response = await $fetch<{ user: User; session_token: string }>(
 				`${config.public.apiBaseUrl}/v2/users/create`,
 				{
 					method: 'POST',
@@ -48,7 +49,7 @@ export function useSignup() {
 					});
 			}
 
-			return { success: true, message: 'Signup successful' };
+			return { success: true, message: 'Signup successful', user: response.user };
 		} catch (error) {
 			return { success: false, message: `${error}` || 'Signup failed. Please try again.' };
 		}

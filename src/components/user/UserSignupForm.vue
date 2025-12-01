@@ -106,6 +106,7 @@
 <script setup lang="ts">
 import z from 'zod';
 import { emailSchema, fullNameSchema, passwordSchema, usernameSchema } from '~/shared/schemas';
+import type { User } from '~/shared/types/user';
 
 const fullName = ref('');
 const email = ref('');
@@ -118,10 +119,10 @@ const error = ref('');
 const message = ref('');
 
 const signup = useSignup();
-const { fetchUser } = useAuth();
+const router = useRouter();
 
 const emit = defineEmits<{
-	(event: 'signupSuccess', hasEmail: boolean): void;
+	(event: 'signupSuccess', user: User, hasEmail: boolean): void;
 }>();
 
 async function handleSignup() {
@@ -130,8 +131,10 @@ async function handleSignup() {
 
 	const toast = useToast();
 
-	const firstName = fullName.value.trim() ? fullName.value.trim().split(' ')[0] : '';
-	const lastName = fullName.value.trim() ? fullName.value.trim().split(' ').slice(1).join(' ') : '';
+	const firstName = fullName.value.trim() ? fullName.value.trim().split(' ')[0] : 'John';
+	const lastName = fullName.value.trim()
+		? fullName.value.trim().split(' ').slice(1).join(' ')
+		: 'Doe';
 
 	if (fullName.value.trim() && !firstName) {
 		error.value = 'Please enter a valid name.';
@@ -147,11 +150,11 @@ async function handleSignup() {
 		lastName || undefined
 	);
 
-	if (result.success) {
-		// Fetch user data to update the auth state
-		fetchUser(true).then(() => {
-			emit('signupSuccess', !!email.value.trim());
-		});
+	if (result.success && result.user) {
+		useState<User>('user').value = result.user;
+		useState<User>('user-current').value = result.user;
+		emit('signupSuccess', result.user, !!email.value.trim());
+
 		message.value = 'Welcome!';
 
 		toast.add({
@@ -161,13 +164,13 @@ async function handleSignup() {
 			color: 'success',
 			duration: 3000
 		});
-
-		refreshNuxtData('user-current'); // Refresh user data
 	} else {
 		if (result.message.includes('409')) {
 			error.value = 'Username already exists. Please choose another.';
 		} else if (result.message.includes('400')) {
-			error.value = 'Invalid username or password.';
+			error.value =
+				result.message.replace('400 Bad Request: ', '') ||
+				'Invalid signup data. Please check your inputs.';
 		} else if (result.message.includes('429')) {
 			error.value = 'Too many signup attempts. Please try again later.';
 		} else if (result.message.includes('500')) {

@@ -13,6 +13,8 @@
 </template>
 
 <script setup lang="ts">
+import type { User } from '~/shared/types/user';
+
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Sign Up');
 
@@ -26,21 +28,23 @@ watch(
 	(currentUser) => {
 		if (currentUser) {
 			router.push('/');
-			toast.add({
-				title: 'Already Logged In',
-				description: 'You are already logged in.',
-				icon: 'mdi:login-variant',
-				color: 'info',
-				duration: 3000
-			});
+
+			// add buffer if just signed up
+			if (new Date(currentUser.created_at).getTime() + 60 * 1000 <= Date.now()) {
+				toast.add({
+					title: 'Already Logged In',
+					description: 'You are already logged in.',
+					icon: 'mdi:login-variant',
+					color: 'info',
+					duration: 3000
+				});
+			}
 		}
 	},
 	{ immediate: true }
 );
 
-function handleSignupSuccess(hasEmail: boolean) {
-	if (!user.value) return;
-
+function handleSignupSuccess(_: User, hasEmail: boolean) {
 	// Redirect to home page or verify email after successful login
 	if (hasEmail) {
 		router.push('/verify-email');

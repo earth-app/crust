@@ -19,7 +19,7 @@ export const emailSchema = z
 	.email('Invalid email address')
 	.min(5, 'Must be at least 5 characters')
 	.max(100, 'Must be at most 100 characters')
-	.optional();
+	.or(z.literal(''));
 
 export const fullNameSchema = z
 	.string()

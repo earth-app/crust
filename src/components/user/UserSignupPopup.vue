@@ -21,11 +21,13 @@
 </template>
 
 <script setup lang="ts">
+import type { User } from '~/shared/types/user';
+
 const isOpen = ref(false);
 const router = useRouter();
 const toast = useToast();
 
-function handleSignupSuccess(hasEmail: boolean) {
+function handleSignupSuccess(_: User, hasEmail: boolean) {
 	isOpen.value = false; // Close the popup after successful signup
 
 	// Redirect to home page or verify email after successful login
