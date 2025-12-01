@@ -139,7 +139,7 @@
 	</div>
 	<ClientOnly>
 		<UBanner
-			v-if="user?.account.email_verified === false"
+			v-if="user?.account.email && user?.account.email_verified === false"
 			class="mb-4"
 			icon="mdi:email-alert"
 			title="Your email is unverified. Please verify your email to access all features."

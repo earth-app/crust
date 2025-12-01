@@ -7,6 +7,8 @@
 				id="avatar"
 				title="Click to Preview Profile"
 				@click="navigateTo(`/profile/@${user.username}`)"
+				width="128"
+				height="128"
 			/>
 			<UButton
 				icon="material-symbols:refresh"
@@ -353,7 +355,7 @@ const props: {
 		type: 'email',
 		computed: email,
 		get unverified() {
-			return !user.value.account.email_verified;
+			return user.value.account.email != null && !user.value.account.email_verified;
 		},
 		verify: async () => {
 			const result = handleSendVerificationEmail();

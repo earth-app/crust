@@ -131,10 +131,14 @@ async function handleSignup() {
 
 	const toast = useToast();
 
-	const firstName = fullName.value.trim() ? fullName.value.trim().split(' ')[0] : 'John';
-	const lastName = fullName.value.trim()
-		? fullName.value.trim().split(' ').slice(1).join(' ')
-		: 'Doe';
+	let firstName: string | null = null,
+		lastName: string | null = null;
+
+	if (fullName.value.trim()) {
+		const nameParts = fullName.value.trim().split(' ');
+		firstName = nameParts[0] || null;
+		lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+	}
 
 	if (fullName.value.trim() && !firstName) {
 		error.value = 'Please enter a valid name.';
@@ -168,9 +172,7 @@ async function handleSignup() {
 		if (result.message.includes('409')) {
 			error.value = 'Username already exists. Please choose another.';
 		} else if (result.message.includes('400')) {
-			error.value =
-				result.message.replace('400 Bad Request: ', '') ||
-				'Invalid signup data. Please check your inputs.';
+			error.value = 'Invalid signup data. Please check your inputs.';
 		} else if (result.message.includes('429')) {
 			error.value = 'Too many signup attempts. Please try again later.';
 		} else if (result.message.includes('500')) {
