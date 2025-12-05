@@ -6,17 +6,29 @@
 		<PromptPage :prompt="prompt" />
 	</div>
 	<div
-		v-else
+		v-else-if="prompt == null"
 		class="flex flex-col items-center justify-center h-screen w-screen"
 	>
 		<p class="text-gray-600">Prompt doesn't exist. Maybe look at the URL again?</p>
+	</div>
+	<div
+		v-else
+		class="flex flex-col items-center justify-center h-screen w-screen"
+	>
+		<p class="text-gray-600">Loading prompt...</p>
 	</div>
 </template>
 
 <script setup lang="ts">
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
-const { prompt } = usePrompt(route.params.id as string);
+const { prompt, fetch } = usePrompt(route.params.id as string);
+
+// Force fetch on mount to ensure fresh data on page refresh
+onMounted(() => {
+	fetch();
+});
+
 watch(
 	() => prompt.value,
 	(prompt) => {

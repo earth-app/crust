@@ -38,7 +38,7 @@ export async function getRandomPrompts(count: number = 10) {
 }
 
 export function usePrompt(id: string) {
-	const prompt = useState<Prompt | null>(`prompt-${id}`, () => null);
+	const prompt = useState<Prompt | null | undefined>(`prompt-${id}`, () => undefined);
 
 	const fetch = async () => {
 		const res = await makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`);
@@ -48,6 +48,9 @@ export function usePrompt(id: string) {
 			}
 
 			prompt.value = res.data;
+		} else {
+			// not found
+			prompt.value = null;
 		}
 
 		return res;
@@ -91,8 +94,7 @@ export function usePromptResponses(id: string, page: number = 1, limit: number =
 		if (loading.value) return { success: false, message: 'Already loading' };
 
 		loading.value = true;
-		const res = await makeAPIRequest<{ items: PromptResponse[] }>(
-			`prompt-${id}-responses-page-${newPage}-${newLimit}`,
+		const res = await makeClientAPIRequest<{ items: PromptResponse[] }>(
 			`/v2/prompts/${id}/responses?page=${newPage}&limit=${newLimit}`
 		);
 

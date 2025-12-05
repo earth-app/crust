@@ -67,7 +67,6 @@
 <script setup lang="ts">
 import { DateTime } from 'luxon';
 import { type PromptResponse } from '~/shared/types/prompts';
-import type { User } from '~/shared/types/user';
 
 const props = defineProps<{
 	response: PromptResponse;
@@ -79,8 +78,8 @@ const emit = defineEmits<{
 
 const i18n = useI18n();
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-const user = ref<User | null>(null);
-const { handle: identifier } = useDisplayName(user);
+const { user } = useAuth();
+const { handle: identifier } = useDisplayName(props.response.owner);
 
 const { avatar128: authorAvatar } = useUser(props.response.owner.id);
 

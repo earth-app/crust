@@ -36,7 +36,7 @@
 			</div>
 			<USeparator class="my-4 mx-3 w-4/5" />
 		</div>
-		<div class="flex items-center justify-center min-w-100 w-3/5 my-8">
+		<div class="flex flex-col items-center justify-center min-w-100 w-3/5 my-8">
 			<div
 				v-for="response in responses"
 				:key="response.id"
@@ -52,12 +52,24 @@
 					"
 				/>
 			</div>
+			<div
+				v-if="hasMore"
+				id="scroll-sentinel"
+				class="h-1"
+			></div>
+			<p
+				v-if="isLoading"
+				class="text-gray-500 my-4"
+			>
+				Loading more responses...
+			</p>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { type Prompt, type PromptResponse } from '~/shared/types/prompts';
+import { makeClientAPIRequest } from '~/shared/util';
 
 const { user, avatar128 } = useAuth();
 const { handle } = useDisplayName(user);
@@ -128,12 +140,14 @@ async function loadResponses() {
 	if (isLoading.value || !hasMore.value) return;
 
 	isLoading.value = true;
-	const { responses: newResponses, fetch } = usePromptResponses(props.prompt.id, page.value);
 
-	const result = await fetch(page.value);
+	// Directly fetch without using the composable's caching
+	const res = await makeClientAPIRequest<{ items: PromptResponse[] }>(
+		`/v2/prompts/${props.prompt.id}/responses?page=${page.value}&limit=25`
+	);
 
-	if (result.success && result.data && !('message' in result.data)) {
-		const newItems = result.data.items;
+	if (res.success && res.data && !('message' in res.data)) {
+		const newItems = res.data.items;
 		if (newItems.length > 0) {
 			responses.value.push(...newItems);
 			page.value++;
@@ -148,6 +162,11 @@ async function loadResponses() {
 }
 
 onMounted(async () => {
+	// Clear any existing responses to ensure fresh data on page load
+	responses.value = [];
+	page.value = 1;
+	hasMore.value = true;
+
 	await loadResponses();
 
 	const sentinel = document.querySelector('#scroll-sentinel');
