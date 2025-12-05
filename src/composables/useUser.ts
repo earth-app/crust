@@ -50,7 +50,9 @@ export async function useCurrentUser() {
 		return { success: false, message: 'Unauthenticated. Please log in to continue.' };
 	}
 
-	const result = await makeAPIRequest<User>('user-current', '/v2/users/current', token);
+	// Don't use caching to ensure fresh user data on each request
+	// This prevents stale state issues on hard refresh
+	const result = await makeClientAPIRequest<User>('/v2/users/current', token);
 	if (!result.success && 'code' in (result.data || {}) && (result.data as any).code === 401) {
 		// remove invalid token
 		useCurrentSessionToken(null);
@@ -63,23 +65,15 @@ export const useAuth = () => {
 	const user = useState<User | null | undefined>('user', () => undefined);
 	const token = useCurrentSessionToken();
 
-	if (!token) {
-		// only set to null if it hasn't been initialized yet to avoid flashing
-		if (user.value === undefined) {
+	const fetchUser = async (force: boolean = false) => {
+		// Check if token exists before fetching
+		const currentToken = useCurrentSessionToken();
+		if (!currentToken) {
 			user.value = null;
+			return;
 		}
 
-		return {
-			user,
-			fetchUser: async () => {},
-			avatar: computed(() => '/earth-app.png'),
-			avatar32: computed(() => '/favicon.png'),
-			avatar128: computed(() => '/earth-app.png')
-		};
-	}
-
-	const fetchUser = async (force: boolean = false) => {
-		if (!force && user.value !== undefined) return; // only fetch if truly uninitialized or forced
+		if (!force && user.value !== undefined && user.value !== null) return; // only fetch if uninitialized or forced
 
 		const res = await useCurrentUser();
 		if (res.success && res.data) {
@@ -97,7 +91,7 @@ export const useAuth = () => {
 		}
 	};
 
-	// if user is not loaded, fetch it in the next tick to avoid async context issues
+	// if user is not loaded, fetch it
 	if (user.value === undefined) {
 		if (import.meta.server) {
 			try {
@@ -106,6 +100,7 @@ export const useAuth = () => {
 				console.error('Error fetching user on server:', e);
 			}
 		} else {
+			// On client, immediately fetch to minimize flash
 			fetchUser();
 		}
 	}
