@@ -170,7 +170,7 @@
 						</div>
 					</div>
 					<p
-						v-else-if="footer"
+						v-else-if="footer && !footerTooltip"
 						class="text-gray-500 light:text-gray-800 text-xs sm:text-sm"
 					>
 						{{ footer }}
