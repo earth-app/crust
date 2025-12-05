@@ -100,9 +100,7 @@ const fullTimestamp = computed(() => {
 async function markAsRead() {
 	if (!props.notification.read) {
 		const res = await markNotificationRead(props.notification.id);
-		if (res.success) {
-			props.notification.read = true;
-		} else {
+		if (!res.success) {
 			console.error('Failed to mark notification as read:', res.message);
 
 			const toast = useToast();

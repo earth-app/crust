@@ -50,8 +50,15 @@ export function useSignup() {
 			}
 
 			return { success: true, message: 'Signup successful', user: response.user };
-		} catch (error) {
-			return { success: false, message: `${error}` || 'Signup failed. Please try again.' };
+		} catch (error: any) {
+			const statusCode = error?.response?.status || error?.statusCode || error?.status;
+			const message = error?.data?.message || error?.message || 'Signup failed. Please try again.';
+
+			if (statusCode) {
+				return { success: false, message: `${statusCode}: ${message}` };
+			}
+
+			return { success: false, message };
 		}
 	};
 }
@@ -82,9 +89,17 @@ export function useLogin() {
 			sessionCookie.value = response.session_token;
 
 			return { success: true, message: 'Login successful' };
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Login failed:', error);
-			return { success: false, message: 'Login failed. Please check your credentials.' };
+			const statusCode = error?.response?.status || error?.statusCode || error?.status;
+			const message =
+				error?.data?.message || error?.message || 'Login failed. Please check your credentials.';
+
+			if (statusCode) {
+				return { success: false, message: `${statusCode}: ${message}` };
+			}
+
+			return { success: false, message };
 		}
 	};
 }

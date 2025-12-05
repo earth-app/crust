@@ -402,7 +402,8 @@ export function useNotifications() {
 			// load individual notifications into state cache
 			if (import.meta.client) {
 				for (const n of res.data.items) {
-					useState<UserNotification>(`notification-${n.id}`, () => n);
+					const state = useState<UserNotification | null | undefined>(`notification-${n.id}`);
+					state.value = n;
 				}
 			}
 
@@ -449,6 +450,14 @@ export async function markNotificationRead(id: string) {
 		if (notification) {
 			notification.read = true;
 			unreadCount.value = Math.max(0, unreadCount.value - 1);
+
+			// Sync the same object to individual notification state
+			if (import.meta.client) {
+				const individualNotification = useState<UserNotification | null | undefined>(
+					`notification-${id}`
+				);
+				individualNotification.value = notification;
+			}
 		}
 	}
 
@@ -470,6 +479,11 @@ export async function markNotificationUnread(id: string) {
 		if (notification) {
 			notification.read = false;
 			unreadCount.value += 1;
+
+			if (import.meta.client) {
+				const state = useState<UserNotification | null | undefined>(`notification-${id}`);
+				state.value = notification;
+			}
 		}
 	}
 
@@ -489,6 +503,11 @@ export async function markAllNotificationsRead() {
 		const { notifications, unreadCount } = useNotifications();
 		for (const n of notifications.value) {
 			n.read = true;
+
+			if (import.meta.client) {
+				const state = useState<UserNotification | null | undefined>(`notification-${n.id}`);
+				state.value = n;
+			}
 		}
 		unreadCount.value = 0;
 	}
@@ -509,6 +528,11 @@ export async function markAllNotificationsUnread() {
 		const { notifications, unreadCount } = useNotifications();
 		for (const n of notifications.value) {
 			n.read = false;
+
+			if (import.meta.client) {
+				const state = useState<UserNotification | null | undefined>(`notification-${n.id}`);
+				state.value = n;
+			}
 		}
 		unreadCount.value = notifications.value.length;
 	}

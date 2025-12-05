@@ -50,6 +50,7 @@ export async function makeRequest<T>(
 			headers: {
 				Authorization: `Bearer ${token}`
 			},
+			ignoreResponseError: true,
 			...options
 		}).catch((error) => {
 			throw {
@@ -60,7 +61,14 @@ export async function makeRequest<T>(
 			};
 		});
 
-		if (!data) {
+		// handle '204 No Content' as success with no data
+		if (!data || data === null || data === undefined) {
+			if (options.method === 'POST' || options.method === 'DELETE' || options.method === 'PATCH') {
+				return {
+					success: true
+				};
+			}
+
 			return {
 				success: false,
 				data: { code: 404, message: 'Not Found' },
