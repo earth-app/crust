@@ -128,6 +128,8 @@
 							:size="badge.size || 'md'"
 							:ui="{ label: 'text-sm' }"
 							class="max-w-100 mr-2 mb-2 hover:scale-105 transition-all duration-300 hover:cursor-text"
+							:icon="badge.icon || undefined"
+							:variant="badge.variant || 'solid'"
 							>{{ badge.text }}</UBadge
 						>
 					</div>
@@ -219,6 +221,8 @@ const props = defineProps<{
 		text: string;
 		color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
 		size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
+		icon?: string;
+		variant?: 'solid' | 'subtle' | 'outline' | 'soft';
 	}[];
 	title: string;
 	description?: string;
