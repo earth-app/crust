@@ -12,6 +12,15 @@
 				:avatar-chip="authorAvatarChipColor ? true : false"
 				:avatar-chip-color="authorAvatarChipColor"
 				:secondary-avatar="article.ocean?.favicon"
+				:badges="
+					article.tags.map((tag) => ({
+						text: tag,
+						color: 'warning',
+						icon: 'mdi:tag-outline',
+						variant: 'subtle',
+						size: 'md'
+					}))
+				"
 				secondary-avatar-size="xs"
 			/>
 		</div>
