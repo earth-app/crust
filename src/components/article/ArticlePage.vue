@@ -18,10 +18,23 @@
 					</NuxtLink>
 				</h2>
 			</UTooltip>
+			<div class="flex my-2">
+				<UBadge
+					v-for="(tag, index) in article.tags"
+					:key="`article-tag-${index}`"
+					class="mr-2 mb-2"
+					:ui="{ label: 'text-sm' }"
+					variant="subtle"
+					icon="mdi:tag"
+					size="lg"
+					color="warning"
+					>{{ tag }}</UBadge
+				>
+			</div>
 			<USeparator class="my-2" />
 		</div>
 		<div
-			v-if="isAdmin"
+			v-if="hasWriteAccess"
 			class="mb-4"
 		>
 			<UButton
@@ -31,6 +44,19 @@
 				@click="removeArticle"
 				>Delete</UButton
 			>
+
+			<ArticleEditor
+				:article="article"
+				mode="edit"
+			>
+				<UButton
+					color="info"
+					icon="mdi:pencil"
+					variant="subtle"
+					class="ml-2"
+					>Edit</UButton
+				>
+			</ArticleEditor>
 		</div>
 		<div class="mt-2 prose min-w-67 max-w-5/7 items-center">
 			<p
@@ -149,10 +175,13 @@ useHead({
 	]
 });
 
-// Admin Actions
+// Owner Actions
 
 const { user } = useAuth();
-const isAdmin = computed(() => {
+const hasWriteAccess = computed(() => {
+	if (user.value == null) return false;
+	if (props.article.author_id === user.value.id) return true;
+
 	return user.value?.account.account_type === 'ADMINISTRATOR';
 });
 

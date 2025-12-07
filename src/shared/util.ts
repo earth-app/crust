@@ -15,7 +15,6 @@ export async function makeRequest<T>(
 		const isBinaryRequest = url.includes('profile_photo') || options.responseType === 'blob';
 
 		if (isBinaryRequest) {
-			// Handle binary data requests - use $fetch directly for blobs
 			const headers: Record<string, string> = {};
 			if (token) {
 				headers['Authorization'] = `Bearer ${token}`;
