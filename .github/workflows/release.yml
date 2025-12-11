@@ -23,8 +23,6 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: 'latest'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@earth-app'
       - name: Install Husky
         run: bun add -g husky
       - name: Install dependencies
@@ -36,9 +34,9 @@ jobs:
       - name: Build Library
         run: bun run build:lib
       - name: Publish to GitHub Packages
-        run: bun publish --access public
+        run: npm publish --access public
         env:
-          NPM_CONFIG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
     runs-on: ubuntu-latest
