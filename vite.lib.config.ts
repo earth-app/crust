@@ -20,7 +20,6 @@ export default defineConfig({
 			tsconfigPath: path.resolve(__dirname, 'tsconfig.lib.json'),
 			include: [
 				'src/lib.ts',
-				'src/components/EarthCircle.vue',
 				'src/composables/useActivity.ts',
 				'src/composables/useArticle.ts',
 				'src/composables/useConstants.ts',
@@ -65,6 +64,7 @@ export default defineConfig({
 				'#app/composables/router',
 				'#app/composables/state',
 				'#imports',
+				'#components',
 				/@nuxt\//,
 				/^#/
 			],

@@ -13,7 +13,6 @@
 	},
 	"include": [
 		"src/lib.ts",
-		"src/components/EarthCircle.vue",
 		"src/composables/**/*.ts",
 		"src/shared/**/*.ts",
 		".nuxt/imports.d.ts",

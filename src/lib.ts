@@ -1,6 +1,3 @@
-// components
-export { default as EarthCircle } from './components/EarthCircle.vue';
-
 // composables
 export * from './composables/useActivity';
 export * from './composables/useArticle';
