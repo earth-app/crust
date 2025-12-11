@@ -2,10 +2,12 @@
   "name": "@earth-app/crust",
   "version": "0.1.0",
   "type": "module",
-  "main": "lib/crust.mjs",
-  "module": "lib/crust.mjs",
-  "types": "lib/crust.d.mts",
-  "files": ["lib"],
+  "main": "./nuxt.config.ts",
+  "files": [
+    "src",
+    "nuxt.config.ts",
+    "tsconfig.json"
+  ],
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",
     "access": "public"
@@ -14,7 +16,6 @@
     "dev": "bunx nuxi dev --dotenv .config/local.env --no-restart --public --port 3000",
     "dev:remote": "bunx nuxi dev --dotenv .config/production.env --dotenv .env --dotenv .env.local --no-restart --public --port 3000",
     "build": "nuxt build",
-    "build:lib": "bunx vite build --config ./vite.lib.config.ts",
     "postinstall": "nuxt prepare",
     "prettier": "bunx prettier --write .",
     "prettier:check": "bunx prettier --check .",

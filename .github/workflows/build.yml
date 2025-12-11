@@ -29,8 +29,6 @@ jobs:
           bun run postinstall
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build Library
-        run: bun run build:lib
       - name: Update Version with Hash
         run: |
           VERSION=$(node -p "require('./package.json').version")
