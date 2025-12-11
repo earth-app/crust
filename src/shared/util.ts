@@ -1,4 +1,3 @@
-import { useRuntimeConfig } from '#imports';
 import { DateTime } from 'luxon';
 import type { SortingOption } from './types/global';
 import type { User } from './types/user';

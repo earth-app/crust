@@ -1,6 +1,7 @@
-import type { Activity } from '~/shared/types/activity';
-import type { SortingOption } from '~/shared/types/global';
-import type { User, UserNotification } from '~/shared/types/user';
+import type { MaybeRefOrGetter } from 'vue';
+import type { Activity } from '../shared/types/activity';
+import type { SortingOption } from '../shared/types/global';
+import type { User, UserNotification } from '../shared/types/user';
 import {
 	getUserDisplayName,
 	makeAPIRequest,
@@ -8,7 +9,7 @@ import {
 	makeServerRequest,
 	paginatedAPIRequest,
 	realFullName
-} from '~/shared/util';
+} from '../shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 export function useVisitedSite() {
@@ -24,7 +25,6 @@ export function useVisitedSite() {
 	};
 }
 
-// Display name composable (moved from src/composables/useDisplayName.ts)
 export function useDisplayName(
 	user: MaybeRefOrGetter<
 		| Pick<User, 'full_name' | 'username'>
@@ -63,7 +63,6 @@ export async function useCurrentUser() {
 
 export const useAuth = () => {
 	const user = useState<User | null | undefined>('user', () => undefined);
-	const token = useCurrentSessionToken();
 
 	const fetchUser = async (force: boolean = false) => {
 		// Check if token exists before fetching

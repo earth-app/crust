@@ -1,11 +1,11 @@
-import { type Activity, type WikipediaSummary, type YouTubeVideo } from '~/shared/types/activity';
-import type { SortingOption } from '~/shared/types/global';
+import { type Activity, type WikipediaSummary, type YouTubeVideo } from '../shared/types/activity';
+import type { SortingOption } from '../shared/types/global';
 import {
 	makeAPIRequest,
 	makeClientAPIRequest,
 	makeServerRequest,
 	paginatedAPIRequest
-} from '~/shared/util';
+} from '../shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 // mantle - /v2/activities

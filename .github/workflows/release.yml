@@ -8,6 +8,36 @@ on:
         description: 'Changelog to replace the auto-generated one'
 
 jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/master' }}
+
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 'latest'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@earth-app'
+      - name: Install dependencies
+        run: |
+          bun install --frozen-lockfile
+          bun run postinstall
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Library
+        run: bun run build:lib
+      - name: Publish to GitHub Packages
+        run: bun publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   release:
     runs-on: ubuntu-latest
 
