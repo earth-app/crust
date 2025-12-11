@@ -1,3 +1,4 @@
+name: Build Project
 on:
   push:
     branches:

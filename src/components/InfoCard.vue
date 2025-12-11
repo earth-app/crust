@@ -106,7 +106,14 @@
 							v-if="youtubeId"
 							:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1&origin=${origin}`"
 							class="w-full h-48 object-cover rounded-lg mb-2"
-							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+							allow="
+								accelerometer;
+								autoplay;
+								clipboard-write;
+								encrypted-media;
+								gyroscope;
+								picture-in-picture;
+							"
 							allowfullscreen
 							loading="lazy"
 							referrerpolicy="strict-origin-when-cross-origin"
