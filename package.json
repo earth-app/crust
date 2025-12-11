@@ -17,6 +17,8 @@
     "dev:remote": "bunx nuxi dev --dotenv .config/production.env --dotenv .env --dotenv .env.local --no-restart --public --port 3000",
     "build": "nuxt build",
     "postinstall": "nuxt prepare",
+    "prepack": "cp nuxt.config.library.ts nuxt.config.ts",
+    "postpack": "git checkout nuxt.config.ts",
     "prettier": "bunx prettier --write .",
     "prettier:check": "bunx prettier --check .",
     "prepare": "husky install"
