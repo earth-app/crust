@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { type UserNotification } from '../shared/types/user';
+import { type UserNotification } from '../../shared/types/user';
 
 const props = defineProps<{
 	additional?: boolean;

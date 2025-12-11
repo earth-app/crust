@@ -74,9 +74,9 @@ import { DateTime } from 'luxon';
 import {
 	markNotificationRead,
 	deleteNotification as removeNotification
-} from '../composables/useUser';
-import type { UserNotification } from '../shared/types/user';
-import { trimString } from '../shared/util';
+} from '../../composables/useUser';
+import type { UserNotification } from '../../shared/types/user';
+import { trimString } from '../../shared/util';
 
 const props = defineProps<{
 	notification: UserNotification;

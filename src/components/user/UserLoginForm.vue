@@ -75,7 +75,7 @@
 
 <script setup lang="ts">
 import z from 'zod';
-import { passwordSchema, usernameSchema } from '../shared/schemas';
+import { passwordSchema, usernameSchema } from '../../shared/schemas';
 
 const username = ref('');
 const password = ref('');

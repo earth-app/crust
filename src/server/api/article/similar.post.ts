@@ -1,4 +1,4 @@
-import type { Article } from '../shared/types/article';
+import type { Article } from '../../../shared/types/article';
 
 export default defineEventHandler(async (event) => {
 	const config = useRuntimeConfig();

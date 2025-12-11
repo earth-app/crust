@@ -1,4 +1,4 @@
-import { ensureLoggedIn } from '../server/utils';
+import { ensureLoggedIn } from '../../../server/utils';
 
 const validJournies = ['activity', 'prompt', 'article'];
 

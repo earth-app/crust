@@ -150,13 +150,7 @@
 
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
-import {
-	deleteActivity,
-	draftActivity,
-	editActivity,
-	newActivity
-} from '../composables/useActivity';
-import type { Activity } from '../shared/types/activity';
+import type { Activity } from '../../shared/types/activity';
 
 const props = defineProps<{
 	title?: string;
