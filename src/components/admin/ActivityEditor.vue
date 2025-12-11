@@ -155,8 +155,8 @@ import {
 	draftActivity,
 	editActivity,
 	newActivity
-} from '~/composables/useActivity';
-import type { Activity } from '~/shared/types/activity';
+} from '../composables/useActivity';
+import type { Activity } from '../shared/types/activity';
 
 const props = defineProps<{
 	title?: string;

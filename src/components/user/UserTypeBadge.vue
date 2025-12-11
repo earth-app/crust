@@ -23,8 +23,8 @@
 
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
-import type { User } from '~/shared/types/user';
-import { capitalizeFully } from '~/shared/util';
+import type { User } from '../shared/types/user';
+import { capitalizeFully } from '../shared/util';
 
 const props = defineProps<{
 	user: User;

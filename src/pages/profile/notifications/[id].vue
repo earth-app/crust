@@ -66,7 +66,7 @@
 </template>
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import { capitalizeFully } from '~/shared/util';
+import { capitalizeFully } from '../shared/util';
 
 const { user } = useAuth();
 const route = useRoute();

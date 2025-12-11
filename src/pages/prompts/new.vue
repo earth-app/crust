@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Prompt } from '~/shared/types/prompts';
+import type { Prompt } from '../shared/types/prompts';
 
 const router = useRouter();
 const toast = useToast();

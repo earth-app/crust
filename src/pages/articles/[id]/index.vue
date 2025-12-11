@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Article } from '~/shared/types/article';
+import type { Article } from '../shared/types/article';
 
 const { user } = useAuth();
 const toast = useToast();

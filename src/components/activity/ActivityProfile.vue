@@ -61,9 +61,9 @@
 </template>
 
 <script setup lang="ts">
-import type { Activity } from '~/shared/types/activity';
-import { capitalizeFully } from '~/shared/util';
 import ActivityEditorModal from '../admin/ActivityEditorModal.vue';
+import type { Activity } from '../shared/types/activity';
+import { capitalizeFully } from '../shared/util';
 
 const props = defineProps<{
 	activity: Activity;
