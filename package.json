@@ -4,7 +4,9 @@
   "type": "module",
   "main": "./nuxt.config.ts",
   "files": [
-    "src",
+    "src/components/",
+    "src/composables/",
+    "src/shared/",
     "nuxt.config.ts",
     "tsconfig.json"
   ],
