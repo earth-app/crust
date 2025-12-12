@@ -13,14 +13,20 @@ import {
 import { useCurrentSessionToken } from './useLogin';
 
 export function useVisitedSite() {
-	const visitedSite = useState<boolean>('visited-site', () => false);
+	const visitedSiteCookie = useCookie('visited_site', {
+		sameSite: 'lax',
+		secure: true,
+		maxAge: 60 * 60 * 24 * 365 * 5 // 5 years
+	});
+	const visitedSite = computed(() => visitedSiteCookie.value === 'true');
 
 	const markVisited = () => {
-		visitedSite.value = true;
+		visitedSiteCookie.value = 'true';
 	};
 
 	return {
 		visitedSite,
+		visitedSiteCookie,
 		markVisited
 	};
 }
