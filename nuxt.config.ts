@@ -11,6 +11,7 @@ export default defineNuxtConfig({
 			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'https://api.earth-app.com',
 			cloudBaseUrl: process.env.NUXT_PUBLIC_CLOUD_BASE_URL || 'https://cloud.earth-app.com',
 			// oauth client ids
+			googleClientId: process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || '',
 			microsoftClientId: process.env.NUXT_PUBLIC_MICROSOFT_CLIENT_ID || '',
 			githubClientId: process.env.NUXT_PUBLIC_GITHUB_CLIENT_ID || '',
 			discordClientId: process.env.NUXT_PUBLIC_DISCORD_CLIENT_ID || '',
@@ -20,6 +21,7 @@ export default defineNuxtConfig({
 			secretKey: process.env.NUXT_TURNSTILE_SECRET_KEY || ''
 		},
 		// oauth client secrets
+		googleClientSecret: process.env.NUXT_GOOGLE_CLIENT_SECRET || '',
 		microsoftClientSecret: process.env.NUXT_MICROSOFT_CLIENT_SECRET || '',
 		discordClientSecret: process.env.NUXT_DISCORD_CLIENT_SECRET || '',
 		githubClientSecret: process.env.NUXT_GITHUB_CLIENT_SECRET || '',

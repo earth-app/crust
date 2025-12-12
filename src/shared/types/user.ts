@@ -3,8 +3,9 @@ import type { Activity } from './activity';
 
 export const DEFAULT_FULL_NAME = 'John Doe';
 
-export type OAuthProvider = 'github' | 'microsoft' | 'discord' | 'facebook';
+export type OAuthProvider = 'google' | 'github' | 'microsoft' | 'discord' | 'facebook';
 export const OAUTH_PROVIDERS: OAuthProvider[] = [
+	'google',
 	'github',
 	'microsoft',
 	'discord'

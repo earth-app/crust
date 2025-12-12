@@ -1,5 +1,5 @@
 import { H3Event } from 'h3';
-import { type User } from '../shared/types/user';
+import { OAuthProvider, type User } from '../shared/types/user';
 
 export async function ensureAdministrator(event: H3Event) {
 	const config = useRuntimeConfig();
@@ -99,10 +99,24 @@ export async function ensureValidActivity(activityId: string) {
 }
 
 // oauth
-export async function exchangeCodeForToken(provider: string, code: string): Promise<string> {
+export async function exchangeCodeForToken(provider: OAuthProvider, code: string): Promise<string> {
 	const config = useRuntimeConfig();
 
 	switch (provider) {
+		case 'google':
+			const google = await $fetch<{ access_token: string }>('https://oauth2.googleapis.com/token', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body: new URLSearchParams({
+					code,
+					client_id: config.public.googleClientId,
+					client_secret: config.googleClientSecret,
+					redirect_uri: 'https://app.earth-app.com/api/auth/callback',
+					grant_type: 'authorization_code'
+				})
+			});
+
+			return google.access_token;
 		case 'microsoft':
 			const ms = await $fetch<{ id_token: string }>(
 				'https://login.microsoftonline.com/common/oauth2/v2.0/token',
@@ -122,19 +136,22 @@ export async function exchangeCodeForToken(provider: string, code: string): Prom
 
 			return ms.id_token;
 		case 'discord':
-			const discord = await $fetch<{ id_token: string }>('https://discord.com/api/oauth2/token', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-				body: new URLSearchParams({
-					code,
-					client_id: config.public.discordClientId,
-					client_secret: config.discordClientSecret,
-					redirect_uri: 'https://app.earth-app.com/api/auth/callback',
-					grant_type: 'authorization_code'
-				})
-			});
+			const discord = await $fetch<{ access_token: string }>(
+				'https://discord.com/api/oauth2/token',
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: new URLSearchParams({
+						code,
+						client_id: config.public.discordClientId,
+						client_secret: config.discordClientSecret,
+						redirect_uri: 'https://app.earth-app.com/api/auth/callback',
+						grant_type: 'authorization_code'
+					})
+				}
+			);
 
-			return discord.id_token;
+			return discord.access_token;
 		case 'github':
 			const github = await $fetch<{ access_token: string }>(
 				'https://github.com/login/oauth/access_token',
@@ -155,9 +172,9 @@ export async function exchangeCodeForToken(provider: string, code: string): Prom
 			const fb = await $fetch<{ access_token: string }>(
 				'https://graph.facebook.com/v18.0/oauth/access_token',
 				{
-					method: 'GET',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: new URLSearchParams({
 						code,
 						client_id: config.public.facebookClientId,
 						client_secret: config.facebookClientSecret,

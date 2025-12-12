@@ -34,6 +34,8 @@ const props = defineProps<{
 
 const icon = computed(() => {
 	switch (props.provider) {
+		case 'google':
+			return 'mdi:google';
 		case 'microsoft':
 			return 'mdi:microsoft';
 		case 'discord':
