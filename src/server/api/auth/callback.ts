@@ -1,3 +1,4 @@
+import { OAUTH_PROVIDERS, OAuthProvider } from '../../../shared/types/user';
 import { exchangeCodeForToken } from '../../utils';
 
 export default defineEventHandler(async (event) => {
@@ -18,13 +19,20 @@ export default defineEventHandler(async (event) => {
 		return sendRedirect(event, `/${page}?error=no_code`);
 	}
 
+	if (!OAUTH_PROVIDERS.includes(state as OAuthProvider)) {
+		setHeader(event, 'X-Error-Type', 'invalid_provider');
+		setHeader(event, 'X-Error-Extra', `Provided: ${state}`);
+		return sendRedirect(event, `/${page}?error=invalid_provider`);
+	}
+
 	try {
-		const idToken = await exchangeCodeForToken(state, code);
+		const token = await exchangeCodeForToken(state as OAuthProvider, code);
+		const tokenField = state === 'microsoft' ? 'id_token' : 'access_token';
 		const response = await $fetch<{ session_token: string; user: any }>(
 			`https://api.earth-app.com/v2/users/oauth/${state}?is_linking=${isLoggedIn}`,
 			{
 				method: 'POST',
-				body: { id_token: idToken, session_token: sessionToken },
+				body: { [tokenField]: token, session_token: sessionToken },
 				onResponse({ response: res }) {
 					event.context.oauthStatus = res.status;
 				},
