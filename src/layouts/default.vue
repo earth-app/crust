@@ -19,7 +19,7 @@ const route = useRoute();
 const { user, fetchUser } = useAuth();
 
 onMounted(async () => {
-	const { force_refresh } = route.params;
+	const { force_refresh } = route.query;
 	if (force_refresh) {
 		await fetchUser(true);
 	}

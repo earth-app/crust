@@ -1,5 +1,4 @@
-export default defineNuxtPlugin(async (nuxtApp) => {
-	// Initialize user authentication state on app load (client-side only)
+export default defineNuxtPlugin(async (_) => {
 	const { user, fetchUser } = useAuth();
 
 	if (user.value === undefined) {

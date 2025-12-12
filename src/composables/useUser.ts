@@ -44,6 +44,19 @@ export function useDisplayName(
 	return { name, handle, fullName, hasFullName };
 }
 
+async function syncSessionToken() {
+	if (import.meta.server) return;
+
+	try {
+		const response = await $fetch<{ session_token: string | null }>('/api/auth/session');
+		if (response.session_token) {
+			useCurrentSessionToken(response.session_token);
+		}
+	} catch (error) {
+		console.error('Failed to sync session token:', error);
+	}
+}
+
 export async function useCurrentUser() {
 	const token = useCurrentSessionToken();
 	if (!token) {
@@ -65,7 +78,11 @@ export const useAuth = () => {
 	const user = useState<User | null | undefined>('user', () => undefined);
 
 	const fetchUser = async (force: boolean = false) => {
-		// Check if token exists before fetching
+		if (import.meta.client && force) {
+			await syncSessionToken();
+		}
+
+		// check if token exists before fetching
 		const currentToken = useCurrentSessionToken();
 		if (!currentToken) {
 			user.value = null;
