@@ -66,13 +66,15 @@ watch(
 	(currentUser) => {
 		if (currentUser) {
 			router.push('/');
-			toast.add({
-				title: 'Already Logged In',
-				description: 'You are already logged in.',
-				icon: 'mdi:login-variant',
-				color: 'info',
-				duration: 3000
-			});
+
+			if (!error)
+				toast.add({
+					title: 'Already Logged In',
+					description: 'You are already logged in.',
+					icon: 'mdi:login-variant',
+					color: 'info',
+					duration: 3000
+				});
 		}
 	},
 	{ immediate: true }

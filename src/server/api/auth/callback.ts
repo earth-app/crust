@@ -5,15 +5,13 @@ export default defineEventHandler(async (event) => {
 	const { code, state } = query;
 
 	const sessionToken = getCookie(event, 'session_token');
-	const loggedIn = !!sessionToken;
-	const redirectPage = loggedIn ? 'profile' : 'login';
 
 	if (!state || Array.isArray(state) || typeof state !== 'string') {
-		return sendRedirect(event, `/${redirectPage}?error=no_provider`);
+		return sendRedirect(event, `/login?error=no_provider`);
 	}
 
 	if (!code || Array.isArray(code) || typeof code !== 'string') {
-		return sendRedirect(event, `/${redirectPage}?error=no_code`);
+		return sendRedirect(event, `/login?error=no_code`);
 	}
 
 	try {
@@ -41,6 +39,6 @@ export default defineEventHandler(async (event) => {
 		return sendRedirect(event, `/profile?success=${successParam}`);
 	} catch (error) {
 		console.error('OAuth error:', error);
-		return sendRedirect(event, `/${redirectPage}?error=auth_failed`);
+		return sendRedirect(event, `/login?error=auth_failed`);
 	}
 });
