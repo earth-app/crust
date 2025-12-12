@@ -15,7 +15,15 @@
 </template>
 
 <script setup lang="ts">
-const { user } = useAuth();
+const route = useRoute();
+const { user, fetchUser } = useAuth();
+
+onMounted(async () => {
+	const { force_refresh } = route.params;
+	if (force_refresh) {
+		await fetchUser(true);
+	}
+});
 
 const welcomeTour: SiteTourStep[] = [
 	{

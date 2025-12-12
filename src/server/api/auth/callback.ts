@@ -49,8 +49,9 @@ export default defineEventHandler(async (event) => {
 				maxAge: 60 * 60 * 24 * 14 // 14 days
 			});
 
-		if (successParam) return sendRedirect(event, `/profile?success=${successParam}`);
-		else return sendRedirect(event, '/profile');
+		if (successParam)
+			return sendRedirect(event, `/profile?success=${successParam}&force_refresh=true`);
+		else return sendRedirect(event, '/profile?force_refresh=true');
 	} catch (error: any) {
 		console.error('OAuth error:', error);
 
