@@ -5,8 +5,8 @@ export default defineEventHandler(async (event) => {
 	const { code, state } = query;
 
 	const sessionToken = getCookie(event, 'session_token');
-	const isLoggedin = !!sessionToken;
-	const page = isLoggedin ? 'profile' : 'login';
+	const isLoggedIn = !!sessionToken;
+	const page = isLoggedIn ? 'profile' : 'login';
 
 	if (!state || Array.isArray(state) || typeof state !== 'string') {
 		setHeader(event, 'X-Error-Type', 'missing_provider');
@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
 	try {
 		const idToken = await exchangeCodeForToken(state, code);
 		const response = await $fetch<{ session_token: string; user: any }>(
-			`https://api.earth-app.com/v2/users/oauth/${state}?is_linking=${isLoggedin}`,
+			`https://api.earth-app.com/v2/users/oauth/${state}?is_linking=${isLoggedIn}`,
 			{
 				method: 'POST',
 				body: { id_token: idToken, session_token: sessionToken },
@@ -36,16 +36,21 @@ export default defineEventHandler(async (event) => {
 
 		const isNewUser = event.context.oauthStatus === 201;
 
-		if (isNewUser)
+		let successParam: string | null = null;
+		if (isNewUser) successParam = 'oauth_signup';
+		else {
+			successParam = isLoggedIn ? 'oauth_linked' : null;
+		}
+
+		if (isNewUser || !isLoggedIn)
 			setCookie(event, 'session_token', response.session_token, {
 				httpOnly: true,
 				secure: true,
 				maxAge: 60 * 60 * 24 * 14 // 14 days
 			});
 
-		const successParam = isNewUser ? 'oauth_signup' : 'oauth_linked';
-
-		return sendRedirect(event, `/profile?success=${successParam}`);
+		if (successParam) return sendRedirect(event, `/profile?success=${successParam}`);
+		else return sendRedirect(event, '/profile');
 	} catch (error: any) {
 		console.error('OAuth error:', error);
 

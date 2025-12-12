@@ -46,6 +46,10 @@ if (error) {
 			description = 'Authentication failed with the provider.';
 			icon = 'mdi:account-off';
 			break;
+		case 'not_authenticated':
+			description = 'You must be logged in to perform this action.';
+			icon = 'mdi:login-variant';
+			break;
 		default:
 			description = 'An unknown error occurred during login.';
 			icon = 'mdi:alert-circle';
