@@ -6,6 +6,13 @@
 		>
 			Sign Up
 		</h1>
+		<div class="flex space-x-4 mb-6">
+			<UserOAuthButton
+				v-for="provider in OAUTH_PROVIDERS"
+				:key="provider"
+				:provider="provider"
+			/>
+		</div>
 		<ClientOnly>
 			<UserSignupForm @signup-success="handleSignupSuccess" />
 		</ClientOnly>
@@ -13,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import type { User } from '../shared/types/user';
+import { type User, OAUTH_PROVIDERS } from '../shared/types/user';
 
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Sign Up');

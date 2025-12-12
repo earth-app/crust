@@ -3,6 +3,14 @@ import type { Activity } from './activity';
 
 export const DEFAULT_FULL_NAME = 'John Doe';
 
+export type OAuthProvider = 'github' | 'microsoft' | 'discord' | 'facebook';
+export const OAUTH_PROVIDERS: OAuthProvider[] = [
+	'github',
+	'microsoft',
+	'discord'
+	// 'facebook'
+];
+
 export type User = {
 	id: string;
 	username: string;
@@ -20,6 +28,8 @@ export type User = {
 		bio?: string;
 		email?: string;
 		email_verified?: boolean;
+		has_password?: boolean;
+		linked_providers: OAuthProvider[];
 		subscribed?: boolean;
 		address?: string;
 		country?: string;

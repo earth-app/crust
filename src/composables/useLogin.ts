@@ -135,8 +135,13 @@ export function useLogout() {
 export function useCurrentSessionToken(value?: string | null) {
 	if (import.meta.server) {
 		if (value) {
-			// On server, we cannot set cookies directly. This is a limitation.
-			console.warn('Setting session token on server is not supported.');
+			setCookie(useRequestEvent()!, 'session_token', value, {
+				httpOnly: true,
+				secure: true,
+				maxAge: 60 * 60 * 24 * 14 // 14 days
+			});
+
+			return value;
 		}
 
 		const cachedToken = useState<string | null>('session_token_cache', () => null);

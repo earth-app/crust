@@ -97,3 +97,77 @@ export async function ensureValidActivity(activityId: string) {
 		});
 	}
 }
+
+// oauth
+export async function exchangeCodeForToken(provider: string, code: string): Promise<string> {
+	const config = useRuntimeConfig();
+
+	switch (provider) {
+		case 'microsoft':
+			const ms = await $fetch<{ id_token: string }>(
+				'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: new URLSearchParams({
+						code,
+						client_id: config.public.microsoftClientId,
+						client_secret: config.microsoftClientSecret,
+						redirect_uri: 'https://app.earth-app.com/auth/callback',
+						grant_type: 'authorization_code',
+						scope: 'openid email profile'
+					})
+				}
+			);
+
+			return ms.id_token;
+		case 'discord':
+			const discord = await $fetch<{ id_token: string }>('https://discord.com/api/oauth2/token', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body: new URLSearchParams({
+					code,
+					client_id: config.public.discordClientId,
+					client_secret: config.discordClientSecret,
+					redirect_uri: 'https://app.earth-app.com/auth/callback',
+					grant_type: 'authorization_code'
+				})
+			});
+
+			return discord.id_token;
+		case 'github':
+			const github = await $fetch<{ access_token: string }>(
+				'https://github.com/login/oauth/access_token',
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+					body: JSON.stringify({
+						code,
+						client_id: config.public.githubClientId,
+						client_secret: config.githubClientSecret,
+						redirect_uri: 'https://app.earth-app.com/auth/callback'
+					})
+				}
+			);
+
+			return github.access_token;
+		case 'facebook':
+			const fb = await $fetch<{ access_token: string }>(
+				'https://graph.facebook.com/v18.0/oauth/access_token',
+				{
+					method: 'GET',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						code,
+						client_id: config.public.facebookClientId,
+						client_secret: config.facebookClientSecret,
+						redirect_uri: 'https://app.earth-app.com/auth/callback'
+					})
+				}
+			);
+
+			return fb.access_token;
+		default:
+			throw new Error(`Unknown provider: ${provider}`);
+	}
+}

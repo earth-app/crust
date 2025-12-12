@@ -1,6 +1,13 @@
 <template>
 	<div class="flex flex-col w-full h-full items-center justify-center sm:px-10 md:px-20 lg:px-60">
 		<h1 class="text-3xl font-semibold mb-4 mt-24 sm:mt-8">Login</h1>
+		<div class="flex space-x-4 mb-6">
+			<UserOAuthButton
+				v-for="provider in OAUTH_PROVIDERS"
+				:key="provider"
+				:provider="provider"
+			/>
+		</div>
 		<ClientOnly>
 			<UserLoginForm @login-success="handleLoginSuccess" />
 		</ClientOnly>
@@ -8,6 +15,8 @@
 </template>
 
 <script setup lang="ts">
+import { OAUTH_PROVIDERS } from '~/shared/types/user';
+
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Login');
 

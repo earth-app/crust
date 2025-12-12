@@ -247,7 +247,19 @@
 				</div>
 			</div>
 			<div class="w-full flex flex-col items-center">
-				<div class="flex flex-col w-full max-w-3xl items-center my-6">
+				<div class="flex flex-col w-full max-w-3xl items-center my-4">
+					<h2 class="text-xl font-medium flex-1 mb-2">OAuth Providers</h2>
+					<div class="flex">
+						<UserOAuthButton
+							v-for="provider in OAUTH_PROVIDERS"
+							:key="provider"
+							:provider="provider"
+							:linked="user.account.linked_providers.includes(provider)"
+							class="mx-2"
+						/>
+					</div>
+				</div>
+				<div class="flex flex-col w-full max-w-3xl items-center mb-6">
 					<USeparator class="my-4" />
 					<div class="flex items-center justify-center gap-4 w-full">
 						<USwitch
@@ -299,7 +311,7 @@
 import { UButton } from '#components';
 import { com } from '@earth-app/ocean';
 import type { InputTypeHTMLAttribute } from 'vue';
-import type { User } from '../../shared/types/user';
+import { OAUTH_PROVIDERS, type User } from '../../shared/types/user';
 import { capitalizeFully } from '../../shared/util';
 import { type EmailVerificationModalRef } from './UserEmailVerificationModal.vue';
 import { type PasswordChangeModalRef } from './UserPasswordChangeModal.vue';
