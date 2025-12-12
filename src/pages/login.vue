@@ -13,7 +13,44 @@ setTitleSuffix('Login');
 
 const { user } = useAuth();
 const toast = useToast();
+const route = useRoute();
 const router = useRouter();
+
+const { error } = route.query;
+if (error) {
+	let description,
+		icon = '';
+	switch (error) {
+		case 'no_provider':
+			description = 'No OAuth provider specified.';
+			icon = 'mdi:account-alert';
+			break;
+		case 'no_code':
+			description = 'No authorization code received from provider.';
+			icon = 'mdi:cancel';
+			break;
+		case 'invalid_provider':
+			description = 'Invalid OAuth provider.';
+			icon = 'mdi:account-cancel';
+			break;
+		case 'auth_failed':
+			description = 'Authentication failed with the provider.';
+			icon = 'mdi:account-off';
+			break;
+		default:
+			description = 'An unknown error occurred during login.';
+			icon = 'mdi:alert-circle';
+			break;
+	}
+
+	toast.add({
+		title: 'Login Error',
+		description,
+		icon,
+		color: 'error',
+		duration: -1
+	});
+}
 
 watch(
 	() => user.value,
