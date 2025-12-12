@@ -144,7 +144,16 @@ export const useAuth = () => {
 				}
 
 				try {
-					const response = await fetch(url, { method: 'HEAD' });
+					const token = useCurrentSessionToken();
+					const headers: HeadersInit = {};
+					if (token) {
+						headers['Authorization'] = `Bearer ${token}`;
+					}
+
+					const response = await fetch(url, {
+						method: 'HEAD',
+						headers
+					});
 					if (response.ok) {
 						validatedUrls.value = {
 							avatar: url,
@@ -349,7 +358,13 @@ export function useUser(identifier: string) {
 				}
 
 				try {
-					const response = await fetch(url, { method: 'HEAD' });
+					const token = useCurrentSessionToken();
+					const headers: HeadersInit = {};
+					if (token) {
+						headers['Authorization'] = `Bearer ${token}`;
+					}
+
+					const response = await fetch(url, { method: 'HEAD', headers });
 					if (response.ok) {
 						validatedUrls.value = {
 							avatar: url,
