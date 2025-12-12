@@ -128,14 +128,48 @@ export const useAuth = () => {
 	}
 
 	const avatarUrl = computed(() => user.value?.account?.avatar_url);
-	const validatedUrls = ref<{ avatar: string; avatar32: string; avatar128: string } | null>(null);
+	const blobUrls = ref<{ avatar: string; avatar32: string; avatar128: string } | null>(null);
+
+	const isRemoteUrl = (url: string | undefined): boolean => {
+		if (!url) return false;
+		return url.startsWith('http://') || url.startsWith('https://');
+	};
+
+	const fetchAuthenticatedImage = async (url: string): Promise<string | null> => {
+		try {
+			const token = useCurrentSessionToken();
+			const headers: HeadersInit = {};
+			if (token) {
+				headers['Authorization'] = `Bearer ${token}`;
+			}
+
+			const response = await fetch(url, { headers });
+			if (response.ok) {
+				const blob = await response.blob();
+				return URL.createObjectURL(blob);
+			}
+			return null;
+		} catch {
+			return null;
+		}
+	};
 
 	if (import.meta.client) {
 		watch(
 			avatarUrl,
-			async (url) => {
-				if (!url) {
-					validatedUrls.value = {
+			async (url, _) => {
+				if (blobUrls.value) {
+					const avatar = blobUrls.value.avatar;
+					const avatar32 = blobUrls.value.avatar32;
+					const avatar128 = blobUrls.value.avatar128;
+
+					if (avatar.startsWith('blob:')) URL.revokeObjectURL(avatar);
+					if (avatar32.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+					if (avatar128.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+				}
+
+				if (!url || !isRemoteUrl(url)) {
+					blobUrls.value = {
 						avatar: '/earth-app.png',
 						avatar32: '/favicon.png',
 						avatar128: '/favicon.png'
@@ -143,55 +177,46 @@ export const useAuth = () => {
 					return;
 				}
 
-				try {
-					const token = useCurrentSessionToken();
-					const headers: HeadersInit = {};
-					if (token) {
-						headers['Authorization'] = `Bearer ${token}`;
-					}
+				// fetch images with authentication
+				const [avatarBlob, avatar32Blob, avatar128Blob] = await Promise.all([
+					fetchAuthenticatedImage(url),
+					fetchAuthenticatedImage(`${url}?size=32`),
+					fetchAuthenticatedImage(`${url}?size=128`)
+				]);
 
-					const response = await fetch(url, {
-						method: 'HEAD',
-						headers
-					});
-					if (response.ok) {
-						validatedUrls.value = {
-							avatar: url,
-							avatar32: `${url}?size=32`,
-							avatar128: `${url}?size=128`
-						};
-					} else {
-						// 404 or other error - use fallbacks
-						validatedUrls.value = {
-							avatar: '/earth-app.png',
-							avatar32: '/favicon.png',
-							avatar128: '/favicon.png'
-						};
-					}
-				} catch {
-					// network error - use fallbacks
-					validatedUrls.value = {
-						avatar: '/earth-app.png',
-						avatar32: '/favicon.png',
-						avatar128: '/favicon.png'
-					};
-				}
+				blobUrls.value = {
+					avatar: avatarBlob || '/earth-app.png',
+					avatar32: avatar32Blob || '/favicon.png',
+					avatar128: avatar128Blob || '/earth-app.png'
+				};
 			},
 			{ immediate: true }
 		);
+
+		onBeforeUnmount(() => {
+			if (blobUrls.value) {
+				const avatar = blobUrls.value.avatar;
+				const avatar32 = blobUrls.value.avatar32;
+				const avatar128 = blobUrls.value.avatar128;
+
+				if (avatar.startsWith('blob:')) URL.revokeObjectURL(avatar);
+				if (avatar32.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+				if (avatar128.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+			}
+		});
 	}
 
 	const avatar = computed(() => {
-		if (validatedUrls.value) return validatedUrls.value.avatar;
-		return avatarUrl.value || '/earth-app.png';
+		if (blobUrls.value) return blobUrls.value.avatar;
+		return '/earth-app.png';
 	});
 	const avatar32 = computed(() => {
-		if (validatedUrls.value) return validatedUrls.value.avatar32;
-		return avatarUrl.value ? `${avatarUrl.value}?size=32` : '/favicon.png';
+		if (blobUrls.value) return blobUrls.value.avatar32;
+		return '/favicon.png';
 	});
 	const avatar128 = computed(() => {
-		if (validatedUrls.value) return validatedUrls.value.avatar128;
-		return avatarUrl.value ? `${avatarUrl.value}?size=128` : '/earth-app.png';
+		if (blobUrls.value) return blobUrls.value.avatar128;
+		return '/earth-app.png';
 	});
 
 	return {
@@ -342,14 +367,48 @@ export function useUser(identifier: string) {
 	}
 
 	const avatarUrl = computed(() => user.value?.account?.avatar_url);
-	const validatedUrls = ref<{ avatar: string; avatar32: string; avatar128: string } | null>(null);
+	const blobUrls = ref<{ avatar: string; avatar32: string; avatar128: string } | null>(null);
+
+	const isRemoteUrl = (url: string | undefined): boolean => {
+		if (!url) return false;
+		return url.startsWith('http://') || url.startsWith('https://');
+	};
+
+	const fetchAuthenticatedImage = async (url: string): Promise<string | null> => {
+		try {
+			const token = useCurrentSessionToken();
+			const headers: HeadersInit = {};
+			if (token) {
+				headers['Authorization'] = `Bearer ${token}`;
+			}
+
+			const response = await fetch(url, { headers });
+			if (response.ok) {
+				const blob = await response.blob();
+				return URL.createObjectURL(blob);
+			}
+			return null;
+		} catch {
+			return null;
+		}
+	};
 
 	if (import.meta.client) {
 		watch(
 			avatarUrl,
-			async (url) => {
-				if (!url) {
-					validatedUrls.value = {
+			async (url, _) => {
+				if (blobUrls.value) {
+					const avatar = blobUrls.value.avatar;
+					const avatar32 = blobUrls.value.avatar32;
+					const avatar128 = blobUrls.value.avatar128;
+
+					if (avatar.startsWith('blob:')) URL.revokeObjectURL(avatar);
+					if (avatar32.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+					if (avatar128.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+				}
+
+				if (!url || !isRemoteUrl(url)) {
+					blobUrls.value = {
 						avatar: '/earth-app.png',
 						avatar32: '/favicon.png',
 						avatar128: '/favicon.png'
@@ -357,52 +416,45 @@ export function useUser(identifier: string) {
 					return;
 				}
 
-				try {
-					const token = useCurrentSessionToken();
-					const headers: HeadersInit = {};
-					if (token) {
-						headers['Authorization'] = `Bearer ${token}`;
-					}
+				const [avatarBlob, avatar32Blob, avatar128Blob] = await Promise.all([
+					fetchAuthenticatedImage(url),
+					fetchAuthenticatedImage(`${url}?size=32`),
+					fetchAuthenticatedImage(`${url}?size=128`)
+				]);
 
-					const response = await fetch(url, { method: 'HEAD', headers });
-					if (response.ok) {
-						validatedUrls.value = {
-							avatar: url,
-							avatar32: `${url}?size=32`,
-							avatar128: `${url}?size=128`
-						};
-					} else {
-						// 404 or other error - use fallbacks
-						validatedUrls.value = {
-							avatar: '/earth-app.png',
-							avatar32: '/favicon.png',
-							avatar128: '/favicon.png'
-						};
-					}
-				} catch {
-					// network error - use fallbacks
-					validatedUrls.value = {
-						avatar: '/earth-app.png',
-						avatar32: '/favicon.png',
-						avatar128: '/favicon.png'
-					};
-				}
+				blobUrls.value = {
+					avatar: avatarBlob || '/earth-app.png',
+					avatar32: avatar32Blob || '/favicon.png',
+					avatar128: avatar128Blob || '/earth-app.png'
+				};
 			},
 			{ immediate: true }
 		);
+
+		onBeforeUnmount(() => {
+			if (blobUrls.value) {
+				const avatar = blobUrls.value.avatar;
+				const avatar32 = blobUrls.value.avatar32;
+				const avatar128 = blobUrls.value.avatar128;
+
+				if (avatar.startsWith('blob:')) URL.revokeObjectURL(avatar);
+				if (avatar32.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+				if (avatar128.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+			}
+		});
 	}
 
 	const avatar = computed(() => {
-		if (validatedUrls.value) return validatedUrls.value.avatar;
-		return avatarUrl.value || '/earth-app.png';
+		if (blobUrls.value) return blobUrls.value.avatar;
+		return '/earth-app.png';
 	});
 	const avatar32 = computed(() => {
-		if (validatedUrls.value) return validatedUrls.value.avatar32;
-		return avatarUrl.value ? `${avatarUrl.value}?size=32` : '/favicon.png';
+		if (blobUrls.value) return blobUrls.value.avatar32;
+		return '/favicon.png';
 	});
 	const avatar128 = computed(() => {
-		if (validatedUrls.value) return validatedUrls.value.avatar128;
-		return avatarUrl.value ? `${avatarUrl.value}?size=128` : '/earth-app.png';
+		if (blobUrls.value) return blobUrls.value.avatar128;
+		return '/earth-app.png';
 	});
 
 	return {
