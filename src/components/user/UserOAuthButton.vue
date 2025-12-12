@@ -4,7 +4,7 @@
 			:icon="icon"
 			:variant="linked ? 'solid' : 'outline'"
 			@click="handleOauth"
-			:disabled="linked || true"
+			:disabled="linked"
 		/>
 		<UButton
 			v-if="linked && user"
