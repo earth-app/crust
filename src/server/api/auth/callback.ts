@@ -40,12 +40,23 @@ export default defineEventHandler(async (event) => {
 		const successParam = isNewUser ? 'oauth_signup' : 'oauth_linked';
 
 		return sendRedirect(event, `/profile?success=${successParam}`);
-	} catch (error) {
+	} catch (error: any) {
 		console.error('OAuth error:', error);
 
 		setHeader(event, 'X-Error-Detail', error instanceof Error ? error.message : 'Unknown error');
 		setHeader(event, 'X-Error-Response', JSON.stringify(event.context.oauthStatus || {}));
-		setHeader(event, 'X-Error-Extra', JSON.stringify(error));
+		setHeader(
+			event,
+			'X-Error-Extra',
+			JSON.stringify({
+				statusMessage: error?.statusMessage,
+				statusText: error?.statusText,
+				statusCode: error?.statusCode,
+				...error
+			})
+		);
+		if (error.data) setHeader(event, 'X-Error-Data', JSON.stringify(error.data));
+
 		setHeader(event, 'X-Error-Type', 'oauth_failure');
 		return sendRedirect(event, `/login?error=auth_failed`);
 	}
