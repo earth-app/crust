@@ -4,13 +4,13 @@ export default defineEventHandler(async (event) => {
 	const query = getQuery(event);
 	const { code, state } = query;
 
-	const sessionToken = getCookie(event, 'session_token');
-
 	if (!state || Array.isArray(state) || typeof state !== 'string') {
+		setHeader(event, 'X-Error-Type', 'missing_provider');
 		return sendRedirect(event, `/login?error=no_provider`);
 	}
 
 	if (!code || Array.isArray(code) || typeof code !== 'string') {
+		setHeader(event, 'X-Error-Type', 'missing_code');
 		return sendRedirect(event, `/login?error=no_code`);
 	}
 
@@ -22,6 +22,9 @@ export default defineEventHandler(async (event) => {
 				method: 'POST',
 				body: { id_token: idToken },
 				onResponse({ response: res }) {
+					event.context.oauthStatus = res.status;
+				},
+				onResponseError({ response: res }) {
 					event.context.oauthStatus = res.status;
 				}
 			}
@@ -39,6 +42,11 @@ export default defineEventHandler(async (event) => {
 		return sendRedirect(event, `/profile?success=${successParam}`);
 	} catch (error) {
 		console.error('OAuth error:', error);
+
+		setHeader(event, 'X-Error-Detail', error instanceof Error ? error.message : 'Unknown error');
+		setHeader(event, 'X-Error-Response', JSON.stringify(event.context.oauthStatus || {}));
+		setHeader(event, 'X-Error-Extra', JSON.stringify(error));
+		setHeader(event, 'X-Error-Type', 'oauth_failure');
 		return sendRedirect(event, `/login?error=auth_failed`);
 	}
 });
