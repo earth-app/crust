@@ -248,7 +248,7 @@
 			</div>
 			<div class="w-full flex flex-col items-center">
 				<div class="flex flex-col w-full max-w-3xl items-center my-4">
-					<h2 class="text-xl font-medium flex-1 mb-2">OAuth Providers</h2>
+					<h2 class="text-xl font-medium flex-1 mb-1">OAuth Providers</h2>
 					<div class="flex">
 						<UserOAuthButton
 							v-for="provider in OAUTH_PROVIDERS"
@@ -463,7 +463,7 @@ const { avatar: oldAvatar, fetchUser: refetchUser } = useUser(user.value.id);
 const avatarLoading = ref(false);
 const avatarOverride = ref<string | null>(null);
 
-const avatar = computed(() => avatarOverride.value || oldAvatar.value);
+const avatar = computed(() => avatarOverride.value || oldAvatar.value || undefined);
 
 onBeforeUnmount(() => {
 	if (avatarOverride.value && avatarOverride.value.startsWith('blob:')) {
