@@ -82,6 +82,23 @@ if (error) {
 				color: 'error',
 				duration: 5000
 			});
+		case 'no_provider':
+			toast.add({
+				title: 'Authentication Error',
+				description: 'No authentication provider was specified. Please try logging in again.',
+				icon: 'mdi:account-alert',
+				color: 'error',
+				duration: 5000
+			});
+			break;
+		case 'no_code':
+			toast.add({
+				title: 'Authentication Error',
+				description: 'No authentication code was provided. Please try logging in again.',
+				icon: 'mdi:account-alert',
+				color: 'error',
+				duration: 5000
+			});
 			break;
 	}
 }

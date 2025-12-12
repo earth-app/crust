@@ -2,17 +2,16 @@ import { exchangeCodeForToken } from '../../utils';
 
 export default defineEventHandler(async (event) => {
 	const query = getQuery(event);
-	const code = query.code as string;
-	const state = query.state as string;
+	const { code, state } = query;
 
-	if (!code || !state || !state.startsWith('unlink_')) {
-		return sendRedirect(event, '/settings?error=invalid_unlink');
+	if (!code || !state || typeof state !== 'string' || !state.startsWith('unlink_')) {
+		return sendRedirect(event, '/profile?error=invalid_unlink');
 	}
 
 	const provider = state.replace('unlink_', '');
 
 	try {
-		const idToken = await exchangeCodeForToken(provider, code);
+		const idToken = await exchangeCodeForToken(provider, code.toString());
 
 		const sessionToken = getCookie(event, 'session_token');
 		if (!sessionToken) {

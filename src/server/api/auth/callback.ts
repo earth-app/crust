@@ -2,20 +2,24 @@ import { exchangeCodeForToken } from '../../utils';
 
 export default defineEventHandler(async (event) => {
 	const query = getQuery(event);
-	const { code, provider } = query;
+	const { code, state } = query;
 
-	if (!provider || Array.isArray(provider) || typeof provider !== 'string') {
-		return sendRedirect(event, '/login?error=no_provider');
+	const sessionToken = getCookie(event, 'session_token');
+	const loggedIn = !!sessionToken;
+	const redirectPage = loggedIn ? '/profile' : '/login';
+
+	if (!state || Array.isArray(state) || typeof state !== 'string') {
+		return sendRedirect(event, `/${redirectPage}?error=no_provider`);
 	}
 
 	if (!code || Array.isArray(code) || typeof code !== 'string') {
-		return sendRedirect(event, '/login?error=no_code');
+		return sendRedirect(event, `/${redirectPage}?error=no_code`);
 	}
 
 	try {
-		const idToken = await exchangeCodeForToken(provider, code);
+		const idToken = await exchangeCodeForToken(state, code);
 		const response = await $fetch<{ session_token: string; user: any }>(
-			`https://api.earth-app.com/v2/users/oauth/${provider}`,
+			`https://api.earth-app.com/v2/users/oauth/${state}`,
 			{
 				method: 'POST',
 				body: { id_token: idToken },
@@ -37,6 +41,6 @@ export default defineEventHandler(async (event) => {
 		return sendRedirect(event, `/profile?success=${successParam}`);
 	} catch (error) {
 		console.error('OAuth error:', error);
-		return sendRedirect(event, '/login?error=auth_failed');
+		return sendRedirect(event, `/${redirectPage}?error=auth_failed`);
 	}
 });
