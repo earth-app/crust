@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
 
 	const sessionToken = getCookie(event, 'session_token');
 	const loggedIn = !!sessionToken;
-	const redirectPage = loggedIn ? '/profile' : '/login';
+	const redirectPage = loggedIn ? 'profile' : 'login';
 
 	if (!state || Array.isArray(state) || typeof state !== 'string') {
 		return sendRedirect(event, `/${redirectPage}?error=no_provider`);
