@@ -113,7 +113,7 @@ export async function exchangeCodeForToken(provider: string, code: string): Prom
 						code,
 						client_id: config.public.microsoftClientId,
 						client_secret: config.microsoftClientSecret,
-						redirect_uri: 'https://app.earth-app.com/auth/callback',
+						redirect_uri: 'https://app.earth-app.com/api/auth/callback',
 						grant_type: 'authorization_code',
 						scope: 'openid email profile'
 					})
@@ -129,7 +129,7 @@ export async function exchangeCodeForToken(provider: string, code: string): Prom
 					code,
 					client_id: config.public.discordClientId,
 					client_secret: config.discordClientSecret,
-					redirect_uri: 'https://app.earth-app.com/auth/callback',
+					redirect_uri: 'https://app.earth-app.com/api/auth/callback',
 					grant_type: 'authorization_code'
 				})
 			});
@@ -145,7 +145,7 @@ export async function exchangeCodeForToken(provider: string, code: string): Prom
 						code,
 						client_id: config.public.githubClientId,
 						client_secret: config.githubClientSecret,
-						redirect_uri: 'https://app.earth-app.com/auth/callback'
+						redirect_uri: 'https://app.earth-app.com/api/auth/callback'
 					})
 				}
 			);
@@ -161,7 +161,7 @@ export async function exchangeCodeForToken(provider: string, code: string): Prom
 						code,
 						client_id: config.public.facebookClientId,
 						client_secret: config.facebookClientSecret,
-						redirect_uri: 'https://app.earth-app.com/auth/callback'
+						redirect_uri: 'https://app.earth-app.com/api/auth/callback'
 					})
 				}
 			);

@@ -43,7 +43,7 @@ const icon = computed(() => {
 });
 
 // Link Authentication Methods
-const linkUri = `${config.public.baseUrl}/auth/callback`;
+const linkUri = `${config.public.baseUrl}/api/auth/callback`;
 const microsoftAuth = () => {
 	const clientId = config.public.microsoftClientId;
 	const scope = 'openid email profile';
@@ -122,7 +122,7 @@ async function handleOauth() {
 }
 
 // Unlink Authentication Methods
-const unlinkUri = `${config.public.baseUrl}/api/unlink-callback`;
+const unlinkUri = `${config.public.baseUrl}/api/auth/unlink-callback`;
 async function handleDisconnect() {
 	if (!user.value) return;
 
