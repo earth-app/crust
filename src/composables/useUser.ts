@@ -128,7 +128,11 @@ export const useAuth = () => {
 	}
 
 	const avatarUrl = computed(() => user.value?.account?.avatar_url);
-	const blobUrls = ref<{ avatar: string; avatar32: string; avatar128: string } | null>(null);
+	const blobUrls = ref<{
+		avatar: string | null;
+		avatar32: string | null;
+		avatar128: string | null;
+	} | null>(null);
 
 	const isRemoteUrl = (url: string | undefined): boolean => {
 		if (!url) return false;
@@ -163,9 +167,9 @@ export const useAuth = () => {
 					const avatar32 = blobUrls.value.avatar32;
 					const avatar128 = blobUrls.value.avatar128;
 
-					if (avatar.startsWith('blob:')) URL.revokeObjectURL(avatar);
-					if (avatar32.startsWith('blob:')) URL.revokeObjectURL(avatar32);
-					if (avatar128.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+					if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
+					if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+					if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
 				}
 
 				if (!url || !isRemoteUrl(url)) {
@@ -176,6 +180,13 @@ export const useAuth = () => {
 					};
 					return;
 				}
+
+				// Set to null while loading
+				blobUrls.value = {
+					avatar: null,
+					avatar32: null,
+					avatar128: null
+				};
 
 				// fetch images with authentication
 				const [avatarBlob, avatar32Blob, avatar128Blob] = await Promise.all([
@@ -199,24 +210,24 @@ export const useAuth = () => {
 				const avatar32 = blobUrls.value.avatar32;
 				const avatar128 = blobUrls.value.avatar128;
 
-				if (avatar.startsWith('blob:')) URL.revokeObjectURL(avatar);
-				if (avatar32.startsWith('blob:')) URL.revokeObjectURL(avatar32);
-				if (avatar128.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+				if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
+				if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+				if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
 			}
 		});
 	}
 
 	const avatar = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar;
-		return '/earth-app.png';
+		if (blobUrls.value) return blobUrls.value.avatar || undefined;
+		return undefined;
 	});
 	const avatar32 = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar32;
-		return '/favicon.png';
+		if (blobUrls.value) return blobUrls.value.avatar32 || undefined;
+		return undefined;
 	});
 	const avatar128 = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar128;
-		return '/earth-app.png';
+		if (blobUrls.value) return blobUrls.value.avatar128 || undefined;
+		return undefined;
 	});
 
 	return {
@@ -367,7 +378,11 @@ export function useUser(identifier: string) {
 	}
 
 	const avatarUrl = computed(() => user.value?.account?.avatar_url);
-	const blobUrls = ref<{ avatar: string; avatar32: string; avatar128: string } | null>(null);
+	const blobUrls = ref<{
+		avatar: string | null;
+		avatar32: string | null;
+		avatar128: string | null;
+	} | null>(null);
 
 	const isRemoteUrl = (url: string | undefined): boolean => {
 		if (!url) return false;
@@ -402,9 +417,9 @@ export function useUser(identifier: string) {
 					const avatar32 = blobUrls.value.avatar32;
 					const avatar128 = blobUrls.value.avatar128;
 
-					if (avatar.startsWith('blob:')) URL.revokeObjectURL(avatar);
-					if (avatar32.startsWith('blob:')) URL.revokeObjectURL(avatar32);
-					if (avatar128.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+					if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
+					if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+					if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
 				}
 
 				if (!url || !isRemoteUrl(url)) {
@@ -415,6 +430,13 @@ export function useUser(identifier: string) {
 					};
 					return;
 				}
+
+				// Set to null while loading
+				blobUrls.value = {
+					avatar: null,
+					avatar32: null,
+					avatar128: null
+				};
 
 				const [avatarBlob, avatar32Blob, avatar128Blob] = await Promise.all([
 					fetchAuthenticatedImage(url),
@@ -437,24 +459,24 @@ export function useUser(identifier: string) {
 				const avatar32 = blobUrls.value.avatar32;
 				const avatar128 = blobUrls.value.avatar128;
 
-				if (avatar.startsWith('blob:')) URL.revokeObjectURL(avatar);
-				if (avatar32.startsWith('blob:')) URL.revokeObjectURL(avatar32);
-				if (avatar128.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+				if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
+				if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+				if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
 			}
 		});
 	}
 
 	const avatar = computed(() => {
 		if (blobUrls.value) return blobUrls.value.avatar;
-		return '/earth-app.png';
+		return null;
 	});
 	const avatar32 = computed(() => {
 		if (blobUrls.value) return blobUrls.value.avatar32;
-		return '/favicon.png';
+		return null;
 	});
 	const avatar128 = computed(() => {
 		if (blobUrls.value) return blobUrls.value.avatar128;
-		return '/earth-app.png';
+		return null;
 	});
 
 	return {
