@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
 
 		if (isNewUser || !isLoggedIn)
 			setCookie(event, 'session_token', response.session_token, {
-				httpOnly: true,
+				sameSite: 'none',
 				secure: true,
 				maxAge: 60 * 60 * 24 * 14 // 14 days
 			});

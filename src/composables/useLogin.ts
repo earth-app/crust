@@ -136,7 +136,7 @@ export function useCurrentSessionToken(value?: string | null) {
 	if (import.meta.server) {
 		if (value) {
 			setCookie(useRequestEvent()!, 'session_token', value, {
-				httpOnly: true,
+				sameSite: 'none',
 				secure: true,
 				maxAge: 60 * 60 * 24 * 14 // 14 days
 			});
