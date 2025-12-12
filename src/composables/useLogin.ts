@@ -32,7 +32,7 @@ export function useSignup() {
 			const sessionCookie = useCookie('session_token', {
 				maxAge: 60 * 60 * 24 * 14,
 				secure: true,
-				sameSite: 'strict'
+				sameSite: 'none'
 			});
 			sessionCookie.value = response.session_token;
 
@@ -84,7 +84,7 @@ export function useLogin() {
 			const sessionCookie = useCookie('session_token', {
 				maxAge: 60 * 60 * 24 * 14,
 				secure: true,
-				sameSite: 'strict'
+				sameSite: 'none'
 			});
 			sessionCookie.value = response.session_token;
 
@@ -110,7 +110,7 @@ export function useLogout() {
 	const sessionCookie = useCookie('session_token', {
 		maxAge: 60 * 60 * 24 * 14,
 		secure: true,
-		sameSite: 'strict'
+		sameSite: 'none'
 	});
 
 	return async function logout() {
@@ -163,7 +163,7 @@ export function useCurrentSessionToken(value?: string | null) {
 		const sessionCookie = useCookie('session_token', {
 			maxAge: 60 * 60 * 24 * 14,
 			secure: true,
-			sameSite: 'strict'
+			sameSite: 'none'
 		});
 
 		if (value !== undefined) sessionCookie.value = value;
