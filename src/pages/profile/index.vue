@@ -55,6 +55,15 @@ if (success) {
 
 if (error) {
 	switch (error) {
+		case 'auth_failed':
+			toast.add({
+				title: 'Authentication Failed',
+				description: 'There was an error during authentication. Please try again.',
+				icon: 'mdi:account-alert',
+				color: 'error',
+				duration: 5000
+			});
+			break;
 		case 'oauth_already_linked':
 			toast.add({
 				title: 'OAuth Already Linked',
@@ -86,6 +95,16 @@ if (error) {
 			toast.add({
 				title: 'Authentication Error',
 				description: 'No authentication provider was specified. Please try logging in again.',
+				icon: 'mdi:account-alert',
+				color: 'error',
+				duration: 5000
+			});
+			break;
+		case 'invalid_provider':
+			toast.add({
+				title: 'Authentication Error',
+				description:
+					'The specified authentication provider is invalid. Please try logging in again.',
 				icon: 'mdi:account-alert',
 				color: 'error',
 				duration: 5000
