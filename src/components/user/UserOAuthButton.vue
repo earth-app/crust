@@ -65,6 +65,20 @@ const microsoftAuth = () => {
 	);
 };
 
+const googleAuth = () => {
+	const clientId = config.public.googleClientId;
+	const scope = 'openid email profile';
+
+	return (
+		`https://accounts.google.com/o/oauth2/v2/auth?` +
+		`client_id=${clientId}&` +
+		`redirect_uri=${encodeURIComponent(linkUri)}&` +
+		`response_type=code&` +
+		`scope=${encodeURIComponent(scope)}&` +
+		`state=google`
+	);
+};
+
 const discordAuth = () => {
 	const clientId = config.public.discordClientId;
 	const scope = 'identify email';
@@ -109,6 +123,9 @@ const facebookAuth = () => {
 async function handleOauth() {
 	let authUrl = '';
 	switch (props.provider) {
+		case 'google':
+			authUrl = googleAuth();
+			break;
 		case 'microsoft':
 			authUrl = microsoftAuth();
 			break;
@@ -129,7 +146,6 @@ async function handleOauth() {
 }
 
 // Unlink Authentication Methods
-const unlinkUri = `${config.public.baseUrl}/api/auth/unlink-callback`;
 async function handleDisconnect() {
 	if (!user.value) return;
 
@@ -145,50 +161,7 @@ async function handleDisconnect() {
 		return;
 	}
 
-	let disconnectUrl = '';
-	switch (props.provider) {
-		case 'microsoft':
-			disconnectUrl =
-				`https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
-				`client_id=${config.public.microsoftClientId}&` +
-				`redirect_uri=${encodeURIComponent(unlinkUri)}&` +
-				`response_type=code&` +
-				`scope=${encodeURIComponent('openid email profile')}&` +
-				`state=unlink_microsoft`;
-			break;
-
-		case 'discord':
-			disconnectUrl =
-				`https://discord.com/api/oauth2/authorize?` +
-				`client_id=${config.public.discordClientId}&` +
-				`redirect_uri=${encodeURIComponent(unlinkUri)}&` +
-				`response_type=code&` +
-				`scope=${encodeURIComponent('identify email')}&` +
-				`state=unlink_discord`;
-			break;
-
-		case 'github':
-			disconnectUrl =
-				`https://github.com/login/oauth/authorize?` +
-				`client_id=${config.public.githubClientId}&` +
-				`redirect_uri=${encodeURIComponent(unlinkUri)}&` +
-				`scope=${encodeURIComponent('user:email read:user')}&` +
-				`state=unlink_github`;
-			break;
-
-		case 'facebook':
-			disconnectUrl =
-				`https://www.facebook.com/v18.0/dialog/oauth?` +
-				`client_id=${config.public.facebookClientId}&` +
-				`redirect_uri=${encodeURIComponent(unlinkUri)}&` +
-				`response_type=code&` +
-				`scope=${encodeURIComponent('public_profile email')}&` +
-				`state=unlink_facebook`;
-			break;
-		default:
-			throw new Error('Unsupported OAuth provider');
-	}
-
-	navigateTo(disconnectUrl, { external: true });
+	const unlinkUrl = `/api/auth/unlink-callback?provider=${props.provider}`;
+	navigateTo(unlinkUrl);
 }
 </script>
