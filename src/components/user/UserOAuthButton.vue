@@ -1,14 +1,19 @@
 <template>
-	<div class="flex flex-col space-y-2">
-		<UButton
-			:icon="icon"
-			:variant="linked ? 'solid' : 'outline'"
-			@click="handleOauth"
-			:disabled="linked"
-		/>
+	<div class="flex flex-col space-y-2 items-center">
+		<div>
+			<UButton
+				:icon="icon"
+				color="primary"
+				:variant="linked ? 'solid' : 'outline'"
+				@click="handleOauth"
+				:disabled="linked"
+			/>
+		</div>
 		<UButton
 			v-if="linked && user"
-			class="text-red-500 font-medium"
+			color="error"
+			variant="solid"
+			size="xs"
 			@click="handleDisconnect"
 			>Disconnect</UButton
 		>
