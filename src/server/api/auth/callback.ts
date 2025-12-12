@@ -30,13 +30,15 @@ export default defineEventHandler(async (event) => {
 			}
 		);
 
-		setCookie(event, 'session_token', response.session_token, {
-			httpOnly: true,
-			secure: true,
-			maxAge: 60 * 60 * 24 * 14 // 14 days
-		});
-
 		const isNewUser = event.context.oauthStatus === 201;
+
+		if (isNewUser)
+			setCookie(event, 'session_token', response.session_token, {
+				httpOnly: true,
+				secure: true,
+				maxAge: 60 * 60 * 24 * 14 // 14 days
+			});
+
 		const successParam = isNewUser ? 'oauth_signup' : 'oauth_linked';
 
 		return sendRedirect(event, `/profile?success=${successParam}`);
