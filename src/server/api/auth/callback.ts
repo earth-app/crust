@@ -4,23 +4,27 @@ export default defineEventHandler(async (event) => {
 	const query = getQuery(event);
 	const { code, state } = query;
 
+	const sessionToken = getCookie(event, 'session_token');
+	const isLoggedin = !!sessionToken;
+	const page = isLoggedin ? 'profile' : 'login';
+
 	if (!state || Array.isArray(state) || typeof state !== 'string') {
 		setHeader(event, 'X-Error-Type', 'missing_provider');
-		return sendRedirect(event, `/login?error=no_provider`);
+		return sendRedirect(event, `/${page}?error=no_provider`);
 	}
 
 	if (!code || Array.isArray(code) || typeof code !== 'string') {
 		setHeader(event, 'X-Error-Type', 'missing_code');
-		return sendRedirect(event, `/login?error=no_code`);
+		return sendRedirect(event, `/${page}?error=no_code`);
 	}
 
 	try {
 		const idToken = await exchangeCodeForToken(state, code);
 		const response = await $fetch<{ session_token: string; user: any }>(
-			`https://api.earth-app.com/v2/users/oauth/${state}`,
+			`https://api.earth-app.com/v2/users/oauth/${state}?is_linking=${isLoggedin}`,
 			{
 				method: 'POST',
-				body: { id_token: idToken },
+				body: { id_token: idToken, session_token: sessionToken },
 				onResponse({ response: res }) {
 					event.context.oauthStatus = res.status;
 				},
@@ -60,6 +64,6 @@ export default defineEventHandler(async (event) => {
 		if (error.data) setHeader(event, 'X-Error-Data', JSON.stringify(error.data));
 
 		setHeader(event, 'X-Error-Type', 'oauth_failure');
-		return sendRedirect(event, `/login?error=auth_failed`);
+		return sendRedirect(event, `/${page}?error=auth_failed`);
 	}
 });
