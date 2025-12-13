@@ -28,7 +28,7 @@ export default defineNuxtConfig({
 		facebookClientSecret: process.env.NUXT_FACEBOOK_CLIENT_SECRET || ''
 	},
 	ssr: true,
-	compatibilityDate: '2025-06-20',
+	compatibilityDate: '2025-12-13',
 	// Disable devtools in production to reduce client bundle size and overhead
 	devtools: { enabled: process.env.NODE_ENV !== 'production' },
 	srcDir: 'src',
@@ -63,15 +63,6 @@ export default defineNuxtConfig({
 		}
 	},
 	hub: {
-		projectKey: 'earthapp-crust-tdti',
-		bindings: {
-			compatibilityDate: '2025-06-20',
-			observability: {
-				logs: {
-					head_sampling_rate: 0.2
-				}
-			}
-		},
 		cache: true
 	},
 	routeRules: {
