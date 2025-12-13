@@ -55,6 +55,16 @@ if (success) {
 
 if (error) {
 	switch (error) {
+		case 'provider_error':
+			toast.add({
+				title: 'OAuth Provider Error',
+				description:
+					'The OAuth provider returned an error during authentication. Please try again.',
+				icon: 'mdi:alert-box-outline',
+				color: 'error',
+				duration: 5000
+			});
+			break;
 		case 'auth_failed':
 			toast.add({
 				title: 'Authentication Failed',

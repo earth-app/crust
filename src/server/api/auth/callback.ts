@@ -3,11 +3,19 @@ import { exchangeCodeForToken } from '../../utils';
 
 export default defineEventHandler(async (event) => {
 	const query = getQuery(event);
-	const { code, state } = query;
+	const { code, state, error, error_description } = query;
 
 	const sessionToken = getCookie(event, 'session_token');
 	const isLoggedIn = !!sessionToken;
 	const page = isLoggedIn ? 'profile' : 'login';
+
+	if (error) {
+		setHeader(event, 'X-Error-Type', 'oauth_provider_error');
+		setHeader(event, 'X-Error-Detail', (error_description as string) || 'No description provided');
+		setHeader(event, 'X-Error-Extra', `Provider error: ${error}`);
+		console.error(`OAuth provider error: ${error} - ${error_description}`);
+		return sendRedirect(event, `/${page}?error=provider_error`);
+	}
 
 	if (!state || Array.isArray(state) || typeof state !== 'string') {
 		setHeader(event, 'X-Error-Type', 'missing_provider');

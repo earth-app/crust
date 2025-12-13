@@ -30,6 +30,10 @@ if (error) {
 	let description,
 		icon = '';
 	switch (error) {
+		case 'provider_error':
+			description = 'An error occurred with the OAuth provider.';
+			icon = 'mdi:alert-box-outline';
+			break;
 		case 'no_provider':
 			description = 'No OAuth provider specified.';
 			icon = 'mdi:account-alert';
