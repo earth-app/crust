@@ -56,7 +56,10 @@ export default defineNuxtConfig({
 		preset: 'cloudflare_module',
 		cloudflare: {
 			deployConfig: true,
-			nodeCompat: true
+			nodeCompat: true,
+			wrangler: {
+				name: 'earthapp-crust'
+			}
 		},
 		prerender: {
 			routes: ['/sitemap.xml']
@@ -68,6 +71,8 @@ export default defineNuxtConfig({
 	routeRules: {
 		// Static pages, assets (prerender at build time)
 		'/about': { prerender: true },
+		'/terms-of-service': { prerender: true },
+		'/privacy-policy': { prerender: true },
 
 		// Client-side only pages (auth, profiles, admin)
 		'/login': { ssr: false },
