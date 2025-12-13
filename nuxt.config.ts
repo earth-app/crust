@@ -72,10 +72,10 @@ export default defineNuxtConfig({
 		// Client-side only pages (auth, profiles, admin)
 		'/login': { ssr: false },
 		'/signup': { ssr: false },
-		'/verify-email': { ssr: false, robots: false },
-		'/change-password': { ssr: false, robots: false },
+		'/verify-email': { ssr: false },
+		'/change-password': { ssr: false },
 		'/profile/**': { ssr: false },
-		'/admin': { ssr: false, robots: false },
+		'/admin': { ssr: false },
 
 		// Content listing pages (ISR)
 		'/': { isr: 3600 }, // Homepage regenerates every hour
