@@ -35,12 +35,11 @@ export default defineEventHandler(async (event) => {
 
 	try {
 		const token = await exchangeCodeForToken(state as OAuthProvider, code);
-		const tokenField = state === 'microsoft' ? 'id_token' : 'access_token';
 		const response = await $fetch<{ session_token: string; user: any }>(
 			`https://api.earth-app.com/v2/users/oauth/${state}?is_linking=${isLoggedIn}`,
 			{
 				method: 'POST',
-				body: { [tokenField]: token, session_token: sessionToken },
+				body: { access_token: token, session_token: sessionToken },
 				onResponse({ response: res }) {
 					event.context.oauthStatus = res.status;
 				},

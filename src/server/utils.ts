@@ -118,7 +118,7 @@ export async function exchangeCodeForToken(provider: OAuthProvider, code: string
 
 			return google.access_token;
 		case 'microsoft':
-			const ms = await $fetch<{ id_token: string }>(
+			const ms = await $fetch<{ access_token: string }>(
 				'https://login.microsoftonline.com/common/oauth2/v2.0/token',
 				{
 					method: 'POST',
@@ -134,7 +134,7 @@ export async function exchangeCodeForToken(provider: OAuthProvider, code: string
 				}
 			);
 
-			return ms.id_token;
+			return ms.access_token;
 		case 'discord':
 			const discord = await $fetch<{ access_token: string }>(
 				'https://discord.com/api/oauth2/token',
