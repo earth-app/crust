@@ -69,5 +69,4 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          workingDirectory: .output/server
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
