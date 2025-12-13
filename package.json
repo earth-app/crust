@@ -1,6 +1,6 @@
 {
   "name": "@earth-app/crust",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "main": "./nuxt.config.ts",
   "files": [
