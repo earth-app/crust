@@ -22,6 +22,8 @@
 					API
 				</NuxtLink>
 				<NuxtLink to="/about">About</NuxtLink>
+				<NuxtLink to="/terms-of-service">Terms of Service</NuxtLink>
+				<NuxtLink to="/privacy-policy">Privacy Policy</NuxtLink>
 			</div>
 			<div class="flex space-x-3 mt-2 *:hover:opacity-70 *:transition-opacity *:duration-200">
 				<NuxtLink
