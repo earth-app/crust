@@ -9,10 +9,26 @@
 			No notifications
 		</div>
 		<div v-else>
-			<h2 class="text-sm sm:text-md mb-4 text-gray-400">
-				{{ notificationsCount }} Notifications
-				{{ displayed.length !== notificationsCount ? `(${displayed.length} shown)` : '' }}
-			</h2>
+			<div class="flex justify-between">
+				<h2 class="text-sm sm:text-md mb-4 text-gray-400">
+					{{ notificationsCount }} Notifications
+					{{ displayed.length !== notificationsCount ? `(${displayed.length} shown)` : '' }}
+				</h2>
+				<div class="flex space-x-8 font-medium">
+					<h2
+						class="text-sm sm:text-md mb-4 text-gray-400 hover:cursor-pointer"
+						@click="notifications.forEach((n) => (n.read = true))"
+					>
+						Mark All as Read
+					</h2>
+					<h2
+						class="text-sm sm:text-md mb-4 text-gray-400 hover:cursor-pointer"
+						@click="notifications.splice(0, notifications.length)"
+					>
+						Clear All
+					</h2>
+				</div>
+			</div>
 			<UserNotificationCard
 				v-for="notification in displayed"
 				:key="notification.id"
