@@ -66,7 +66,7 @@ export default defineNuxtConfig({
 		}
 	},
 	hub: {
-		cache: true
+		cache: process.env.NODE_ENV === 'production'
 	},
 	routeRules: {
 		// Static pages, assets (prerender at build time)
