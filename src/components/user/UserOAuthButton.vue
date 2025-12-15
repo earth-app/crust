@@ -5,7 +5,7 @@
 				:icon="icon"
 				color="primary"
 				:variant="linked ? 'solid' : 'outline'"
-				@click="handleOauth"
+				@click="() => handleOauth(provider)"
 				:disabled="linked"
 			/>
 		</div>
@@ -14,7 +14,7 @@
 			color="error"
 			variant="solid"
 			size="xs"
-			@click="handleDisconnect"
+			@click="() => handleDisconnect(provider)"
 			>Disconnect</UButton
 		>
 	</div>
@@ -120,9 +120,9 @@ const facebookAuth = () => {
 	);
 };
 
-async function handleOauth() {
+export async function handleOauth(provider: string) {
 	let authUrl = '';
-	switch (props.provider) {
+	switch (provider) {
 		case 'google':
 			authUrl = googleAuth();
 			break;
@@ -146,7 +146,7 @@ async function handleOauth() {
 }
 
 // Unlink Authentication Methods
-async function handleDisconnect() {
+export async function handleDisconnect(provider: string) {
 	if (!user.value) return;
 
 	if (!user.value.account.has_password && user.value.account.linked_providers.length <= 1) {
@@ -161,7 +161,7 @@ async function handleDisconnect() {
 		return;
 	}
 
-	const unlinkUrl = `/api/auth/unlink-callback?provider=${props.provider}`;
+	const unlinkUrl = `/api/auth/unlink-callback?provider=${provider}`;
 	navigateTo(unlinkUrl);
 }
 </script>
