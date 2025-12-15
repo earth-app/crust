@@ -311,8 +311,8 @@
 import { UButton } from '#components';
 import { com } from '@earth-app/ocean';
 import type { InputTypeHTMLAttribute } from 'vue';
-import { OAUTH_PROVIDERS, type User } from '../../shared/types/user';
-import { capitalizeFully } from '../../shared/util';
+import { OAUTH_PROVIDERS, type User } from '~/shared/types/user';
+import { capitalizeFully } from '~/shared/util';
 import { type EmailVerificationModalRef } from './UserEmailVerificationModal.vue';
 import { type PasswordChangeModalRef } from './UserPasswordChangeModal.vue';
 

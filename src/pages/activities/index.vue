@@ -58,7 +58,7 @@
 	></div>
 </template>
 <script setup lang="ts">
-import type { Activity } from '../../shared/types/activity';
+import type { Activity } from '~/shared/types/activity';
 
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Activities');

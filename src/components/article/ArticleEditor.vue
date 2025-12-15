@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Article } from '../../shared/types/article';
+import type { Article } from '~/shared/types/article';
 
 const props = defineProps<{
 	article?: Article;

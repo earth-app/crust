@@ -1,7 +1,7 @@
 import type { com } from '@earth-app/ocean';
-import type { SortingOption } from '../shared/types/global';
-import type { Prompt, PromptResponse } from '../shared/types/prompts';
-import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '../shared/util';
+import type { SortingOption } from '~/shared/types/global';
+import type { Prompt, PromptResponse } from '~/shared/types/prompts';
+import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 export async function getPrompts(

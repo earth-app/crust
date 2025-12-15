@@ -1,7 +1,7 @@
 import type { MaybeRefOrGetter } from 'vue';
-import type { Activity } from '../shared/types/activity';
-import type { SortingOption } from '../shared/types/global';
-import type { User, UserNotification } from '../shared/types/user';
+import type { Activity } from '~/shared/types/activity';
+import type { SortingOption } from '~/shared/types/global';
+import type { User, UserNotification } from '~/shared/types/user';
 import {
 	getUserDisplayName,
 	makeAPIRequest,
@@ -9,7 +9,7 @@ import {
 	makeServerRequest,
 	paginatedAPIRequest,
 	realFullName
-} from '../shared/util';
+} from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 export function useVisitedSite() {
@@ -467,16 +467,16 @@ export function useUser(identifier: string) {
 	}
 
 	const avatar = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar;
-		return null;
+		if (blobUrls.value) return blobUrls.value.avatar || undefined;
+		return undefined;
 	});
 	const avatar32 = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar32;
-		return null;
+		if (blobUrls.value) return blobUrls.value.avatar32 || undefined;
+		return undefined;
 	});
 	const avatar128 = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar128;
-		return null;
+		if (blobUrls.value) return blobUrls.value.avatar128 || undefined;
+		return undefined;
 	});
 
 	return {

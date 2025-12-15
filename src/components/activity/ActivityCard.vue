@@ -18,8 +18,8 @@
 </template>
 
 <script setup lang="ts">
-import type { Activity } from '../../shared/types/activity';
-import { capitalizeFully, trimString } from '../../shared/util';
+import type { Activity } from '~/shared/types/activity';
+import { capitalizeFully, trimString } from '~/shared/util';
 
 const colors = ['primary', 'warning', 'info'];
 

@@ -1,11 +1,17 @@
-import { type Activity, type WikipediaSummary, type YouTubeVideo } from '../shared/types/activity';
-import type { SortingOption } from '../shared/types/global';
+import {
+	type Activity,
+	type PixabayImage,
+	type PixabayVideo,
+	type WikipediaSummary,
+	type YouTubeVideo
+} from '~/shared/types/activity';
+import type { SortingOption } from '~/shared/types/global';
 import {
 	makeAPIRequest,
 	makeClientAPIRequest,
 	makeServerRequest,
 	paginatedAPIRequest
-} from '../shared/util';
+} from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 // mantle - /v2/activities
@@ -225,6 +231,75 @@ export async function getActivityWikipediaSearches(
 				}
 			} catch (error) {
 				// Ignore errors for individual summaries
+			}
+		})
+	);
+
+	return results;
+}
+
+export async function getActivityPixabayImages(
+	queries: string[],
+	onImageLoaded?: (query: string, images: PixabayImage[]) => void
+) {
+	const results: Record<string, PixabayImage[]> = {};
+	await Promise.all(
+		queries.map(async (query) => {
+			if (results[query]) return; // Already fetched
+
+			try {
+				const res = await makeServerRequest<PixabayImage[]>(
+					`pixabay-images-${query}`,
+					`/api/activity/pixabayImages?query=${encodeURIComponent(query)}`,
+					useCurrentSessionToken()
+				);
+
+				if (res.success && res.data) {
+					results[query] = res.data;
+
+					// call callback immediately when images load (for incremental display)
+					if (onImageLoaded) {
+						onImageLoaded(query, res.data);
+					}
+				} else {
+					results[query] = [];
+				}
+			} catch (error) {
+				results[query] = [];
+			}
+		})
+	);
+
+	return results;
+}
+
+export async function getActivityPixabayVideos(
+	queries: string[],
+	onVideoLoaded?: (query: string, videos: PixabayVideo[]) => void
+) {
+	const results: Record<string, PixabayVideo[]> = {};
+	await Promise.all(
+		queries.map(async (query) => {
+			if (results[query]) return; // Already fetched
+			try {
+				const res = await makeServerRequest<PixabayVideo[]>(
+					`pixabay-videos-${query}`,
+					`/api/activity/pixabayVideos?query=${encodeURIComponent(query)}`,
+					useCurrentSessionToken()
+				);
+
+				if (res.success && res.data) {
+					results[query] = res.data;
+
+					// call callback immediately when videos load (for incremental display)
+					if (onVideoLoaded) {
+						onVideoLoaded(query, res.data);
+					}
+				} else {
+					results[query] = [];
+				}
+			} catch (error) {
+				results[query] = [];
 			}
 		})
 	);

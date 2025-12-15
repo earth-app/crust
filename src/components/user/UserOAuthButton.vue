@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import type { OAuthProvider } from '../../shared/types/user';
+import type { OAuthProvider } from '~/shared/types/user';
 
 const { user } = useAuth();
 const toast = useToast();

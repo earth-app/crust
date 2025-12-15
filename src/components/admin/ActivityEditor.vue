@@ -150,7 +150,7 @@
 
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
-import type { Activity } from '../../shared/types/activity';
+import type { Activity } from '~/shared/types/activity';
 
 const props = defineProps<{
 	title?: string;

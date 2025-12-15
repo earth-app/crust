@@ -1,6 +1,6 @@
-import { ensureLoggedIn } from '../../../server/utils';
-import type { Article } from '../../../shared/types/article';
-import type { User } from '../../../shared/types/user';
+import { ensureLoggedIn } from '~/server/utils';
+import type { Article } from '~/shared/types/article';
+import type { User } from '~/shared/types/user';
 
 export default defineEventHandler(async (event) => {
 	await ensureLoggedIn(event);

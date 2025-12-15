@@ -54,6 +54,7 @@
 				:link="card.link"
 				:image="card.image"
 				:youtube-id="card.youtubeId"
+				:video="card.video"
 				:footer="card.footer"
 			/>
 		</div>
@@ -61,8 +62,8 @@
 </template>
 
 <script setup lang="ts">
-import type { Activity } from '../../shared/types/activity';
-import { capitalizeFully } from '../../shared/util';
+import type { Activity } from '~/shared/types/activity';
+import { capitalizeFully } from '~/shared/util';
 import ActivityEditorModal from '../admin/ActivityEditorModal.vue';
 
 const props = defineProps<{
@@ -115,13 +116,14 @@ const cards = ref<
 		content?: string;
 		link?: string;
 		image?: string;
+		video?: string;
 		youtubeId?: string;
 		footer?: string;
 	}[]
 >([]);
 
 const loadRequestId = ref(0);
-async function loadCardsForActivity(activity: Activity) {
+export async function loadCardsForActivity(activity: Activity) {
 	if (!activity) return;
 
 	// Create a new request token; used to ignore late async responses
@@ -172,7 +174,7 @@ async function loadCardsForActivity(activity: Activity) {
 	);
 	await Promise.allSettled(ytPromises);
 
-	// Wikipedia searches (name + aliases) - load incrementally as they arrive
+	// Wikipedia searches (name + aliases)
 	try {
 		const terms = [activity.name, ...(activity.aliases || [])];
 		await getActivityWikipediaSearches(terms, (_, entry) => {
@@ -188,6 +190,41 @@ async function loadCardsForActivity(activity: Activity) {
 				image: entry.originalimage?.source,
 				footer: entry.summarySnippet
 			});
+		});
+	} catch (e) {
+		// ignore
+	}
+
+	// Pixabay image searches (name + aliases)
+	try {
+		const terms = [activity.name, ...(activity.aliases || [])];
+		await getActivityPixabayImages(terms, (_, images) => {
+			safePush(
+				images.map((image) => ({
+					title: image.tags.split(',')[0] || activity.name,
+					icon: 'mdi:image',
+					description: `Photo by ${image.user} on Pixabay`,
+					link: image.pageURL,
+					image: image.webformatURL
+				}))
+			);
+		});
+	} catch (e) {
+		// ignore
+	}
+
+	// Pixabay video searches (name + aliases)
+	try {
+		const terms = [activity.name, ...(activity.aliases || [])];
+		await getActivityPixabayVideos(terms, (_, videos) => {
+			safePush(
+				videos.map((video) => ({
+					title: activity.name,
+					icon: 'mdi:video',
+					description: `Video by ${video.user} on Pixabay`,
+					video: video.videos.medium.url
+				}))
+			);
 		});
 	} catch (e) {
 		// ignore

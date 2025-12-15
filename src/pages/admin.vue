@@ -124,8 +124,8 @@
 </template>
 
 <script setup lang="ts">
-import type { Activity } from '../shared/types/activity';
-import type { User } from '../shared/types/user';
+import type { Activity } from '~/shared/types/activity';
+import type { User } from '~/shared/types/user';
 
 const { user } = useAuth();
 

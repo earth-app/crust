@@ -1,12 +1,12 @@
-import { type Article } from '../shared/types/article';
-import type { SortingOption } from '../shared/types/global';
-import type { User } from '../shared/types/user';
+import { type Article } from '~/shared/types/article';
+import type { SortingOption } from '~/shared/types/global';
+import type { User } from '~/shared/types/user';
 import {
 	makeAPIRequest,
 	makeClientAPIRequest,
 	makeServerRequest,
 	paginatedAPIRequest
-} from '../shared/util';
+} from '~/shared/util';
 import { useCurrentSessionToken } from './useLogin';
 
 export async function getArticles(

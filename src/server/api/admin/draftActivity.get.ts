@@ -1,4 +1,4 @@
-import { ensureAdministrator } from '../../utils';
+import { ensureAdministrator } from '~/server/utils';
 
 export default defineEventHandler(async (event) => {
 	await ensureAdministrator(event);

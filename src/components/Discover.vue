@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import type { CommandPaletteGroup, CommandPaletteItem } from '#ui/types';
-import { getUserDisplayName } from '../shared/util';
+import { getUserDisplayName } from '~/shared/util';
 
 const { user } = useAuth();
 const router = useRouter();

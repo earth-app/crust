@@ -85,7 +85,7 @@
 						{{ description }}
 					</p>
 					<USeparator
-						v-if="content || image || youtubeId"
+						v-if="content || image || youtubeId || video"
 						class="border-gray-500 light:border-black my-2 w-11/12"
 					/>
 					<NuxtImg
@@ -119,6 +119,13 @@
 							referrerpolicy="strict-origin-when-cross-origin"
 						></iframe>
 					</ClientOnly>
+					<video
+						v-if="video"
+						:src="video"
+						class="w-full h-48 object-cover rounded-lg mb-2"
+						controls
+						loading="lazy"
+					></video>
 					<span
 						v-if="content"
 						class="text-xs sm:text-sm md:text-md text-gray-300 light:text-gray-700 hover:cursor-text"
@@ -256,6 +263,7 @@ const props = defineProps<{
 	secondaryAvatarChipSize?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
 	image?: string;
 	youtubeId?: string;
+	video?: string;
 	footer?: string;
 	footerTooltip?: string;
 	secondaryFooter?: string;

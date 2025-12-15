@@ -1,4 +1,4 @@
-import { makeServerRequest } from '../shared/util';
+import { makeServerRequest } from '~/shared/util';
 
 export function useTurnstile(token: string) {
 	const config = useRuntimeConfig();

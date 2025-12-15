@@ -1,5 +1,5 @@
 import { H3Event } from 'h3';
-import { OAuthProvider, type User } from '../shared/types/user';
+import { OAuthProvider, type User } from '~/shared/types/user';
 
 export async function ensureAdministrator(event: H3Event) {
 	const config = useRuntimeConfig();
