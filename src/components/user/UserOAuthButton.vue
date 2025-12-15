@@ -49,104 +49,13 @@ const icon = computed(() => {
 	}
 });
 
-// Link Authentication Methods
-const linkUri = `${config.public.baseUrl}/api/auth/callback`;
-const microsoftAuth = () => {
-	const clientId = config.public.microsoftClientId;
-	const scope = 'openid email profile';
-
-	return (
-		`https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
-		`client_id=${clientId}&` +
-		`redirect_uri=${encodeURIComponent(linkUri)}&` +
-		`response_type=code&` +
-		`scope=${encodeURIComponent(scope)}&` +
-		`state=microsoft`
-	);
-};
-
-const googleAuth = () => {
-	const clientId = config.public.googleClientId;
-	const scope = 'openid email profile';
-
-	return (
-		`https://accounts.google.com/o/oauth2/v2/auth?` +
-		`client_id=${clientId}&` +
-		`redirect_uri=${encodeURIComponent(linkUri)}&` +
-		`response_type=code&` +
-		`scope=${encodeURIComponent(scope)}&` +
-		`state=google`
-	);
-};
-
-const discordAuth = () => {
-	const clientId = config.public.discordClientId;
-	const scope = 'identify email';
-
-	return (
-		`https://discord.com/api/oauth2/authorize?` +
-		`client_id=${clientId}&` +
-		`redirect_uri=${encodeURIComponent(linkUri)}&` +
-		`response_type=code&` +
-		`scope=${encodeURIComponent(scope)}&` +
-		`state=discord`
-	);
-};
-
-const githubAuth = () => {
-	const clientId = config.public.githubClientId;
-	const scope = 'user:email read:user';
-
-	return (
-		`https://github.com/login/oauth/authorize?` +
-		`client_id=${clientId}&` +
-		`redirect_uri=${encodeURIComponent(linkUri)}&` +
-		`scope=${encodeURIComponent(scope)}&` +
-		`state=github`
-	);
-};
-
-const facebookAuth = () => {
-	const clientId = config.public.facebookClientId;
-	const scope = 'public_profile email';
-
-	return (
-		`https://www.facebook.com/v18.0/dialog/oauth?` +
-		`client_id=${clientId}&` +
-		`redirect_uri=${encodeURIComponent(linkUri)}&` +
-		`response_type=code&` +
-		`scope=${encodeURIComponent(scope)}&` +
-		`state=facebook`
-	);
-};
-
-export async function handleOauth(provider: string) {
-	let authUrl = '';
-	switch (provider) {
-		case 'google':
-			authUrl = googleAuth();
-			break;
-		case 'microsoft':
-			authUrl = microsoftAuth();
-			break;
-		case 'discord':
-			authUrl = discordAuth();
-			break;
-		case 'github':
-			authUrl = githubAuth();
-			break;
-		case 'facebook':
-			authUrl = facebookAuth();
-			break;
-		default:
-			throw new Error('Unsupported OAuth provider');
-	}
-
+function handleOauth(provider: string) {
+	const authUrl = authLink(provider);
 	navigateTo(authUrl, { external: true });
 }
 
 // Unlink Authentication Methods
-export async function handleDisconnect(provider: string) {
+function handleDisconnect(provider: string) {
 	if (!user.value) return;
 
 	if (!user.value.account.has_password && user.value.account.linked_providers.length <= 1) {

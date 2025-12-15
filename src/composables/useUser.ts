@@ -796,3 +796,106 @@ export async function clearCurrentJourney(identifier: string) {
 		}
 	);
 }
+
+// OAuth Utils
+
+const microsoftAuth = () => {
+	const config = useRuntimeConfig();
+	const linkUri = `${config.public.baseUrl}/api/auth/callback`;
+
+	const clientId = config.public.microsoftClientId;
+	const scope = 'openid email profile';
+
+	return (
+		`https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
+		`client_id=${clientId}&` +
+		`redirect_uri=${encodeURIComponent(linkUri)}&` +
+		`response_type=code&` +
+		`scope=${encodeURIComponent(scope)}&` +
+		`state=microsoft`
+	);
+};
+
+const googleAuth = () => {
+	const config = useRuntimeConfig();
+	const linkUri = `${config.public.baseUrl}/api/auth/callback`;
+
+	const clientId = config.public.googleClientId;
+	const scope = 'openid email profile';
+
+	return (
+		`https://accounts.google.com/o/oauth2/v2/auth?` +
+		`client_id=${clientId}&` +
+		`redirect_uri=${encodeURIComponent(linkUri)}&` +
+		`response_type=code&` +
+		`scope=${encodeURIComponent(scope)}&` +
+		`state=google`
+	);
+};
+
+const discordAuth = () => {
+	const config = useRuntimeConfig();
+	const linkUri = `${config.public.baseUrl}/api/auth/callback`;
+
+	const clientId = config.public.discordClientId;
+	const scope = 'identify email';
+
+	return (
+		`https://discord.com/api/oauth2/authorize?` +
+		`client_id=${clientId}&` +
+		`redirect_uri=${encodeURIComponent(linkUri)}&` +
+		`response_type=code&` +
+		`scope=${encodeURIComponent(scope)}&` +
+		`state=discord`
+	);
+};
+
+const githubAuth = () => {
+	const config = useRuntimeConfig();
+	const linkUri = `${config.public.baseUrl}/api/auth/callback`;
+
+	const clientId = config.public.githubClientId;
+	const scope = 'user:email read:user';
+
+	return (
+		`https://github.com/login/oauth/authorize?` +
+		`client_id=${clientId}&` +
+		`redirect_uri=${encodeURIComponent(linkUri)}&` +
+		`scope=${encodeURIComponent(scope)}&` +
+		`state=github`
+	);
+};
+
+const facebookAuth = () => {
+	const config = useRuntimeConfig();
+	const linkUri = `${config.public.baseUrl}/api/auth/callback`;
+
+	const clientId = config.public.facebookClientId;
+	const scope = 'public_profile email';
+
+	return (
+		`https://www.facebook.com/v18.0/dialog/oauth?` +
+		`client_id=${clientId}&` +
+		`redirect_uri=${encodeURIComponent(linkUri)}&` +
+		`response_type=code&` +
+		`scope=${encodeURIComponent(scope)}&` +
+		`state=facebook`
+	);
+};
+
+export function authLink(provider: string) {
+	switch (provider) {
+		case 'google':
+			return googleAuth();
+		case 'microsoft':
+			return microsoftAuth();
+		case 'discord':
+			return discordAuth();
+		case 'github':
+			return githubAuth();
+		case 'facebook':
+			return facebookAuth();
+		default:
+			throw new Error('Unsupported OAuth provider');
+	}
+}
