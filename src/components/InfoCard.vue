@@ -119,13 +119,26 @@
 							referrerpolicy="strict-origin-when-cross-origin"
 						></iframe>
 					</ClientOnly>
-					<video
-						v-if="video"
-						:src="video"
-						class="w-full h-48 object-cover rounded-lg mb-2"
-						controls
-						loading="lazy"
-					></video>
+					<ClientOnly>
+						<video
+							v-if="video"
+							class="w-full h-48 object-cover rounded-lg mb-2"
+							controls
+							loading="lazy"
+							preload="metadata"
+						>
+							<source
+								v-if="video.endsWith('.mp4')"
+								:src="video"
+								type="video/mp4"
+							/>
+							<source
+								v-if="video.endsWith('.webm')"
+								:src="video"
+								type="video/webm"
+							/>
+						</video>
+					</ClientOnly>
 					<span
 						v-if="content"
 						class="text-xs sm:text-sm md:text-md text-gray-300 light:text-gray-700 hover:cursor-text"

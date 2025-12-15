@@ -123,7 +123,7 @@ const cards = ref<
 >([]);
 
 const loadRequestId = ref(0);
-export async function loadCardsForActivity(activity: Activity) {
+async function loadCardsForActivity(activity: Activity) {
 	if (!activity) return;
 
 	// Create a new request token; used to ignore late async responses
@@ -201,7 +201,7 @@ export async function loadCardsForActivity(activity: Activity) {
 		await getActivityPixabayImages(terms, (_, images) => {
 			safePush(
 				images.map((image) => ({
-					title: image.tags.split(',')[0] || activity.name,
+					title: capitalizeFully(activity.name),
 					icon: 'mdi:image',
 					description: `Photo by ${image.user} on Pixabay`,
 					link: image.pageURL,
@@ -219,7 +219,7 @@ export async function loadCardsForActivity(activity: Activity) {
 		await getActivityPixabayVideos(terms, (_, videos) => {
 			safePush(
 				videos.map((video) => ({
-					title: activity.name,
+					title: capitalizeFully(activity.name),
 					icon: 'mdi:video',
 					description: `Video by ${video.user} on Pixabay`,
 					video: video.videos.medium.url

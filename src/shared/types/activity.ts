@@ -33,3 +33,31 @@ export type YouTubeVideo = {
 	title: string;
 	uploaded_at: string;
 };
+
+export type PixabayImage = {
+	user: string;
+	type: 'photo' | 'illustration' | 'vector';
+	pageURL: string;
+	tags: string;
+	webformatURL: string;
+};
+
+export type PixabayVideo = {
+	user: string;
+	type: 'film' | 'animation';
+	pageURL: string;
+	tags: string;
+	videos: {
+		large: PiaxbayVideoVariant;
+		medium: PiaxbayVideoVariant;
+		small: PiaxbayVideoVariant;
+		tiny: PiaxbayVideoVariant;
+	};
+};
+
+export type PiaxbayVideoVariant = {
+	url: string;
+	width: number;
+	height: number;
+	thumbnail: string;
+};

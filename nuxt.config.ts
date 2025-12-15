@@ -5,6 +5,7 @@ import { defineNuxtConfig } from 'nuxt/config';
 export default defineNuxtConfig({
 	runtimeConfig: {
 		adminApiKey: process.env.NUXT_ADMIN_API_KEY || '',
+		pixabayApiKey: process.env.NUXT_PIXABAY_API_KEY || '',
 		baseUrl: process.env.NUXT_BASE_URL || 'https://app.earth-app.com',
 		public: {
 			baseUrl: process.env.NUXT_PUBLIC_BASE_URL || 'https://app.earth-app.com',
