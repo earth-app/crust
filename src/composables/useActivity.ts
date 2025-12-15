@@ -7,6 +7,7 @@ import {
 } from '~/shared/types/activity';
 import type { SortingOption } from '~/shared/types/global';
 import {
+	capitalizeFully,
 	makeAPIRequest,
 	makeClientAPIRequest,
 	makeServerRequest,
@@ -332,4 +333,171 @@ export async function getActivityIconSearches(queries: string[]) {
 	);
 
 	return results;
+}
+
+// Activity Profile
+
+export function useActivityIslands() {
+	const islands = ref<{ name: string; icon: string; x: number; y: number }[]>([]);
+	const loadIslandsForActivity = async (activity: Activity) => {
+		if (activity.fields['island_icons']) {
+			const icons = activity.fields['island_icons'].split(',');
+			const size = icons.length;
+			islands.value.push(
+				...Array.from({ length: size }, (_, i) => {
+					const id = icons[i] ?? '';
+					if (!id) return null;
+
+					return {
+						name: capitalizeFully(id),
+						icon: id.includes(':') ? id.toLowerCase() : `cib:${id.toLowerCase()}`,
+						x: i % 2 == 0 ? Math.random() * 5 + 33 : Math.random() * -5 - 37,
+						y: i * 6 + 30
+					};
+				}).filter((island) => island !== null)
+			);
+		}
+
+		getActivityIconSearches([activity.name, ...(activity.aliases || [])]).then((icons) => {
+			let i = 0;
+			for (const icon of Object.values(icons).flat()) {
+				islands.value.push({
+					name: capitalizeFully(icon),
+					icon: icon,
+					x: i % 2 == 0 ? Math.random() * 5 + 33 : Math.random() * -5 - 37,
+					y: i * 6 + 30
+				});
+				i++;
+			}
+		});
+	};
+
+	return { islands, loadIslandsForActivity };
+}
+
+export function useActivityCards() {
+	const cards = ref<
+		{
+			title: string;
+			icon: string;
+			description?: string;
+			content?: string;
+			link?: string;
+			image?: string;
+			video?: string;
+			youtubeId?: string;
+			footer?: string;
+		}[]
+	>([]);
+	const loadRequestId = ref(0);
+
+	const loadCardsForActivity = async (activity: Activity) => {
+		if (!activity) return;
+
+		// Create a new request token; used to ignore late async responses
+		const reqId = ++loadRequestId.value;
+		cards.value = [];
+
+		// Track unique items across sources
+		const seen = new Set<string>();
+
+		const safePush = (items: (typeof cards.value)[number] | (typeof cards.value)[number][]) => {
+			if (loadRequestId.value !== reqId) return; // stale load, ignore
+			const arr = Array.isArray(items) ? items : [items];
+			for (const item of arr) {
+				const key = item.youtubeId
+					? `yt:${item.youtubeId}`
+					: item.link
+						? `link:${item.link}`
+						: `t:${item.title}`;
+				if (seen.has(key)) continue;
+				seen.add(key);
+
+				const lower = Math.min(4, cards.value.length);
+				const upper = cards.value.length;
+				const randomPlace = lower + Math.floor(Math.random() * (upper - lower + 1));
+				cards.value.splice(randomPlace, 0, item);
+			}
+		};
+
+		const ytQueries = [`what is ${activity.name}`, `how to ${activity.name}`];
+		const ytPromises = ytQueries.map((q) =>
+			getActivityYouTubeSearch(q)
+				.then((res) => {
+					if (res.success && res.data) {
+						safePush(
+							res.data.map((video) => ({
+								title: video.title,
+								icon: 'cib:youtube',
+								description: video.uploaded_at,
+								link: `https://www.youtube.com/watch?v=${video.id}`,
+								youtubeId: video.id
+							}))
+						);
+					}
+				})
+				.catch(() => {
+					// ignore individual source failures
+				})
+		);
+		await Promise.allSettled(ytPromises);
+
+		// Wikipedia searches (name + aliases)
+		try {
+			const terms = [activity.name, ...(activity.aliases || [])];
+			await getActivityWikipediaSearches(terms, (_, entry) => {
+				const key = `wp:${entry.pageid}`;
+				if (seen.has(key)) return;
+				seen.add(key);
+				safePush({
+					title: entry.title,
+					icon: 'cib:wikipedia',
+					description: entry.description,
+					content: entry.extract,
+					link: `https://en.wikipedia.org/wiki/${entry.titles.canonical}`,
+					image: entry.originalimage?.source,
+					footer: entry.summarySnippet
+				});
+			});
+		} catch (e) {
+			// ignore
+		}
+
+		// Pixabay image searches (name + aliases)
+		try {
+			const terms = [activity.name, ...(activity.aliases || [])];
+			await getActivityPixabayImages(terms, (_, images) => {
+				safePush(
+					images.map((image) => ({
+						title: capitalizeFully(activity.name),
+						icon: 'mdi:image',
+						description: `Photo by ${image.user} on Pixabay`,
+						link: image.pageURL,
+						image: image.webformatURL
+					}))
+				);
+			});
+		} catch (e) {
+			// ignore
+		}
+
+		// Pixabay video searches (name + aliases)
+		try {
+			const terms = [activity.name, ...(activity.aliases || [])];
+			await getActivityPixabayVideos(terms, (_, videos) => {
+				safePush(
+					videos.map((video) => ({
+						title: capitalizeFully(activity.name),
+						icon: 'mdi:video',
+						description: `Video by ${video.user} on Pixabay`,
+						video: video.videos.medium.url
+					}))
+				);
+			});
+		} catch (e) {
+			// ignore
+		}
+	};
+
+	return { cards, loadRequestId, loadCardsForActivity };
 }
