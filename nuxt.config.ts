@@ -59,7 +59,11 @@ export default defineNuxtConfig({
 			deployConfig: true,
 			nodeCompat: true,
 			wrangler: {
-				name: 'earthapp-crust'
+				name: 'earthapp-crust',
+				observability: {
+					enabled: true,
+					head_sampling_rate: 0.2
+				}
 			}
 		},
 		prerender: {
