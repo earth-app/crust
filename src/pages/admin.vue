@@ -106,6 +106,49 @@
 				</ul>
 			</div>
 		</div>
+		<div class="container mx-auto my-8 px-4 py-8 bg-gray-900 border-8 border-gray-950 rounded-lg">
+			<h1 class="text-2xl">Prompts</h1>
+			<span class="mt-2 text-gray-500">Manage prompts from this panel.</span>
+			<div class="mt-4">
+				<UInput
+					v-model="promptSearch"
+					placeholder="Search Prompts..."
+					class="mr-2"
+				/>
+				<UButton
+					color="primary"
+					@click="fetchPrompts"
+					:loading="loadingPrompts"
+					:disabled="loadingPrompts"
+				>
+					{{ loadingPrompts ? 'Loading...' : 'Fetch Prompts' }}
+				</UButton>
+				<div
+					v-if="loadingPrompts"
+					class="mt-2 text-gray-500"
+				>
+					Loading prompts...
+				</div>
+				<ul class="mt-4 space-y-2 max-h-100 overflow-y-auto">
+					<li
+						v-for="prompt in prompts"
+						:key="prompt.id"
+						class="p-2 border hover:bg-secondary-900"
+					>
+						<div class="flex items-center justify-between">
+							<NuxtLink :to="`/prompts/${prompt.id}`">
+								<UAvatar
+									size="sm"
+									:src="prompt.owner.account.avatar_url || undefined"
+									class="mr-2"
+								/>
+								<span class="text-lg font-semibold">{{ prompt.prompt }}</span>
+							</NuxtLink>
+						</div>
+					</li>
+				</ul>
+			</div>
+		</div>
 	</div>
 	<div
 		v-else-if="user && user.account.account_type !== 'ADMINISTRATOR'"
@@ -125,6 +168,7 @@
 
 <script setup lang="ts">
 import type { Activity } from '~/shared/types/activity';
+import type { Prompt } from '~/shared/types/prompts';
 import type { User } from '~/shared/types/user';
 
 const { user } = useAuth();
@@ -143,6 +187,19 @@ async function fetchUsers() {
 		users.value = res.data;
 	}
 	loadingUsers.value = false;
+}
+
+const prompts = ref<Prompt[]>([]);
+const promptSearch = ref<string>('');
+const loadingPrompts = ref(false);
+
+async function fetchPrompts() {
+	loadingPrompts.value = true;
+	const res = await getPrompts(100, promptSearch.value);
+	if (res.data) {
+		prompts.value = res.data;
+	}
+	loadingPrompts.value = false;
 }
 
 const activities = ref<Activity[]>([]);

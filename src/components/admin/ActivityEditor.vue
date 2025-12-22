@@ -16,7 +16,16 @@
 				v-model="activityName"
 				placeholder="Activity Name"
 				label="Activity Name"
+				:trailing-icon="
+					activityNameValid === null
+						? 'mdi:help-circle-outline'
+						: activityNameValid
+							? 'mdi:check-circle-outline'
+							: 'mdi:close-circle-outline'
+				"
 				@keyup.enter="(event: Event) => (activityName = (event.target as HTMLInputElement).value)"
+				@input="() => (activityNameValid = null)"
+				@blur="(event: Event) => checkActivityName((event.target as HTMLInputElement).value)"
 			/>
 			<UTextarea
 				v-model="activityDescription"
@@ -123,6 +132,7 @@
 					createActivity();
 				}
 			"
+			:icon="activityFields['icon'] || 'mdi:plus'"
 			:loading="loading"
 			:disabled="loading"
 		>
@@ -168,6 +178,27 @@ const activity = ref<Partial<Activity> | null>(props.activity || null);
 const toast = useToast();
 
 const activityName = ref<string>(props.activity?.name || '');
+const activityNameValid = ref<boolean | null>(false);
+
+async function checkActivityName(newName: string) {
+	if (newName.trim() === '') {
+		activity.value = null;
+	}
+
+	const newName0 = newName.trim().toLowerCase().replace(/\s+/g, '_');
+
+	// alert on existing activity names
+	if (newName0.length > 3) {
+		getActivity(newName.trim().toLowerCase().replace(/\s+/g, '_')).then((res) => {
+			activityNameValid.value = !(res.success && res.data);
+		});
+	}
+
+	if (newName0.length < 3 || newName0.length > 50) {
+		activityNameValid.value = false;
+	}
+}
+
 const activityId = computed(() => activityName.value.trim().toLowerCase().replace(/\s+/g, '_'));
 const activityDescription = ref<string>(props.activity?.description || '');
 const activityType1 = ref<typeof com.earthapp.activity.ActivityType.prototype.name | undefined>(
@@ -349,6 +380,20 @@ async function generateActivity() {
 const loading = ref(false);
 async function createActivity() {
 	loading.value = true;
+
+	const existing = await getActivity(activityId.value);
+	if (existing.success && existing.data) {
+		toast.add({
+			title: 'Error',
+			description: `An activity with the ID "${activityId.value}" already exists. Please choose a different name.`,
+			icon: 'mdi:alert-circle',
+			color: 'error',
+			duration: 3000
+		});
+
+		loading.value = false;
+		return;
+	}
 
 	const res = await newActivity({
 		id: activityId.value,
