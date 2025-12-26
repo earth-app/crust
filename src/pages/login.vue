@@ -91,6 +91,6 @@ watch(
 function handleLoginSuccess() {
 	// Redirect to home page or dashboard after successful login
 	router.push('/');
-	refreshNuxtData('user-current'); // Refresh user data
+	refreshNuxtData(); // Refresh user data
 }
 </script>

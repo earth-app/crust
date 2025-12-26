@@ -123,7 +123,7 @@ export function useLogout() {
 			});
 
 			sessionCookie.value = null; // Clear the session cookie
-			refreshNuxtData('user-current'); // Refresh user data
+			refreshNuxtData(); // Refresh all data
 			return { success: true, message: 'Logout successful' };
 		} catch (error) {
 			console.error('Logout failed:', error);

@@ -115,7 +115,7 @@ async function handleLogin() {
 			duration: 3000
 		});
 
-		refreshNuxtData('user-current'); // Refresh user data
+		refreshNuxtData(); // Refresh data
 	} else {
 		if (result.message.includes('401')) {
 			error.value = 'Invalid username or password.';
