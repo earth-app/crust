@@ -899,3 +899,225 @@ export function authLink(provider: string) {
 			throw new Error('Unsupported OAuth provider');
 	}
 }
+
+// User Friends
+
+export function useFriends(id?: string) {
+	const dataId = id || 'current';
+
+	// friends functions
+
+	const friends = useState<User[]>(`user-friends-${dataId}`, () => []);
+	const fetchFriends = async (limit?: number, search?: string) => {
+		const token = useCurrentSessionToken();
+		if (!token) {
+			friends.value = [];
+			return;
+		}
+
+		const res = await paginatedAPIRequest<User>(
+			`friends-${dataId}`,
+			`/v2/users/${dataId}/friends`,
+			token,
+			{},
+			limit ?? 100,
+			search
+		);
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				console.error('Failed to fetch friends:', res.data.message);
+				friends.value = [];
+				return;
+			}
+
+			friends.value = res.data;
+		} else {
+			console.error('Failed to fetch friends:', res.message);
+			friends.value = [];
+		}
+	};
+
+	const fetchFriendsPage = async (page: number, limit: number, search: string = '') => {
+		const token = useCurrentSessionToken();
+		if (!token) {
+			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
+		}
+
+		return await makeAPIRequest<{ items: User[]; total: number }>(
+			`friends-${dataId}-page-${page}-limit-${limit}-search-${search}`,
+			`/v2/users/${dataId}/friends?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
+			token
+		);
+	};
+
+	const addFriend = async (friend: string) => {
+		const token = useCurrentSessionToken();
+		if (!token) {
+			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
+		}
+
+		const res = await makeClientAPIRequest<{ user: User; friend: User; is_mutual: boolean }>(
+			`/v2/users/${dataId}/friends?friend=${encodeURIComponent(friend)}`,
+			token,
+			{
+				method: 'PUT'
+			}
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			const friend = res.data.friend;
+			friends.value.push(friend);
+		}
+
+		return res;
+	};
+
+	const removeFriend = async (friend: string) => {
+		const token = useCurrentSessionToken();
+		if (!token) {
+			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
+		}
+
+		const res = await makeClientAPIRequest<{ user: User; friend: User; is_mutual: boolean }>(
+			`/v2/users/${dataId}/friends?friend=${encodeURIComponent(friend)}`,
+			token,
+			{
+				method: 'DELETE'
+			}
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			const friend = res.data.friend;
+			friends.value = friends.value.filter((f) => f.id !== friend.id);
+			circle.value = circle.value.filter((f) => f.id !== friend.id);
+		}
+
+		return res;
+	};
+
+	if (friends.value.length === 0) {
+		fetchFriends();
+	}
+
+	// circle functions
+
+	const circle = useState<User[]>(`user-circle-${dataId}`, () => []);
+	const fetchCircle = async (limit?: number) => {
+		const token = useCurrentSessionToken();
+		if (!token) {
+			circle.value = [];
+			return;
+		}
+
+		const res = await paginatedAPIRequest<User>(
+			`user-circle-${dataId}`,
+			`/v2/users/${dataId}/circle`,
+			token,
+			{},
+			limit ?? 100
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				console.error('Failed to fetch circle:', res.data.message);
+				circle.value = [];
+				return;
+			}
+
+			circle.value = res.data;
+		} else {
+			console.error('Failed to fetch circle:', res.message);
+			circle.value = [];
+		}
+	};
+
+	const fetchCirclePage = async (page: number, limit: number) => {
+		const token = useCurrentSessionToken();
+		if (!token) {
+			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
+		}
+
+		return await makeAPIRequest<{ items: User[]; total: number }>(
+			`circle-${dataId}-page-${page}-limit-${limit}`,
+			`/v2/users/${dataId}/circle?page=${page}&limit=${limit}`,
+			token
+		);
+	};
+
+	const addToCircle = async (friend: string) => {
+		const token = useCurrentSessionToken();
+		if (!token) {
+			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
+		}
+
+		const res = await makeClientAPIRequest<{ user: User; friend: User; is_mutual: boolean }>(
+			`/v2/users/${dataId}/circle?friend=${encodeURIComponent(friend)}`,
+			token,
+			{
+				method: 'PUT'
+			}
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			const friend = res.data.friend;
+			circle.value.push(friend);
+		}
+
+		return res;
+	};
+
+	const removeFromCircle = async (friend: string) => {
+		const token = useCurrentSessionToken();
+		if (!token) {
+			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
+		}
+
+		const res = await makeClientAPIRequest<{ user: User; friend: User; is_mutual: boolean }>(
+			`/v2/users/${dataId}/circle?friend=${encodeURIComponent(friend)}`,
+			token,
+			{
+				method: 'DELETE'
+			}
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			const friend = res.data.friend;
+			circle.value = circle.value.filter((f) => f.id !== friend.id);
+		}
+
+		return res;
+	};
+
+	if (circle.value.length === 0) {
+		fetchCircle();
+	}
+
+	return {
+		friends,
+		fetchFriends,
+		fetchFriendsPage,
+		addFriend,
+		removeFriend,
+		circle,
+		fetchCircle,
+		fetchCirclePage,
+		addToCircle,
+		removeFromCircle
+	};
+}

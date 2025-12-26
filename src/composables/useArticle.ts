@@ -192,13 +192,13 @@ export function useUserArticles(
 	const total = useState<number>(`user-${identifier}-articles-total`, () => 0);
 	const articles = useState<Article[]>(`user-${identifier}-articles-${page}:${limit}`, () => []);
 
-	const fetch = async (newPage: number = page, newLimit: number = limit) => {
+	const fetch = async (newPage: number = page, newLimit: number = limit, search: string = '') => {
 		const res = await makeAPIRequest<{
 			items: Article[];
 			total: number;
 		}>(
 			`articles-${identifier}-${newPage}-${newLimit}`,
-			`/v2/users/${identifier}/articles?page=${newPage}&limit=${newLimit}&sort=${sort}`
+			`/v2/users/${identifier}/articles?page=${newPage}&limit=${newLimit}&sort=${sort}&search=${encodeURIComponent(search)}`
 		);
 		if (res.success && res.data) {
 			if ('message' in res.data) {

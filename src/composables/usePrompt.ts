@@ -173,13 +173,13 @@ export function useUserPrompts(
 	const total = useState<number>(`user-${identifier}-prompts-total`, () => 0);
 	const prompts = useState<Prompt[]>(`user-${identifier}-prompts-${page}:${limit}`, () => []);
 
-	const fetch = async (newPage: number = page, newLimit: number = limit) => {
+	const fetch = async (newPage: number = page, newLimit: number = limit, search: string = '') => {
 		const res = await makeAPIRequest<{
 			items: Prompt[];
 			total: number;
 		}>(
 			`user-prompts-${identifier}-${newPage}-${newLimit}`,
-			`/v2/users/${identifier}/prompts?page=${newPage}&limit=${newLimit}&sort=${sort}`
+			`/v2/users/${identifier}/prompts?page=${newPage}&limit=${newLimit}&sort=${sort}&search=${encodeURIComponent(search)}`
 		);
 		if (res.success && res.data) {
 			if ('message' in res.data) {

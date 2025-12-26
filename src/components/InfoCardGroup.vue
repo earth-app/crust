@@ -8,7 +8,17 @@
 				v-if="icon"
 				class="flex"
 			>
+				<UButton
+					v-if="iconButton"
+					:icon="icon"
+					color="neutral"
+					variant="soft"
+					:ui="{ leadingIcon: 'size-5 md:size-8 mt-0.5' }"
+					class="mr-2"
+					@click="emit('icon-click')"
+				/>
 				<UIcon
+					v-else
 					:name="icon"
 					class="size-4 md:size-8 mr-2 mt-0.5"
 				/>
@@ -58,7 +68,12 @@ defineProps<{
 	title: string;
 	description?: string;
 	icon?: string;
+	iconButton?: boolean;
 	showProgress?: boolean;
+}>();
+
+const emit = defineEmits<{
+	(event: 'icon-click'): void;
 }>();
 
 const scrollContainer = ref<HTMLElement>();

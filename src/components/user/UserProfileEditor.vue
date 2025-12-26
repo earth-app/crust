@@ -190,13 +190,13 @@
 								:model-value="
 									prop.dropdownItems?.find((item) => item.value === prop.computed!.value)
 								"
-								@update:model-value="(item: any) => (prop.computed!.value = item?.value || '')"
+								@update:model-value="updateCountry"
 								:items="prop.dropdownItems"
 								placeholder="Select a country..."
 								class="w-full sm:w-auto min-w-48"
 								size="lg"
 								searchable
-								:loading="countriesLoading"
+								:loading="countriesLoading || countryUpdating"
 								:ui="{
 									content: 'h-48 overflow-y-auto',
 									trailingIcon: 'text-primary'
@@ -350,6 +350,7 @@ const phoneNumber = createAccountProp('phone_number');
 const country = createAccountProp('country');
 
 const countriesLoading = ref(true);
+const countryUpdating = ref(false);
 
 const props: {
 	name: string;
@@ -396,7 +397,8 @@ const props: {
 			const countries = com.earthapp.account.Country.values().map((country) => ({
 				label: country.countryName,
 				value: country.code,
-				icon: country.flagEmoji
+				icon: country.flagEmoji,
+				disabled: !country.code
 			}));
 			countriesLoading.value = false;
 			return countries;
@@ -450,6 +452,22 @@ async function updateUser() {
 	}
 
 	return 'User not found.';
+}
+
+async function updateCountry(item: any) {
+	if (!user.value) return;
+
+	const newValue = item?.value || '';
+	if (country.value === newValue) return;
+
+	country.value = newValue;
+	changed.value = true;
+
+	countryUpdating.value = true;
+	const result = await updateUser();
+	countryUpdating.value = false;
+
+	return result;
 }
 
 function getLabel(key: keyof User['account']['field_privacy']): string {
@@ -817,8 +835,8 @@ function handleAccountDeletion() {
 	const sessionCookie = useCookie('session_token');
 	sessionCookie.value = null;
 
-	// Clear user state
-	refreshNuxtData('user-current');
+	// Clear state
+	refreshNuxtData();
 
 	// Redirect to homepage
 	router.push('/');
