@@ -53,7 +53,17 @@ export type User = {
 	email_change_pending?: string;
 	message?: string;
 	activities?: Activity[];
+	is_friend: boolean;
+	is_my_friend: boolean;
 	friends?: string[];
+	added_count?: number;
+	mutual_count: number; // always public
+	non_mutual_count?: number;
+	is_in_circle: boolean;
+	is_in_my_circle: boolean;
+	circle?: string[];
+	circle_count?: number;
+	max_circle_count?: number;
 };
 
 export type UserNotification = {
