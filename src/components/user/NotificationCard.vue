@@ -17,7 +17,7 @@
 					class="text-xs sm:text-sm md:text-md text-gray-300 light:text-gray-700"
 					:style="{ fontWeight: notification.read ? 'normal' : 'bold' }"
 				>
-					{{ trimString(notification.message, 50) }}
+					<span v-html="trimString(notification.message, 50)"></span>
 				</p>
 				<p class="text-xs md:text-sm text-gray-400 light:text-gray-800">
 					{{ timestamp }} • {{ fullTimestamp }}

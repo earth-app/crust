@@ -556,19 +556,28 @@ export async function markNotificationRead(id: string) {
 	);
 
 	if (res.success) {
-		const { notifications, unreadCount } = useNotifications();
+		const { notifications, unreadCount, fetch } = useNotifications();
 		const notification = notifications.value.find((n) => n.id === id);
 		if (notification) {
 			notification.read = true;
 			unreadCount.value = Math.max(0, unreadCount.value - 1);
+		}
 
-			// Sync the same object to individual notification state
-			if (import.meta.client) {
-				const individualNotification = useState<UserNotification | null | undefined>(
-					`notification-${id}`
-				);
-				individualNotification.value = notification;
+		// Update individual notification state regardless of whether it's in the array
+		if (import.meta.client) {
+			const individualNotification = useState<UserNotification | null | undefined>(
+				`notification-${id}`
+			);
+			if (individualNotification.value) {
+				individualNotification.value.read = true;
 			}
+		}
+
+		// Refresh cached data and re-fetch notifications to ensure all views are updated
+		if (import.meta.client) {
+			await refreshNuxtData(`notification-${id}`);
+			await refreshNuxtData('notifications-current');
+			await fetch(); // Re-fetch to sync state
 		}
 	}
 
@@ -658,6 +667,11 @@ export function useNotification(id: string) {
 	);
 
 	const fetch = async () => {
+		// Refresh cached data to ensure we get the latest notification
+		if (import.meta.client) {
+			await refreshNuxtData(`notification-${id}`);
+		}
+
 		const res = await makeAPIRequest<UserNotification>(
 			`notification-${id}`,
 			`/v2/users/current/notifications/${id}`,
