@@ -33,7 +33,7 @@
 							:href="notification.link"
 							class="text-blue-400 hover:underline break-all"
 						>
-							{{ notification.link }}
+							{{ notification.link.startsWith('http') ? notification.link : 'Open Link' }}
 						</a>
 						<p class="text-gray-500 text-xs mt-2">
 							From: {{ notification.source }} | Type: {{ capitalizeFully(notification.type) }} | ID:
