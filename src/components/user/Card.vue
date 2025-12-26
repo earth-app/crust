@@ -16,6 +16,7 @@
 						: undefined
 				"
 				size="xl"
+				class="mr-2"
 			/>
 
 			<UBadge
