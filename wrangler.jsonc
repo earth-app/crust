@@ -1,0 +1,20 @@
+{
+	"compatibility_date": "2025-12-07",
+	"compatibility_flags": ["nodejs_compat"],
+	"name": "earthapp-crust",
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 0.2
+	},
+	"main": "index.mjs",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "../public"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "CACHE",
+			"id": "c4a1aaf2a5fc4be98b91df2d0fc0faab"
+		}
+	]
+}
