@@ -99,19 +99,17 @@ export default defineNuxtConfig({
 		'/prompts/**': { swr: 1800 }, // Cache 30 minutes
 
 		// API routes
-		'/api/**': { cors: true },
+		'/api/**': { cors: false },
 
 		// No-cache API routes
-		'/api/user/journey': { cors: true, cache: false },
-		'/api/turnstile': { cors: true, cache: false },
-		'/api/article/recommend': { cors: true, cache: false }, // User-specific
-		'/api/article/similar': { cors: true, cache: false }, // Article-specific
-		'/api/admin/**': { cors: true, cache: false },
-
+		'/api/user/journey': { cache: false },
+		'/api/turnstile': { cache: false },
+		'/api/article/recommend': { cache: false }, // User-specific
+		'/api/article/similar': { cache: false }, // Article-specific
+		'/api/admin/**': { cache: false },
 		// Cached API routes
-		'/api/activity/**': { cors: true, cache: { maxAge: 3600 } } // 1 hour cache
+		'/api/activity/**': { cache: { maxAge: 3600 } } // 1 hour cache
 	},
-
 	modules: [
 		'@nuxthub/core',
 		'@nuxt/ui',
