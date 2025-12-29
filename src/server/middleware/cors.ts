@@ -32,12 +32,12 @@ export default defineEventHandler((event) => {
 	setResponseHeader(
 		event,
 		'Access-Control-Allow-Headers',
-		'Authorization, Content-Type, X-Requested-With, Accept'
+		'Authorization, User-Agent, Content-Type, X-Requested-With, Accept'
 	);
 	setResponseHeader(event, 'Access-Control-Allow-Credentials', 'true');
 	setResponseHeader(event, 'Access-Control-Max-Age', 3600);
 
-	setResponseHeader(event, 'Vary', 'Accept-Encoding, Origin');
+	setResponseHeader(event, 'Vary', 'Accept-Encoding,Origin');
 
 	if (event.method === 'OPTIONS') {
 		setResponseStatus(event, 200);
