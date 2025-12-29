@@ -20,7 +20,7 @@
 			/>
 
 			<UBadge
-				v-if="user.is_in_my_circle"
+				v-if="user.is_in_my_circle && currentUser?.id === user.id"
 				variant="soft"
 				color="warning"
 				icon="mdi:account-group"
@@ -65,6 +65,8 @@ const badgeVariants = ref<('subtle' | 'solid')[]>([]);
 const props = defineProps<{
 	user: User;
 }>();
+
+const { user: currentUser } = useAuth();
 
 const chip = computed(() => {
 	const accountType = props.user.account.account_type;
