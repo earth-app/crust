@@ -73,7 +73,7 @@
 					name="mdi:account-multiple"
 					class="size-5"
 				/>
-				<h3 class="text-2xl font-semibold">{{ user.mutual_count ?? 0 }}</h3>
+				<h3 class="text-2xl font-semibold">{{ withSuffix(user.mutual_count ?? 0) }}</h3>
 				<UTooltip text="Number of friends you share with this person">
 					<span>Mutual Friends</span>
 				</UTooltip>
@@ -86,7 +86,7 @@
 					name="mdi:account-plus"
 					class="size-5"
 				/>
-				<h3 class="text-2xl font-semibold">{{ user.added_count ?? 0 }}</h3>
+				<h3 class="text-2xl font-semibold">{{ withSuffix(user.added_count ?? 0) }}</h3>
 				<UTooltip text="Number of friends this person has added">
 					<span>Friends Added</span>
 				</UTooltip>
@@ -99,7 +99,7 @@
 					name="mdi:account-minus"
 					class="size-5"
 				/>
-				<h3 class="text-2xl font-semibold">{{ user.non_mutual_count ?? 0 }}</h3>
+				<h3 class="text-2xl font-semibold">{{ withSuffix(user.non_mutual_count ?? 0) }}</h3>
 				<UTooltip text="Number of friends this person has added that didn't add them back">
 					<span>Non-Mutual Friends</span>
 				</UTooltip>
@@ -109,6 +109,7 @@
 </template>
 <script setup lang="ts">
 import type { User } from '~/shared/types/user';
+import { withSuffix } from '~/shared/util';
 
 const props = defineProps<{
 	user: User;
