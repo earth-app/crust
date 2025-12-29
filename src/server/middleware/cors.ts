@@ -35,6 +35,7 @@ export default defineEventHandler((event) => {
 		'Authorization, Content-Type, X-Requested-With, Accept'
 	);
 	setResponseHeader(event, 'Access-Control-Allow-Credentials', 'true');
+	setResponseHeader(event, 'Access-Control-Max-Age', 3600);
 
 	setResponseHeader(event, 'Vary', 'Accept-Encoding, Origin');
 
