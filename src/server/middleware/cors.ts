@@ -24,7 +24,11 @@ export default defineEventHandler((event) => {
 		setResponseHeader(event, 'Access-Control-Allow-Origin', 'https://app.earth-app.com');
 	}
 
-	setResponseHeader(event, 'Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+	setResponseHeader(
+		event,
+		'Access-Control-Allow-Methods',
+		'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+	);
 	setResponseHeader(
 		event,
 		'Access-Control-Allow-Headers',
@@ -33,4 +37,9 @@ export default defineEventHandler((event) => {
 	setResponseHeader(event, 'Access-Control-Allow-Credentials', 'true');
 
 	setResponseHeader(event, 'Vary', 'Accept-Encoding, Origin');
+
+	if (event.method === 'OPTIONS') {
+		setResponseStatus(event, 200);
+		return '';
+	}
 });
