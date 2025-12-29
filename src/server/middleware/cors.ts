@@ -25,13 +25,12 @@ export default defineEventHandler((event) => {
 	}
 
 	setResponseHeader(event, 'Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-	setResponseHeader(event, 'Access-Control-Allow-Headers', 'Authorization, Content-Type, Accept');
+	setResponseHeader(
+		event,
+		'Access-Control-Allow-Headers',
+		'Authorization, Content-Type, X-Requested-With, Accept'
+	);
 	setResponseHeader(event, 'Access-Control-Allow-Credentials', 'true');
 
 	setResponseHeader(event, 'Vary', 'Accept-Encoding, Origin');
-
-	if (event.method === 'OPTIONS') {
-		setResponseStatus(event, 204);
-		return '';
-	}
 });
