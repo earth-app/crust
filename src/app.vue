@@ -33,7 +33,7 @@ useSeoMeta({
 	twitterCard: 'summary_large_image',
 	twitterCreator: '@the_earth_app',
 	themeColor: {
-		color: THEME_COLOR,
+		content: THEME_COLOR,
 		media: '(prefers-color-scheme: dark)'
 	},
 	msapplicationTileColor: THEME_COLOR,
