@@ -5,10 +5,6 @@
 	"packageRules": [
 		{
 			"matchUpdateTypes": ["minor", "patch", "pin", "digest"]
-		},
-		{
-			"matchPackageNames": ["@earth-app/ocean"],
-			"followTag": "latest"
 		}
 	],
 	"hostRules": [
