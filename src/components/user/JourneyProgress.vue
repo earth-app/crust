@@ -18,7 +18,7 @@
 				</span>
 				<span
 					v-else
-					class="text-sm font-semibold text-yellow-500"
+					class="text-sm font-semibold text-yellow-500 light:text-yellow-600"
 				>
 					{{ count }}
 				</span>
