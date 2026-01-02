@@ -240,7 +240,6 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue';
 const props = defineProps<{
 	external?: boolean;
 	variant?: 'outline' | 'subtle' | 'solid' | 'soft';

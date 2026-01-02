@@ -67,6 +67,9 @@ const props = defineProps<{
 	noLink?: boolean;
 }>();
 
+const toast = useToast();
+const router = useRouter();
+
 const { handle: ownerHandle } = useDisplayName(() => props.prompt.owner);
 
 const promptText = ref(props.prompt.prompt);
@@ -133,7 +136,7 @@ const editLoading = ref(false);
 
 async function savePrompt() {
 	editLoading.value = true;
-	const toast = useToast();
+
 	const res = await updatePrompt(props.prompt.id, promptText.value);
 
 	if (res.success) {
@@ -162,8 +165,6 @@ async function savePrompt() {
 async function deletePrompt() {
 	const yes = confirm('Are you sure you want to delete this prompt? This action cannot be undone.');
 
-	const toast = useToast();
-	const router = useRouter();
 	if (yes) {
 		const res = await removePrompt(props.prompt.id);
 		if (res.success) {
