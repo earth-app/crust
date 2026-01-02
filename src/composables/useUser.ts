@@ -203,18 +203,6 @@ export const useAuth = () => {
 			},
 			{ immediate: true }
 		);
-
-		onBeforeUnmount(() => {
-			if (blobUrls.value) {
-				const avatar = blobUrls.value.avatar;
-				const avatar32 = blobUrls.value.avatar32;
-				const avatar128 = blobUrls.value.avatar128;
-
-				if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
-				if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
-				if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
-			}
-		});
 	}
 
 	const avatar = computed(() => {
@@ -378,11 +366,11 @@ export function useUser(identifier: string) {
 	}
 
 	const avatarUrl = computed(() => user.value?.account?.avatar_url);
-	const blobUrls = ref<{
+	const blobUrls = useState<{
 		avatar: string | null;
 		avatar32: string | null;
 		avatar128: string | null;
-	} | null>(null);
+	} | null>(`user-avatar-blobs-${identifier}`, () => null);
 
 	const isRemoteUrl = (url: string | undefined): boolean => {
 		if (!url) return false;
@@ -452,18 +440,6 @@ export function useUser(identifier: string) {
 			},
 			{ immediate: true }
 		);
-
-		onBeforeUnmount(() => {
-			if (blobUrls.value) {
-				const avatar = blobUrls.value.avatar;
-				const avatar32 = blobUrls.value.avatar32;
-				const avatar128 = blobUrls.value.avatar128;
-
-				if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
-				if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
-				if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
-			}
-		});
 	}
 
 	const avatar = computed(() => {
