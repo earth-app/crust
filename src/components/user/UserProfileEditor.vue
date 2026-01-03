@@ -500,6 +500,25 @@ async function regenerateProfilePhoto() {
 			URL.revokeObjectURL(avatarOverride.value);
 		}
 
+		// clear cached blob URLs to force refetch
+		const cachedBlobUrls = useState<{
+			avatar: string | null;
+			avatar32: string | null;
+			avatar128: string | null;
+		} | null>(`user-avatar-blobs-${user.value.id}`, () => null);
+
+		if (cachedBlobUrls.value) {
+			const avatar = cachedBlobUrls.value.avatar;
+			const avatar32 = cachedBlobUrls.value.avatar32;
+			const avatar128 = cachedBlobUrls.value.avatar128;
+
+			if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
+			if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+			if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+
+			cachedBlobUrls.value = null;
+		}
+
 		avatarOverride.value = URL.createObjectURL(res.data);
 		refetchUser();
 

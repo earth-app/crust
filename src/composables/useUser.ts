@@ -161,8 +161,13 @@ export const useAuth = () => {
 	if (import.meta.client) {
 		watch(
 			avatarUrl,
-			async (url, _) => {
-				if (blobUrls.value) {
+			async (url, oldUrl) => {
+				if (blobUrls.value && url === oldUrl) {
+					return;
+				}
+
+				// only revoke if URL actually changed
+				if (oldUrl && oldUrl !== url && blobUrls.value) {
 					const avatar = blobUrls.value.avatar;
 					const avatar32 = blobUrls.value.avatar32;
 					const avatar128 = blobUrls.value.avatar128;
@@ -173,15 +178,22 @@ export const useAuth = () => {
 				}
 
 				if (!url || !isRemoteUrl(url)) {
-					blobUrls.value = {
-						avatar: '/earth-app.png',
-						avatar32: '/favicon.png',
-						avatar128: '/favicon.png'
-					};
+					if (!blobUrls.value) {
+						blobUrls.value = {
+							avatar: '/earth-app.png',
+							avatar32: '/favicon.png',
+							avatar128: '/favicon.png'
+						};
+					}
 					return;
 				}
 
-				// Set to null while loading
+				// don't refetch existing blobs
+				if (blobUrls.value?.avatar && blobUrls.value.avatar.startsWith('blob:')) {
+					return;
+				}
+
+				// null = loading
 				blobUrls.value = {
 					avatar: null,
 					avatar32: null,
@@ -399,8 +411,13 @@ export function useUser(identifier: string) {
 	if (import.meta.client) {
 		watch(
 			avatarUrl,
-			async (url, _) => {
-				if (blobUrls.value) {
+			async (url, oldUrl) => {
+				if (blobUrls.value && url === oldUrl) {
+					return;
+				}
+
+				// only revoke if URL actually changed
+				if (oldUrl && oldUrl !== url && blobUrls.value) {
 					const avatar = blobUrls.value.avatar;
 					const avatar32 = blobUrls.value.avatar32;
 					const avatar128 = blobUrls.value.avatar128;
@@ -411,15 +428,22 @@ export function useUser(identifier: string) {
 				}
 
 				if (!url || !isRemoteUrl(url)) {
-					blobUrls.value = {
-						avatar: '/earth-app.png',
-						avatar32: '/favicon.png',
-						avatar128: '/favicon.png'
-					};
+					if (!blobUrls.value) {
+						blobUrls.value = {
+							avatar: '/earth-app.png',
+							avatar32: '/favicon.png',
+							avatar128: '/favicon.png'
+						};
+					}
 					return;
 				}
 
-				// Set to null while loading
+				// don't refetch existing blobs
+				if (blobUrls.value?.avatar && blobUrls.value.avatar.startsWith('blob:')) {
+					return;
+				}
+
+				// null = loading
 				blobUrls.value = {
 					avatar: null,
 					avatar32: null,
