@@ -77,6 +77,7 @@ const emit = defineEmits<{
 }>();
 
 const i18n = useI18n();
+const toast = useToast();
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const { user } = useAuth();
 const { handle: identifier } = useDisplayName(props.response.owner);
@@ -138,7 +139,6 @@ const editLoading = ref(false);
 
 async function saveResponse() {
 	editLoading.value = true;
-	const toast = useToast();
 	const res = await updatePromptResponse(
 		props.response.prompt_id,
 		props.response.id,
@@ -173,7 +173,6 @@ async function deleteResponse() {
 		'Are you sure you want to delete this response? This action cannot be undone.'
 	);
 
-	const toast = useToast();
 	if (yes) {
 		const res = await removePromptResponse(props.response.prompt_id, props.response.id);
 		if (res.success) {
