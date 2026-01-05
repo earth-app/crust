@@ -56,6 +56,20 @@
 				class="flex flex-col items-center justify-center w-full motion-opacity-in-0 motion-duration-1500"
 			>
 				<InfoCardGroup
+					v-if="user"
+					title="Your Activities"
+					description="Continue to explore your interests"
+					icon="mdi:star"
+					class="w-11/12"
+				>
+					<ActivityCard
+						v-for="activity in user.activities"
+						:key="activity.id"
+						:activity="activity"
+					/>
+				</InfoCardGroup>
+
+				<InfoCardGroup
 					:title="user ? `Today's Content` : 'Discover Content'"
 					:description="user ? 'Topics you might enjoy' : 'Explore interests from around the world'"
 					icon="material-symbols:apps"
