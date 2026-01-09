@@ -1,30 +1,28 @@
 <template>
-	<ClientOnly>
-		<div class="w-full flex items-center justify-center my-8">
-			<InfoCard
-				:title="article.title"
-				:description="trimString(article.description, 100)"
-				:content="trimString(article.content, 300)"
-				:link="noLink ? undefined : `/articles/${article.id}`"
-				:footer="footer"
-				:color="article.color"
-				:avatar="authorAvatar"
-				:avatar-chip="authorAvatarChipColor ? true : false"
-				:avatar-chip-color="authorAvatarChipColor"
-				:secondary-avatar="article.ocean?.favicon"
-				:badges="
-					article.tags.map((tag) => ({
-						text: tag,
-						color: 'warning',
-						icon: 'mdi:tag-outline',
-						variant: 'subtle',
-						size: 'md'
-					}))
-				"
-				secondary-avatar-size="xs"
-			/>
-		</div>
-	</ClientOnly>
+	<div class="w-full flex items-center justify-center my-8">
+		<InfoCard
+			:title="article.title"
+			:description="trimString(article.description, 100)"
+			:content="trimString(article.content, 300)"
+			:link="noLink ? undefined : `/articles/${article.id}`"
+			:footer="footer"
+			:color="article.color"
+			:avatar="authorAvatar"
+			:avatar-chip="authorAvatarChipColor ? true : false"
+			:avatar-chip-color="authorAvatarChipColor"
+			:secondary-avatar="article.ocean?.favicon"
+			:badges="
+				article.tags.map((tag) => ({
+					text: tag,
+					color: 'warning',
+					icon: 'mdi:tag-outline',
+					variant: 'subtle',
+					size: 'md'
+				}))
+			"
+			secondary-avatar-size="xs"
+		/>
+	</div>
 </template>
 
 <script setup lang="ts">

@@ -20,7 +20,7 @@
 			/>
 
 			<UBadge
-				v-if="user.is_in_my_circle && currentUser?.id === user.id"
+				v-if="user.is_in_my_circle"
 				variant="soft"
 				color="warning"
 				icon="mdi:account-group"

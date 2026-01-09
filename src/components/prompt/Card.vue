@@ -1,60 +1,58 @@
 <template>
-	<ClientOnly>
-		<div class="w-full flex items-center justify-center my-2 sm:my-4 md:my-6 lg:my-8">
-			<InfoCard
-				:title="promptText"
-				:description="ownerHandle"
-				:avatar="authorAvatar"
-				avatar-size="xl"
-				:avatar-chip="authorAvatarChipColor ? true : false"
-				:avatar-chip-color="authorAvatarChipColor"
-				avatar-chip-size="xl"
-				:link="noLink ? undefined : `/prompts/${prompt.id}`"
-				:footer="`${footer} • ${prompt.responses_count ? withSuffix(prompt.responses_count) + ' Responses' : 'No Responses'}`"
-				:secondary-footer="secondaryFooter"
-				:buttons="
-					hasButtons
-						? [
-								{
-									text: 'Edit',
-									color: 'secondary',
-									onClick: () => {
-										editOpen = true;
-									}
-								},
-								{
-									text: 'Delete',
-									color: 'error',
-									onClick: () => {
-										deletePrompt();
-									}
+	<div class="w-full flex items-center justify-center my-2 sm:my-4 md:my-6 lg:my-8">
+		<InfoCard
+			:title="promptText"
+			:description="ownerHandle"
+			:avatar="authorAvatar"
+			avatar-size="xl"
+			:avatar-chip="authorAvatarChipColor ? true : false"
+			:avatar-chip-color="authorAvatarChipColor"
+			avatar-chip-size="xl"
+			:link="noLink ? undefined : `/prompts/${prompt.id}`"
+			:footer="`${footer} • ${prompt.responses_count ? withSuffix(prompt.responses_count) + ' Responses' : 'No Responses'}`"
+			:secondary-footer="secondaryFooter"
+			:buttons="
+				hasButtons
+					? [
+							{
+								text: 'Edit',
+								color: 'secondary',
+								onClick: () => {
+									editOpen = true;
 								}
-							]
-						: undefined
-				"
-			/>
-		</div>
-		<UModal
-			v-if="hasButtons"
-			title="Edit Prompt"
-			size="2xl"
-			:closeable="true"
-			v-model:open="editOpen"
-			:overlay="false"
-		>
-			<template #body>
-				<div class="flex flex-col space-y-4">
-					<UInput v-model="promptText" />
-					<UButton
-						@click="savePrompt"
-						:loading="editLoading"
-						:disabled="editLoading || promptText.trim().length === 0"
-						>Save</UButton
-					>
-				</div>
-			</template>
-		</UModal>
-	</ClientOnly>
+							},
+							{
+								text: 'Delete',
+								color: 'error',
+								onClick: () => {
+									deletePrompt();
+								}
+							}
+						]
+					: undefined
+			"
+		/>
+	</div>
+	<UModal
+		v-if="hasButtons"
+		title="Edit Prompt"
+		size="2xl"
+		:closeable="true"
+		v-model:open="editOpen"
+		:overlay="false"
+	>
+		<template #body>
+			<div class="flex flex-col space-y-4">
+				<UInput v-model="promptText" />
+				<UButton
+					@click="savePrompt"
+					:loading="editLoading"
+					:disabled="editLoading || promptText.trim().length === 0"
+					>Save</UButton
+				>
+			</div>
+		</template>
+	</UModal>
 </template>
 
 <script setup lang="ts">
