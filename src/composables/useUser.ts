@@ -18,7 +18,7 @@ export function useVisitedSite() {
 		secure: true,
 		maxAge: 60 * 60 * 24 * 365 * 5 // 5 years
 	});
-	const visitedSite = computed(() => visitedSiteCookie.value === 'true');
+	const visitedSite = computed(() => visitedSiteCookie.value != null);
 
 	const markVisited = () => {
 		visitedSiteCookie.value = 'true';
