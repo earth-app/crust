@@ -41,12 +41,14 @@ export default defineNuxtConfig({
 			link: [
 				{ rel: 'preconnect', href: 'https://cdn.earth-app.com' },
 				{ rel: 'dns-prefetch', href: 'https://cdn.earth-app.com' },
-				{ rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+				{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+				{ rel: 'dns-prefetch', href: 'https://fonts.googleapis.com' },
+				{ rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous' },
 				{ rel: 'dns-prefetch', href: 'https://fonts.gstatic.com' },
 				{ rel: 'preconnect', href: 'https://www.youtube.com' },
 				{ rel: 'dns-prefetch', href: 'https://www.youtube.com' },
 				{ rel: 'preconnect', href: 'https://api.earth-app.com' },
-				{ rel: 'dns-prefetch', href: 'https://api.earth-app.com' }
+				{ rel: 'dns-prefetch', href: 'https://api.earth-app.com', crossorigin: 'use-credentials' }
 			]
 		}
 	},
