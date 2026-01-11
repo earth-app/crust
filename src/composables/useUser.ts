@@ -128,11 +128,11 @@ export const useAuth = () => {
 	}
 
 	const avatarUrl = computed(() => user.value?.account?.avatar_url);
-	const blobUrls = ref<{
+	const blobUrls = useState<{
 		avatar: string | null;
 		avatar32: string | null;
 		avatar128: string | null;
-	} | null>(null);
+	} | null>('user-avatar-blobs-current', () => null);
 
 	const isRemoteUrl = (url: string | undefined): boolean => {
 		if (!url) return false;
@@ -162,19 +162,23 @@ export const useAuth = () => {
 		watch(
 			avatarUrl,
 			async (url, oldUrl) => {
-				if (blobUrls.value && url === oldUrl) {
-					return;
-				}
+				// If we already have valid blob URLs cached, don't refetch
+				if (blobUrls.value?.avatar && blobUrls.value.avatar.startsWith('blob:')) {
+					// Only refetch if URL actually changed
+					if (oldUrl && oldUrl !== url) {
+						// URL changed, revoke old blobs
+						const avatar = blobUrls.value.avatar;
+						const avatar32 = blobUrls.value.avatar32;
+						const avatar128 = blobUrls.value.avatar128;
 
-				// only revoke if URL actually changed
-				if (oldUrl && oldUrl !== url && blobUrls.value) {
-					const avatar = blobUrls.value.avatar;
-					const avatar32 = blobUrls.value.avatar32;
-					const avatar128 = blobUrls.value.avatar128;
-
-					if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
-					if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
-					if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+						if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
+						if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+						if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+						// Continue to fetch new blobs below
+					} else {
+						// Same URL and already have blobs, skip
+						return;
+					}
 				}
 
 				if (!url || !isRemoteUrl(url)) {
@@ -188,17 +192,14 @@ export const useAuth = () => {
 					return;
 				}
 
-				// don't refetch existing blobs
-				if (blobUrls.value?.avatar && blobUrls.value.avatar.startsWith('blob:')) {
-					return;
+				// Set defaults first if we don't have any values yet
+				if (!blobUrls.value) {
+					blobUrls.value = {
+						avatar: '/earth-app.png',
+						avatar32: '/favicon.png',
+						avatar128: '/favicon.png'
+					};
 				}
-
-				// null = loading
-				blobUrls.value = {
-					avatar: null,
-					avatar32: null,
-					avatar128: null
-				};
 
 				// fetch images with authentication
 				const [avatarBlob, avatar32Blob, avatar128Blob] = await Promise.all([
@@ -412,19 +413,23 @@ export function useUser(identifier: string) {
 		watch(
 			avatarUrl,
 			async (url, oldUrl) => {
-				if (blobUrls.value && url === oldUrl) {
-					return;
-				}
+				// If we already have valid blob URLs cached, don't refetch
+				if (blobUrls.value?.avatar && blobUrls.value.avatar.startsWith('blob:')) {
+					// Only refetch if URL actually changed
+					if (oldUrl && oldUrl !== url) {
+						// URL changed, revoke old blobs
+						const avatar = blobUrls.value.avatar;
+						const avatar32 = blobUrls.value.avatar32;
+						const avatar128 = blobUrls.value.avatar128;
 
-				// only revoke if URL actually changed
-				if (oldUrl && oldUrl !== url && blobUrls.value) {
-					const avatar = blobUrls.value.avatar;
-					const avatar32 = blobUrls.value.avatar32;
-					const avatar128 = blobUrls.value.avatar128;
-
-					if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
-					if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
-					if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+						if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
+						if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+						if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+						// Continue to fetch new blobs below
+					} else {
+						// Same URL and already have blobs, skip
+						return;
+					}
 				}
 
 				if (!url || !isRemoteUrl(url)) {
@@ -438,17 +443,14 @@ export function useUser(identifier: string) {
 					return;
 				}
 
-				// don't refetch existing blobs
-				if (blobUrls.value?.avatar && blobUrls.value.avatar.startsWith('blob:')) {
-					return;
+				// Set defaults first if we don't have any values yet
+				if (!blobUrls.value) {
+					blobUrls.value = {
+						avatar: '/earth-app.png',
+						avatar32: '/favicon.png',
+						avatar128: '/favicon.png'
+					};
 				}
-
-				// null = loading
-				blobUrls.value = {
-					avatar: null,
-					avatar32: null,
-					avatar128: null
-				};
 
 				const [avatarBlob, avatar32Blob, avatar128Blob] = await Promise.all([
 					fetchAuthenticatedImage(url),
