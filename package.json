@@ -1,6 +1,6 @@
 {
   "name": "@earth-app/crust",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "main": "./nuxt.config.ts",
   "files": [
@@ -58,7 +58,7 @@
   },
   "devDependencies": {
     "@iconify-json/bx": "^1.2.2",
-    "@iconify-json/carbon": "^1.2.16",
+    "@iconify-json/carbon": "^1.2.18",
     "@iconify-json/cib": "^1.2.3",
     "@iconify-json/circum": "^1.2.2",
     "@iconify-json/eos-icons": "^1.2.4",
@@ -66,7 +66,7 @@
     "@iconify-json/healthicons": "^1.2.12",
     "@iconify-json/heroicons": "^1.2.3",
     "@iconify-json/icon-park-outline": "^1.2.4",
-    "@iconify-json/lucide": "^1.2.84",
+    "@iconify-json/lucide": "^1.2.85",
     "@iconify-json/map": "^1.2.2",
     "@iconify-json/material-symbols": "^1.2.51",
     "@iconify-json/material-symbols-light": "^1.2.51",
@@ -76,12 +76,12 @@
     "@iconify-json/solar": "^1.2.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.7.4",
+    "prettier": "^3.8.0",
     "prettier-plugin-organize-imports": "4.3.0",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "vite-plugin-dts": "^4.5.4",
     "vue-tsc": "^3.2.2",
-    "wrangler": "^4.58.0"
+    "wrangler": "^4.59.2"
   },
   "lint-staged": {
     "*.{js,css,ts,json,yml,vue}": "prettier --write"
