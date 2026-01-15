@@ -39,6 +39,7 @@ export default defineNuxtConfig({
 	app: {
 		head: {
 			link: [
+				{ rel: 'canonical', href: 'https://app.earth-app.com' },
 				{ rel: 'preconnect', href: 'https://cdn.earth-app.com' },
 				{ rel: 'dns-prefetch', href: 'https://cdn.earth-app.com' },
 				{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
