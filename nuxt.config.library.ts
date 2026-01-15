@@ -21,6 +21,7 @@ export default defineNuxtConfig({
 		'@nuxt/ui',
 		'@nuxtjs/i18n',
 		'@nuxt/image',
+		'nuxt-viewport',
 		[
 			'@nuxt/icon',
 			{
