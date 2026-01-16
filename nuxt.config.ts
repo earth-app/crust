@@ -7,6 +7,7 @@ export default defineNuxtConfig({
 		adminApiKey: process.env.NUXT_ADMIN_API_KEY || '',
 		pixabayApiKey: process.env.NUXT_PIXABAY_API_KEY || '',
 		baseUrl: process.env.NUXT_BASE_URL || 'https://app.earth-app.com',
+		mapsApiKey: process.env.NUXT_MAPS_API_KEY || '',
 		public: {
 			baseUrl: process.env.NUXT_PUBLIC_BASE_URL || 'https://app.earth-app.com',
 			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'https://api.earth-app.com',
@@ -16,7 +17,9 @@ export default defineNuxtConfig({
 			microsoftClientId: process.env.NUXT_PUBLIC_MICROSOFT_CLIENT_ID || '',
 			githubClientId: process.env.NUXT_PUBLIC_GITHUB_CLIENT_ID || '',
 			discordClientId: process.env.NUXT_PUBLIC_DISCORD_CLIENT_ID || '',
-			facebookClientId: process.env.NUXT_PUBLIC_FACEBOOK_CLIENT_ID || ''
+			facebookClientId: process.env.NUXT_PUBLIC_FACEBOOK_CLIENT_ID || '',
+			// public keys
+			mapsApiKey: process.env.NUXT_PUBLIC_MAPS_API_KEY || ''
 		},
 		turnstile: {
 			secretKey: process.env.NUXT_TURNSTILE_SECRET_KEY || ''
@@ -123,6 +126,7 @@ export default defineNuxtConfig({
 		'@nuxtjs/sitemap',
 		'@nuxt/image',
 		'nuxt-schema-org',
+		'nuxt-api-shield',
 		[
 			'@nuxtjs/google-fonts',
 			{
@@ -149,6 +153,20 @@ export default defineNuxtConfig({
 	turnstile: {
 		siteKey: process.env.NUXT_PUBLIC_TURNSTILE_SITE_KEY || '',
 		addValidateEndpoint: true
+	},
+	nuxtApiShield: {
+		limit: {
+			max: 500,
+			duration: 60,
+			ban: 300
+		},
+		delayOnBan: true,
+		errorMessage: 'Too many requests from this IP, please try again later.',
+		routes: ['/api/admin/**', '/api/event/autocomplete'],
+		log: {
+			path: '',
+			attempts: 100
+		}
 	},
 	experimental: {
 		renderJsonPayloads: true

@@ -8,7 +8,8 @@
     "src/composables/",
     "src/shared/",
     "nuxt.config.ts",
-    "tsconfig.json"
+    "tsconfig.json",
+    "LICENSE"
   ],
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",
@@ -43,6 +44,7 @@
     "@types/luxon": "^3.7.1",
     "luxon": "^3.7.2",
     "nuxt": "^4.2.2",
+    "nuxt-api-shield": "^0.10.0",
     "nuxt-schema-org": "^5.0.10",
     "nuxt-viewport": "^2.3.1",
     "tailwindcss": "^4.1.18",
