@@ -1,6 +1,11 @@
 import type { Event, EventData } from '~/shared/types/event';
 import type { User } from '~/shared/types/user';
-import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/util';
+import {
+	makeAPIRequest,
+	makeClientAPIRequest,
+	makeServerRequest,
+	paginatedAPIRequest
+} from '~/shared/util';
 
 export function useEvents() {
 	const getEvents = async (
@@ -204,6 +209,54 @@ export function useEvent(id: string) {
 		return res;
 	};
 
+	const thumbnail = useState<string | null>(`event-thumbnail-${id}`, () => null);
+	const fetchThumbnail = async () => {
+		const config = useRuntimeConfig();
+		const res = await makeServerRequest<Blob>(
+			`event-thumbnail-${id}`,
+			`/api/event/thumbnail?id=${encodeURIComponent(id)}`,
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			const url = URL.createObjectURL(res.data);
+			thumbnail.value = url;
+		} else {
+			thumbnail.value = null;
+		}
+
+		return res;
+	};
+
+	const uploadThumbnail = async (file: File) => {
+		const config = useRuntimeConfig();
+		const formData = new FormData();
+		formData.append('photo', file);
+
+		const res = await makeServerRequest(
+			`event-thumbnail-upload-${id}`,
+			`/api/event/thumbnail?id=${encodeURIComponent(id)}`,
+			useCurrentSessionToken(),
+			{
+				method: 'POST',
+				body: formData
+			}
+		);
+
+		if (res.success) {
+			await fetchThumbnail();
+		}
+
+		return res;
+	};
+
+	const unloadThumbnail = () => {
+		if (thumbnail.value) {
+			URL.revokeObjectURL(thumbnail.value);
+			thumbnail.value = null;
+		}
+	};
+
 	return {
 		event,
 		fetchEvent,
@@ -212,6 +265,10 @@ export function useEvent(id: string) {
 		attendees,
 		fetchAttendees,
 		signUpForEvent,
-		leaveEvent
+		leaveEvent,
+		thumbnail,
+		fetchThumbnail,
+		uploadThumbnail,
+		unloadThumbnail
 	};
 }
