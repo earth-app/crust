@@ -14,25 +14,35 @@ export function useEvents() {
 		search: string = '',
 		upcoming: boolean = true
 	) => {
-		const res = await makeAPIRequest<Event[]>(
+		const res = await makeAPIRequest<{
+			items: Event[];
+			page: number;
+			limit: number;
+			total: number;
+		}>(
 			`events-${page}-${limit}-${search}-${upcoming}`,
 			`/v2/events?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
 			useCurrentSessionToken()
 		);
 		if (res.success && res.data) {
 			if ('message' in res.data) {
-				return res;
+				throw new Error(res.data.message);
 			}
 
 			if (upcoming) {
 				const now = new Date();
-				return res.data.filter((event) => new Date(event.date) >= now);
+				return {
+					items: res.data.items.filter((event) => new Date(event.date * 1000) >= now),
+					total: res.data.total,
+					page: res.data.page,
+					limit: res.data.limit
+				};
 			} else {
 				return res.data;
 			}
 		}
 
-		return res;
+		return { items: [], total: 0, page, limit };
 	};
 
 	const currentEvents = useState<Event[] | null>('events-current', () => null);
@@ -96,7 +106,7 @@ export function useEvents() {
 export function useEvent(id: string) {
 	const event = useState<Event | null>(`event-${id}`, () => null);
 
-	const fetchEvent = async () => {
+	const fetch = async () => {
 		const res = await makeAPIRequest<Event>(
 			`event-${id}`,
 			`/v2/events/${id}`,
@@ -117,7 +127,7 @@ export function useEvent(id: string) {
 	};
 
 	if (!event.value) {
-		fetchEvent();
+		fetch();
 	}
 
 	const updateEvent = async (updatedEvent: Partial<EventData>) => {
@@ -211,7 +221,6 @@ export function useEvent(id: string) {
 
 	const thumbnail = useState<string | null>(`event-thumbnail-${id}`, () => null);
 	const fetchThumbnail = async () => {
-		const config = useRuntimeConfig();
 		const res = await makeServerRequest<Blob>(
 			`event-thumbnail-${id}`,
 			`/api/event/thumbnail?id=${encodeURIComponent(id)}`,
@@ -228,8 +237,11 @@ export function useEvent(id: string) {
 		return res;
 	};
 
+	if (!thumbnail.value) {
+		fetchThumbnail();
+	}
+
 	const uploadThumbnail = async (file: File) => {
-		const config = useRuntimeConfig();
 		const formData = new FormData();
 		formData.append('photo', file);
 
@@ -250,6 +262,48 @@ export function useEvent(id: string) {
 		return res;
 	};
 
+	const generateThumbnail = async () => {
+		if (!event.value) {
+			await fetch();
+		}
+
+		const res = await makeServerRequest<Blob>(
+			`event-thumbnail-generate-${id}`,
+			`/api/event/thumbnail?id=${id}&name=${encodeURIComponent(event.value?.name ?? '')}&generate=true`,
+			useCurrentSessionToken(),
+			{
+				method: 'POST'
+			}
+		);
+
+		if (res.success && res.data) {
+			const url = URL.createObjectURL(res.data);
+			thumbnail.value = url;
+		}
+
+		return res;
+	};
+
+	const deleteThumbnail = async () => {
+		const res = await makeServerRequest(
+			`event-thumbnail-delete-${id}`,
+			`/api/event/thumbnail?id=${encodeURIComponent(id)}`,
+			useCurrentSessionToken(),
+			{
+				method: 'DELETE'
+			}
+		);
+
+		if (res.success) {
+			if (thumbnail.value) {
+				URL.revokeObjectURL(thumbnail.value);
+				thumbnail.value = null;
+			}
+		}
+
+		return res;
+	};
+
 	const unloadThumbnail = () => {
 		if (thumbnail.value) {
 			URL.revokeObjectURL(thumbnail.value);
@@ -259,7 +313,7 @@ export function useEvent(id: string) {
 
 	return {
 		event,
-		fetchEvent,
+		fetch,
 		updateEvent,
 		deleteEvent,
 		attendees,
@@ -269,6 +323,8 @@ export function useEvent(id: string) {
 		thumbnail,
 		fetchThumbnail,
 		uploadThumbnail,
+		generateThumbnail,
+		deleteThumbnail,
 		unloadThumbnail
 	};
 }
