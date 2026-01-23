@@ -9,9 +9,7 @@
 					width="192"
 					height="192"
 					class="h-48 w-48 mb-6"
-					loading="eager"
-					decoding="async"
-					fetchpriority="high"
+					:preload="{ fetchPriority: 'high' }"
 				/>
 				<h1 class="text-4xl font-bold mb-4">Oops! Something went wrong.</h1>
 				<p class="text-lg mb-8">
