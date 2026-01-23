@@ -8,7 +8,14 @@ export default defineEventHandler(async (event) => {
 	await ensureLoggedIn(event);
 
 	const config = useRuntimeConfig();
-	const { input, latitude, longitude } = getQuery(event);
+	const { input, latitude, longitude, sessionToken } = getQuery(event);
+
+	if (!sessionToken || typeof sessionToken !== 'string' || sessionToken.trim() === '') {
+		throw createError({
+			statusCode: 400,
+			statusMessage: 'SessionToken parameter is required and must be a non-empty string'
+		});
+	}
 
 	if (!input || typeof input !== 'string' || input.trim() === '') {
 		throw createError({
@@ -41,6 +48,7 @@ export default defineEventHandler(async (event) => {
 		body: {
 			input: input.trim(),
 			includeQueryPredictions: true,
+			sessionToken,
 			locationBias: {
 				circle: {
 					latitude: latitude || 0,

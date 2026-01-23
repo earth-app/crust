@@ -18,6 +18,7 @@ export default defineEventHandler(async (event) => {
 		timeout: 10000,
 		onResponseError: (ctx) => {
 			throw createError({
+				data: ctx.response._data,
 				statusCode: ctx.response.status,
 				statusMessage: `Failed to fetch event thumbnail: ${ctx.response.statusText}`
 			});
