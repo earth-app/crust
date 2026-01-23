@@ -97,9 +97,7 @@
 						width="800"
 						height="400"
 						class="w-full h-48 object-cover rounded-lg mb-2"
-						loading="lazy"
-						decoding="async"
-						fetchpriority="low"
+						:preload="{ fetchPriority: 'low' }"
 					/>
 					<ClientOnly>
 						<iframe
@@ -160,21 +158,6 @@
 							>{{ badge.text }}</UBadge
 						>
 					</div>
-					<USeparator
-						v-if="footer"
-						class="border-gray-500 my-2 w-11/12"
-					/>
-					<UTooltip
-						v-if="footerTooltip"
-						:text="footerTooltip"
-					>
-						<p
-							v-if="footer"
-							class="text-gray-500 text-xs sm:text-sm"
-						>
-							{{ footer }}
-						</p>
-					</UTooltip>
 					<div
 						v-if="additionalLinks"
 						class="flex flex-wrap space-x-1 mb-1"
@@ -198,6 +181,34 @@
 							<span v-if="index < additionalLinks.length - 1">•</span>
 						</div>
 					</div>
+					<div v-if="avatarGroup">
+						<UAvatarGroup :max="avatarGroup.max">
+							<UAvatar
+								v-for="(avatar, index) in avatarGroup.avatars"
+								:key="`avatar-group-${index}`"
+								:src="avatar.src"
+								:alt="avatar.alt"
+								:icon="avatar.icon"
+								:size="avatarGroup.size || 'md'"
+								:chip="avatar.chip || undefined"
+							/>
+						</UAvatarGroup>
+					</div>
+					<USeparator
+						v-if="footer"
+						class="border-gray-500 my-2 w-11/12"
+					/>
+					<UTooltip
+						v-if="footerTooltip"
+						:text="footerTooltip"
+					>
+						<p
+							v-if="footer"
+							class="text-gray-500 text-xs sm:text-sm"
+						>
+							{{ footer }}
+						</p>
+					</UTooltip>
 					<p
 						v-else-if="footer && !footerTooltip"
 						class="text-gray-500 light:text-gray-800 text-xs sm:text-sm"
@@ -212,23 +223,23 @@
 					</p>
 				</div>
 			</div>
-			<div v-if="buttons">
-				<div class="flex flex-col ml-2">
-					<h2
-						class="text-sm md:text-md text-center font-semibold text-gray-500 light:text-gray-800"
-					>
-						Actions
-					</h2>
-					<UButton
-						v-for="(button, index) in buttons"
-						:key="`button-${index}`"
-						:color="button.color || 'primary'"
-						:size="button.size || 'md'"
-						@click="() => button.onClick && button.onClick()"
-						class="my-1 hover:opacity-90 hover:cursor-pointer transition-all duration-300"
-						>{{ button.text }}</UButton
-					>
-				</div>
+			<div
+				v-if="buttons"
+				class="flex flex-col items-center ml-2 min-w-22 sm:min-w-26 md:min-w-30"
+			>
+				<h2 class="text-sm md:text-md text-center font-semibold text-gray-500 light:text-gray-800">
+					Actions
+				</h2>
+				<UButton
+					v-for="(button, index) in buttons"
+					:key="`button-${index}`"
+					:color="button.color || 'primary'"
+					:size="button.size || 'md'"
+					:icon="button.icon"
+					@click="() => button.onClick && button.onClick()"
+					class="my-1 hover:opacity-90 hover:cursor-pointer transition-all duration-300 w-full"
+					>{{ button.text }}</UButton
+				>
 			</div>
 		</div>
 		<div
@@ -286,10 +297,25 @@ const props = defineProps<{
 	}[];
 	buttons?: {
 		text: string;
+		icon?: string;
 		color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
 		size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
 		onClick?: () => void;
 	}[];
+	avatarGroup?: {
+		avatars: {
+			src?: string;
+			alt?: string;
+			icon?: string;
+			chip?: {
+				inset?: boolean;
+				color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
+				size?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
+			};
+		}[];
+		size?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
+		max?: number;
+	};
 	color?: number;
 }>();
 
