@@ -19,21 +19,26 @@
 			<div class="flex min-w-30 sm:min-w-70 md:min-w-60 w-3/5 max-w-120">
 				<Discover class="mx-1 sm:ml-4 md:ml-8 lg:ml-12" />
 			</div>
-			<div class="hidden md:flex items-center mr-12 lg:space-x-4">
+			<div class="hidden md:flex items-center mr-12 justify-between">
 				<NuxtLink
 					to="/activities"
-					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 md:mx-2 lg:mx-6"
+					class="text-md md:text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
 					>Activities</NuxtLink
 				>
 				<NuxtLink
 					to="/prompts"
-					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 md:mx-2 lg:mx-6"
+					class="text-md md:text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
 					>Prompts</NuxtLink
 				>
 				<NuxtLink
 					to="/articles"
-					class="text-md md:text-xl lg:text-2xl font-semibold hover:text-gray-300 md:mx-2 mx-6"
+					class="text-md md:text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
 					>Articles</NuxtLink
+				>
+				<NuxtLink
+					to="/events"
+					class="text-md md:text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
+					>Events</NuxtLink
 				>
 			</div>
 			<div
@@ -65,6 +70,15 @@
 						size="xl"
 						icon="mdi:newspaper"
 						>Articles</UBadge
+					>
+				</NuxtLink>
+				<NuxtLink to="/events">
+					<UBadge
+						variant="subtle"
+						color="success"
+						size="xl"
+						icon="mdi:calendar-star"
+						>Events</UBadge
 					>
 				</NuxtLink>
 			</div>
