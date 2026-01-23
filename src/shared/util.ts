@@ -260,6 +260,10 @@ export function withSuffix(num: number): string {
 	return num.toString();
 }
 
+export function comma(num: number): string {
+	return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 export function parseLooseDate(input: string): DateTime | string {
 	const formats = [
 		'yyyy', // 2025
