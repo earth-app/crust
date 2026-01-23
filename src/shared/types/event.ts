@@ -15,28 +15,20 @@ export type Event = {
 		latitude: number;
 		longitude: number;
 	};
-	date: string;
-	end_date?: string;
+	date: number;
+	end_date?: number;
 	visibility: typeof com.earthapp.Visibility.prototype.name;
 	attendee_count: number;
 	is_attending: boolean;
+	can_edit: boolean;
 	created_at: string;
 	updated_at?: string;
 };
 
-export type EventData = {
-	name: string;
-	description?: string;
-	type: EventType;
-	activities: string[];
-	location?: {
-		latitude: number;
-		longitude: number;
-	};
-	date: number;
-	end_date?: number;
-	visibility: typeof com.earthapp.Visibility.prototype.name;
-};
+export type EventData = Omit<
+	Event,
+	'id' | 'host' | 'attendee_count' | 'is_attending' | 'created_at' | 'updated_at'
+>;
 
 export type RawEventAutocompleteSuggestion = {
 	place?: string;
