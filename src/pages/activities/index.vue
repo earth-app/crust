@@ -142,10 +142,7 @@ async function loadActivities() {
 const loadMoreRef = ref<HTMLElement | null>(null);
 
 onMounted(async () => {
-	// Load initial activities
 	await loadActivities();
-
-	// Set up intersection observer for infinite scrolling
 	const observer = new IntersectionObserver(
 		(entries) => {
 			if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value) {

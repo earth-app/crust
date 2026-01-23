@@ -9,9 +9,9 @@
 				:description="`@${user.username}`"
 				:avatar="{ src: `${user.account.avatar_url}?size=128`, loading: 'lazy' }"
 				:chip="
-					chip
+					chipColor
 						? {
-								color: chip
+								color: chipColor
 							}
 						: undefined
 				"
@@ -66,19 +66,5 @@ const props = defineProps<{
 	user: User;
 }>();
 
-const { user: currentUser } = useAuth();
-
-const chip = computed(() => {
-	const accountType = props.user.account.account_type;
-	switch (accountType) {
-		case 'ADMINISTRATOR':
-			return 'error';
-		case 'ORGANIZER':
-			return 'warning';
-		case 'WRITER':
-			return 'primary';
-		default:
-			return null;
-	}
-});
+const { chipColor } = useUser(props.user.id);
 </script>

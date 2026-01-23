@@ -37,9 +37,9 @@ const props = defineProps<{
 
 const footer = ref<string | undefined>(undefined);
 
-const { avatar128: authorAvatar } = useUser(props.article.author_id);
-
-const authorAvatarChipColor = ref<any | null>(null);
+const { avatar128: authorAvatar, chipColor: authorAvatarChipColor } = useUser(
+	props.article.author_id
+);
 
 const i18n = useI18n();
 const time = computed(() => {
@@ -52,18 +52,6 @@ const time = computed(() => {
 });
 
 onMounted(async () => {
-	switch (props.article.author.account.account_type) {
-		case 'WRITER':
-			authorAvatarChipColor.value = 'primary';
-			break;
-		case 'ORGANIZER':
-			authorAvatarChipColor.value = 'warning';
-			break;
-		case 'ADMINISTRATOR':
-			authorAvatarChipColor.value = 'error';
-			break;
-	}
-
 	footer.value = `@${props.article.author.username} - ${time.value}`;
 });
 </script>

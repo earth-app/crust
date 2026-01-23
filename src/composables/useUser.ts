@@ -481,12 +481,28 @@ export function useUser(identifier: string) {
 		return undefined;
 	});
 
+	const chipColor = computed(() => {
+		if (!user.value) return undefined;
+
+		switch (user.value.account?.account_type) {
+			case 'PRO':
+				return 'secondary';
+			case 'WRITER':
+				return 'primary';
+			case 'ORGANIZER':
+				return 'warning';
+			case 'ADMINISTRATOR':
+				return 'error';
+		}
+	});
+
 	return {
 		user,
 		fetchUser,
 		avatar,
 		avatar32,
-		avatar128
+		avatar128,
+		chipColor
 	};
 }
 
