@@ -152,76 +152,35 @@
 			</h2>
 		</div>
 	</div>
-	<UDrawer
-		should-scale-background
-		set-background-color-on-scale
-		:overlay="false"
-		direction="left"
-		inset
-		v-model:open="drawerOpen"
+	<ContentDrawer
+		ref="drawerRef"
+		:title="drawerTitle"
+		:is-loading="isLoading"
+		@load-more="handleLoadMore"
 	>
-		<template #content>
-			<div class="flex flex-col items-center min-w-140 max-w-150 overflow-y-auto">
-				<h2 class="text-2xl font-bold p-4">
-					{{
-						mode === 'friends'
-							? `${displayName}'s Friends`
-							: mode === 'prompts'
-								? `Prompts by ${displayName}`
-								: mode === 'articles'
-									? `Articles by ${displayName}`
-									: ''
-					}}
-				</h2>
-				<UInput
-					v-if="mode"
-					v-model="search"
-					type="search"
-					placeholder="Search..."
-					class="mb-4 mx-4 w-11/12"
-					icon="mdi:magnify"
-				/>
-				<div
-					v-if="mode"
-					class="grid grid-cols-1 gap-4 w-full p-4"
-				>
-					<UserCard
-						v-if="mode === 'friends'"
-						v-for="friend in filteredFriends"
-						:key="friend.id"
-						:user="friend"
-					/>
-					<PromptCard
-						v-else-if="mode === 'prompts'"
-						v-for="prompt in filteredPrompts"
-						:key="prompt.id"
-						:prompt="prompt"
-					/>
-					<ArticleCard
-						v-else-if="mode === 'articles'"
-						v-for="article in filteredArticles"
-						:key="article.id"
-						:article="article"
-					/>
-				</div>
-
-				<div
-					v-if="isLoading"
-					class="text-center py-4"
-				>
-					<UIcon name="eos-icons:loading" />
-				</div>
-
-				<div
-					ref="loadMoreRef"
-					class="h-1"
-				></div>
-			</div>
-		</template>
-	</UDrawer>
+		<UserCard
+			v-if="mode === 'friends'"
+			v-for="friend in filteredFriends"
+			:key="friend.id"
+			:user="friend"
+		/>
+		<PromptCard
+			v-else-if="mode === 'prompts'"
+			v-for="prompt in filteredPrompts"
+			:key="prompt.id"
+			:prompt="prompt"
+		/>
+		<ArticleCard
+			v-else-if="mode === 'articles'"
+			v-for="article in filteredArticles"
+			:key="article.id"
+			:article="article"
+		/>
+	</ContentDrawer>
 </template>
 
 <script setup lang="ts">
+import ContentDrawer from '~/components/ContentDrawer.vue';
 import type { Article } from '~/shared/types/article';
 import type { Prompt } from '~/shared/types/prompts';
 import type { User } from '~/shared/types/user';
@@ -254,12 +213,20 @@ function openEmail() {
 	window.location.href = `mailto:${props.user.account.email}`;
 }
 
-const drawerOpen = ref(false);
+const drawerRef = ref<InstanceType<typeof ContentDrawer>>();
 const mode = ref<'friends' | 'prompts' | 'articles' | null>(null);
-const search = ref('');
 const allFriends = ref<User[]>([]);
 const allPrompts = ref<Prompt[]>([]);
 const allArticles = ref<Article[]>([]);
+
+const drawerTitle = computed(() => {
+	if (mode.value === 'friends') return `${displayName.value}'s Friends`;
+	if (mode.value === 'prompts') return `Prompts by ${displayName.value}`;
+	if (mode.value === 'articles') return `Articles by ${displayName.value}`;
+	return '';
+});
+
+const search = computed(() => drawerRef.value?.search || '');
 
 // Client-side filtering for already loaded content
 const filteredFriends = computed(() => {
@@ -289,7 +256,6 @@ const filteredArticles = computed(() => {
 		return title.includes(searchLower) || description.includes(searchLower);
 	});
 });
-
 const friendsPage = ref(1);
 const friendsHasMore = ref(true);
 const promptsPage = ref(1);
@@ -297,7 +263,6 @@ const promptsHasMore = ref(true);
 const articlesPage = ref(1);
 const articlesHasMore = ref(true);
 const isLoading = ref(false);
-const loadMoreRef = ref<HTMLElement | null>(null);
 
 // load functions for each content type
 async function loadFriends() {
@@ -361,72 +326,38 @@ async function loadArticles() {
 }
 
 async function openFriends() {
-	search.value = '';
+	if (drawerRef.value) drawerRef.value.search = '';
 	mode.value = 'friends';
 	allFriends.value = [];
 	friendsPage.value = 1;
 	friendsHasMore.value = true;
-	drawerOpen.value = true;
+	drawerRef.value?.open();
 	await loadFriends();
 }
 
 async function openPrompts() {
-	search.value = '';
+	if (drawerRef.value) drawerRef.value.search = '';
 	mode.value = 'prompts';
 	allPrompts.value = [];
 	promptsPage.value = 1;
 	promptsHasMore.value = true;
-	drawerOpen.value = true;
+	drawerRef.value?.open();
 	await loadPrompts();
 }
 
 async function openArticles() {
-	search.value = '';
+	if (drawerRef.value) drawerRef.value.search = '';
 	mode.value = 'articles';
 	allArticles.value = [];
 	articlesPage.value = 1;
 	articlesHasMore.value = true;
-	drawerOpen.value = true;
+	drawerRef.value?.open();
 	await loadArticles();
 }
 
-let observer: IntersectionObserver | null = null;
-watch(drawerOpen, (isOpen) => {
-	if (isOpen && loadMoreRef.value) {
-		nextTick(() => {
-			if (observer) {
-				observer.disconnect();
-			}
-
-			observer = new IntersectionObserver(
-				(entries) => {
-					if (entries[0]?.isIntersecting && !isLoading.value) {
-						if (mode.value === 'friends' && friendsHasMore.value) {
-							loadFriends();
-						} else if (mode.value === 'prompts' && promptsHasMore.value) {
-							loadPrompts();
-						} else if (mode.value === 'articles' && articlesHasMore.value) {
-							loadArticles();
-						}
-					}
-				},
-				{ rootMargin: '100px' }
-			);
-
-			if (loadMoreRef.value) {
-				observer.observe(loadMoreRef.value);
-			}
-		});
-	} else if (!isOpen && observer) {
-		// Clean up observer when drawer closes
-		observer.disconnect();
-		observer = null;
-	}
-});
-
-onUnmounted(() => {
-	if (observer) {
-		observer.disconnect();
-	}
-});
+async function handleLoadMore() {
+	if (mode.value === 'friends') await loadFriends();
+	else if (mode.value === 'prompts') await loadPrompts();
+	else if (mode.value === 'articles') await loadArticles();
+}
 </script>
