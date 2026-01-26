@@ -133,7 +133,6 @@ export function useEvent(id: string) {
 	const attendees = useState<User[] | null>(`event-attendees-${id}`, () => null);
 	const fetchAttendees = async () => {
 		const res = await paginatedAPIRequest<User>(
-			`event-attendees-${id}`,
 			`/v2/events/${id}/attendees`,
 			useCurrentSessionToken()
 		);

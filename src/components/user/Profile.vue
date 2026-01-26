@@ -282,7 +282,6 @@ const {
 	currentEventsCount: totalEvents,
 	fetchCurrentEvents,
 	attendingEvents,
-	attendingEventsCount,
 	fetchAttendingEvents
 } = useUser(`@${props.user.username}`);
 const {
@@ -533,7 +532,6 @@ async function showEvents(day: CalendarDate | DateValue | undefined) {
 
 // Initialize calendar with today's events
 onMounted(async () => {
-	// Fetch events first, then show today's events
 	await Promise.all([fetchAttendingEvents(), fetchCurrentEvents()]);
 
 	selectedDate.value = today(getLocalTimeZone()) as DateValue;
