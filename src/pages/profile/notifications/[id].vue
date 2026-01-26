@@ -43,12 +43,7 @@
 				</UChip>
 			</div>
 		</div>
-		<div
-			v-else-if="user && notification === undefined"
-			class="flex flex-col items-center justify-center h-screen"
-		>
-			<p class="text-gray-600">Loading notification...</p>
-		</div>
+		<Loading v-else-if="user && notification === undefined" />
 		<div
 			v-else-if="user && notification === null"
 			class="flex flex-col items-center justify-center h-screen"

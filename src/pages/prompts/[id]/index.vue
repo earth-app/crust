@@ -6,17 +6,12 @@
 		<PromptPage :prompt="prompt" />
 	</div>
 	<div
-		v-else-if="prompt == null"
+		v-else-if="prompt === null"
 		class="flex flex-col items-center justify-center h-screen w-screen"
 	>
 		<p class="text-gray-600">Prompt doesn't exist. Maybe look at the URL again?</p>
 	</div>
-	<div
-		v-else
-		class="flex flex-col items-center justify-center h-screen w-screen"
-	>
-		<p class="text-gray-600">Loading prompt...</p>
-	</div>
+	<Loading v-else />
 </template>
 
 <script setup lang="ts">

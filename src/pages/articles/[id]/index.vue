@@ -39,31 +39,22 @@
 		>
 			<p>Article not found.</p>
 		</div>
-		<div
-			v-else
-			class="flex w-full h-full items-center justify-center text-center"
-		>
-			<UIcon
-				name="mdi:loading"
-				class="animate-spin size-8 sm:size-16 mt-4"
-			/>
-		</div>
+		<Loading v-else />
 	</ClientOnly>
 </template>
 
 <script setup lang="ts">
 import type { Article } from '~/shared/types/article';
 
-const { user } = useAuth();
 const toast = useToast();
-
-const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
+const { user } = useAuth();
+const { setTitleSuffix } = useTitleSuffix();
+const { article } = useArticle(route.params.id as string);
 
 const relatedLoaded = ref(false);
 const relatedArticles = ref<Article[]>([]);
 
-const { article } = useArticle(route.params.id as string);
 watch(
 	() => article.value,
 	(article) => {
@@ -71,6 +62,9 @@ watch(
 
 		if (article) {
 			loadSimilar(article);
+		} else {
+			relatedLoaded.value = false;
+			relatedArticles.value = [];
 		}
 	},
 	{ immediate: true }

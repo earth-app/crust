@@ -1,12 +1,6 @@
 <template>
 	<ClientOnly>
-		<div
-			v-if="currentUser === undefined"
-			class="flex flex-col items-center justify-center h-screen"
-		>
-			<!-- Loading state -->
-			<p class="text-gray-600">Loading profile...</p>
-		</div>
+		<Loading v-if="currentUser === undefined" />
 		<div
 			v-else-if="currentUser === null"
 			class="flex flex-col items-center justify-center h-screen"
