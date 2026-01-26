@@ -1,14 +1,13 @@
 import { ensureLoggedIn } from '~/server/utils';
 import type { Article } from '~/shared/types/article';
-import type { User } from '~/shared/types/user';
 
 export default defineEventHandler(async (event) => {
-	await ensureLoggedIn(event);
+	const user = await ensureLoggedIn(event);
 
 	const config = useRuntimeConfig();
-	const body = await readBody<{ user: User; count: number; pool: Article[] }>(event);
+	const body = await readBody<{ count: number; pool: Article[] }>(event);
 
-	const activities = body.user.activities?.map((a) => a.name) || [];
+	const activities = user.activities?.map((a) => a.name) || [];
 	if (activities.length === 0) {
 		// If the user has no activities, return random articles
 		return body.pool.slice(0, body.count);
