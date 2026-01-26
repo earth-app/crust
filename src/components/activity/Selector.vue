@@ -1,7 +1,9 @@
 <template>
 	<ClientOnly>
 		<UInputMenu
-			placeholder="Select activities..."
+			:placeholder="
+				props.includeActivityTypes ? 'Select activities or types...' : 'Select activities...'
+			"
 			v-model="selectedActivities"
 			:items="allActivities"
 			:size="size"
@@ -30,13 +32,16 @@
 </template>
 
 <script setup lang="ts">
+import { com } from '@earth-app/ocean';
 import type { Activity } from '~/shared/types/activity';
+import { capitalizeFully } from '~/shared/util';
 
 interface ActivityItem {
 	label: string;
 	value: string;
 	icon: string;
 	disabled?: boolean;
+	isActivityType?: boolean;
 }
 
 const props = defineProps<{
@@ -56,6 +61,10 @@ const props = defineProps<{
 	 * Maximum number of activities that can be selected
 	 */
 	maxActivities?: number;
+	/**
+	 * Whether to include activity types in the list
+	 */
+	includeActivityTypes?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -72,6 +81,17 @@ const selectedActivities = ref<ActivityItem[]>([]);
 
 const activitiesSearch = ref<string>('');
 const activitiesLoading = ref(false);
+
+// Add activity types to the list if enabled - do this synchronously before mount
+if (props.includeActivityTypes) {
+	const activityTypes = com.earthapp.activity.ActivityType.values().map((type) => ({
+		label: capitalizeFully(type.name.toString().replace(/_/g, ' ')),
+		value: type.name.toString(),
+		icon: 'mdi:tag-outline',
+		isActivityType: true
+	}));
+	allActivities.value = activityTypes;
+}
 
 // Initialize activities from modelValue
 onMounted(() => {
@@ -92,40 +112,68 @@ function initializeActivities() {
 		return;
 	}
 
-	// Check if modelValue contains Activity objects or just IDs
 	const firstItem = props.modelValue[0];
 	if (typeof firstItem === 'string') {
-		// modelValue is array of IDs - fetch activity details if we don't have them
+		// modelValue is array of IDs/types
 		const existingIds = allActivities.value.map((a) => a.value);
-		const newIds = props.modelValue.filter((id) => !existingIds.includes(id as string));
+		const newIds = (props.modelValue as string[]).filter((id) => !existingIds.includes(id));
 
 		if (newIds.length > 0) {
-			// Trigger a search to load these activities
-			activitiesLoading.value = true;
-			getAllActivities(-1, '').then((res) => {
-				if (res.success && res.data) {
-					const activities = res.data
-						.filter((activity) => (props.modelValue as string[]).includes(activity.id))
-						.map((activity) => ({
-							label: activity.name,
-							value: activity.id,
-							icon: activity.fields['icon'] || 'material-symbols:activity-zone'
-						}));
+			const activityTypeNames = com.earthapp.activity.ActivityType.values().map((t) =>
+				t.name.toString()
+			);
+			const typeValues = newIds.filter((id) => activityTypeNames.includes(id));
+			const activityIds = newIds.filter((id) => !activityTypeNames.includes(id));
 
-					allActivities.value = allActivities.value
-						.concat(activities)
-						.filter(
-							(activity, index, self) => index === self.findIndex((a) => a.value === activity.value)
-						);
+			if (props.includeActivityTypes && typeValues.length > 0) {
+				const types = typeValues.map((typeValue) => ({
+					label: capitalizeFully(typeValue.replace(/_/g, ' ')),
+					value: typeValue,
+					icon: 'mdi:tag-outline',
+					isActivityType: true
+				}));
 
-					selectedActivities.value = allActivities.value.filter((a) =>
-						(props.modelValue as string[]).includes(a.value)
+				allActivities.value = allActivities.value
+					.concat(types)
+					.filter(
+						(activity, index, self) => index === self.findIndex((a) => a.value === activity.value)
 					);
-				}
-				activitiesLoading.value = false;
-			});
+			}
+
+			// fetch activity details for IDs
+			if (activityIds.length > 0) {
+				activitiesLoading.value = true;
+				getAllActivities(-1, '').then((res) => {
+					if (res.success && res.data) {
+						const activities = res.data
+							.filter((activity) => activityIds.includes(activity.id))
+							.map((activity) => ({
+								label: activity.name,
+								value: activity.id,
+								icon: activity.fields['icon'] || 'material-symbols:activity-zone',
+								isActivityType: false
+							}));
+
+						allActivities.value = allActivities.value
+							.concat(activities)
+							.filter(
+								(activity, index, self) =>
+									index === self.findIndex((a) => a.value === activity.value)
+							);
+
+						selectedActivities.value = allActivities.value.filter((a) =>
+							(props.modelValue as string[]).includes(a.value)
+						);
+					}
+					activitiesLoading.value = false;
+				});
+			} else {
+				selectedActivities.value = allActivities.value.filter((a) =>
+					(props.modelValue as string[]).includes(a.value)
+				);
+			}
 		} else {
-			// We already have these activities loaded
+			// already have these items loaded
 			selectedActivities.value = allActivities.value.filter((a) =>
 				(props.modelValue as string[]).includes(a.value)
 			);
@@ -137,11 +185,18 @@ function initializeActivities() {
 			.map((activity) => ({
 				label: activity.name,
 				value: activity.id,
-				icon: activity.fields['icon'] || 'material-symbols:activity-zone'
+				icon: activity.fields['icon'] || 'material-symbols:activity-zone',
+				isActivityType: false
 			}))
 			.filter(Boolean);
 
-		allActivities.value = current;
+		allActivities.value = props.includeActivityTypes
+			? allActivities.value
+					.concat(current)
+					.filter(
+						(activity, index, self) => index === self.findIndex((a) => a.value === activity.value)
+					)
+			: current;
 		selectedActivities.value = current;
 	}
 }
@@ -156,10 +211,12 @@ function updateActivitiesList(search: string) {
 				res.data?.map((activity) => ({
 					label: activity.name,
 					value: activity.id,
-					icon: activity.fields['icon'] || 'material-symbols:activity-zone'
+					icon: activity.fields['icon'] || 'material-symbols:activity-zone',
+					isActivityType: false
 				})) || [];
 
-			allActivities.value = allActivities.value
+			const existingTypes = allActivities.value.filter((a) => a.isActivityType);
+			allActivities.value = existingTypes
 				.concat(activities)
 				.filter(
 					(activity, index, self) => index === self.findIndex((a) => a.value === activity.value)
@@ -175,7 +232,9 @@ function updateActivitiesList(search: string) {
 				color: 'error',
 				duration: 5000
 			});
-			allActivities.value = [];
+
+			// keep activity types if they exist
+			allActivities.value = allActivities.value.filter((a) => a.isActivityType);
 			activitiesLoading.value = false;
 		}
 	});
