@@ -51,6 +51,15 @@ export async function makeRequest<T>(
 			ignoreResponseError: true,
 			...options
 		}).catch((error) => {
+			// Silently handle 404s - don't log or report
+			const errorStr = error.toString();
+			if (errorStr.includes('404')) {
+				throw {
+					is404: true,
+					toString: () => '404'
+				};
+			}
+
 			throw {
 				message: `Error fetching ${key} from ${url}: ${error}`,
 				data,
@@ -67,10 +76,9 @@ export async function makeRequest<T>(
 				};
 			}
 
+			// 404 - return silently without message
 			return {
-				success: false,
-				data: { code: 404, message: 'Not Found' },
-				message: `No data found for ${key} at ${url}`
+				success: false
 			};
 		}
 
@@ -92,14 +100,14 @@ export async function makeRequest<T>(
 			data: data as T
 		};
 	} catch (error: any) {
-		const value: string = error.toString();
-		const data = error.data as { code: number; message: string } | undefined;
-		if (value.includes('404')) {
+		if (error.is404 || error.toString().includes('404')) {
 			return {
-				success: false,
-				message: `Resource not found at ${url}`
+				success: false
 			};
 		}
+
+		const value: string = error.toString();
+		const data = error.data as { code: number; message: string } | undefined;
 
 		if (value.includes('400')) {
 			return {
@@ -126,6 +134,7 @@ export async function makeRequest<T>(
 		}
 
 		console.error(`Failed to fetch ${key || url}:`, error);
+
 		return {
 			success: false,
 			message: 'An error occurred while fetching data.',
@@ -201,20 +210,14 @@ export async function paginatedAPIRequest<T>(
 ) {
 	const allItems: T[] = [];
 	let currentPage = 1;
+	const maxPages = 100;
 
-	while (true) {
-		const res = key
-			? await makeAPIRequest<{ items: T[]; total: number }>(
-					`${key}-page-${currentPage}`,
-					`${url}?page=${currentPage}&limit=100&search=${search}&sort=${sort}`,
-					token,
-					options
-				)
-			: await makeClientAPIRequest<{ items: T[]; total: number }>(
-					`${url}?page=${currentPage}&limit=100&search=${search}&sort=${sort}`,
-					token,
-					options
-				);
+	while (currentPage <= maxPages) {
+		const res = await makeClientAPIRequest<{ items: T[]; total: number }>(
+			`${url}?page=${currentPage}&limit=100&search=${search}&sort=${sort}`,
+			token,
+			options
+		);
 
 		if (!res.success || !res.data) {
 			console.error(`Failed to fetch page ${currentPage}:`, res.message);
@@ -228,6 +231,7 @@ export async function paginatedAPIRequest<T>(
 
 		allItems.push(...res.data.items);
 
+		// Stop if we've reached the limit or got fewer items than requested
 		if (res.data.items.length < 100 || (limit !== -1 && allItems.length >= limit)) {
 			break;
 		}
@@ -235,7 +239,7 @@ export async function paginatedAPIRequest<T>(
 		currentPage++;
 	}
 
-	return { success: true, data: allItems.slice(0, limit) };
+	return { success: true, data: limit !== -1 ? allItems.slice(0, limit) : allItems };
 }
 
 // Non-request related
