@@ -24,7 +24,6 @@ export async function getAllActivities(
 	sort: SortingOption = 'desc'
 ) {
 	return await paginatedAPIRequest<Activity>(
-		`activities-${search}-${limit}`,
 		'/v2/activities',
 		useCurrentSessionToken(),
 		{},

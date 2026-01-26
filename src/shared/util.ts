@@ -200,7 +200,6 @@ export async function makeServerRequest<T>(
 }
 
 export async function paginatedAPIRequest<T>(
-	key: string | null,
 	url: string,
 	token: string | null | undefined = null,
 	options: any = {},

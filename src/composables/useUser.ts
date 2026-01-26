@@ -1,5 +1,6 @@
 import type { MaybeRefOrGetter } from 'vue';
 import type { Activity } from '~/shared/types/activity';
+import type { Event } from '~/shared/types/event';
 import type { SortingOption } from '~/shared/types/global';
 import type { User, UserNotification } from '~/shared/types/user';
 import {
@@ -29,6 +30,81 @@ export function useVisitedSite() {
 		visitedSiteCookie,
 		markVisited
 	};
+}
+
+const globalAvatarCache = new Map<
+	string,
+	{ avatar: string; avatar32: string; avatar128: string }
+>();
+
+const avatarFetchQueue = new Map<
+	string,
+	Promise<{ avatar: string; avatar32: string; avatar128: string }>
+>();
+
+const userFetchQueue = new Map<string, Promise<void>>();
+let authFetchQueue: Promise<void> | null = null;
+
+async function fetchAvatarBlobsForUrl(
+	url: string
+): Promise<{ avatar: string; avatar32: string; avatar128: string }> {
+	// Check global cache first
+	const cached = globalAvatarCache.get(url);
+	if (cached) {
+		return cached;
+	}
+
+	// Check if already fetching this URL
+	const existing = avatarFetchQueue.get(url);
+	if (existing) {
+		return existing;
+	}
+
+	// Create new fetch promise
+	const fetchPromise = (async () => {
+		try {
+			const token = useCurrentSessionToken();
+			const headers: HeadersInit = {};
+			if (token) headers['Authorization'] = `Bearer ${token}`;
+
+			const [r1, r2, r3] = await Promise.all([
+				fetch(url, { headers }),
+				fetch(`${url}?size=32`, { headers }),
+				fetch(`${url}?size=128`, { headers })
+			]);
+
+			const [blob1, blob2, blob3] = await Promise.all([
+				r1.ok ? r1.blob() : null,
+				r2.ok ? r2.blob() : null,
+				r3.ok ? r3.blob() : null
+			]);
+
+			const blobs = {
+				avatar: blob1 ? URL.createObjectURL(blob1) : '/earth-app.png',
+				avatar32: blob2 ? URL.createObjectURL(blob2) : '/favicon.png',
+				avatar128: blob3 ? URL.createObjectURL(blob3) : '/earth-app.png'
+			};
+
+			// Store in global cache - THIS IS THE KEY FIX
+			globalAvatarCache.set(url, blobs);
+
+			return blobs;
+		} catch {
+			const fallback = {
+				avatar: '/earth-app.png',
+				avatar32: '/favicon.png',
+				avatar128: '/favicon.png'
+			};
+			globalAvatarCache.set(url, fallback);
+			return fallback;
+		} finally {
+			// Clean up queue (but keep cache!)
+			avatarFetchQueue.delete(url);
+		}
+	})();
+
+	avatarFetchQueue.set(url, fetchPromise);
+	return fetchPromise;
 }
 
 export function useDisplayName(
@@ -97,20 +173,37 @@ export const useAuth = () => {
 
 		if (!force && user.value !== undefined && user.value !== null) return; // only fetch if uninitialized or forced
 
-		const res = await useCurrentUser();
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				// API returned an error message
-				user.value = null;
-				console.error('Failed to fetch current user:', res.data.message);
-				return;
-			}
-
-			user.value = res.data;
-		} else {
-			console.error('Failed to fetch current user:', res.message);
-			user.value = null;
+		// Check if already fetching (unless forced)
+		if (!force && authFetchQueue) {
+			await authFetchQueue;
+			return;
 		}
+
+		// Create new fetch promise
+		const fetchPromise = (async () => {
+			try {
+				const res = await useCurrentUser();
+				if (res.success && res.data) {
+					if ('message' in res.data) {
+						// API returned an error message
+						user.value = null;
+						console.error('Failed to fetch current user:', res.data.message);
+						return;
+					}
+
+					user.value = res.data;
+				} else {
+					console.error('Failed to fetch current user:', res.message);
+					user.value = null;
+				}
+			} finally {
+				// Clean up queue
+				authFetchQueue = null;
+			}
+		})();
+
+		authFetchQueue = fetchPromise;
+		await fetchPromise;
 	};
 
 	// if user is not loaded, fetch it
@@ -128,107 +221,34 @@ export const useAuth = () => {
 	}
 
 	const avatarUrl = computed(() => user.value?.account?.avatar_url);
-	const blobUrls = useState<{
-		avatar: string | null;
-		avatar32: string | null;
-		avatar128: string | null;
-	} | null>('user-avatar-blobs-current', () => null);
 
 	const isRemoteUrl = (url: string | undefined): boolean => {
 		if (!url) return false;
 		return url.startsWith('http://') || url.startsWith('https://');
 	};
 
-	const fetchAuthenticatedImage = async (url: string): Promise<string | null> => {
-		try {
-			const token = useCurrentSessionToken();
-			const headers: HeadersInit = {};
-			if (token) {
-				headers['Authorization'] = `Bearer ${token}`;
-			}
-
-			const response = await fetch(url, { headers });
-			if (response.ok) {
-				const blob = await response.blob();
-				return URL.createObjectURL(blob);
-			}
-			return null;
-		} catch {
-			return null;
+	// Trigger avatar fetch if not in cache
+	if (import.meta.client && user.value) {
+		const url = avatarUrl.value;
+		if (url && isRemoteUrl(url) && !globalAvatarCache.has(url)) {
+			fetchAvatarBlobsForUrl(url);
 		}
-	};
-
-	if (import.meta.client) {
-		watch(
-			avatarUrl,
-			async (url, oldUrl) => {
-				// If we already have valid blob URLs cached, don't refetch
-				if (blobUrls.value?.avatar && blobUrls.value.avatar.startsWith('blob:')) {
-					// Only refetch if URL actually changed
-					if (oldUrl && oldUrl !== url) {
-						// URL changed, revoke old blobs
-						const avatar = blobUrls.value.avatar;
-						const avatar32 = blobUrls.value.avatar32;
-						const avatar128 = blobUrls.value.avatar128;
-
-						if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
-						if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
-						if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
-						// Continue to fetch new blobs below
-					} else {
-						// Same URL and already have blobs, skip
-						return;
-					}
-				}
-
-				if (!url || !isRemoteUrl(url)) {
-					if (!blobUrls.value) {
-						blobUrls.value = {
-							avatar: '/earth-app.png',
-							avatar32: '/favicon.png',
-							avatar128: '/favicon.png'
-						};
-					}
-					return;
-				}
-
-				// Set defaults first if we don't have any values yet
-				if (!blobUrls.value) {
-					blobUrls.value = {
-						avatar: '/earth-app.png',
-						avatar32: '/favicon.png',
-						avatar128: '/favicon.png'
-					};
-				}
-
-				// fetch images with authentication
-				const [avatarBlob, avatar32Blob, avatar128Blob] = await Promise.all([
-					fetchAuthenticatedImage(url),
-					fetchAuthenticatedImage(`${url}?size=32`),
-					fetchAuthenticatedImage(`${url}?size=128`)
-				]);
-
-				blobUrls.value = {
-					avatar: avatarBlob || '/earth-app.png',
-					avatar32: avatar32Blob || '/favicon.png',
-					avatar128: avatar128Blob || '/earth-app.png'
-				};
-			},
-			{ immediate: true }
-		);
 	}
 
 	const avatar = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar || undefined;
-		return undefined;
+		const url = avatarUrl.value;
+		if (!url || !isRemoteUrl(url)) return '/earth-app.png';
+		return globalAvatarCache.get(url)?.avatar || undefined;
 	});
 	const avatar32 = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar32 || undefined;
-		return undefined;
+		const url = avatarUrl.value;
+		if (!url || !isRemoteUrl(url)) return '/favicon.png';
+		return globalAvatarCache.get(url)?.avatar32 || undefined;
 	});
 	const avatar128 = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar128 || undefined;
-		return undefined;
+		const url = avatarUrl.value;
+		if (!url || !isRemoteUrl(url)) return '/favicon.png';
+		return globalAvatarCache.get(url)?.avatar128 || undefined;
 	});
 
 	const maxEventAttendees = computed(() => {
@@ -247,13 +267,69 @@ export const useAuth = () => {
 		}
 	});
 
+	const attendingEvents = useState<Event[] | null>('events-attending-current', () => null);
+	const attendingEventsCount = useState<number>('events-attending-count-current', () => 0);
+	const fetchAttendingEvents = async () => {
+		const res = await paginatedAPIRequest<Event>(
+			'events-attending-current',
+			'/v2/events/current',
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				attendingEvents.value = null;
+				return res;
+			}
+
+			attendingEvents.value = res.data;
+			attendingEventsCount.value = res.data.length;
+		} else {
+			attendingEvents.value = null;
+			attendingEventsCount.value = 0;
+		}
+
+		return res;
+	};
+
+	const currentEvents = useState<Event[] | null>('events-hosting-current', () => null);
+	const currentEventsCount = useState<number>('events-hosting-count-current', () => 0);
+	const fetchCurrentEvents = async () => {
+		const res = await paginatedAPIRequest<Event>(
+			'events-hosting-current',
+			'/v2/users/current/events',
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				currentEvents.value = null;
+				return res;
+			}
+
+			currentEvents.value = res.data;
+			currentEventsCount.value = res.data.length;
+		} else {
+			currentEvents.value = null;
+			currentEventsCount.value = 0;
+		}
+
+		return res;
+	};
+
 	return {
 		user,
 		fetchUser,
 		avatar,
 		avatar32,
 		avatar128,
-		maxEventAttendees
+		maxEventAttendees,
+		attendingEvents,
+		attendingEventsCount,
+		fetchAttendingEvents,
+		currentEvents,
+		currentEventsCount,
+		fetchCurrentEvents
 	};
 };
 
@@ -339,7 +415,6 @@ export async function getUsers(
 	sort: SortingOption = 'desc'
 ) {
 	return await paginatedAPIRequest<User>(
-		`users-${search}-${limit}`,
 		`/v2/users`,
 		useCurrentSessionToken(),
 		{},
@@ -370,24 +445,40 @@ export function useUser(identifier: string) {
 		if (!identifier) return;
 		if (user.value !== undefined) return; // Only fetch if truly uninitialized
 
-		try {
-			const res = await getUser(identifier);
-			if (res.success && res.data) {
-				if ('message' in res.data) {
-					console.warn(`Failed to fetch user ${identifier}:`, res.data.message);
-					user.value = null;
-					return;
-				}
-
-				user.value = res.data;
-			} else {
-				console.warn(`Failed to fetch user ${identifier}:`, res.message);
-				user.value = null;
-			}
-		} catch (error) {
-			console.warn(`Failed to fetch user ${identifier}:`, error);
-			user.value = null; // Set to null on error
+		// Check if already fetching this user
+		const existingFetch = userFetchQueue.get(identifier);
+		if (existingFetch) {
+			await existingFetch;
+			return;
 		}
+
+		// Create new fetch promise
+		const fetchPromise = (async () => {
+			try {
+				const res = await getUser(identifier);
+				if (res.success && res.data) {
+					if ('message' in res.data) {
+						console.warn(`Failed to fetch user ${identifier}:`, res.data.message);
+						user.value = null;
+						return;
+					}
+
+					user.value = res.data;
+				} else {
+					console.warn(`Failed to fetch user ${identifier}:`, res.message);
+					user.value = null;
+				}
+			} catch (error) {
+				console.warn(`Failed to fetch user ${identifier}:`, error);
+				user.value = null; // Set to null on error
+			} finally {
+				// Clean up queue
+				userFetchQueue.delete(identifier);
+			}
+		})();
+
+		userFetchQueue.set(identifier, fetchPromise);
+		await fetchPromise;
 	};
 
 	// If user is not loaded, fetch it
@@ -396,106 +487,34 @@ export function useUser(identifier: string) {
 	}
 
 	const avatarUrl = computed(() => user.value?.account?.avatar_url);
-	const blobUrls = useState<{
-		avatar: string | null;
-		avatar32: string | null;
-		avatar128: string | null;
-	} | null>(`user-avatar-blobs-${identifier}`, () => null);
 
 	const isRemoteUrl = (url: string | undefined): boolean => {
 		if (!url) return false;
 		return url.startsWith('http://') || url.startsWith('https://');
 	};
 
-	const fetchAuthenticatedImage = async (url: string): Promise<string | null> => {
-		try {
-			const token = useCurrentSessionToken();
-			const headers: HeadersInit = {};
-			if (token) {
-				headers['Authorization'] = `Bearer ${token}`;
-			}
-
-			const response = await fetch(url, { headers });
-			if (response.ok) {
-				const blob = await response.blob();
-				return URL.createObjectURL(blob);
-			}
-			return null;
-		} catch {
-			return null;
+	// Trigger avatar fetch if not in cache
+	if (import.meta.client && user.value) {
+		const url = avatarUrl.value;
+		if (url && isRemoteUrl(url) && !globalAvatarCache.has(url)) {
+			fetchAvatarBlobsForUrl(url);
 		}
-	};
-
-	if (import.meta.client) {
-		watch(
-			avatarUrl,
-			async (url, oldUrl) => {
-				// If we already have valid blob URLs cached, don't refetch
-				if (blobUrls.value?.avatar && blobUrls.value.avatar.startsWith('blob:')) {
-					// Only refetch if URL actually changed
-					if (oldUrl && oldUrl !== url) {
-						// URL changed, revoke old blobs
-						const avatar = blobUrls.value.avatar;
-						const avatar32 = blobUrls.value.avatar32;
-						const avatar128 = blobUrls.value.avatar128;
-
-						if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
-						if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
-						if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
-						// Continue to fetch new blobs below
-					} else {
-						// Same URL and already have blobs, skip
-						return;
-					}
-				}
-
-				if (!url || !isRemoteUrl(url)) {
-					if (!blobUrls.value) {
-						blobUrls.value = {
-							avatar: '/earth-app.png',
-							avatar32: '/favicon.png',
-							avatar128: '/favicon.png'
-						};
-					}
-					return;
-				}
-
-				// Set defaults first if we don't have any values yet
-				if (!blobUrls.value) {
-					blobUrls.value = {
-						avatar: '/earth-app.png',
-						avatar32: '/favicon.png',
-						avatar128: '/favicon.png'
-					};
-				}
-
-				const [avatarBlob, avatar32Blob, avatar128Blob] = await Promise.all([
-					fetchAuthenticatedImage(url),
-					fetchAuthenticatedImage(`${url}?size=32`),
-					fetchAuthenticatedImage(`${url}?size=128`)
-				]);
-
-				blobUrls.value = {
-					avatar: avatarBlob || '/earth-app.png',
-					avatar32: avatar32Blob || '/favicon.png',
-					avatar128: avatar128Blob || '/earth-app.png'
-				};
-			},
-			{ immediate: true }
-		);
 	}
 
 	const avatar = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar || undefined;
-		return undefined;
+		const url = avatarUrl.value;
+		if (!url || !isRemoteUrl(url)) return '/earth-app.png';
+		return globalAvatarCache.get(url)?.avatar || undefined;
 	});
 	const avatar32 = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar32 || undefined;
-		return undefined;
+		const url = avatarUrl.value;
+		if (!url || !isRemoteUrl(url)) return '/favicon.png';
+		return globalAvatarCache.get(url)?.avatar32 || undefined;
 	});
 	const avatar128 = computed(() => {
-		if (blobUrls.value) return blobUrls.value.avatar128 || undefined;
-		return undefined;
+		const url = avatarUrl.value;
+		if (!url || !isRemoteUrl(url)) return '/favicon.png';
+		return globalAvatarCache.get(url)?.avatar128 || undefined;
 	});
 
 	const chipColor = computed(() => {
@@ -529,6 +548,56 @@ export function useUser(identifier: string) {
 		}
 	});
 
+	const attendingEvents = useState<Event[]>(`events-attending-${identifier}`, () => []);
+	const attendingEventsCount = useState<number>(`events-attending-count-${identifier}`, () => 0);
+	const fetchAttendingEvents = async () => {
+		const res = await paginatedAPIRequest<Event>(
+			`events-attending-${identifier}`,
+			`/v2/users/${identifier}/events/attending`,
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				attendingEvents.value = [];
+				return res;
+			}
+
+			attendingEvents.value = res.data;
+			attendingEventsCount.value = res.data.length;
+		} else {
+			attendingEvents.value = [];
+			attendingEventsCount.value = 0;
+		}
+
+		return res;
+	};
+
+	const currentEvents = useState<Event[]>(`events-hosting-${identifier}`, () => []);
+	const currentEventsCount = useState<number>(`events-hosting-count-${identifier}`, () => 0);
+	const fetchCurrentEvents = async () => {
+		const res = await paginatedAPIRequest<Event>(
+			`events-hosting-${identifier}`,
+			`/v2/users/${identifier}/events`,
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				currentEvents.value = [];
+				return res;
+			}
+
+			currentEvents.value = res.data;
+			currentEventsCount.value = res.data.length;
+		} else {
+			currentEvents.value = [];
+			currentEventsCount.value = 0;
+		}
+
+		return res;
+	};
+
 	return {
 		user,
 		fetchUser,
@@ -536,7 +605,13 @@ export function useUser(identifier: string) {
 		avatar32,
 		avatar128,
 		chipColor,
-		maxEventAttendees
+		maxEventAttendees,
+		attendingEvents,
+		attendingEventsCount,
+		fetchAttendingEvents,
+		currentEvents,
+		currentEventsCount,
+		fetchCurrentEvents
 	};
 }
 
@@ -982,7 +1057,6 @@ export function useFriends(id?: string) {
 		}
 
 		const res = await paginatedAPIRequest<User>(
-			`friends-${dataId}`,
 			`/v2/users/${dataId}/friends`,
 			token,
 			{},
@@ -1084,7 +1158,6 @@ export function useFriends(id?: string) {
 		}
 
 		const res = await paginatedAPIRequest<User>(
-			`user-circle-${dataId}`,
 			`/v2/users/${dataId}/circle`,
 			token,
 			{},

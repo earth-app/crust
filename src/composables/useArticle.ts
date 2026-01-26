@@ -1,6 +1,5 @@
 import { type Article } from '~/shared/types/article';
 import type { SortingOption } from '~/shared/types/global';
-import type { User } from '~/shared/types/user';
 import {
 	makeAPIRequest,
 	makeClientAPIRequest,
@@ -15,7 +14,6 @@ export async function getArticles(
 	sort: SortingOption = 'desc'
 ) {
 	return await paginatedAPIRequest<Article>(
-		`articles-${search}-${limit}`,
 		`/v2/articles`,
 		useCurrentSessionToken(),
 		{},
@@ -25,7 +23,20 @@ export async function getArticles(
 	);
 }
 
-export async function getRecommendedArticles(user: User, count: number = 3) {
+export async function getRecommendedArticles(count: number = 3) {
+	const { user } = useAuth();
+	if (!user.value) {
+		const res = await useCurrentUser();
+		if (!res.success || !res.data || 'message' in res.data) {
+			return {
+				success: false,
+				message: 'User must be logged in to get recommended articles.'
+			};
+		}
+
+		user.value = res.data;
+	}
+
 	const pool = await getRandomArticles(Math.min(count * 3, 15)).then((res) =>
 		res.success ? res.data : res.message
 	);
@@ -43,12 +54,12 @@ export async function getRecommendedArticles(user: User, count: number = 3) {
 	}
 
 	const res = await makeServerRequest<Article[]>(
-		`user-${user.id}-article_recommendations`,
+		`user-${user.value.id}-article_recommendations`,
 		`/api/article/recommend`,
 		useCurrentSessionToken(),
 		{
 			method: 'POST',
-			body: { user, count, pool }
+			body: { count, pool }
 		}
 	);
 
@@ -120,6 +131,26 @@ export async function getRandomArticles(count: number = 3) {
 
 		// load individual articles into state
 		for (const article of res.data) {
+			useState<Article | null>(`article-${article.id}`, () => article);
+		}
+	}
+
+	return res;
+}
+
+export async function getRecentArticles(count: number = 5) {
+	const res = await makeClientAPIRequest<{ items: Article[] }>(
+		`/v2/articles?sort=desc&limit=${count}`,
+		useCurrentSessionToken()
+	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load individual articles into state
+		for (const article of res.data.items) {
 			useState<Article | null>(`article-${article.id}`, () => article);
 		}
 	}

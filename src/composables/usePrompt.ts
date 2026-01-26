@@ -10,7 +10,6 @@ export async function getPrompts(
 	sort: SortingOption = 'desc'
 ) {
 	return await paginatedAPIRequest<Prompt>(
-		`prompts-${search}-${limit}`,
 		`/v2/prompts`,
 		useCurrentSessionToken(),
 		{},
