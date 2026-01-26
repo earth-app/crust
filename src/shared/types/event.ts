@@ -1,7 +1,17 @@
 import type { com } from '@earth-app/ocean';
+import type { Activity } from './activity';
 import type { User } from './user';
 
 export type EventType = 'IN_PERSON' | 'HYBRID' | 'ONLINE';
+
+export type EventActivity =
+	| {
+			type: 'activity_type';
+			value: typeof com.earthapp.activity.ActivityType.prototype.name;
+	  }
+	| ({
+			type: 'activity';
+	  } & Activity);
 
 export type Event = {
 	id: string;
@@ -10,7 +20,7 @@ export type Event = {
 	name: string;
 	description: string;
 	type: EventType;
-	activities: string[];
+	activities: EventActivity[];
 	location: {
 		latitude: number;
 		longitude: number;
@@ -23,12 +33,21 @@ export type Event = {
 	can_edit: boolean;
 	created_at: string;
 	updated_at?: string;
+	fields?: Record<string, any>;
 };
 
 export type EventData = Omit<
 	Event,
-	'id' | 'host' | 'attendee_count' | 'is_attending' | 'created_at' | 'updated_at'
->;
+	| 'id'
+	| 'host'
+	| 'hostId'
+	| 'attendee_count'
+	| 'is_attending'
+	| 'created_at'
+	| 'updated_at'
+	| 'can_edit'
+	| 'activities'
+> & { activities: (string | typeof com.earthapp.activity.ActivityType.prototype.name)[] };
 
 export type RawEventAutocompleteSuggestion = {
 	place?: string;
@@ -62,4 +81,5 @@ export type EventAutocompleteSuggestion = {
 	place_id?: string;
 	address?: string;
 	distance_meters?: number;
+	types: string[];
 };
