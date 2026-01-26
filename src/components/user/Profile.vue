@@ -111,6 +111,54 @@
 			</h2>
 		</div>
 		<div
+			class="flex flex-col items-center mt-12 w-full sm:px-8 md:px-12 lg:px-20"
+			id="user-signedup-events"
+		>
+			<h1 class="text-2xl font-bold">{{ props.user?.username }}'s Calendar</h1>
+			<UCard class="mt-4 w-full">
+				<div class="flex flex-col items-center mt-4 w-full">
+					<UCalendar
+						v-model="selectedDate"
+						id="calendar"
+						@update:modelValue="(date: any) => showEvents(date)"
+						class="w-80 max-w-120"
+					>
+						<template #day="{ day }">
+							<div
+								class="relative flex items-center justify-center w-full h-full rounded-full"
+								:class="{
+									'bg-info-100 dark:bg-info-900/20 font-semibold':
+										hasEventsOnDate(day) && !isSelectedDate(day),
+									'ring-2 ring-info-500 ring-inset': hasEventsOnDate(day)
+								}"
+							>
+								<span>{{ day.day }}</span>
+								<span
+									v-if="hasEventsOnDate(day)"
+									class="absolute bottom-0.5 left-1/2 -translate-x-1/2 size-1 bg-primary-500 rounded-full"
+								></span>
+							</div>
+						</template>
+					</UCalendar>
+					<InfoCardGroup
+						:title="`Events ${props.user.username} is Attending on ${formattedCurrentDay}`"
+						:description="`${attendingEventsDay.length} Events that ${props.user.username} is attending on ${formattedCurrentDay} (${Math.min(attendingEventsDay.length, 25)} shown here)`"
+						icon="mdi:calendar-check-outline"
+						:icon-button="true"
+						@icon-click="openCurrentDayEvents"
+						class="w-full sm:w-11/12 my-4"
+						show-progress
+					>
+						<EventCard
+							v-for="event in attendingEventsDay.slice(0, 25)"
+							:key="event.id"
+							:event="event"
+						/>
+					</InfoCardGroup>
+				</div>
+			</UCard>
+		</div>
+		<div
 			class="flex flex-col items-center mt-12 mb-2 w-full"
 			id="user-content"
 		>
@@ -147,6 +195,22 @@
 					:article="article"
 				/>
 			</InfoCardGroup>
+			<InfoCardGroup
+				v-if="events.length > 0"
+				:title="`Events hosted by ${displayName}`"
+				:description="`${totalEvents} Events hosted by ${props.user.username} (${Math.min(totalEvents, 25)} shown here)`"
+				icon="mdi:calendar-star-outline"
+				:icon-button="true"
+				@icon-click="openEvents"
+				class="w-11/12 my-4"
+				show-progress
+			>
+				<EventCard
+					v-for="event in events.slice(0, 25)"
+					:key="event.id"
+					:event="event"
+				/>
+			</InfoCardGroup>
 			<h2 v-if="prompts.length === 0 && articles.length === 0">
 				{{ props.user.username }} has not created any content.
 			</h2>
@@ -176,12 +240,31 @@
 			:key="article.id"
 			:article="article"
 		/>
+		<EventCard
+			v-else-if="mode === 'hosting-events'"
+			v-for="event in filteredEvents"
+			:key="`${event.hostId}-${event.id}`"
+			:event="event"
+		/>
+		<EventCard
+			v-else-if="mode === 'attending-events'"
+			v-for="event in filteredAttendingEvents"
+			:key="event.id"
+			:event="event"
+		/>
 	</ContentDrawer>
 </template>
 
 <script setup lang="ts">
+import {
+	getLocalTimeZone,
+	today,
+	type CalendarDate,
+	type DateValue
+} from '@internationalized/date';
 import ContentDrawer from '~/components/ContentDrawer.vue';
 import type { Article } from '~/shared/types/article';
+import type { Event } from '~/shared/types/event';
 import type { Prompt } from '~/shared/types/prompts';
 import type { User } from '~/shared/types/user';
 
@@ -193,7 +276,15 @@ const props = defineProps<{
 const { user } = useAuth();
 const { name: displayName, handle, hasFullName } = useDisplayName(() => props.user);
 
-const { avatar } = useUser(props.user.id);
+const {
+	avatar,
+	currentEvents: events,
+	currentEventsCount: totalEvents,
+	fetchCurrentEvents,
+	attendingEvents,
+	attendingEventsCount,
+	fetchAttendingEvents
+} = useUser(`@${props.user.username}`);
 const {
 	prompts,
 	total: totalPrompts,
@@ -214,7 +305,9 @@ function openEmail() {
 }
 
 const drawerRef = ref<InstanceType<typeof ContentDrawer>>();
-const mode = ref<'friends' | 'prompts' | 'articles' | null>(null);
+const mode = ref<'friends' | 'prompts' | 'articles' | 'hosting-events' | 'attending-events' | null>(
+	null
+);
 const allFriends = ref<User[]>([]);
 const allPrompts = ref<Prompt[]>([]);
 const allArticles = ref<Article[]>([]);
@@ -223,6 +316,8 @@ const drawerTitle = computed(() => {
 	if (mode.value === 'friends') return `${displayName.value}'s Friends`;
 	if (mode.value === 'prompts') return `Prompts by ${displayName.value}`;
 	if (mode.value === 'articles') return `Articles by ${displayName.value}`;
+	if (mode.value === 'hosting-events') return `Events hosted by ${displayName.value}`;
+	if (mode.value === 'attending-events') return `Events ${displayName.value} is Attending`;
 	return '';
 });
 
@@ -256,6 +351,15 @@ const filteredArticles = computed(() => {
 		return title.includes(searchLower) || description.includes(searchLower);
 	});
 });
+
+const filteredEvents = computed(() => {
+	if (!search.value.trim()) return events.value;
+	const searchLower = search.value.toLowerCase();
+	return (events.value || []).filter((event) => {
+		return event.name.toLowerCase().includes(searchLower);
+	});
+});
+
 const friendsPage = ref(1);
 const friendsHasMore = ref(true);
 const promptsPage = ref(1);
@@ -355,9 +459,98 @@ async function openArticles() {
 	await loadArticles();
 }
 
+async function openEvents() {
+	if (drawerRef.value) drawerRef.value.search = '';
+	mode.value = 'hosting-events';
+	drawerRef.value?.open();
+}
+
 async function handleLoadMore() {
 	if (mode.value === 'friends') await loadFriends();
 	else if (mode.value === 'prompts') await loadPrompts();
 	else if (mode.value === 'articles') await loadArticles();
 }
+
+const selectedDate: any = ref<DateValue | undefined>(undefined);
+const currentEventsDay = ref<Date>(new Date());
+const attendingEventsDay = ref<Event[]>([]);
+
+const formattedCurrentDay = computed(() => {
+	return currentEventsDay.value.toLocaleDateString('en-US', {
+		weekday: 'long',
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric'
+	});
+});
+
+function isSelectedDate(day: DateValue): boolean {
+	if (!selectedDate.value) return false;
+	return (
+		selectedDate.value.year === day.year &&
+		selectedDate.value.month === day.month &&
+		selectedDate.value.day === day.day
+	);
+}
+
+function eventsCountOn(day: DateValue): number {
+	if (!attendingEvents.value) return 0;
+
+	return attendingEvents.value.filter((event) => {
+		const eventStart = new Date(event.date * 1000);
+		const eventEnd = event.end_date ? new Date(event.end_date * 1000) : eventStart;
+		const checkDate = new Date(day.year, day.month - 1, day.day);
+
+		return (
+			checkDate >= new Date(eventStart.setHours(0, 0, 0, 0)) &&
+			checkDate <= new Date(eventEnd.setHours(23, 59, 59, 999))
+		);
+	}).length;
+}
+
+function hasEventsOnDate(day: DateValue): boolean {
+	return eventsCountOn(day) > 0;
+}
+
+async function showEvents(day: CalendarDate | DateValue | undefined) {
+	if (!day) {
+		attendingEventsDay.value = [];
+		return;
+	}
+
+	currentEventsDay.value = new Date(day.year, day.month - 1, day.day);
+	attendingEventsDay.value = (attendingEvents.value || []).filter((event) => {
+		const eventStart = new Date(event.date * 1000);
+		const eventEnd = event.end_date ? new Date(event.end_date * 1000) : eventStart;
+		const selectedDateTime = new Date(day.year, day.month - 1, day.day);
+
+		return (
+			selectedDateTime >= new Date(eventStart.setHours(0, 0, 0, 0)) &&
+			selectedDateTime <= new Date(eventEnd.setHours(23, 59, 59, 999))
+		);
+	});
+}
+
+// Initialize calendar with today's events
+onMounted(async () => {
+	// Fetch events first, then show today's events
+	await Promise.all([fetchAttendingEvents(), fetchCurrentEvents()]);
+
+	selectedDate.value = today(getLocalTimeZone()) as DateValue;
+	showEvents(selectedDate.value as any);
+});
+
+async function openCurrentDayEvents() {
+	if (drawerRef.value) drawerRef.value.search = '';
+	mode.value = 'attending-events';
+	drawerRef.value?.open();
+}
+
+const filteredAttendingEvents = computed(() => {
+	if (!search.value.trim()) return attendingEvents.value || [];
+	const searchLower = search.value.toLowerCase();
+	return (attendingEvents.value || []).filter((event) => {
+		return event.name.toLowerCase().includes(searchLower);
+	});
+});
 </script>

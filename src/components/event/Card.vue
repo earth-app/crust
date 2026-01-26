@@ -45,20 +45,24 @@ const props = defineProps<{
 	full?: boolean;
 }>();
 
+const toast = useToast();
+const router = useRouter();
 const { user } = useAuth();
 const { thumbnail, unloadThumbnail, attendees, signUpForEvent, leaveEvent, deleteEvent } = useEvent(
-	props.event.id
+	props.event.id || ''
 );
 
 const attendeesDrawerRef = ref<InstanceType<typeof ContentDrawer>>();
 const allAttendees = computed(() => {
-	return [props.event.host, ...(attendees.value || [])];
+	// Filter out host from attendees to avoid duplicates
+	const filteredAttendees = (attendees.value || []).filter(
+		(attendee) => attendee.id !== props.event.hostId
+	);
+	return [props.event.host, ...filteredAttendees];
 });
 
 const attendeeAvatars = computed(() => {
-	const array = [props.event.host].concat(attendees.value || []);
-
-	return array.map((attendee) => {
+	return allAttendees.value.map((attendee) => {
 		const { avatar128, chipColor } = useUser(attendee.id);
 
 		return {
@@ -76,6 +80,7 @@ const badges = computed(() => {
 		size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
 		icon?: string;
 		variant?: 'solid' | 'subtle' | 'outline' | 'soft';
+		link?: string;
 	}[] = [];
 
 	let typeIcon: string;
@@ -98,15 +103,50 @@ const badges = computed(() => {
 		size: 'md'
 	});
 
-	array.push(
-		...(props.event.activities.map((type) => ({
-			text: capitalizeFully(type.replace('_', ' ')),
-			color: 'warning',
-			icon: 'mdi:tag-outline',
-			variant: 'subtle',
-			size: 'md'
-		})) as any[])
-	);
+	props.event.activities.forEach((activity) => {
+		if (typeof activity === 'string') {
+			// legacy string format (activity type name)
+			const activityStr: string = activity;
+			array.push({
+				text: capitalizeFully(activityStr.replace(/_/g, ' ')),
+				color: 'warning',
+				icon: 'mdi:tag-outline',
+				variant: 'subtle',
+				size: 'md'
+			});
+		} else if ('type' in activity && activity.type === 'activity_type' && 'value' in activity) {
+			// actual activity type
+			const activityType = activity as { type: 'activity_type'; value: string };
+			array.push({
+				text: capitalizeFully(activityType.value.replace(/_/g, ' ')),
+				color: 'warning',
+				icon: 'mdi:tag-outline',
+				variant: 'subtle',
+				size: 'md'
+			});
+		} else if (
+			'type' in activity &&
+			activity.type === 'activity' &&
+			'name' in activity &&
+			'id' in activity
+		) {
+			// actual activity
+			const actualActivity = activity as {
+				type: 'activity';
+				id: string;
+				name: string;
+				fields?: Record<string, any>;
+			};
+			array.push({
+				text: actualActivity.name,
+				color: 'primary',
+				icon: actualActivity.fields?.['icon'] || 'material-symbols:activity-zone',
+				variant: 'outline',
+				size: 'md',
+				link: `/activities/${actualActivity.id}`
+			});
+		}
+	});
 
 	return array;
 });
@@ -118,7 +158,33 @@ const buttons = computed(() => {
 		color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
 		size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
 		onClick?: () => void;
+		disabled?: boolean;
 	}[] = [];
+
+	const isAtCapacity = computed(() => {
+		const maxInPerson = props.event.fields?.['max_in_person'] as number | undefined;
+		const maxOnline = props.event.fields?.['max_online'] as number | undefined;
+
+		if (props.event.type === 'IN_PERSON' && maxInPerson) {
+			// skips undefined or 0
+			return props.event.attendee_count >= maxInPerson;
+		} else if (props.event.type === 'ONLINE' && maxOnline) {
+			// skips undefined or 0
+			return props.event.attendee_count >= maxOnline;
+		} else if (props.event.type === 'HYBRID') {
+			const totalMax = (maxInPerson || 0) + (maxOnline || 0);
+			if (totalMax > 0) {
+				return props.event.attendee_count >= totalMax;
+			}
+		}
+
+		const { user: hostUser, maxEventAttendees } = useUser(props.event.hostId);
+		if (hostUser.value) {
+			return props.event.attendee_count >= maxEventAttendees.value;
+		}
+
+		return false;
+	});
 
 	if (props.event.hostId !== user.value?.id) {
 		if (props.event.is_attending) {
@@ -128,16 +194,53 @@ const buttons = computed(() => {
 				color: 'error',
 				size: 'md',
 				onClick: async () => {
+					if (user.value === null) {
+						router.push(`/login?redirect=/events/${props.event.id}`);
+
+						toast.add({
+							title: 'Login Required',
+							description: 'You must be logged in to sign up for events.',
+							icon: 'mdi:login',
+							color: 'warning',
+							duration: 5000
+						});
+					}
+
 					await leaveEvent();
 				}
 			});
 		} else {
 			array.push({
-				text: 'Sign Up',
-				icon: 'mdi:calendar-plus',
-				color: 'primary',
+				text: isAtCapacity.value ? 'Event Full' : 'Sign Up',
+				icon: isAtCapacity.value ? 'mdi:calendar-alert' : 'mdi:calendar-plus',
+				color: isAtCapacity.value ? 'neutral' : 'primary',
 				size: 'md',
+				disabled: isAtCapacity.value,
 				onClick: async () => {
+					if (isAtCapacity.value) {
+						toast.add({
+							title: 'Event Full',
+							description: 'This event has reached its maximum capacity.',
+							icon: 'mdi:alert-circle',
+							color: 'warning',
+							duration: 5000
+						});
+						return;
+					}
+
+					if (user.value === null) {
+						router.push(`/login?redirect=/events/${props.event.id}`);
+
+						toast.add({
+							title: 'Login Required',
+							description: 'You must be logged in to sign up for events.',
+							icon: 'mdi:login',
+							color: 'warning',
+							duration: 5000
+						});
+						return;
+					}
+
 					await signUpForEvent();
 				}
 			});

@@ -1,26 +1,67 @@
 <template>
 	<div class="flex flex-col items-center w-full pt-8">
 		<div class="flex items-start justify-center w-full px-4">
-			<UButton
-				v-if="!thumbnail && event.can_edit"
-				icon="mdi:image-refresh"
-				class="mx-4"
-				:loading="genLoading"
-				@click="genThumbnail"
-				>Generate Thumbnail</UButton
-			>
-			<div class="flex flex-col h-full mx-4">
+			<div class="flex flex-col min-h-64 h-full mx-4">
 				<NuxtImg
-					:src="thumbnail || '/cloud.png'"
+					:src="thumbnail || '/earth-app.png'"
+					:title="`${event.name} Thumbnail | Photo by ${thumbnailAuthor || 'Unknown'}`"
 					alt="Event Thumbnail"
 					format="webp"
-					class="h-full rounded-lg shadow-md object-cover hover:scale-105 transition-transform duration-500 hover:cursor-pointer"
+					class="h-64 rounded-lg shadow-md object-cover hover:scale-105 transition-transform duration-500 hover:cursor-pointer"
 					@click="thumbnail && openPreview()"
 				/>
+				<UButton
+					v-if="!thumbnail && event.can_edit"
+					icon="mdi:image-refresh"
+					class="mx-4 my-2"
+					:loading="genLoading"
+					@click="genThumbnail"
+					>Generate Thumbnail</UButton
+				>
 				<UserCard
 					:user="event.host"
-					class="my-4"
+					class="my-2"
 				/>
+				<USeparator class="my-2" />
+				<div class="flex flex-col justify-center px-2">
+					<NuxtLink
+						v-if="event.fields?.link"
+						:to="event.fields.link"
+						target="_blank"
+						class="text-blue-600 hover:underline border-blue-600 inline-flex items-center w-fit"
+					>
+						<UIcon
+							name="mdi:link-variant"
+							class="inline-block mr-1"
+						/>
+						{{ event.fields.link }}
+					</NuxtLink>
+					<UButton
+						v-if="event.fields?.info"
+						variant="soft"
+						color="neutral"
+						class="w-fit mt-2"
+						@click="openInfo"
+					>
+						<UIcon
+							name="mdi:information-outline"
+							class="inline-block mr-1"
+						/>
+						About Event
+					</UButton>
+					<UModal
+						v-if="event.fields?.info"
+						v-model:open="infoOpen"
+						:title="`About ${event.name}`"
+						name="event-info"
+					>
+						<template #body>
+							<div class="prose max-w-none">
+								<p v-html="event.fields.info"></p>
+							</div>
+						</template>
+					</UModal>
+				</div>
 			</div>
 
 			<EventCard
@@ -39,12 +80,17 @@
 		:height="720"
 	>
 		<template #content>
-			<NuxtImg
-				:src="thumbnail || '/cloud.png'"
-				alt="Event Thumbnail"
-				format="webp"
-				class="max-h-screen max-w-screen rounded-lg shadow-md object-contain"
-			/>
+			<div class="flex flex-col items-center justify-center p-4">
+				<NuxtImg
+					:src="thumbnail || '/cloud.png'"
+					alt="Event Thumbnail"
+					format="webp"
+					class="max-h-screen max-w-screen rounded-lg shadow-md object-contain"
+				/>
+				<h2 class="text-center font-semibold">
+					{{ thumbnailAuthor ? `Photo by ${thumbnailAuthor}` : '' }}
+				</h2>
+			</div>
 		</template>
 	</UModal>
 </template>
@@ -57,7 +103,7 @@ const props = defineProps<{
 }>();
 
 const toast = useToast();
-const { thumbnail, fetchThumbnail, generateThumbnail } = useEvent(props.event.id);
+const { thumbnail, thumbnailAuthor, fetchThumbnail, generateThumbnail } = useEvent(props.event.id);
 
 onMounted(() => {
 	if (!thumbnail.value) {
@@ -105,5 +151,11 @@ async function genThumbnail() {
 const previewOpen = ref(false);
 function openPreview() {
 	previewOpen.value = true;
+}
+
+const infoOpen = ref(false);
+function openInfo() {
+	if (!props.event.fields?.info) return;
+	infoOpen.value = true;
 }
 </script>

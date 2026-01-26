@@ -105,6 +105,18 @@
 						:article="article"
 					/>
 				</InfoCardGroup>
+				<InfoCardGroup
+					title="Join The Community"
+					description="Sign up for events to personalize your experience"
+					icon="mdi:account-group-outline"
+					class="w-11/12 mt-4"
+				>
+					<EventCard
+						v-for="event in randomEvents"
+						:key="event.id"
+						:event="event"
+					/>
+				</InfoCardGroup>
 			</div>
 		</ClientOnly>
 	</div>
@@ -113,6 +125,7 @@
 <script setup lang="ts">
 import type { Activity } from '~/shared/types/activity';
 import type { Article } from '~/shared/types/article';
+import type { Event } from '~/shared/types/event';
 import type { Prompt } from '~/shared/types/prompts';
 
 const { setTitleSuffix } = useTitleSuffix();
@@ -126,13 +139,15 @@ const { visitedSite, markVisited } = useVisitedSite();
 const randomPrompts = ref<Prompt[]>([]);
 const randomActivities = ref<Activity[]>([]);
 const randomArticles = ref<Article[]>([]);
+const randomEvents = ref<Event[]>([]);
 
 onMounted(async () => {
 	// Fetch all random content in parallel to reduce total latency
-	const [resPrompt, resActivities, resArticles] = await Promise.all([
+	const [resPrompt, resActivities, resArticles, resEvents] = await Promise.all([
 		getRandomPrompts(3),
 		getRandomActivities(5),
-		getRandomArticles(4)
+		getRandomArticles(4),
+		getRandomEvents(5)
 	]);
 
 	if (resPrompt.success && resPrompt.data) {
@@ -177,6 +192,21 @@ onMounted(async () => {
 			});
 		} else {
 			randomArticles.value = resArticles.data;
+		}
+	}
+
+	if (resEvents.success && resEvents.data) {
+		if ('message' in resEvents.data) {
+			randomEvents.value = [];
+			toast.add({
+				title: 'Error Fetching Events',
+				description: resEvents.data.message || 'An unknown error occurred.',
+				icon: 'mdi:alert-circle-outline',
+				color: 'error',
+				duration: 5000
+			});
+		} else {
+			randomEvents.value = resEvents.data;
 		}
 	}
 

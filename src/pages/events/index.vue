@@ -1,110 +1,209 @@
 <template>
-	<div class="flex w-full justify-center my-4">
-		<h2
-			id="events"
-			class="text-2xl mt-24 sm:mt-0 text-center font-semibold"
-		>
-			All Events
-		</h2>
-	</div>
-	<div class="flex flex-col w-full justify-between items-center">
-		<div
-			class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 place-items-center w-9/10 px-4 gap-x-4 gap-y-12 *:mx-2 *:max-w-100 *:lg:w-1/2 *:xl:w-1/3"
-		>
-			<InfoCardSkeleton
-				v-if="allEvents.length === 0"
-				v-for="n in 12"
-				:key="n"
-				content-size="small"
+	<div class="flex flex-col pt-20 sm:pt-0">
+		<div class="flex justify-center mt-2 gap-x-2">
+			<UButton
+				title="Refresh"
+				icon="i-lucide-refresh-cw"
+				color="neutral"
+				variant="outline"
+				:loading="loading"
+				:disabled="loading"
+				class="mt-2"
+				@click="loadContent"
 			/>
-			<EventCard
-				v-for="event in allEvents"
-				:key="event.id"
-				:event="event"
-			/>
+			<EventEditor mode="create">
+				<UButton
+					v-if="user"
+					title="Create Event"
+					icon="i-lucide-plus"
+					color="primary"
+					variant="outline"
+					class="mt-2"
+					:disabled="newDisabled"
+				/>
+			</EventEditor>
 		</div>
+		<ClientOnly>
+			<InfoCardGroup
+				v-if="user"
+				title="Recommended for You"
+				description="Based on your interests and activities"
+				icon="mdi:calendar-star"
+			>
+				<InfoCardSkeleton
+					v-if="!recommendedLoaded"
+					v-for="n in 2"
+					:key="n"
+					content-size="small"
+				/>
+				<EventCard
+					v-for="event in recommendedEvents"
+					:key="event.id"
+					:event="event"
+				/>
+			</InfoCardGroup>
+			<InfoCardGroup
+				title="Explore Events"
+				description="Discover new and interesting events"
+				icon="mdi:compass"
+				id="events"
+			>
+				<InfoCardSkeleton
+					v-if="!randomLoaded"
+					v-for="n in 3"
+					:key="n"
+					content-size="small"
+				/>
+				<EventCard
+					v-for="event in randomEvents"
+					:key="event.id"
+					:event="event"
+				/>
+			</InfoCardGroup>
+			<InfoCardGroup
+				title="Recent Events"
+				description="Latest events from the community"
+				icon="mdi:history"
+			>
+				<InfoCardSkeleton
+					v-if="!recentLoaded"
+					v-for="n in 2"
+					:key="n"
+					content-size="small"
+				/>
+				<EventCard
+					v-for="event in recentEvents"
+					:key="event.id"
+					:event="event"
+				/>
+			</InfoCardGroup>
+		</ClientOnly>
 	</div>
-
-	<div
-		v-if="isLoading"
-		class="text-center py-4"
-	>
-		<UIcon name="eos-icons:loading" />
-	</div>
-
-	<div
-		ref="loadMoreRef"
-		class="h-1"
-	></div>
 </template>
 
 <script setup lang="ts">
 import { type Event } from '~/shared/types/event';
 
+const toast = useToast();
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Events');
 
-const { user } = useAuth();
-const { getEvents } = useEvents();
-const toast = useToast();
+const { user, maxEventAttendees, currentEventsCount } = useAuth();
 
-const allEvents = ref<Event[]>([]);
-const page = ref(1);
-const hasMore = ref(true);
-const isLoading = ref(false);
+const recommendedLoaded = ref(false);
+const recommendedEvents = ref<Event[]>([]);
 
-async function loadEvents() {
-	if (isLoading.value || !hasMore.value) return;
-	isLoading.value = true;
+const randomLoaded = ref(false);
+const randomEvents = ref<Event[]>([]);
 
-	try {
-		const res = await getEvents(page.value, 100);
-		const data = res.items;
+const recentLoaded = ref(false);
+const recentEvents = ref<Event[]>([]);
 
-		// Shuffle only the new items before adding them (Fisher-Yates shuffle)
-		for (let i = data.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-			const temp = data[i];
-			data[i] = data[j]!;
-			data[j] = temp!;
-		}
-		allEvents.value.push(...data);
-		hasMore.value = allEvents.value.length < res.total;
-		page.value++;
-	} catch (error) {
-		toast.add({
-			title: 'Error Loading Events',
-			description: (error as Error).message,
-			icon: 'mdi:alert-circle',
-			color: 'error',
-			duration: 5000
-		});
-
-		hasMore.value = false;
+const loading = computed(() => {
+	const loaded = !randomLoaded.value || !recentLoaded.value;
+	if (!user.value) {
+		return loaded;
 	}
 
-	isLoading.value = false;
+	return !recommendedLoaded.value || loaded;
+});
+
+async function loadContent() {
+	// reset states
+	recommendedLoaded.value = false;
+	recommendedEvents.value = [];
+	randomLoaded.value = false;
+	randomEvents.value = [];
+	recentLoaded.value = false;
+	recentEvents.value = [];
+
+	if (user.value) {
+		const recommendedRes = await getRecommendedEvents();
+		if (recommendedRes.success && recommendedRes.data) {
+			recommendedEvents.value = recommendedRes.data;
+			recommendedLoaded.value = true;
+		} else {
+			console.error('Failed to load recommended events:', recommendedRes.message);
+			recommendedLoaded.value = true;
+
+			toast.add({
+				title: 'Error',
+				icon: 'mdi:alert-circle',
+				description: recommendedRes.message || 'Failed to load recommended events.',
+				color: 'error'
+			});
+		}
+	} else {
+		recommendedLoaded.value = true;
+	}
+
+	const randomRes = await getRandomEvents(5);
+	if (randomRes.success && randomRes.data) {
+		if ('message' in randomRes.data) {
+			randomLoaded.value = true;
+			randomEvents.value = [];
+			console.error('Failed to load random events:', randomRes.data.message);
+
+			toast.add({
+				title: 'Error',
+				icon: 'mdi:alert-circle',
+				description: randomRes.data.message || 'Failed to load random events.',
+				color: 'error'
+			});
+		} else {
+			randomEvents.value = randomRes.data;
+			randomLoaded.value = true;
+		}
+	} else {
+		randomLoaded.value = true;
+		randomEvents.value = [];
+
+		console.error('Failed to load random events:', randomRes.message);
+
+		toast.add({
+			title: 'Error',
+			icon: 'mdi:alert-circle',
+			description: randomRes.message || 'Failed to load random events.',
+			color: 'error'
+		});
+	}
+
+	const recentRes = await getRecentEvents();
+	if (recentRes.success && recentRes.data) {
+		if ('message' in recentRes.data) {
+			recentLoaded.value = true;
+			recentEvents.value = [];
+			console.error('Failed to load recent events:', recentRes.data.message);
+
+			toast.add({
+				title: 'Error',
+				icon: 'mdi:alert-circle',
+				description: recentRes.data.message || 'Failed to load recent events.',
+				color: 'error'
+			});
+		} else {
+			recentEvents.value = recentRes.data.items;
+			recentLoaded.value = true;
+		}
+	} else {
+		console.error('Failed to load recent events:', recentRes.message);
+		recentLoaded.value = true;
+
+		toast.add({
+			title: 'Error',
+			icon: 'mdi:alert-circle',
+			description: recentRes.message || 'Failed to load recent events.',
+			color: 'error'
+		});
+	}
 }
 
-const loadMoreRef = ref<HTMLElement | null>(null);
-
 onMounted(async () => {
-	await loadEvents();
-	const observer = new IntersectionObserver(
-		(entries) => {
-			if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value) {
-				loadEvents();
-			}
-		},
-		{ rootMargin: '100px' }
-	);
+	await loadContent();
+});
 
-	if (loadMoreRef.value) {
-		observer.observe(loadMoreRef.value);
-	}
-
-	onUnmounted(() => {
-		observer.disconnect();
-	});
+const newDisabled = computed(() => {
+	if (user.value === null) return true;
+	return currentEventsCount.value >= maxEventAttendees.value;
 });
 </script>

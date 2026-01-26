@@ -1,4 +1,4 @@
-import type { Event, EventData } from '~/shared/types/event';
+import type { Event, EventAutocompleteSuggestion, EventData } from '~/shared/types/event';
 import type { User } from '~/shared/types/user';
 import {
 	makeAPIRequest,
@@ -45,68 +45,39 @@ export function useEvents() {
 		return { items: [], total: 0, page, limit };
 	};
 
-	const currentEvents = useState<Event[] | null>('events-current', () => null);
-	const fetchCurrentEvents = async () => {
-		const res = await paginatedAPIRequest<Event>(
-			'events-current',
-			'/v2/events/current',
-			useCurrentSessionToken()
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				currentEvents.value = null;
-				return res;
-			}
-
-			currentEvents.value = res.data;
-		} else {
-			currentEvents.value = null;
-		}
-
-		return res;
-	};
-
 	const createEvent = async (eventData: EventData) => {
-		const res = await makeAPIRequest<Event>(
-			'event-create',
-			'/v2/events',
-			useCurrentSessionToken(),
-			{
-				method: 'POST',
-				body: eventData
-			}
-		);
+		const res = await makeClientAPIRequest<Event>('/v2/events', useCurrentSessionToken(), {
+			method: 'POST',
+			body: eventData
+		});
 
 		return res;
 	};
 
 	const deleteEvent = async (id: string) => {
-		const res = await makeAPIRequest<void>(
-			`event-delete-${id}`,
-			`/v2/events/${id}`,
-			useCurrentSessionToken(),
-			{
-				method: 'DELETE'
-			}
-		);
+		const res = await makeClientAPIRequest<void>(`/v2/events/${id}`, useCurrentSessionToken(), {
+			method: 'DELETE'
+		});
 
 		return res;
 	};
 
 	return {
 		getEvents,
-		currentEvents,
-		fetchCurrentEvents,
 		createEvent,
 		deleteEvent
 	};
 }
 
 export function useEvent(id: string) {
-	const event = useState<Event | null>(`event-${id}`, () => null);
+	const event = useState<Event | null | undefined>(`event-${id}`, () => undefined);
 
 	const fetch = async () => {
+		if (!id || id === '') {
+			event.value = null;
+			return { success: false, message: 'Invalid event ID' };
+		}
+
 		const res = await makeAPIRequest<Event>(
 			`event-${id}`,
 			`/v2/events/${id}`,
@@ -126,7 +97,7 @@ export function useEvent(id: string) {
 		return res;
 	};
 
-	if (!event.value) {
+	if (event.value === undefined && id && id !== '') {
 		fetch();
 	}
 
@@ -197,6 +168,16 @@ export function useEvent(id: string) {
 		if (res.success && event.value) {
 			event.value.is_attending = true;
 			event.value.attendee_count += 1;
+
+			if (res.data && !('message' in res.data) && attendees.value) {
+				const userData = res.data as { user: User; event: Event };
+
+				if (!attendees.value.some((a) => a.id === userData.user.id)) {
+					attendees.value.push(userData.user);
+				}
+			} else {
+				await fetchAttendees();
+			}
 		}
 
 		return res;
@@ -214,6 +195,15 @@ export function useEvent(id: string) {
 		if (res.success && event.value) {
 			event.value.is_attending = false;
 			event.value.attendee_count -= 1;
+
+			// Remove the current user from the attendees list for immediate visual update
+			if (res.data && !('message' in res.data) && attendees.value) {
+				const userData = res.data as { user: User; event: Event };
+				attendees.value = attendees.value.filter((a) => a.id !== userData.user.id);
+			} else {
+				// Refetch attendees to ensure UI is in sync
+				await fetchAttendees();
+			}
 		}
 
 		return res;
@@ -239,6 +229,34 @@ export function useEvent(id: string) {
 
 	if (!thumbnail.value) {
 		fetchThumbnail();
+	}
+
+	const thumbnailAuthor = useState<string | null>(`event-thumbnail-author-${id}`, () => null);
+	const thumbnailSize = useState<number | null>(`event-thumbnail-size-${id}`, () => null);
+
+	const fetchThumbnailMetadata = async () => {
+		const res = await makeServerRequest<{ author: string; size: number }>(
+			`event-thumbnail-metadata-${id}`,
+			`/api/event/thumbnail?id=${encodeURIComponent(id)}&metadata=true`,
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			const author =
+				res.data.author === '<user>' ? event.value?.host.full_name || 'Host' : res.data.author;
+			thumbnailAuthor.value = author;
+
+			thumbnailSize.value = res.data.size;
+		} else {
+			thumbnailAuthor.value = null;
+			thumbnailSize.value = null;
+		}
+
+		return res;
+	};
+
+	if (!thumbnailAuthor.value || !thumbnailSize.value) {
+		fetchThumbnailMetadata();
 	}
 
 	const uploadThumbnail = async (file: File) => {
@@ -325,6 +343,224 @@ export function useEvent(id: string) {
 		uploadThumbnail,
 		generateThumbnail,
 		deleteThumbnail,
-		unloadThumbnail
+		unloadThumbnail,
+		thumbnailAuthor,
+		thumbnailSize,
+		fetchThumbnailMetadata
+	};
+}
+
+export async function getRandomEvents(count: number = 5) {
+	const res = await makeClientAPIRequest<Event[]>(
+		`/v2/events/random?count=${count}`,
+		useCurrentSessionToken()
+	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load individual events into state
+		for (const event of res.data) {
+			useState<Event | null>(`event-${event.id}`, () => event);
+		}
+	}
+
+	return res;
+}
+
+export async function getRecentEvents(count: number = 5) {
+	const res = await makeClientAPIRequest<{ items: Event[] }>(
+		`/v2/events?sort=desc&limit=${count}`,
+		useCurrentSessionToken()
+	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load individual events into state
+		for (const event of res.data.items) {
+			useState<Event | null>(`event-${event.id}`, () => event);
+		}
+	}
+
+	return res;
+}
+
+export async function getRecommendedEvents(count: number = 5) {
+	const { user } = useAuth();
+	if (!user.value) {
+		const res = await useCurrentUser();
+		if (!res.success || !res.data || 'message' in res.data) {
+			return {
+				success: false,
+				message: 'User must be logged in to get recommended events.'
+			};
+		}
+
+		user.value = res.data;
+	}
+
+	const pool = await getRandomEvents(Math.min(count * 3, 15)).then((res) =>
+		res.success ? res.data : res.message
+	);
+
+	const res = await makeServerRequest<Event[]>(
+		`user-${user.value.id}-event_recommendations`,
+		`/api/event/recommend`,
+		useCurrentSessionToken(),
+		{
+			method: 'POST',
+			body: { user, count, pool }
+		}
+	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load recommended events into state
+		for (const recommendedEvent of res.data) {
+			useState<Event | null>(`event-${recommendedEvent.id}`, () => recommendedEvent);
+		}
+	}
+
+	return res;
+}
+
+export async function getSimilarEvents(event: Event, count: number = 5) {
+	const pool = await getRandomEvents(Math.min(count * 3, 15)).then((res) =>
+		res.success ? res.data : res.message
+	);
+
+	if (!pool || typeof pool === 'string') {
+		throw new Error(`Failed to fetch random events: ${pool}`);
+	}
+
+	if ('message' in pool) {
+		throw new Error(`Failed to fetch random events: ${pool.code} ${pool.message}`);
+	}
+
+	if (!pool || pool.length === 0) {
+		return { success: true, data: [] };
+	}
+
+	const res = await makeServerRequest<Event[]>(
+		`event-${event.id}-similar_events`,
+		`/api/event/similar`,
+		useCurrentSessionToken(),
+		{
+			method: 'POST',
+			body: { event, count, pool }
+		}
+	);
+
+	if (res.success && res.data) {
+		if ('message' in res.data) {
+			return res;
+		}
+
+		// load similar events into state
+		for (const similarEvent of res.data) {
+			useState<Event | null>(`event-${similarEvent.id}`, () => similarEvent);
+		}
+	}
+
+	return res;
+}
+
+export function useGeocoding() {
+	const latitude = useState<number | null>('user-latitude', () => null);
+	const longitude = useState<number | null>('user-longitude', () => null);
+
+	const retrieveLocation = () => {
+		if (navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(
+				(position) => {
+					latitude.value = position.coords.latitude;
+					longitude.value = position.coords.longitude;
+				},
+				(error) => {
+					console.error('Error retrieving location:', error);
+				}
+			);
+		}
+	};
+
+	if (latitude.value === null || longitude.value === null) {
+		retrieveLocation();
+	}
+
+	const autocomplete = async (input: string, sessionToken: string) => {
+		const res = await makeServerRequest<EventAutocompleteSuggestion[]>(
+			`event-autocomplete-${input}-${latitude.value ?? 'null'}-${longitude.value ?? 'null'}`,
+			`/api/event/autocomplete?input=${encodeURIComponent(
+				input
+			)}&sessionToken=${encodeURIComponent(sessionToken)}${
+				latitude.value !== null && longitude.value !== null
+					? `&latitude=${latitude.value}&longitude=${longitude.value}`
+					: ''
+			}`,
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			return res;
+		}
+
+		return { success: false, message: 'Failed to fetch autocomplete suggestions.' };
+	};
+
+	const geocode = async (address: string) => {
+		const res = await makeServerRequest<{ latitude: number; longitude: number }>(
+			`event-geocode-${address}`,
+			`/api/event/geocode?address=${encodeURIComponent(address)}`,
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			return res;
+		}
+
+		return { success: false, message: 'Failed to geocode address.' };
+	};
+
+	const reverseGeocode = async (lat: number, lng: number) => {
+		const res = await makeServerRequest<{ address: string }>(
+			`event-reverse-geocode-${lat}-${lng}`,
+			`/api/event/geocode?lat=${lat}&lng=${lng}`,
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			return res;
+		}
+
+		return { success: false, message: 'Failed to reverse geocode coordinates.' };
+	};
+
+	return {
+		latitude,
+		longitude,
+		retrieveLocation,
+		autocomplete,
+		geocode,
+		reverseGeocode
 	};
 }
