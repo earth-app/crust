@@ -2,7 +2,7 @@
 	<UCard
 		:variant="variant || 'outline'"
 		:class="[
-			'relative min-w-65 lg:min-w-100 xl:min-w-120 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl transition-all duration-600',
+			'relative min-w-80! lg:min-w-100 xl:min-w-120 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl transition-all duration-600',
 			isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
 			'will-change-[opacity,transform]'
 		]"
@@ -152,9 +152,11 @@
 							:color="badge.color || 'primary'"
 							:size="badge.size || 'md'"
 							:ui="{ label: 'text-sm' }"
-							class="max-w-100 mr-2 mb-2 hover:scale-105 transition-all duration-300 hover:cursor-text"
+							class="max-w-100 mr-2 mb-2 hover:scale-105 transition-all duration-300"
+							:class="badge.link ? 'hover:cursor-pointer' : 'hover:cursor-text'"
 							:icon="badge.icon || undefined"
 							:variant="badge.variant || 'solid'"
+							@click="badge.link ? $router.push(badge.link) : null"
 							>{{ badge.text }}</UBadge
 						>
 					</div>
@@ -260,6 +262,7 @@ const props = defineProps<{
 		size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
 		icon?: string;
 		variant?: 'solid' | 'subtle' | 'outline' | 'soft';
+		link?: string;
 	}[];
 	title: string;
 	description?: string;
