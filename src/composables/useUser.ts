@@ -32,10 +32,10 @@ export function useVisitedSite() {
 	};
 }
 
-const globalAvatarCache = new Map<
-	string,
-	{ avatar: string; avatar32: string; avatar128: string }
->();
+// Make the cache reactive so computed properties know when it updates
+const globalAvatarCache = reactive(
+	new Map<string, { avatar: string; avatar32: string; avatar128: string }>()
+);
 
 const avatarFetchQueue = new Map<
 	string,
@@ -235,6 +235,19 @@ export const useAuth = () => {
 		}
 	}
 
+	// Watch for user changes to trigger avatar fetch (e.g., after login, navigation)
+	if (import.meta.client) {
+		watch(
+			avatarUrl,
+			(newUrl) => {
+				if (newUrl && isRemoteUrl(newUrl) && !globalAvatarCache.has(newUrl)) {
+					fetchAvatarBlobsForUrl(newUrl);
+				}
+			},
+			{ immediate: true }
+		);
+	}
+
 	const avatar = computed(() => {
 		const url = avatarUrl.value;
 		if (!url || !isRemoteUrl(url)) return '/earth-app.png';
@@ -270,11 +283,7 @@ export const useAuth = () => {
 	const attendingEvents = useState<Event[] | null>('events-attending-current', () => null);
 	const attendingEventsCount = useState<number>('events-attending-count-current', () => 0);
 	const fetchAttendingEvents = async () => {
-		const res = await paginatedAPIRequest<Event>(
-			'events-attending-current',
-			'/v2/events/current',
-			useCurrentSessionToken()
-		);
+		const res = await paginatedAPIRequest<Event>('/v2/events/current', useCurrentSessionToken());
 
 		if (res.success && res.data) {
 			if ('message' in res.data) {
@@ -296,7 +305,6 @@ export const useAuth = () => {
 	const currentEventsCount = useState<number>('events-hosting-count-current', () => 0);
 	const fetchCurrentEvents = async () => {
 		const res = await paginatedAPIRequest<Event>(
-			'events-hosting-current',
 			'/v2/users/current/events',
 			useCurrentSessionToken()
 		);
@@ -501,6 +509,19 @@ export function useUser(identifier: string) {
 		}
 	}
 
+	// Watch for user changes to trigger avatar fetch (e.g., after async user load)
+	if (import.meta.client) {
+		watch(
+			avatarUrl,
+			(newUrl) => {
+				if (newUrl && isRemoteUrl(newUrl) && !globalAvatarCache.has(newUrl)) {
+					fetchAvatarBlobsForUrl(newUrl);
+				}
+			},
+			{ immediate: true }
+		);
+	}
+
 	const avatar = computed(() => {
 		const url = avatarUrl.value;
 		if (!url || !isRemoteUrl(url)) return '/earth-app.png';
@@ -552,7 +573,6 @@ export function useUser(identifier: string) {
 	const attendingEventsCount = useState<number>(`events-attending-count-${identifier}`, () => 0);
 	const fetchAttendingEvents = async () => {
 		const res = await paginatedAPIRequest<Event>(
-			`events-attending-${identifier}`,
 			`/v2/users/${identifier}/events/attending`,
 			useCurrentSessionToken()
 		);
@@ -577,7 +597,6 @@ export function useUser(identifier: string) {
 	const currentEventsCount = useState<number>(`events-hosting-count-${identifier}`, () => 0);
 	const fetchCurrentEvents = async () => {
 		const res = await paginatedAPIRequest<Event>(
-			`events-hosting-${identifier}`,
 			`/v2/users/${identifier}/events`,
 			useCurrentSessionToken()
 		);
