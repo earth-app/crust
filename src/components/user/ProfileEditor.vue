@@ -59,36 +59,11 @@
 		>
 			Activities
 		</h3>
-		<ClientOnly>
-			<UInputMenu
-				placeholder="Select your activities..."
-				v-model="currentActivities"
-				:items="allActivities"
-				size="xl"
-				class="min-w-105 w-3/7 max-w-140 mt-2"
-				multiple
-				deleteIcon="i-lucide-trash"
-				:loading="activitiesLoading"
-				@update:modelValue="updateActivities"
-				@update:searchTerm="updateActivitiesList"
-				:ui="{ tagsItemDeleteIcon: 'text-red-500' }"
-			>
-				<template #tags-item-text="{ item, index }">
-					<div class="flex items-center justify-center">
-						<UIcon
-							:name="item.icon || 'material-symbols:activity-zone'"
-							class="inline-block mr-1 size-4 md:size-5 lg:size-6"
-						/>
-						<span class="mr-1">{{ item.label }}</span>
-					</div>
-				</template>
-			</UInputMenu>
-			<template #fallback>
-				<div class="min-w-105 w-3/7 max-w-140 mt-2 p-2 border rounded-md text-gray-500">
-					Loading activities...
-				</div>
-			</template>
-		</ClientOnly>
+		<ActivitySelector
+			v-model="userActivities"
+			class="min-w-105 w-3/7 max-w-140 mt-2"
+			@update:modelValue="updateActivities"
+		/>
 
 		<h3
 			class="text-2xl font-semibold text-gray-200 mt-10"
@@ -545,119 +520,40 @@ async function regenerateProfilePhoto() {
 
 // Activities
 
-const allActivities = ref<{ label: string; value: string; icon: string; disabled?: boolean }[]>([]);
-const currentActivities = ref<{ label: string; value: string; icon: string }[]>([]);
-
-const activitiesSearch = ref<string>('');
-const activitiesLoading = ref(false);
-
-onMounted(() => {
-	// Initialize current activities from user data
-	if (user.value?.activities) {
-		const current = user.value.activities
-			.map((userActivity) => {
-				return {
-					label: userActivity.name,
-					value: userActivity.id,
-					icon: userActivity.fields['icon'] || 'material-symbols:activity-zone'
-				};
-			})
-			.filter(Boolean);
-
-		allActivities.value = current;
-		currentActivities.value = current;
+const userActivities = computed({
+	get: () => user.value?.activities || [],
+	set: (value: any) => {
+		// value will be an array of activity IDs from the selector
+		// We don't update user.value.activities directly here
 	}
 });
 
-function updateActivitiesList(search: string) {
-	activitiesSearch.value = search;
-	activitiesLoading.value = true;
+function updateActivities(activityIds: string[]) {
+	if (!user.value) return;
 
-	getAllActivities(-1, activitiesSearch.value).then((res) => {
-		if (res.success) {
-			const activities =
-				res.data?.map((activity) => {
-					return {
-						label: activity.name,
-						value: activity.id,
-						icon: activity.fields['icon'] || 'material-symbols:activity-zone'
-					};
-				}) || [];
+	if (activityIds.length === 0) return;
 
-			allActivities.value = allActivities.value
-				.concat(activities)
-				.filter(
-					(activity, index, self) => index === self.findIndex((a) => a.value === activity.value)
-				); // Remove duplicates
-
-			activitiesLoading.value = false;
+	setUserActivities(activityIds).then((res) => {
+		if (res.success && res.data && 'activities' in res.data) {
+			user.value.activities = res.data.activities;
+			toast.add({
+				title: 'Activities Updated',
+				description: 'Your activities have been successfully updated.',
+				color: 'success',
+				icon: 'mdi:check-circle',
+				duration: 3000
+			});
 		} else {
-			console.error(res.message || 'Failed to fetch activities.');
+			console.error(res.message || 'Failed to update activities.');
 			toast.add({
 				title: 'Error',
-				description: res.message || 'Failed to fetch activities.',
+				description: res.message || 'Failed to update activities.',
 				icon: 'mdi:alert',
 				color: 'error',
 				duration: 5000
 			});
-			allActivities.value = [];
 		}
 	});
-}
-
-watch(
-	() => user.value?.activities,
-	(newActivities) => {
-		if (newActivities && allActivities.value.length > 0) {
-			currentActivities.value = newActivities.map((activity) => {
-				return {
-					label: activity.name,
-					value: activity.id,
-					icon: activity.fields['icon'] || 'material-symbols:activity-zone'
-				};
-			});
-		}
-	},
-	{ deep: true }
-);
-
-function updateActivities() {
-	if (!user.value) return;
-
-	if (currentActivities.value.length === 0) return;
-	if (currentActivities.value.length >= 10) {
-		toast.add({
-			title: 'Too Many Activities',
-			description: 'You can only select up to 10 activities.',
-			color: 'warning',
-			duration: 5000
-		});
-		return;
-	}
-
-	setUserActivities(currentActivities.value.map((activity) => activity.value as string)).then(
-		(res) => {
-			if (res.success && res.data && 'activities' in res.data) {
-				user.value.activities = res.data.activities;
-				toast.add({
-					title: 'Activities Updated',
-					description: 'Your activities have been successfully updated.',
-					color: 'success',
-					icon: 'mdi:check-circle',
-					duration: 3000
-				});
-			} else {
-				console.error(res.message || 'Failed to update activities.');
-				toast.add({
-					title: 'Error',
-					description: res.message || 'Failed to update activities.',
-					icon: 'mdi:alert',
-					color: 'error',
-					duration: 5000
-				});
-			}
-		}
-	);
 }
 
 // Account Privacy
