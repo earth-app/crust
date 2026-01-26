@@ -231,12 +231,29 @@ export const useAuth = () => {
 		return undefined;
 	});
 
+	const maxEventAttendees = computed(() => {
+		if (!user.value) return 0;
+
+		switch (user.value.account?.account_type) {
+			case 'PRO':
+			case 'WRITER':
+				return 5000;
+			case 'ORGANIZER':
+				return 1_000_000;
+			case 'ADMINISTRATOR':
+				return Infinity;
+			default:
+				return 1000;
+		}
+	});
+
 	return {
 		user,
 		fetchUser,
 		avatar,
 		avatar32,
-		avatar128
+		avatar128,
+		maxEventAttendees
 	};
 };
 
@@ -496,13 +513,30 @@ export function useUser(identifier: string) {
 		}
 	});
 
+	const maxEventAttendees = computed(() => {
+		if (!user.value) return 0;
+
+		switch (user.value.account?.account_type) {
+			case 'PRO':
+			case 'WRITER':
+				return 5000;
+			case 'ORGANIZER':
+				return 1_000_000;
+			case 'ADMINISTRATOR':
+				return Infinity;
+			default:
+				return 1000;
+		}
+	});
+
 	return {
 		user,
 		fetchUser,
 		avatar,
 		avatar32,
 		avatar128,
-		chipColor
+		chipColor,
+		maxEventAttendees
 	};
 }
 
