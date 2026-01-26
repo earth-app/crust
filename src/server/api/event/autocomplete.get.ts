@@ -24,17 +24,17 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
-	if (latitude && typeof latitude !== 'number') {
+	if (!latitude || isNaN(Number(latitude))) {
 		throw createError({
 			statusCode: 400,
-			statusMessage: 'Latitude parameter must be a number'
+			statusMessage: 'Latitude parameter is required and must be a valid number'
 		});
 	}
 
-	if (longitude && typeof longitude !== 'number') {
+	if (!longitude || isNaN(Number(longitude))) {
 		throw createError({
 			statusCode: 400,
-			statusMessage: 'Longitude parameter must be a number'
+			statusMessage: 'Longitude parameter is required and must be a valid number'
 		});
 	}
 
@@ -51,15 +51,24 @@ export default defineEventHandler(async (event) => {
 			sessionToken,
 			locationBias: {
 				circle: {
-					latitude: latitude || 0,
-					longitude: longitude || 0,
-					radiusMeters: 50000
+					center: {
+						latitude: Number(latitude) || 0,
+						longitude: Number(longitude) || 0
+					},
+					radius: 50000
 				}
 			}
 		},
 		headers: {
 			'Content-Type': 'application/json',
 			'X-Goog-Api-Key': config.mapsApiKey
+		},
+		onResponseError: (ctx) => {
+			throw createError({
+				data: ctx.response._data,
+				statusCode: ctx.response.status,
+				statusMessage: `Places API autocomplete request failed with status ${ctx.response.status}`
+			});
 		}
 	});
 
@@ -83,7 +92,8 @@ export default defineEventHandler(async (event) => {
 			full_name: data.text.text,
 			place_id: data.placeId,
 			address: data.structuredFormat?.secondaryText?.text,
-			distance_meters: data.distanceMeters
+			distance_meters: data.distanceMeters,
+			types: data.types || []
 		} satisfies EventAutocompleteSuggestion;
 	});
 });
