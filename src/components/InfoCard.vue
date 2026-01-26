@@ -225,7 +225,7 @@
 			</div>
 			<div
 				v-if="buttons"
-				class="flex flex-col items-center ml-2 min-w-22 sm:min-w-26 md:min-w-30"
+				class="flex flex-col items-center ml-4 min-w-22 sm:min-w-26 md:min-w-30"
 			>
 				<h2 class="text-sm md:text-md text-center font-semibold text-gray-500 light:text-gray-800">
 					Actions
