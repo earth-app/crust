@@ -25,7 +25,7 @@ const toast = useToast();
 const route = useRoute();
 const router = useRouter();
 
-const { error } = route.query;
+const { error, redirect } = route.query;
 if (error) {
 	let description,
 		icon = '';
@@ -89,8 +89,22 @@ watch(
 );
 
 function handleLoginSuccess() {
-	// Redirect to home page or dashboard after successful login
-	router.push('/');
+	let redirect0 = '/';
+	if (redirect && typeof redirect === 'string') {
+		if (!redirect.startsWith('/')) {
+			toast.add({
+				title: 'Invalid Redirect',
+				description: 'The redirect URL is invalid. Redirecting to home page.',
+				icon: 'mdi:alert-circle',
+				color: 'warning',
+				duration: 5000
+			});
+		}
+
+		redirect0 = redirect;
+	}
+
+	router.push(redirect0);
 	refreshNuxtData(); // Refresh user data
 }
 </script>
