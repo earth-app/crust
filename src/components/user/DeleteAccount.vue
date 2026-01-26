@@ -96,7 +96,6 @@ async function confirmDelete() {
 	loading.value = true;
 
 	const res = await deleteAccount(password.value);
-	console.log(res);
 	if (res.success) {
 		emit('deleted');
 	} else {
