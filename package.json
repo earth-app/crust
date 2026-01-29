@@ -38,8 +38,8 @@
     "@nuxtjs/color-mode": "^4.0.0",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@nuxtjs/i18n": "^10.2.1",
-    "@nuxtjs/robots": "^5.6.7",
-    "@nuxtjs/sitemap": "^7.5.2",
+    "@nuxtjs/robots": "^5.7.0",
+    "@nuxtjs/sitemap": "^7.6.0",
     "@nuxtjs/turnstile": "^1.1.1",
     "@tailwindcss/vite": "^4.1.18",
     "@types/luxon": "^3.7.1",
@@ -84,7 +84,7 @@
     "prettier-plugin-tailwindcss": "^0.7.2",
     "vite-plugin-dts": "^4.5.4",
     "vue-tsc": "^3.2.4",
-    "wrangler": "^4.60.0"
+    "wrangler": "^4.61.1"
   },
   "lint-staged": {
     "*.{js,css,ts,json,yml,vue}": "prettier --write"
