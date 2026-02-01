@@ -1,9 +1,9 @@
 <template>
 	<InfoCard
 		v-bind="$attrs"
-		:title="event.name"
-		:content="full ? event.description : trimString(event.description, 350)"
-		:link="noLink ? undefined : `/events/${event.id}`"
+		:title="reactiveEvent.name"
+		:content="full ? reactiveEvent.description : trimString(reactiveEvent.description, 350)"
+		:link="noLink ? undefined : `/events/${reactiveEvent.id}`"
 		:avatar="authorAvatar"
 		:avatar-chip="authorAvatarChipColor ? true : false"
 		:avatar-chip-color="authorAvatarChipColor"
@@ -16,10 +16,11 @@
 			max: 5
 		}"
 		:footer="footer"
+		:banner="banner || undefined"
 	/>
 	<ContentDrawer
 		ref="attendeesDrawerRef"
-		:title="`Event Attendees (${comma(props.event.attendee_count)})`"
+		:title="`Event Attendees (${comma(reactiveEvent.attendee_count)})`"
 		:is-loading="false"
 	>
 		<UserCard
@@ -48,17 +49,24 @@ const props = defineProps<{
 const toast = useToast();
 const router = useRouter();
 const { user } = useAuth();
-const { thumbnail, unloadThumbnail, attendees, signUpForEvent, leaveEvent, deleteEvent } = useEvent(
-	props.event.id || ''
-);
+const {
+	event: eventState,
+	thumbnail,
+	unloadThumbnail,
+	attendees,
+	signUpForEvent,
+	leaveEvent,
+	deleteEvent
+} = useEvent(props.event.id || '');
+
+const reactiveEvent = computed(() => eventState.value || props.event);
 
 const attendeesDrawerRef = ref<InstanceType<typeof ContentDrawer>>();
 const allAttendees = computed(() => {
-	// Filter out host from attendees to avoid duplicates
 	const filteredAttendees = (attendees.value || []).filter(
-		(attendee) => attendee.id !== props.event.hostId
+		(attendee) => attendee.id !== reactiveEvent.value.hostId
 	);
-	return [props.event.host, ...filteredAttendees];
+	return [reactiveEvent.value.host, ...filteredAttendees];
 });
 
 const attendeeAvatars = computed(() => {
@@ -68,6 +76,7 @@ const attendeeAvatars = computed(() => {
 		return {
 			src: avatar128.value || undefined,
 			alt: attendee.username,
+			link: `/profile/@${attendee.username}`,
 			chip: chipColor.value ? { color: chipColor.value as any } : undefined
 		};
 	});
@@ -84,7 +93,7 @@ const badges = computed(() => {
 	}[] = [];
 
 	let typeIcon: string;
-	switch (props.event.type) {
+	switch (reactiveEvent.value.type) {
 		case 'HYBRID':
 			typeIcon = 'mdi:human-greeting-variant';
 			break;
@@ -96,14 +105,14 @@ const badges = computed(() => {
 			break;
 	}
 	array.push({
-		text: capitalizeFully(props.event.type.replace('_', '')),
+		text: capitalizeFully(reactiveEvent.value.type.replace('_', '')),
 		color: 'info',
 		icon: typeIcon,
 		variant: 'soft',
 		size: 'md'
 	});
 
-	props.event.activities.forEach((activity) => {
+	reactiveEvent.value.activities.forEach((activity) => {
 		if (typeof activity === 'string') {
 			// legacy string format (activity type name)
 			const activityStr: string = activity;
@@ -162,32 +171,32 @@ const buttons = computed(() => {
 	}[] = [];
 
 	const isAtCapacity = computed(() => {
-		const maxInPerson = props.event.fields?.['max_in_person'] as number | undefined;
-		const maxOnline = props.event.fields?.['max_online'] as number | undefined;
+		const maxInPerson = reactiveEvent.value.fields?.['max_in_person'] as number | undefined;
+		const maxOnline = reactiveEvent.value.fields?.['max_online'] as number | undefined;
 
-		if (props.event.type === 'IN_PERSON' && maxInPerson) {
+		if (reactiveEvent.value.type === 'IN_PERSON' && maxInPerson) {
 			// skips undefined or 0
-			return props.event.attendee_count >= maxInPerson;
-		} else if (props.event.type === 'ONLINE' && maxOnline) {
+			return reactiveEvent.value.attendee_count >= maxInPerson;
+		} else if (reactiveEvent.value.type === 'ONLINE' && maxOnline) {
 			// skips undefined or 0
-			return props.event.attendee_count >= maxOnline;
-		} else if (props.event.type === 'HYBRID') {
+			return reactiveEvent.value.attendee_count >= maxOnline;
+		} else if (reactiveEvent.value.type === 'HYBRID') {
 			const totalMax = (maxInPerson || 0) + (maxOnline || 0);
 			if (totalMax > 0) {
-				return props.event.attendee_count >= totalMax;
+				return reactiveEvent.value.attendee_count >= totalMax;
 			}
 		}
 
-		const { user: hostUser, maxEventAttendees } = useUser(props.event.hostId);
+		const { user: hostUser, maxEventAttendees } = useUser(reactiveEvent.value.hostId);
 		if (hostUser.value) {
-			return props.event.attendee_count >= maxEventAttendees.value;
+			return reactiveEvent.value.attendee_count >= maxEventAttendees.value;
 		}
 
 		return false;
 	});
 
-	if (props.event.hostId !== user.value?.id) {
-		if (props.event.is_attending) {
+	if (reactiveEvent.value.hostId !== user.value?.id && !reactiveEvent.value.timing.has_passed) {
+		if (reactiveEvent.value.is_attending) {
 			array.push({
 				text: 'Leave Event',
 				icon: 'mdi:calendar-remove',
@@ -195,7 +204,7 @@ const buttons = computed(() => {
 				size: 'md',
 				onClick: async () => {
 					if (user.value === null) {
-						router.push(`/login?redirect=/events/${props.event.id}`);
+						router.push(`/login?redirect=/events/${reactiveEvent.value.id}`);
 
 						toast.add({
 							title: 'Login Required',
@@ -229,7 +238,7 @@ const buttons = computed(() => {
 					}
 
 					if (user.value === null) {
-						router.push(`/login?redirect=/events/${props.event.id}`);
+						router.push(`/login?redirect=/events/${reactiveEvent.value.id}`);
 
 						toast.add({
 							title: 'Login Required',
@@ -241,24 +250,35 @@ const buttons = computed(() => {
 						return;
 					}
 
+					if (reactiveEvent.value.fields?.cancelled) {
+						toast.add({
+							title: 'Event Cancelled',
+							description: 'The host has cancelled this event and sign-ups are closed.',
+							icon: 'mdi:cancel',
+							color: 'error',
+							duration: 5000
+						});
+						return;
+					}
+
 					await signUpForEvent();
 				}
 			});
 		}
 	}
 
-	if (props.event.can_edit) {
+	if (reactiveEvent.value.can_edit) {
 		array.push({
 			text: 'Manage Event',
 			color: 'secondary',
 			size: 'md',
 			onClick: () => {
-				navigateTo(`/events/${props.event.id}/manage`);
+				navigateTo(`/events/${reactiveEvent.value.id}/manage`);
 			}
 		});
 
 		array.push({
-			text: `Attendees (${withSuffix(props.event.attendee_count)})`,
+			text: `Attendees (${withSuffix(reactiveEvent.value.attendee_count)})`,
 			color: 'info',
 			size: 'md',
 			onClick: () => {
@@ -285,14 +305,58 @@ const buttons = computed(() => {
 	return array;
 });
 
-const footer = computed(() => `Created by @${props.event.host.username} - ${time.value}`);
+const footer = computed(() => `Created by @${reactiveEvent.value.host.username} - ${time.value}`);
 
-const { avatar128: authorAvatar, chipColor: authorAvatarChipColor } = useUser(props.event.hostId);
+const banner = computed<{
+	text: string;
+	icon?: string;
+	color: 'primary' | 'error' | 'success' | 'neutral' | 'warning';
+} | null>(() => {
+	if (reactiveEvent.value.fields?.cancelled) {
+		return {
+			text: 'This event has been cancelled by the host.',
+			icon: 'mdi:cancel',
+			color: 'error'
+		};
+	}
+
+	const timing = reactiveEvent.value.timing;
+
+	if (timing.is_ongoing) {
+		return {
+			text: 'This event is currently ongoing.',
+			icon: 'mdi:calendar-clock',
+			color: 'success'
+		};
+	}
+
+	if (timing.starts_in !== null && timing.starts_in > 0 && timing.starts_in <= 3600 * 12) {
+		return {
+			text: 'This event is starting soon!',
+			icon: 'mdi:calendar-star',
+			color: 'warning'
+		};
+	}
+
+	if (timing.has_passed) {
+		return {
+			text: 'This event has concluded.',
+			icon: 'mdi:calendar-check',
+			color: 'neutral'
+		};
+	}
+
+	return null;
+});
+
+const { avatar128: authorAvatar, chipColor: authorAvatarChipColor } = useUser(
+	reactiveEvent.value.hostId
+);
 
 const i18n = useI18n();
 const time = computed(() => {
-	if (!props.event.created_at) return 'sometime';
-	const created = DateTime.fromISO(props.event.created_at, {
+	if (!reactiveEvent.value.created_at) return 'sometime';
+	const created = DateTime.fromISO(reactiveEvent.value.created_at, {
 		zone: Intl.DateTimeFormat().resolvedOptions().timeZone
 	});
 

@@ -76,6 +76,40 @@
 			/>
 		</UFormField>
 
+		<div class="flex gap-4 w-4/5">
+			<UFormField
+				label="Start Date & Time"
+				name="date"
+				class="w-1/2"
+				help="When the event starts"
+				required
+			>
+				<UInput
+					type="datetime-local"
+					:modelValue="dateInputValue"
+					@update:modelValue="updateDate"
+					class="w-full"
+					:disabled="loading"
+				/>
+			</UFormField>
+
+			<UFormField
+				label="End Date & Time"
+				name="end_date"
+				class="w-1/2"
+				help="When the event ends"
+				required
+			>
+				<UInput
+					type="datetime-local"
+					:modelValue="endDateInputValue"
+					@update:modelValue="updateEndDate"
+					class="w-full"
+					:disabled="loading"
+				/>
+			</UFormField>
+		</div>
+
 		<EventLocation
 			v-if="state.type !== 'ONLINE'"
 			v-model="state.location"
@@ -311,6 +345,36 @@ const maxOnline = ref(state.fields?.['max_online'] || 0);
 const maxOnlineValid = ref<boolean | null>(null);
 
 const eventIcon = ref(state.fields?.['icon'] || '');
+
+const dateInputValue = computed(() => {
+	const date = new Date(state.date);
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	const hours = String(date.getHours()).padStart(2, '0');
+	const minutes = String(date.getMinutes()).padStart(2, '0');
+	return `${year}-${month}-${day}T${hours}:${minutes}`;
+});
+
+const endDateInputValue = computed(() => {
+	if (!state.end_date) return '';
+
+	const date = new Date(state.end_date);
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	const hours = String(date.getHours()).padStart(2, '0');
+	const minutes = String(date.getMinutes()).padStart(2, '0');
+	return `${year}-${month}-${day}T${hours}:${minutes}`;
+});
+
+function updateDate(value: string) {
+	state.date = new Date(value).getTime();
+}
+
+function updateEndDate(value: string) {
+	state.end_date = new Date(value).getTime();
+}
 
 // Get max event attendees from user account
 const maxEventAttendees = computed(() => {
