@@ -32,7 +32,7 @@ export function useEvents() {
 			if (upcoming) {
 				const now = new Date();
 				return {
-					items: res.data.items.filter((event) => new Date(event.date * 1000) >= now),
+					items: res.data.items.filter((event) => new Date(event.date) >= now),
 					total: res.data.total,
 					page: res.data.page,
 					limit: res.data.limit
@@ -328,6 +328,50 @@ export function useEvent(id: string) {
 		}
 	};
 
+	const cancelEvent = async () => {
+		const res = await makeClientAPIRequest<Event>(
+			`/v2/events/${id}/cancel`,
+			useCurrentSessionToken(),
+			{
+				method: 'POST'
+			}
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			event.value = res.data;
+		} else {
+			return res;
+		}
+
+		return res;
+	};
+
+	const uncancelEvent = async () => {
+		const res = await makeClientAPIRequest<Event>(
+			`/v2/events/${id}/uncancel`,
+			useCurrentSessionToken(),
+			{
+				method: 'POST'
+			}
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			event.value = res.data;
+		} else {
+			return res;
+		}
+
+		return res;
+	};
+
 	return {
 		event,
 		fetch,
@@ -345,7 +389,9 @@ export function useEvent(id: string) {
 		unloadThumbnail,
 		thumbnailAuthor,
 		thumbnailSize,
-		fetchThumbnailMetadata
+		fetchThumbnailMetadata,
+		cancelEvent,
+		uncancelEvent
 	};
 }
 
