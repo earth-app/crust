@@ -17,23 +17,32 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
-	const results = (await YouTube.search(query, { limit: 20, type: 'video', safeSearch: true }))
-		.filter((video) => video.id && !video.live && !video.shorts && !video.unlisted)
-		.filter((_, index) => index < 5); // Limit to 5 results;
+	try {
+		const results = (await YouTube.search(query, { limit: 20, type: 'video', safeSearch: true }))
+			.filter((video) => video.id && !video.live && !video.shorts && !video.unlisted)
+			.filter((_, index) => index < 5); // Limit to 5 results;
 
-	if (!results || results.length === 0) {
+		if (!results || results.length === 0) {
+			throw createError({
+				statusCode: 404,
+				statusMessage: 'No results found'
+			});
+		}
+
+		return results.map(
+			(video) =>
+				({
+					id: video.id!,
+					title: video.title || 'YouTube Video',
+					uploaded_at: video.uploadedAt || 'Sometime in the past'
+				}) satisfies YouTubeVideo
+		);
+	} catch (error) {
+		console.error('YouTube search error:', error);
 		throw createError({
-			statusCode: 404,
-			statusMessage: 'No results found'
+			cause: error,
+			statusCode: 500,
+			statusMessage: 'An error occurred while searching YouTube'
 		});
 	}
-
-	return results.map(
-		(video) =>
-			({
-				id: video.id!,
-				title: video.title || 'YouTube Video',
-				uploaded_at: video.uploadedAt || 'Sometime in the past'
-			}) satisfies YouTubeVideo
-	);
 });
