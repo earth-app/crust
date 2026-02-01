@@ -7,6 +7,19 @@
 			'will-change-[opacity,transform]'
 		]"
 	>
+		<UBanner
+			v-if="banner"
+			:title="banner.text"
+			:color="banner.color || 'info'"
+			:icon="banner.icon || undefined"
+			:link="banner.link || undefined"
+			:actions="banner.actions || undefined"
+			class="absolute top-0 left-0 w-full rounded-t-lg z-40"
+		/>
+		<div
+			v-if="banner"
+			class="h-6"
+		></div>
 		<div class="flex flex-row h-full justify-between">
 			<div class="flex items-center space-x-4 h-full">
 				<div class="flex flex-col">
@@ -185,15 +198,19 @@
 					</div>
 					<div v-if="avatarGroup">
 						<UAvatarGroup :max="avatarGroup.max">
-							<UAvatar
+							<NuxtLink
+								:to="avatar.link"
 								v-for="(avatar, index) in avatarGroup.avatars"
-								:key="`avatar-group-${index}`"
-								:src="avatar.src"
-								:alt="avatar.alt"
-								:icon="avatar.icon"
-								:size="avatarGroup.size || 'md'"
-								:chip="avatar.chip || undefined"
-							/>
+								:key="`avatar-link-${index}`"
+							>
+								<UAvatar
+									:src="avatar.src"
+									:alt="avatar.alt"
+									:icon="avatar.icon"
+									:size="avatarGroup.size || 'md'"
+									:chip="avatar.chip || undefined"
+								/>
+							</NuxtLink>
 						</UAvatarGroup>
 					</div>
 					<USeparator
@@ -309,6 +326,7 @@ const props = defineProps<{
 		avatars: {
 			src?: string;
 			alt?: string;
+			link?: string;
 			icon?: string;
 			chip?: {
 				inset?: boolean;
@@ -318,6 +336,19 @@ const props = defineProps<{
 		}[];
 		size?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
 		max?: number;
+	};
+	banner?: {
+		color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
+		text: string;
+		icon?: string;
+		link?: string;
+		actions?: {
+			text: string;
+			icon?: string;
+			color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
+			size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
+			onClick?: () => void;
+		}[];
 	};
 	color?: number;
 }>();
