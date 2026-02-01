@@ -13,7 +13,7 @@
 	</UDropdownMenu>
 	<UBadge
 		v-else
-		v-if="props.user.account.account_type !== 'FREE'"
+		v-if="props.user.account?.account_type && props.user.account.account_type !== 'FREE'"
 		:label="badgeLabel"
 		:class="badgeStyling"
 		:ui="{ base: 'justify-center' }"
@@ -32,12 +32,13 @@ const props = defineProps<{
 }>();
 
 const badgeLabel = computed(() => {
-	const type = props.user.account.account_type;
+	const type = props.user.account?.account_type;
+	if (!type) return '';
 	return type.at(0)?.toUpperCase() + type.slice(1).toLowerCase();
 });
 
 const badgeStyling = computed(() => {
-	switch (props.user.account.account_type) {
+	switch (props.user.account?.account_type) {
 		case 'ADMINISTRATOR':
 			return 'bg-red-500 font-bold';
 		case 'ORGANIZER':
@@ -55,7 +56,7 @@ const editorItems = props.editor
 	? com.earthapp.account.AccountType.values().map((type) => ({
 			label: capitalizeFully(type.name.replace('_', ' ')),
 			value: type.name,
-			disabled: type.name === props.user.account.account_type,
+			disabled: type.name === props.user.account?.account_type,
 			onSelect: () => handleSetAccountType(type.name)
 		}))
 	: [];

@@ -7,12 +7,9 @@
 				:to="`/profile/@${user.username}`"
 				:name="user.full_name"
 				:description="`@${user.username}`"
-				:avatar="{ src: `${user.account.avatar_url}?size=128`, loading: 'lazy' }"
-				:chip="
-					chipColor
-						? {
-								color: chipColor
-							}
+				:avatar="
+					user.account?.avatar_url
+						? { src: `${user.account.avatar_url}?size=128`, loading: 'lazy', alt: user.username }
 						: undefined
 				"
 				size="xl"
@@ -25,6 +22,16 @@
 				color="warning"
 				icon="mdi:account-group"
 				label="In Your Circle"
+				class="ml-4 self-center"
+				size="lg"
+			/>
+
+			<UBadge
+				v-if="user.id === currentUser?.id"
+				variant="soft"
+				color="primary"
+				icon="mdi:account-check"
+				label="You"
 				class="ml-4 self-center"
 				size="lg"
 			/>
@@ -66,5 +73,6 @@ const props = defineProps<{
 	user: User;
 }>();
 
+const { user: currentUser } = useAuth();
 const { chipColor } = useUser(props.user.id);
 </script>

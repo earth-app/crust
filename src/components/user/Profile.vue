@@ -496,8 +496,8 @@ function eventsCountOn(day: DateValue): number {
 	if (!attendingEvents.value) return 0;
 
 	return attendingEvents.value.filter((event) => {
-		const eventStart = new Date(event.date * 1000);
-		const eventEnd = event.end_date ? new Date(event.end_date * 1000) : eventStart;
+		const eventStart = new Date(event.date);
+		const eventEnd = event.end_date ? new Date(event.end_date) : eventStart;
 		const checkDate = new Date(day.year, day.month - 1, day.day);
 
 		return (
@@ -519,8 +519,8 @@ async function showEvents(day: CalendarDate | DateValue | undefined) {
 
 	currentEventsDay.value = new Date(day.year, day.month - 1, day.day);
 	attendingEventsDay.value = (attendingEvents.value || []).filter((event) => {
-		const eventStart = new Date(event.date * 1000);
-		const eventEnd = event.end_date ? new Date(event.end_date * 1000) : eventStart;
+		const eventStart = new Date(event.date);
+		const eventEnd = event.end_date ? new Date(event.end_date) : eventStart;
 		const selectedDateTime = new Date(day.year, day.month - 1, day.day);
 
 		return (
