@@ -25,15 +25,31 @@ export type Event = {
 		latitude: number;
 		longitude: number;
 	};
-	date: number;
-	end_date?: number;
+	date: number; // Unix timestamp in milliseconds (sent/received by API)
+	date_f: string; // ISO 8601 timestamp (received only, formatted by backend)
+	end_date?: number; // Unix timestamp in milliseconds (sent/received by API)
+	end_date_f?: string; // ISO 8601 timestamp (received only, formatted by backend)
 	visibility: typeof com.earthapp.Visibility.prototype.name;
 	attendee_count: number;
 	is_attending: boolean;
 	can_edit: boolean;
 	created_at: string;
 	updated_at?: string;
-	fields?: Record<string, any>;
+	timing: {
+		has_passed: boolean;
+		is_ongoing: boolean;
+		starts_in: number;
+		ends_in?: number;
+	};
+	fields?: {
+		[key: string]: any;
+		link?: string;
+		info?: string;
+		max_in_person?: number;
+		max_online?: number;
+		cancelled?: boolean;
+		moho_id?: string;
+	};
 };
 
 export type EventData = Omit<
@@ -47,6 +63,9 @@ export type EventData = Omit<
 	| 'updated_at'
 	| 'can_edit'
 	| 'activities'
+	| 'timing'
+	| 'date_f'
+	| 'end_date_f'
 > & { activities: (string | typeof com.earthapp.activity.ActivityType.prototype.name)[] };
 
 export type RawEventAutocompleteSuggestion = {
