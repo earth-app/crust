@@ -191,7 +191,10 @@ export async function makeServerRequest<T>(
 			data
 		};
 	} catch (error: any) {
-		console.error(`Failed to fetch ${key}:`, error);
+		if (error.status !== 404 && error.statusCode !== 404) {
+			console.error(`Failed to fetch ${key}:`, error);
+		}
+
 		return {
 			success: false,
 			message: error.message || 'An error occurred while fetching server data.'
