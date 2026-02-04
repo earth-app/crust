@@ -1,7 +1,7 @@
 const validJournies = ['activity', 'prompt', 'article', 'event'];
 
 export default defineEventHandler(async (event) => {
-	const { type, id } = getQuery(event);
+	const { type, limit } = getQuery(event);
 
 	if (!type || typeof type !== 'string' || !validJournies.includes(type)) {
 		throw createError({
@@ -11,20 +11,13 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
-	const id0 = id?.toString();
-
-	if (!id0 || !id0.match(/^[0-9]{24}$/)) {
-		throw createError({
-			statusCode: 400,
-			statusMessage: 'Invalid or missing "id" parameter.'
-		});
-	}
+	const limit0 = parseInt(limit as string) || 10;
 
 	const config = useRuntimeConfig();
 
 	try {
-		const response = await $fetch(
-			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/${id}${type === 'activity' ? '/count' : ''}`,
+		const response = await $fetch<{ id: string; streak: number }[]>(
+			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/leaderboard?limit=${limit0}`,
 			{
 				headers: {
 					Authorization: `Bearer ${config.adminApiKey}`,

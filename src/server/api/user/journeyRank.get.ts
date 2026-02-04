@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
 	try {
 		const response = await $fetch(
-			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/${id}${type === 'activity' ? '/count' : ''}`,
+			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/${id}/rank`,
 			{
 				headers: {
 					Authorization: `Bearer ${config.adminApiKey}`,

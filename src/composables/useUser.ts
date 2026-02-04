@@ -949,11 +949,27 @@ export async function tapCurrentJourney(identifier: string, activity?: string) {
 export async function clearCurrentJourney(identifier: string) {
 	return await makeServerRequest<void>(
 		null,
-		`/api/user/journey/clear?type=${identifier}`,
+		`/api/user/journey?type=${identifier}`,
 		useCurrentSessionToken(),
 		{
-			method: 'POST'
+			method: 'DELETE'
 		}
+	);
+}
+
+export async function getCurrentJourneyRank(identifier: string, id: string) {
+	return await makeServerRequest<{ rank: number }>(
+		`journey-rank-${identifier}`,
+		`/api/user/journeyRank?type=${identifier}&id=${id}`,
+		useCurrentSessionToken()
+	);
+}
+
+export async function getJourneyLeaderboard(identifier: string, limit: number = 10) {
+	return await makeServerRequest<{ user: User; id: string; streak: number }[]>(
+		`journey-leaderboard-${identifier}-limit-${limit}`,
+		`/api/user/journeyLeaderboard?type=${identifier}&limit=${limit}`,
+		useCurrentSessionToken()
 	);
 }
 
