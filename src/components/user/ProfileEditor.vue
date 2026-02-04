@@ -287,7 +287,7 @@ import { com } from '@earth-app/ocean';
 import type { InputTypeHTMLAttribute } from 'vue';
 import { OAUTH_PROVIDERS, type User } from '~/shared/types/user';
 import { capitalizeFully } from '~/shared/util';
-import { type EmailVerificationModalRef } from './EmailVerificationModal.vue';
+import { type EmailVerificationModalRef } from './email/VerificationModal.vue';
 import { type PasswordChangeModalRef } from './PasswordChangeModal.vue';
 
 const componentProps = defineProps<{

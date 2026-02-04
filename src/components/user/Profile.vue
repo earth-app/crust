@@ -84,7 +84,7 @@
 			class="min-w-80 max-w-3xl mt-4"
 			id="user-journeys"
 		>
-			<UserJourneys :user="props.user" />
+			<UserJourneyList :user="props.user" />
 		</div>
 		<div
 			class="flex flex-col items-center mt-12 w-full"
