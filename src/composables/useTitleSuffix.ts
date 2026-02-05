@@ -1,4 +1,4 @@
-import { SITE_NAME } from './useConstants';
+import { SITE_NAME } from './useUtilities';
 
 export const useTitleSuffix = () => {
 	const suffix = useState<string>('titleSuffix', () => '');
