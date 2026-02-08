@@ -24,18 +24,8 @@ export async function getArticles(
 }
 
 export async function getRecommendedArticles(count: number = 3) {
-	const { user } = useAuth();
-	if (!user.value) {
-		const res = await useCurrentUser();
-		if (!res.success || !res.data || 'message' in res.data) {
-			return {
-				success: false,
-				message: 'User must be logged in to get recommended articles.'
-			};
-		}
-
-		user.value = res.data;
-	}
+	const { user, fetchUser } = useAuth();
+	await fetchUser();
 
 	const pool = await getRandomArticles(Math.min(count * 3, 15)).then((res) =>
 		res.success ? res.data : res.message
@@ -54,7 +44,7 @@ export async function getRecommendedArticles(count: number = 3) {
 	}
 
 	const res = await makeServerRequest<Article[]>(
-		`user-${user.value.id}-article_recommendations`,
+		`user-${user.value!.id}-article_recommendations`,
 		`/api/article/recommend`,
 		useCurrentSessionToken(),
 		{

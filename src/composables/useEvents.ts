@@ -436,25 +436,15 @@ export async function getRecentEvents(count: number = 5) {
 }
 
 export async function getRecommendedEvents(count: number = 5) {
-	const { user } = useAuth();
-	if (!user.value) {
-		const res = await useCurrentUser();
-		if (!res.success || !res.data || 'message' in res.data) {
-			return {
-				success: false,
-				message: 'User must be logged in to get recommended events.'
-			};
-		}
-
-		user.value = res.data;
-	}
+	const { user, fetchUser } = useAuth();
+	await fetchUser(true);
 
 	const pool = await getRandomEvents(Math.min(count * 3, 15)).then((res) =>
 		res.success ? res.data : res.message
 	);
 
 	const res = await makeServerRequest<Event[]>(
-		`user-${user.value.id}-event_recommendations`,
+		`user-${user.value!.id}-event_recommendations`,
 		`/api/event/recommend`,
 		useCurrentSessionToken(),
 		{

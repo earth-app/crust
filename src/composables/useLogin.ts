@@ -123,7 +123,14 @@ export function useLogout() {
 			});
 
 			sessionCookie.value = null; // Clear the session cookie
-			refreshNuxtData(); // Refresh all data
+
+			// Clear user state immediately
+			const userState = useState<User | null | undefined>('user-current');
+			userState.value = null;
+
+			// Force refresh all data
+			await refreshNuxtData();
+
 			return { success: true, message: 'Logout successful' };
 		} catch (error) {
 			console.error('Logout failed:', error);

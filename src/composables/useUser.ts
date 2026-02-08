@@ -2,7 +2,7 @@ import type { MaybeRefOrGetter } from 'vue';
 import type { Activity } from '~/shared/types/activity';
 import type { Event } from '~/shared/types/event';
 import type { SortingOption } from '~/shared/types/global';
-import type { User, UserNotification } from '~/shared/types/user';
+import type { User, UserBadge, UserNotification } from '~/shared/types/user';
 import {
 	getUserDisplayName,
 	makeAPIRequest,
@@ -60,6 +60,14 @@ async function fetchAvatarBlobsForUrl(
 		return existing;
 	}
 
+	// Initialize cache with loading placeholders immediately
+	const initialCache = {
+		avatar: '/earth-app.png',
+		avatar32: '/favicon.png',
+		avatar128: '/favicon.png'
+	};
+	globalAvatarCache.set(url, initialCache);
+
 	// Create new fetch promise
 	const fetchPromise = (async () => {
 		try {
@@ -67,36 +75,37 @@ async function fetchAvatarBlobsForUrl(
 			const headers: HeadersInit = {};
 			if (token) headers['Authorization'] = `Bearer ${token}`;
 
-			const [r1, r2, r3] = await Promise.all([
-				fetch(url, { headers }),
-				fetch(`${url}?size=32`, { headers }),
-				fetch(`${url}?size=128`, { headers })
-			]);
-
-			const [blob1, blob2, blob3] = await Promise.all([
-				r1.ok ? r1.blob() : null,
-				r2.ok ? r2.blob() : null,
-				r3.ok ? r3.blob() : null
-			]);
-
-			const blobs = {
-				avatar: blob1 ? URL.createObjectURL(blob1) : '/earth-app.png',
-				avatar32: blob2 ? URL.createObjectURL(blob2) : '/favicon.png',
-				avatar128: blob3 ? URL.createObjectURL(blob3) : '/earth-app.png'
+			// Fetch all sizes in parallel but update cache as each completes
+			const fetchAndUpdate = async (
+				size: 'avatar' | 'avatar32' | 'avatar128',
+				sizeParam?: string
+			) => {
+				try {
+					const fetchUrl = sizeParam ? `${url}?size=${sizeParam}` : url;
+					const response = await fetch(fetchUrl, { headers });
+					if (response.ok) {
+						const blob = await response.blob();
+						const objectUrl = URL.createObjectURL(blob);
+						// Update cache immediately for this size
+						const current = globalAvatarCache.get(url)!;
+						globalAvatarCache.set(url, { ...current, [size]: objectUrl });
+					}
+				} catch (error) {
+					console.warn(`Failed to fetch ${size} for ${url}:`, error);
+				}
 			};
 
-			// Store in global cache - THIS IS THE KEY FIX
-			globalAvatarCache.set(url, blobs);
+			// Fetch all sizes in parallel
+			await Promise.all([
+				fetchAndUpdate('avatar'),
+				fetchAndUpdate('avatar32', '32'),
+				fetchAndUpdate('avatar128', '128')
+			]);
 
-			return blobs;
-		} catch {
-			const fallback = {
-				avatar: '/earth-app.png',
-				avatar32: '/favicon.png',
-				avatar128: '/favicon.png'
-			};
-			globalAvatarCache.set(url, fallback);
-			return fallback;
+			return globalAvatarCache.get(url)!;
+		} catch (error) {
+			console.warn(`Failed to fetch avatars for ${url}:`, error);
+			return initialCache;
 		} finally {
 			// Clean up queue (but keep cache!)
 			avatarFetchQueue.delete(url);
@@ -139,205 +148,20 @@ async function syncSessionToken() {
 	}
 }
 
-export async function useCurrentUser() {
-	const token = useCurrentSessionToken();
-	if (!token) {
-		return { success: false, message: 'Unauthenticated. Please log in to continue.' };
-	}
-
-	// Don't use caching to ensure fresh user data on each request
-	// This prevents stale state issues on hard refresh
-	const result = await makeClientAPIRequest<User>('/v2/users/current', token);
-	if (!result.success && 'code' in (result.data || {}) && (result.data as any).code === 401) {
-		// remove invalid token
-		useCurrentSessionToken(null);
-	}
-
-	return result;
-}
-
 export const useAuth = () => {
-	const user = useState<User | null | undefined>('user', () => undefined);
+	const base = useUser('current');
 
 	const fetchUser = async (force: boolean = false) => {
 		if (import.meta.client && force) {
 			await syncSessionToken();
 		}
 
-		// check if token exists before fetching
-		const currentToken = useCurrentSessionToken();
-		if (!currentToken) {
-			user.value = null;
-			return;
-		}
-
-		if (!force && user.value !== undefined && user.value !== null) return; // only fetch if uninitialized or forced
-
-		// Check if already fetching (unless forced)
-		if (!force && authFetchQueue) {
-			await authFetchQueue;
-			return;
-		}
-
-		// Create new fetch promise
-		const fetchPromise = (async () => {
-			try {
-				const res = await useCurrentUser();
-				if (res.success && res.data) {
-					if ('message' in res.data) {
-						// API returned an error message
-						user.value = null;
-						console.error('Failed to fetch current user:', res.data.message);
-						return;
-					}
-
-					user.value = res.data;
-				} else {
-					console.error('Failed to fetch current user:', res.message);
-					user.value = null;
-				}
-			} finally {
-				// Clean up queue
-				authFetchQueue = null;
-			}
-		})();
-
-		authFetchQueue = fetchPromise;
-		await fetchPromise;
-	};
-
-	// if user is not loaded, fetch it
-	if (user.value === undefined) {
-		if (import.meta.server) {
-			try {
-				fetchUser();
-			} catch (e) {
-				console.error('Error fetching user on server:', e);
-			}
-		} else {
-			// On client, immediately fetch to minimize flash
-			fetchUser();
-		}
-	}
-
-	const avatarUrl = computed(() => user.value?.account?.avatar_url);
-
-	const isRemoteUrl = (url: string | undefined): boolean => {
-		if (!url) return false;
-		return url.startsWith('http://') || url.startsWith('https://');
-	};
-
-	// Trigger avatar fetch if not in cache
-	if (import.meta.client && user.value) {
-		const url = avatarUrl.value;
-		if (url && isRemoteUrl(url) && !globalAvatarCache.has(url)) {
-			fetchAvatarBlobsForUrl(url);
-		}
-	}
-
-	// Watch for user changes to trigger avatar fetch (e.g., after login, navigation)
-	if (import.meta.client) {
-		watch(
-			avatarUrl,
-			(newUrl) => {
-				if (newUrl && isRemoteUrl(newUrl) && !globalAvatarCache.has(newUrl)) {
-					fetchAvatarBlobsForUrl(newUrl);
-				}
-			},
-			{ immediate: true }
-		);
-	}
-
-	const avatar = computed(() => {
-		const url = avatarUrl.value;
-		if (!url || !isRemoteUrl(url)) return '/earth-app.png';
-		return globalAvatarCache.get(url)?.avatar || undefined;
-	});
-	const avatar32 = computed(() => {
-		const url = avatarUrl.value;
-		if (!url || !isRemoteUrl(url)) return '/favicon.png';
-		return globalAvatarCache.get(url)?.avatar32 || undefined;
-	});
-	const avatar128 = computed(() => {
-		const url = avatarUrl.value;
-		if (!url || !isRemoteUrl(url)) return '/favicon.png';
-		return globalAvatarCache.get(url)?.avatar128 || undefined;
-	});
-
-	const maxEventAttendees = computed(() => {
-		if (!user.value) return 0;
-
-		switch (user.value.account?.account_type) {
-			case 'PRO':
-			case 'WRITER':
-				return 5000;
-			case 'ORGANIZER':
-				return 1_000_000;
-			case 'ADMINISTRATOR':
-				return Infinity;
-			default:
-				return 1000;
-		}
-	});
-
-	const attendingEvents = useState<Event[] | null>('events-attending-current', () => null);
-	const attendingEventsCount = useState<number>('events-attending-count-current', () => 0);
-	const fetchAttendingEvents = async () => {
-		const res = await paginatedAPIRequest<Event>('/v2/events/current', useCurrentSessionToken());
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				attendingEvents.value = null;
-				return res;
-			}
-
-			attendingEvents.value = res.data;
-			attendingEventsCount.value = res.data.length;
-		} else {
-			attendingEvents.value = null;
-			attendingEventsCount.value = 0;
-		}
-
-		return res;
-	};
-
-	const currentEvents = useState<Event[] | null>('events-hosting-current', () => null);
-	const currentEventsCount = useState<number>('events-hosting-count-current', () => 0);
-	const fetchCurrentEvents = async () => {
-		const res = await paginatedAPIRequest<Event>(
-			'/v2/users/current/events',
-			useCurrentSessionToken()
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				currentEvents.value = null;
-				return res;
-			}
-
-			currentEvents.value = res.data;
-			currentEventsCount.value = res.data.length;
-		} else {
-			currentEvents.value = null;
-			currentEventsCount.value = 0;
-		}
-
-		return res;
+		return base.fetchUser();
 	};
 
 	return {
-		user,
-		fetchUser,
-		avatar,
-		avatar32,
-		avatar128,
-		maxEventAttendees,
-		attendingEvents,
-		attendingEventsCount,
-		fetchAttendingEvents,
-		currentEvents,
-		currentEventsCount,
-		fetchCurrentEvents
+		...base,
+		fetchUser
 	};
 };
 
@@ -435,10 +259,6 @@ export async function getUsers(
 async function getUser(identifier?: string) {
 	if (!identifier) return { success: true, data: undefined };
 
-	if (identifier === 'current') {
-		return await useCurrentUser();
-	}
-
 	return await makeAPIRequest<User>(
 		`user-${identifier}`,
 		`/v2/users/${identifier}`,
@@ -449,13 +269,15 @@ async function getUser(identifier?: string) {
 export function useUser(identifier: string) {
 	const user = useState<User | null | undefined>(`user-${identifier}`, () => undefined);
 
-	const fetchUser = async () => {
+	const fetchUser = async (force: boolean = false) => {
 		if (!identifier) return;
-		if (user.value !== undefined) return; // Only fetch if truly uninitialized
+
+		// Skip if already loaded and not forcing refresh
+		if (user.value !== undefined && !force) return;
 
 		// Check if already fetching this user
 		const existingFetch = userFetchQueue.get(identifier);
-		if (existingFetch) {
+		if (existingFetch && !force) {
 			await existingFetch;
 			return;
 		}
@@ -463,6 +285,11 @@ export function useUser(identifier: string) {
 		// Create new fetch promise
 		const fetchPromise = (async () => {
 			try {
+				// Clear cache if forcing refresh
+				if (force && import.meta.client) {
+					await refreshNuxtData(`user-${identifier}`);
+				}
+
 				const res = await getUser(identifier);
 				if (res.success && res.data) {
 					if ('message' in res.data) {
@@ -487,10 +314,12 @@ export function useUser(identifier: string) {
 
 		userFetchQueue.set(identifier, fetchPromise);
 		await fetchPromise;
+
+		return user.value;
 	};
 
-	// If user is not loaded, fetch it
-	if (user.value === undefined) {
+	// If user is not loaded, fetch it (only on client side after mount)
+	if (import.meta.client && user.value === undefined) {
 		fetchUser();
 	}
 
@@ -525,17 +354,17 @@ export function useUser(identifier: string) {
 	const avatar = computed(() => {
 		const url = avatarUrl.value;
 		if (!url || !isRemoteUrl(url)) return '/earth-app.png';
-		return globalAvatarCache.get(url)?.avatar || undefined;
+		return globalAvatarCache.get(url)?.avatar || '/earth-app.png';
 	});
 	const avatar32 = computed(() => {
 		const url = avatarUrl.value;
 		if (!url || !isRemoteUrl(url)) return '/favicon.png';
-		return globalAvatarCache.get(url)?.avatar32 || undefined;
+		return globalAvatarCache.get(url)?.avatar32 || '/favicon.png';
 	});
 	const avatar128 = computed(() => {
 		const url = avatarUrl.value;
 		if (!url || !isRemoteUrl(url)) return '/favicon.png';
-		return globalAvatarCache.get(url)?.avatar128 || undefined;
+		return globalAvatarCache.get(url)?.avatar128 || '/favicon.png';
 	});
 
 	const chipColor = computed(() => {
@@ -593,6 +422,10 @@ export function useUser(identifier: string) {
 		return res;
 	};
 
+	if (attendingEvents.value.length === 0) {
+		fetchAttendingEvents();
+	}
+
 	const currentEvents = useState<Event[]>(`events-hosting-${identifier}`, () => []);
 	const currentEventsCount = useState<number>(`events-hosting-count-${identifier}`, () => 0);
 	const fetchCurrentEvents = async () => {
@@ -617,6 +450,35 @@ export function useUser(identifier: string) {
 		return res;
 	};
 
+	if (currentEvents.value.length === 0) {
+		fetchCurrentEvents();
+	}
+
+	const badges = useState<UserBadge[]>(`user-badges-${identifier}`, () => []);
+	const fetchBadges = async () => {
+		const res = await makeClientAPIRequest<UserBadge[]>(
+			`/v2/users/${identifier}/badges`,
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				badges.value = [];
+				return res;
+			}
+
+			badges.value = res.data;
+		} else {
+			badges.value = [];
+		}
+
+		return res;
+	};
+
+	if (badges.value.length === 0) {
+		fetchBadges();
+	}
+
 	return {
 		user,
 		fetchUser,
@@ -630,7 +492,9 @@ export function useUser(identifier: string) {
 		fetchAttendingEvents,
 		currentEvents,
 		currentEventsCount,
-		fetchCurrentEvents
+		fetchCurrentEvents,
+		badges,
+		fetchBadges
 	};
 }
 
@@ -966,11 +830,46 @@ export async function getCurrentJourneyRank(identifier: string, id: string) {
 }
 
 export async function getJourneyLeaderboard(identifier: string, limit: number = 10) {
-	return await makeServerRequest<{ user: User; id: string; streak: number }[]>(
+	return await makeServerRequest<{ id: string; streak: number }[]>(
 		`journey-leaderboard-${identifier}-limit-${limit}`,
 		`/api/user/journeyLeaderboard?type=${identifier}&limit=${limit}`,
 		useCurrentSessionToken()
 	);
+}
+
+export function useJourneyLeaderboard(identifier: string) {
+	const leaderboard = useState<{ user: User; id: string; streak: number }[]>(
+		`journey-leaderboard-${identifier}`,
+		() => []
+	);
+
+	const fetchLeaderboard = async (limit: number = 10) => {
+		const res = await getJourneyLeaderboard(identifier, limit);
+		if (res.success && res.data) {
+			const userPromises = res.data.map(async (entry) => {
+				const { user, fetchUser } = useUser(entry.id);
+				await fetchUser();
+				return {
+					user: user.value!,
+					id: entry.id,
+					streak: entry.streak
+				};
+			});
+
+			leaderboard.value = await Promise.all(userPromises);
+		} else {
+			leaderboard.value = [];
+		}
+	};
+
+	if (leaderboard.value.length === 0) {
+		fetchLeaderboard();
+	}
+
+	return {
+		leaderboard,
+		fetchLeaderboard
+	};
 }
 
 // OAuth Utils
