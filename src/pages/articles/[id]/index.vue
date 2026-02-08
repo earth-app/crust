@@ -51,6 +51,7 @@ const route = useRoute();
 const { user } = useAuth();
 const { setTitleSuffix } = useTitleSuffix();
 const { article } = useArticle(route.params.id as string);
+const { startTimer, stopTimer } = useTimeOnPage('articles_read_time');
 
 const relatedLoaded = ref(false);
 const relatedArticles = ref<Article[]>([]);
@@ -127,4 +128,16 @@ async function loadSimilar(article?: Article) {
 		});
 	}
 }
+
+onMounted(() => {
+	if (import.meta.client) {
+		startTimer();
+	}
+});
+
+onUnmounted(() => {
+	if (import.meta.client) {
+		stopTimer();
+	}
+});
 </script>

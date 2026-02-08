@@ -42,9 +42,9 @@ export async function ensureAdministrator(event: H3Event) {
 	}
 }
 
-export async function ensureLoggedIn(event: H3Event) {
+export async function ensureLoggedIn(event: { headers: Headers }) {
 	const config = useRuntimeConfig();
-	const token = getRequestHeader(event, 'Authorization')?.replace('Bearer ', '');
+	const token = event.headers.get('Authorization')?.replace('Bearer ', '');
 	if (!token) {
 		throw createError({
 			statusCode: 401,
