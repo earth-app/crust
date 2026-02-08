@@ -155,11 +155,14 @@ async function handleSignup() {
 	);
 
 	if (result.success && result.user) {
-		useState<User>('user').value = result.user;
-		useState<User>('user-current').value = result.user;
-		emit('signupSuccess', result.user, !!email.value.trim());
-
 		message.value = 'Welcome!';
+
+		// Update user state properly
+		const userState = useState<User | null | undefined>('user-current');
+		userState.value = result.user;
+
+		// Force refresh all cached data
+		await refreshNuxtData();
 
 		toast.add({
 			title: 'Sign Up Successful',
@@ -168,6 +171,9 @@ async function handleSignup() {
 			color: 'success',
 			duration: 3000
 		});
+
+		// Emit after state is ready
+		emit('signupSuccess', result.user, !!email.value.trim());
 	} else {
 		if (result.message.includes('409')) {
 			error.value = 'Username already exists. Please choose another.';

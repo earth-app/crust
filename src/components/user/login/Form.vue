@@ -101,11 +101,13 @@ async function handleLogin() {
 	const result = await login(username.value, password.value);
 
 	if (result.success) {
-		// Fetch user data to update the auth state
-		fetchUser(true).then(() => {
-			emit('loginSuccess');
-		});
 		message.value = 'Welcome!';
+
+		// Fetch user data and ensure state is updated before emitting
+		await fetchUser(true);
+
+		// Force refresh all cached data
+		await refreshNuxtData();
 
 		toast.add({
 			title: 'Login Successful',
@@ -115,7 +117,8 @@ async function handleLogin() {
 			duration: 3000
 		});
 
-		refreshNuxtData(); // Refresh data
+		// Emit after state is ready
+		emit('loginSuccess');
 	} else {
 		if (result.message.includes('401')) {
 			error.value = 'Invalid username or password.';
