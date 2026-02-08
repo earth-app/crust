@@ -77,3 +77,19 @@ export type UserNotification = {
 	read: boolean;
 	created_at: number;
 };
+
+export type Badge = {
+	id: string;
+	name: string;
+	description: string;
+	icon: string;
+	rarity: 'normal' | 'rare' | 'amazing' | 'green';
+	tracker_id?: string;
+};
+
+export type UserBadge = Badge & {
+	user_id: string;
+	granted: boolean;
+	granted_at?: string;
+	progress: number;
+};
