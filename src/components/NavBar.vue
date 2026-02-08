@@ -83,8 +83,11 @@
 				</NuxtLink>
 			</div>
 		</div>
-		<ClientOnly>
-			<div class="ml-auto">
+		<div class="ml-auto">
+			<ClientOnly
+				fallback-tag="div"
+				class="flex items-center"
+			>
 				<div
 					v-if="user"
 					class="flex items-center space-x-4 sm:space-x-6"
@@ -131,6 +134,16 @@
 						</NuxtLink>
 						<NuxtLink
 							class="size-5 lg:size-8"
+							:to="`/profile/${user.id}/badges`"
+							title="Your Badges"
+						>
+							<UIcon
+								name="mdi:shield-star-outline"
+								class="size-5 lg:size-8 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
+							/>
+						</NuxtLink>
+						<NuxtLink
+							class="size-5 lg:size-8"
 							to="/"
 						>
 							<UIcon
@@ -148,8 +161,8 @@
 					<UserSignupPopup />
 					<UserLoginPopup />
 				</div>
-			</div>
-		</ClientOnly>
+			</ClientOnly>
+		</div>
 	</div>
 	<ClientOnly>
 		<UBanner
