@@ -6,11 +6,12 @@
 		<ActivityProfile :activity="currentActivity" />
 	</div>
 	<div
-		v-else
+		v-else-if="currentActivity === null"
 		class="flex flex-col items-center justify-center h-screen"
 	>
 		<p class="text-gray-600">Activity doesn't exist. Maybe look at the URL again?</p>
 	</div>
+	<Loading v-else />
 </template>
 
 <script setup lang="ts">
@@ -19,7 +20,7 @@ import type { Activity } from '~/shared/types/activity';
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
 const toast = useToast();
-const currentActivity = ref<Activity | null>(null);
+const currentActivity = ref<Activity | null | undefined>(undefined);
 
 if (route.params.id) {
 	const res = await getActivity(route.params.id as string);

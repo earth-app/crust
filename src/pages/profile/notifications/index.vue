@@ -8,6 +8,7 @@
 			<h5 class="text-md mb-4 text-gray-300 light:text-gray-500">{{ unreadCount }} unread</h5>
 			<UserNotificationList :additional="true" />
 		</div>
+		<Loading v-else-if="user === undefined" />
 		<!-- Only show message when user is explicitly null (not loading) -->
 		<div
 			v-else-if="user === null"

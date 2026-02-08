@@ -50,6 +50,7 @@
 		>
 			<p class="text-gray-600">Notification doesn't exist. Maybe look at the URL again?</p>
 		</div>
+		<Loading v-else-if="user === undefined" />
 		<!-- Only show "Please log in" when user is explicitly null (not loading) -->
 		<div
 			v-else-if="user === null"
