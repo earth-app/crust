@@ -3,11 +3,12 @@ import { SITE_NAME } from './useUtilities';
 export const useTitleSuffix = () => {
 	const suffix = useState<string>('titleSuffix', () => '');
 
-	const setTitleSuffix = (s: string) => {
-		suffix.value = s;
+	const setTitleSuffix = (s: string | null | undefined) => {
+		const safeSuffix = s || '';
+		suffix.value = safeSuffix;
 		useHead({
 			titleTemplate: (title) => {
-				const clean = s.trim();
+				const clean = safeSuffix.trim();
 				return title ? `${title} | ${clean}` : clean;
 			},
 			meta: [
