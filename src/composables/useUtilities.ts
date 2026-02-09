@@ -6,8 +6,11 @@ export const THEME_COLOR = '#174f96';
 
 export function useTimeOnPage(field: string) {
 	const timeOnPage = ref(0);
+	const isTimerRunning = ref(false);
 
 	const startTimer = async () => {
+		if (isTimerRunning.value) return; // timer already running
+
 		const res = await makeServerRequest<void>(null, '/api/user/timer', useCurrentSessionToken(), {
 			method: 'POST',
 			body: { action: 'start', field }
@@ -18,10 +21,12 @@ export function useTimeOnPage(field: string) {
 			return;
 		}
 
-		timeOnPage.value = 0;
+		isTimerRunning.value = true;
 	};
 
 	const stopTimer = async () => {
+		if (!isTimerRunning.value) return; // timer not started
+
 		const res = await makeServerRequest<{ durationMs: number }>(
 			null,
 			'/api/user/timer',
@@ -37,6 +42,7 @@ export function useTimeOnPage(field: string) {
 			return;
 		}
 
+		isTimerRunning.value = false;
 		timeOnPage.value += res.data.durationMs;
 	};
 
@@ -57,6 +63,7 @@ export function useTimeOnPage(field: string) {
 
 	return {
 		timeOnPage,
+		isTimerRunning,
 		startTimer,
 		stopTimer
 	};
