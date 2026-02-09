@@ -33,11 +33,9 @@
 			</div>
 			<USeparator class="my-2" />
 		</div>
-		<div
-			v-if="hasWriteAccess"
-			class="mb-4"
-		>
+		<div class="mb-4 space-x-2">
 			<UButton
+				v-if="hasWriteAccess"
 				color="error"
 				icon="mdi:delete"
 				variant="subtle"
@@ -46,6 +44,7 @@
 			>
 
 			<ArticleEditor
+				v-if="hasWriteAccess"
 				:article="article"
 				mode="edit"
 			>
@@ -53,10 +52,37 @@
 					color="info"
 					icon="mdi:pencil"
 					variant="subtle"
-					class="ml-2"
 					>Edit</UButton
 				>
 			</ArticleEditor>
+
+			<UButton
+				v-if="quiz && quiz.length > 0 && !score"
+				color="success"
+				icon="mdi:school"
+				variant="subtle"
+				@click="quizOpen = true"
+				>Take Quiz</UButton
+			>
+
+			<UButton
+				v-else-if="score"
+				color="neutral"
+				icon="mdi:check-all"
+				variant="subtle"
+				@click="quizOpen = true"
+				>View Quiz Score</UButton
+			>
+
+			<UButton
+				v-if="!quiz && user?.account.account_type === 'ADMINISTRATOR'"
+				color="primary"
+				icon="mdi:plus"
+				variant="subtle"
+				@click="createQuiz"
+				:loading="quizLoading"
+				>Create Quiz</UButton
+			>
 		</div>
 		<div class="mt-2 prose min-w-67 max-w-5/7 items-center">
 			<p
@@ -91,6 +117,35 @@
 			/>
 		</div>
 	</div>
+	<UModal
+		v-model:open="quizOpen"
+		class="min-w-full sm:min-w-175"
+		close-icon="mdi:close"
+	>
+		<template #header>
+			<div class="flex items-center space-x-4">
+				<UAvatar
+					:src="authorAvatar"
+					class="size-8"
+				/>
+				<h1 class="text-lg font-semibold">Quiz: {{ article.title }}</h1>
+			</div>
+		</template>
+		<template #body>
+			<div class="p-4 w-full">
+				<ArticleQuiz
+					v-if="quiz !== undefined"
+					:article="article"
+				/>
+				<div
+					v-else
+					class="flex items-center justify-center h-32"
+				>
+					<Loading />
+				</div>
+			</div>
+		</template>
+	</UModal>
 </template>
 
 <script setup lang="ts">
@@ -221,5 +276,53 @@ async function removeArticle() {
 			duration: 5000
 		});
 	}
+}
+
+// Article Quiz
+
+const { quiz, fetchQuiz, score } = useArticle(props.article.id);
+const quizOpen = ref(false);
+
+onMounted(async () => {
+	await fetchQuiz();
+});
+
+const quizLoading = ref(false);
+async function createQuiz() {
+	quizLoading.value = true;
+	if (user.value?.account.account_type !== 'ADMINISTRATOR') {
+		toast.add({
+			title: 'Access Denied',
+			description: 'Only administrators can create quizzes for articles.',
+			icon: 'mdi:alert-circle',
+			color: 'error',
+			duration: 5000
+		});
+		return;
+	}
+
+	const res = await createArticleQuiz(props.article);
+	if (res.success && res.data) {
+		toast.add({
+			title: 'Quiz Created',
+			description: 'The quiz has been successfully created for this article.',
+			icon: 'mdi:check',
+			color: 'success',
+			duration: 5000
+		});
+
+		quiz.value = res.data;
+		fetchQuiz();
+	} else {
+		toast.add({
+			title: 'Error',
+			description: res.message || 'An unknown error occurred while creating the quiz.',
+			icon: 'mdi:alert-circle',
+			color: 'error',
+			duration: 7000
+		});
+	}
+
+	quizLoading.value = false;
 }
 </script>

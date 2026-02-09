@@ -1,4 +1,8 @@
-import { type Article } from '~/shared/types/article';
+import {
+	type Article,
+	type ArticleQuizQuestion,
+	type ArticleQuizScoreResult
+} from '~/shared/types/article';
 import type { SortingOption } from '~/shared/types/global';
 import {
 	makeAPIRequest,
@@ -153,28 +157,173 @@ export function useArticle(id: string) {
 
 	const fetch = async () => {
 		if (article.value !== undefined) return;
-		const res = await makeAPIRequest<Article>(`article-${id}`, `/v2/articles/${id}`);
-		if (res.success && res.data) {
-			if ('message' in res.data) {
+		try {
+			const res = await makeAPIRequest<Article>(
+				`article-${id}`,
+				`/v2/articles/${id}`,
+				useCurrentSessionToken()
+			);
+			if (res.success && res.data) {
+				// Check if it's an error response or missing required fields
+				if ('message' in res.data || 'error' in (res.data as any) || !('id' in res.data)) {
+					article.value = null;
+					return res;
+				}
+
+				article.value = res.data;
+			} else {
 				article.value = null;
-				return res;
 			}
 
-			article.value = res.data;
-		} else {
+			return res;
+		} catch (error) {
+			console.error('Error fetching article:', error);
 			article.value = null;
 		}
-
-		return res;
 	};
 
 	if (!article.value) {
 		fetch();
 	}
 
+	const quiz = useState<ArticleQuizQuestion[] | null | undefined>(
+		`article-${id}-quiz`,
+		() => undefined
+	);
+	const quizSummary = useState<{
+		total: number;
+		multiple_choice_count: number;
+		true_false_count: number;
+	} | null>(`article-${id}-quiz_summary`, () => null);
+
+	const fetchQuiz = async () => {
+		if (quiz.value !== undefined) return;
+
+		try {
+			const res = await makeAPIRequest<{
+				questions: ArticleQuizQuestion[];
+				summary: { total: number; multiple_choice_count: number; true_false_count: number };
+			}>(`article-${id}-quiz`, `/v2/articles/${id}/quiz`, useCurrentSessionToken());
+			if (res.success && res.data) {
+				if ('message' in res.data) {
+					// Quiz doesn't exist for this article
+					quiz.value = null;
+					quizSummary.value = null;
+					return res;
+				}
+
+				quiz.value = res.data.questions;
+				quizSummary.value = res.data.summary;
+			} else {
+				// Error fetching quiz
+				quiz.value = null;
+				quizSummary.value = null;
+			}
+
+			return res;
+		} catch (error) {
+			console.error('Error fetching quiz:', error);
+			quiz.value = null;
+			quizSummary.value = null;
+		}
+	};
+
+	if (quiz.value === undefined) {
+		fetchQuiz();
+	}
+
+	const score = useState<ArticleQuizScoreResult | null | undefined>(
+		`article-${id}-quiz-score`,
+		() => undefined
+	);
+
+	const submitQuiz = async (answers: number[]) => {
+		if (!quiz.value || quiz.value.length === 0) {
+			throw new Error('Quiz must be loaded before submitting answers');
+		}
+
+		const quiz0 = quiz.value;
+
+		if (answers.length !== quiz0.length) {
+			throw new Error(
+				`Number of answers (${answers.length}) does not match number of questions (${quiz0.length})`
+			);
+		}
+
+		const answers0 = answers.map((a, i) => ({
+			question: quiz0[i]!.question,
+			text: quiz0[i]!.options[a]!,
+			index: a
+		}));
+
+		try {
+			const res = await makeServerRequest<ArticleQuizScoreResult>(
+				`article-${id}-quiz-submit`,
+				`/api/article/quiz`,
+				useCurrentSessionToken(),
+				{
+					method: 'POST',
+					body: { answers: answers0, articleId: id }
+				}
+			);
+
+			if (res.success && res.data) {
+				if ('message' in res.data) {
+					return res;
+				}
+
+				score.value = res.data;
+			}
+
+			return res;
+		} catch (error) {
+			console.error('Error submitting quiz:', error);
+			throw error;
+		}
+	};
+
+	const fetchQuizScore = async () => {
+		if (score.value !== undefined) return;
+		try {
+			const res = await makeServerRequest<ArticleQuizScoreResult>(
+				`article-${id}-quiz-score`,
+				`/api/article/quiz?articleId=${id}`,
+				useCurrentSessionToken()
+			);
+
+			if (res.success && res.data) {
+				if ('message' in res.data) {
+					// No score exists yet
+					score.value = null;
+					return res;
+				}
+
+				score.value = res.data;
+			} else {
+				// Error or no score
+				score.value = null;
+			}
+
+			return res;
+		} catch (error) {
+			console.error('Error fetching quiz score:', error);
+			score.value = null;
+		}
+	};
+
+	if (score.value === undefined) {
+		fetchQuizScore();
+	}
+
 	return {
 		article,
-		fetch
+		fetch,
+		quiz,
+		quizSummary,
+		fetchQuiz,
+		submitQuiz,
+		score,
+		fetchQuizScore
 	};
 }
 
@@ -246,4 +395,18 @@ export function useUserArticles(
 		total,
 		fetch
 	};
+}
+
+export async function createArticleQuiz(article: Article) {
+	const res = await makeServerRequest<ArticleQuizQuestion[]>(
+		`article-${article.id}-create_quiz`,
+		`/api/admin/createArticleQuiz`,
+		useCurrentSessionToken(),
+		{
+			method: 'POST',
+			body: { article }
+		}
+	);
+
+	return res;
 }

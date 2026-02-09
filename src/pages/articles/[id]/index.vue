@@ -1,7 +1,7 @@
 <template>
 	<ClientOnly>
 		<div
-			v-if="article"
+			v-if="article && !('error' in article) && article.author"
 			class="flex flex-col items-center w-full h-full pt-12 sm:pt-0"
 		>
 			<ArticlePage :article="article" />
@@ -59,11 +59,11 @@ const relatedArticles = ref<Article[]>([]);
 watch(
 	() => article.value,
 	(article) => {
-		setTitleSuffix(article ? article.title : 'Article');
-
-		if (article) {
+		if (article && !('error' in (article as any)) && 'title' in article) {
+			setTitleSuffix(article.title);
 			loadSimilar(article);
 		} else {
+			setTitleSuffix('Article');
 			relatedLoaded.value = false;
 			relatedArticles.value = [];
 		}
@@ -85,7 +85,7 @@ useSeoMeta({
 });
 
 onMounted(async () => {
-	if (!article.value) return;
+	if (!article.value || 'error' in (article.value as any)) return;
 	if (user.value) {
 		const count = await getCurrentJourney('article', user.value.id);
 		if (!count.success || !count.data) return; // silently ignore errors
