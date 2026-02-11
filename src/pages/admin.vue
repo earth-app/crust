@@ -1,6 +1,54 @@
 <template>
 	<div v-if="user && user.is_admin">
 		<div class="container mx-auto my-8 px-4 py-8 bg-gray-900 border-8 border-gray-950 rounded-lg">
+			<h1 class="text-2xl">MOTD Panel</h1>
+			<span class="mt-2 text-gray-500">Manage the Message of the Day from this panel.</span>
+			<div class="flex mt-4 w-full">
+				<UInput
+					v-model="motd.motd"
+					placeholder="Set the Message of the Day..."
+					class="mr-2 w-2/5"
+					:disabled="motdLoading"
+				/>
+				<UInput
+					v-model="motd.icon"
+					:icon="motd.icon"
+					placeholder="Icon (optional, e.g. mdi:earth)"
+					class="mr-2 w-1/4"
+					:disabled="motdLoading"
+				/>
+				<USelect
+					v-model="motd.type"
+					:items="[
+						{ label: 'Info', value: 'info', icon: 'mdi:information' },
+						{ label: 'Success', value: 'success', icon: 'mdi:check-circle' },
+						{ label: 'Warning', value: 'warning', icon: 'mdi:alert' },
+						{ label: 'Error', value: 'error', icon: 'mdi:close-circle' }
+					]"
+					placeholder="Type"
+					class="mr-2 w-1/8"
+					:disabled="motdLoading"
+				/>
+				<UInput
+					v-model.number="ttl"
+					type="number"
+					:min="300"
+					placeholder="TTL (seconds)"
+					class="mr-2 w-1/12"
+					:disabled="motdLoading"
+				/>
+			</div>
+			<UButton
+				color="primary"
+				icon="mdi:send"
+				class="mt-2"
+				@click="handleMotdUpdate"
+				:loading="motdLoading"
+			>
+				Update MOTD
+			</UButton>
+		</div>
+		<div class="container mx-auto my-8 px-4 py-8 bg-gray-900 border-8 border-gray-950 rounded-lg">
 			<h1 class="text-2xl">Users</h1>
 			<span class="mt-2 text-gray-500">Manage user accounts and permissions from this panel.</span>
 			<div class="mt-4">
@@ -172,7 +220,9 @@ import type { Prompt } from '~/shared/types/prompts';
 import type { User } from '~/shared/types/user';
 
 const { user } = useAuth();
+const { motd, ttl, fetchMotd, setMotd } = useMotd();
 
+const toast = useToast();
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Admin Panel');
 
@@ -220,4 +270,20 @@ const activitySearch = ref<string>('');
 const createActivityModal = ref(false);
 const editActivityModal = ref(false);
 const activityToEdit = ref<Partial<Activity> | undefined>(undefined);
+
+const motdLoading = ref(false);
+async function handleMotdUpdate() {
+	motdLoading.value = true;
+	await setMotd(motd.value.motd, motd.value.icon, motd.value.type, ttl.value);
+	await fetchMotd();
+
+	toast.add({
+		title: 'MOTD Updated',
+		description: 'The Message of the Day has been updated successfully.',
+		icon: 'mdi:check-circle',
+		color: 'success'
+	});
+
+	motdLoading.value = false;
+}
 </script>

@@ -189,6 +189,15 @@
 			"
 		/>
 	</ClientOnly>
+	<UBanner
+		v-if="motd.motd"
+		class="mb-4"
+		:icon="motd.icon || 'mdi:earth'"
+		:title="motd.motd"
+		:color="motd.type || 'info'"
+		:ui="{ root: 'flex items-center', title: 'font-semibold' }"
+		close
+	/>
 </template>
 
 <script setup lang="ts">
@@ -196,6 +205,11 @@ const { user, avatar128 } = useAuth();
 const toast = useToast();
 const router = useRouter();
 const logout = useLogout();
+const { motd, fetchMotd } = useMotd();
+
+onMounted(async () => {
+	await fetchMotd();
+});
 
 const isNavbarVisible = ref(true);
 
