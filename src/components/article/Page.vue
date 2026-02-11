@@ -75,7 +75,7 @@
 			>
 
 			<UButton
-				v-if="!quiz && user?.account.account_type === 'ADMINISTRATOR'"
+				v-if="!quiz && user?.is_admin"
 				color="primary"
 				icon="mdi:plus"
 				variant="subtle"
@@ -237,7 +237,7 @@ const hasWriteAccess = computed(() => {
 	if (user.value == null) return false;
 	if (props.article.author_id === user.value.id) return true;
 
-	return user.value?.account.account_type === 'ADMINISTRATOR';
+	return user.value?.is_admin;
 });
 
 async function removeArticle() {

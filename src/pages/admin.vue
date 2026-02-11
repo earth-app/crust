@@ -1,5 +1,5 @@
 <template>
-	<div v-if="user && user.account.account_type === 'ADMINISTRATOR'">
+	<div v-if="user && user.is_admin">
 		<div class="container mx-auto my-8 px-4 py-8 bg-gray-900 border-8 border-gray-950 rounded-lg">
 			<h1 class="text-2xl">Users</h1>
 			<span class="mt-2 text-gray-500">Manage user accounts and permissions from this panel.</span>

@@ -37,7 +37,7 @@
 					>Take the Tour</UButton
 				>
 				<UButton
-					v-if="user && user.account.account_type === 'ADMINISTRATOR'"
+					v-if="user && user.is_admin"
 					icon="mdi:cog-outline"
 					color="error"
 					variant="soft"

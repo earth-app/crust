@@ -14,7 +14,7 @@
 				:avatar-chip-color="
 					user?.account.account_type === 'ORGANIZER'
 						? 'warning'
-						: user?.account.account_type === 'ADMINISTRATOR'
+						: user?.is_admin
 							? 'error'
 							: undefined
 				"
@@ -119,11 +119,7 @@ const tooltip = computed(() => {
 });
 
 const hasButtons = computed(() => {
-	return (
-		user.value &&
-		(user.value.id === props.response.owner.id ||
-			user.value.account.account_type === 'ADMINISTRATOR')
-	);
+	return user.value && (user.value.id === props.response.owner.id || user.value.is_admin);
 });
 
 const responseText = ref(props.response.response);

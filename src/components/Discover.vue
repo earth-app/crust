@@ -138,7 +138,7 @@ function populate(searchTerm: string) {
 			prompts.value = items.map((prompt) => {
 				const owner = prompt.owner;
 				const type = owner.account.account_type;
-				const isChipShown = type === 'ADMINISTRATOR' || type === 'ORGANIZER';
+				const isChipShown = owner.is_admin || type === 'ORGANIZER';
 
 				return {
 					id: `prompt-${prompt.id}`,
@@ -148,7 +148,7 @@ function populate(searchTerm: string) {
 						src: `${owner.account.avatar_url}?size=32`,
 						icon: 'mdi:lightbulb-outline',
 						chip: {
-							color: type === 'ADMINISTRATOR' ? 'error' : 'warning',
+							color: owner.is_admin ? 'error' : 'warning',
 							ui: { root: isChipShown ? 'visible' : 'hidden' }
 						}
 					},
@@ -175,7 +175,7 @@ function populate(searchTerm: string) {
 			articles.value = items.map((article) => {
 				const owner = article.author;
 				const type = owner.account.account_type;
-				const isChipShown = type === 'ADMINISTRATOR' || type === 'ORGANIZER';
+				const isChipShown = owner.is_admin || type === 'ORGANIZER';
 
 				return {
 					id: `article-${article.id}`,
@@ -188,7 +188,7 @@ function populate(searchTerm: string) {
 						src: `${owner.account.avatar_url}?size=32`,
 						icon: 'mdi:file-document-outline',
 						chip: {
-							color: type === 'ADMINISTRATOR' ? 'error' : 'warning',
+							color: owner.is_admin ? 'error' : 'warning',
 							ui: { root: isChipShown ? 'visible' : 'hidden' }
 						}
 					},

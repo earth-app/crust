@@ -97,10 +97,7 @@ const time = computed(() => {
 });
 
 const hasButtons = computed(() => {
-	return (
-		user.value &&
-		(user.value.id === props.prompt.owner_id || user.value.account.account_type === 'ADMINISTRATOR')
-	);
+	return user.value && (user.value.id === props.prompt.owner_id || user.value.is_admin);
 });
 
 const updatedTime = computed(() => {

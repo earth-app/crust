@@ -19,6 +19,7 @@ export type User = {
 	created_at: string;
 	updated_at?: string;
 	last_login?: string;
+	is_admin: boolean;
 	account: {
 		account_type: typeof com.earthapp.account.AccountType.prototype.name;
 		id: string;

@@ -14,7 +14,7 @@
 				</h1>
 				<UserTypeBadge
 					:user="props.user"
-					:editor="user?.account.account_type === 'ADMINISTRATOR'"
+					:editor="user?.is_admin"
 					class="ml-3 mt-1 mb-2"
 				/>
 			</div>
