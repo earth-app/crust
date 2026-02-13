@@ -461,8 +461,7 @@ export function useUser(identifier: string) {
 
 	const badges = useState<UserBadge[]>(`user-badges-${identifier}`, () => []);
 	const fetchBadges = async () => {
-		const res = await makeAPIRequest<UserBadge[]>(
-			`user-badges-${identifier}`,
+		const res = await makeClientAPIRequest<UserBadge[]>(
 			`/v2/users/${identifier}/badges`,
 			useCurrentSessionToken()
 		);

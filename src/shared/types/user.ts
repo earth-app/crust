@@ -49,6 +49,8 @@ export type User = {
 			friends: typeof com.earthapp.account.Privacy.prototype.name;
 			last_login: typeof com.earthapp.account.Privacy.prototype.name;
 			account_type: typeof com.earthapp.account.Privacy.prototype.name;
+			impact_points: typeof com.earthapp.account.Privacy.prototype.name;
+			badges: typeof com.earthapp.account.Privacy.prototype.name;
 		};
 	};
 	email_change_pending?: string;
@@ -65,6 +67,7 @@ export type User = {
 	circle?: string[];
 	circle_count?: number;
 	max_circle_count?: number;
+	impact_points: number;
 };
 
 export type UserNotification = {

@@ -251,12 +251,10 @@ export async function paginatedAPIRequest<T>(
 		);
 
 		if (!res.success || !res.data) {
-			console.error(`Failed to fetch page ${currentPage}:`, res.message);
 			return { success: false, message: res.message || 'Failed to fetch paginated data.' };
 		}
 
 		if (!('items' in res.data)) {
-			console.error(`Failed to fetch page ${currentPage}:`, res.data.message);
 			return { success: false, ...res.data };
 		}
 
