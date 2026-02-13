@@ -1,8 +1,10 @@
 <template>
-	<div class="flex flex-col items-center px-4">
+	<div
+		v-if="user"
+		class="flex flex-col items-center px-4"
+	>
 		<h2 class="text-xl font-semibold my-2 mt-28 md:mt-2">{{ handle }}'s Badges</h2>
 		<h4 class="text-base">{{ completedBadges.length }} / {{ badges.length }} Completed</h4>
-		<Loading v-if="!badges.length" />
 
 		<h3 class="my-4 font-medium text-lg">Completed Badges</h3>
 		<div
@@ -27,11 +29,25 @@
 			/>
 		</div>
 	</div>
+	<div
+		v-else-if="user === null"
+		class="flex flex-col items-center px-4 mt-28 md:mt-2"
+	>
+		<h2 class="text-xl font-semibold">User Not Found</h2>
+		<p class="text-base mt-2">The user you are looking for does not exist.</p>
+	</div>
+	<div
+		v-else
+		class="flex flex-col items-center px-4 mt-28 md:mt-2"
+	>
+		<Loading />
+	</div>
 </template>
 
 <script setup lang="ts">
-const { user, badges, fetchBadges } = useAuth();
-const { handle } = useDisplayName(user.value);
+const route = useRoute();
+const { user, badges, fetchBadges } = useUser(route.params.id as string);
+const { handle } = useDisplayName(user);
 
 onMounted(async () => {
 	await fetchBadges();
