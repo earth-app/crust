@@ -74,5 +74,4 @@ const props = defineProps<{
 }>();
 
 const { user: currentUser } = useAuth();
-const { chipColor } = useUser(props.user.id);
 </script>

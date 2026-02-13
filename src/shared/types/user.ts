@@ -94,3 +94,9 @@ export type UserBadge = Badge & {
 	granted_at?: string;
 	progress: number;
 };
+
+export type UserJourneyLeaderboardEntry = {
+	id: string;
+	streak: number;
+	user: User;
+};

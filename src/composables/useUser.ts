@@ -2,7 +2,12 @@ import type { MaybeRefOrGetter } from 'vue';
 import type { Activity } from '~/shared/types/activity';
 import type { Event } from '~/shared/types/event';
 import type { SortingOption } from '~/shared/types/global';
-import type { User, UserBadge, UserNotification } from '~/shared/types/user';
+import type {
+	User,
+	UserBadge,
+	UserJourneyLeaderboardEntry,
+	UserNotification
+} from '~/shared/types/user';
 import {
 	getUserDisplayName,
 	makeAPIRequest,
@@ -456,7 +461,8 @@ export function useUser(identifier: string) {
 
 	const badges = useState<UserBadge[]>(`user-badges-${identifier}`, () => []);
 	const fetchBadges = async () => {
-		const res = await makeClientAPIRequest<UserBadge[]>(
+		const res = await makeAPIRequest<UserBadge[]>(
+			`user-badges-${identifier}`,
 			`/v2/users/${identifier}/badges`,
 			useCurrentSessionToken()
 		);
@@ -821,30 +827,30 @@ export async function clearCurrentJourney(identifier: string) {
 	);
 }
 
-export async function getCurrentJourneyRank(identifier: string, id: string) {
+export async function getCurrentJourneyRank(type: string, id: string) {
 	return await makeServerRequest<{ rank: number }>(
-		`journey-rank-${identifier}`,
-		`/api/user/journeyRank?type=${identifier}&id=${id}`,
+		`journey-rank-${type}`,
+		`/api/user/journeyRank?type=${type}&id=${id}`,
 		useCurrentSessionToken()
 	);
 }
 
-export async function getJourneyLeaderboard(identifier: string, limit: number = 10) {
-	return await makeServerRequest<{ id: string; streak: number }[]>(
-		`journey-leaderboard-${identifier}-limit-${limit}`,
-		`/api/user/journeyLeaderboard?type=${identifier}&limit=${limit}`,
+export async function getJourneyLeaderboard(type: string, limit: number = 10) {
+	return await makeServerRequest<Omit<UserJourneyLeaderboardEntry, 'user'>[]>(
+		`journey-leaderboard-${type}-limit-${limit}`,
+		`/api/user/journeyLeaderboard?type=${type}&limit=${limit}`,
 		useCurrentSessionToken()
 	);
 }
 
-export function useJourneyLeaderboard(identifier: string) {
-	const leaderboard = useState<{ user: User; id: string; streak: number }[]>(
-		`journey-leaderboard-${identifier}`,
+export function useJourneyLeaderboard(type: string) {
+	const leaderboard = useState<UserJourneyLeaderboardEntry[]>(
+		`journey-leaderboard-${type}`,
 		() => []
 	);
 
 	const fetchLeaderboard = async (limit: number = 10) => {
-		const res = await getJourneyLeaderboard(identifier, limit);
+		const res = await getJourneyLeaderboard(type, limit);
 		if (res.success && res.data) {
 			const userPromises = res.data.map(async (entry) => {
 				const { user, fetchUser } = useUser(entry.id);

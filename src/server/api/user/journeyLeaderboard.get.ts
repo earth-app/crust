@@ -1,4 +1,4 @@
-const validJournies = ['activity', 'prompt', 'article', 'event'];
+const validJournies = ['prompt', 'article', 'event'];
 
 export default defineEventHandler(async (event) => {
 	const { type, limit } = getQuery(event);
