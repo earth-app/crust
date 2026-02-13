@@ -2,8 +2,9 @@
 @import '@nuxt/ui';
 @plugin 'tailwindcss-motion';
 
-@theme {
-	--ui-secondary: #174f96;
+:root {
+	--ui-secondary: #136df5;
+	--ui-success: #69ec42;
 	--font-title: 'Noto Sans', sans-serif;
 }
 
