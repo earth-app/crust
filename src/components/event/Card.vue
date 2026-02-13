@@ -11,10 +11,6 @@
 		:image="full ? undefined : thumbnail || undefined"
 		:color="0xffca20"
 		:buttons="buttons"
-		:avatar-group="{
-			avatars: attendeeAvatars,
-			max: 5
-		}"
 		:footer="footer"
 		:banner="banner || undefined"
 	/>
@@ -54,6 +50,7 @@ const {
 	thumbnail,
 	unloadThumbnail,
 	attendees,
+	fetchAttendees,
 	signUpForEvent,
 	leaveEvent,
 	deleteEvent
@@ -62,6 +59,15 @@ const {
 const reactiveEvent = computed(() => eventState.value || props.event);
 
 const attendeesDrawerRef = ref<InstanceType<typeof ContentDrawer>>();
+
+// Lazy load attendees only when drawer is opened
+const openAttendeesDrawer = () => {
+	if (!attendees.value) {
+		fetchAttendees();
+	}
+	attendeesDrawerRef.value?.open();
+};
+
 const allAttendees = computed(() => {
 	const filteredAttendees = (attendees.value || []).filter(
 		(attendee) => attendee.id !== reactiveEvent.value.hostId
@@ -71,6 +77,8 @@ const allAttendees = computed(() => {
 
 const attendeeAvatars = computed(() => {
 	return allAttendees.value.map((attendee) => {
+		// useUser has internal caching via useState, so calling it multiple times
+		// with the same ID won't cause duplicate fetches
 		const { avatar128, chipColor } = useUser(attendee.id);
 
 		return {
@@ -281,9 +289,7 @@ const buttons = computed(() => {
 			text: `Attendees (${withSuffix(reactiveEvent.value.attendee_count)})`,
 			color: 'info',
 			size: 'md',
-			onClick: () => {
-				attendeesDrawerRef.value?.open();
-			}
+			onClick: openAttendeesDrawer
 		});
 
 		array.push({
@@ -349,6 +355,7 @@ const banner = computed<{
 	return null;
 });
 
+// useUser has internal caching, so this won't cause duplicate fetches
 const { avatar128: authorAvatar, chipColor: authorAvatarChipColor } = useUser(
 	reactiveEvent.value.hostId
 );

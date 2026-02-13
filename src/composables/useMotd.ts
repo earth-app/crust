@@ -1,4 +1,4 @@
-import { makeClientAPIRequest } from '~/shared/util';
+import { makeAPIRequest, makeClientAPIRequest } from '~/shared/util';
 
 export function useMotd() {
 	const motd = useState<{
@@ -9,15 +9,15 @@ export function useMotd() {
 	const ttl = useState<number>('motd-ttl', () => 3600);
 
 	const fetchMotd = async () => {
-		const res = await makeClientAPIRequest<{
+		const res = await makeAPIRequest<{
 			motd: string;
 			ttl: number;
 			icon: string;
 			type: 'info' | 'success' | 'error' | 'warning';
-		}>('/v2/motd', useCurrentSessionToken());
+		}>('motd-data', '/v2/motd', useCurrentSessionToken());
 		if (res.success && res.data) {
 			if ('message' in res.data) {
-				console.error('Failed to fetch MOTD:', res.data.message);
+				// Silently handle when MOTD isn't set
 				motd.value = { motd: '', icon: '', type: 'info' };
 				ttl.value = 0;
 				return;
@@ -30,7 +30,7 @@ export function useMotd() {
 			};
 			ttl.value = res.data.ttl;
 		} else {
-			console.error('Failed to fetch MOTD:', res.message || 'Unknown error');
+			// Silently handle when MOTD isn't set
 			motd.value = { motd: '', icon: '', type: 'info' };
 			ttl.value = 0;
 		}

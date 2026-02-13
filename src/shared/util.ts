@@ -3,6 +3,9 @@ import type { SortingOption } from './types/global';
 import type { User } from './types/user';
 import { DEFAULT_FULL_NAME } from './types/user';
 
+// Global request queue to prevent duplicate concurrent requests
+const requestQueue = new Map<string, Promise<any>>();
+
 export async function makeRequest<T>(
 	key: string | null,
 	url: string,
@@ -10,32 +13,12 @@ export async function makeRequest<T>(
 	options: any = {}
 ): Promise<{ success: boolean; data?: T | { code: number; message: string }; message?: string }> {
 	try {
-		// Check if this is a request for binary data (like images)
-		const isBinaryRequest = url.includes('profile_photo') || options.responseType === 'blob';
-
-		if (isBinaryRequest) {
-			const headers: Record<string, string> = {};
-			if (token) {
-				headers['Authorization'] = `Bearer ${token}`;
-			}
-
-			const blob = await $fetch<Blob>(url, {
-				headers,
-				...options
-			});
-
-			return {
-				success: true,
-				data: blob as T
-			};
-		}
-
-		// Use state for keys
+		// Use state for keys - check cache FIRST for best performance
 		let cached: ReturnType<typeof useState<T | null | undefined>> | null = null;
 		if (key) {
 			cached = useState<T | null | undefined>(key, () => undefined);
 
-			if (cached.value) {
+			if (cached.value !== undefined && cached.value !== null) {
 				return {
 					success: true,
 					data: cached.value
@@ -43,62 +26,106 @@ export async function makeRequest<T>(
 			}
 		}
 
-		// Handle regular JSON requests
-		const data = await $fetch<T>(url, {
-			headers: {
-				Authorization: `Bearer ${token}`
-			},
-			ignoreResponseError: true,
-			...options
-		}).catch((error) => {
-			// Silently handle 404s - don't log or report
-			const errorStr = error.toString();
-			if (errorStr.includes('404')) {
-				throw {
-					is404: true,
-					toString: () => '404'
-				};
-			}
+		const queueKey = key ? `${url}::${key}` : url;
 
-			throw {
-				message: `Error fetching ${key} from ${url}: ${error}`,
-				data,
-				error,
-				toString: () => error.toString()
-			};
-		});
+		// Check if this exact request is already in progress
+		const existingRequest = requestQueue.get(queueKey);
+		if (existingRequest) {
+			return existingRequest;
+		}
 
-		// handle '204 No Content' as success with no data
-		if (!data || data === null || data === undefined) {
-			if (options.method === 'POST' || options.method === 'DELETE' || options.method === 'PATCH') {
+		// Create new request promise and add to queue
+		const requestPromise = (async () => {
+			try {
+				// Check if this is a request for binary data (like images)
+				const isBinaryRequest = url.includes('profile_photo') || options.responseType === 'blob';
+
+				if (isBinaryRequest) {
+					const headers: Record<string, string> = {};
+					if (token) {
+						headers['Authorization'] = `Bearer ${token}`;
+					}
+
+					const blob = await $fetch<Blob>(url, {
+						headers,
+						...options
+					});
+
+					return {
+						success: true,
+						data: blob as T
+					};
+				}
+
+				// Handle regular JSON requests
+				const data = await $fetch<T>(url, {
+					headers: {
+						Authorization: `Bearer ${token}`
+					},
+					ignoreResponseError: true,
+					...options
+				}).catch((error) => {
+					// Silently handle 404s - don't log or report
+					const errorStr = error.toString();
+					if (errorStr.includes('404')) {
+						throw {
+							is404: true,
+							toString: () => '404'
+						};
+					}
+
+					throw {
+						message: `Error fetching ${key} from ${url}: ${error}`,
+						data,
+						error,
+						toString: () => error.toString()
+					};
+				});
+
+				// handle '204 No Content' as success with no data
+				if (!data || data === null || data === undefined) {
+					if (
+						options.method === 'POST' ||
+						options.method === 'DELETE' ||
+						options.method === 'PATCH'
+					) {
+						return {
+							success: true
+						};
+					}
+
+					// 404 - return silently without message
+					return {
+						success: false
+					};
+				}
+
+				if (typeof data === 'object' && 'message' in data) {
+					return {
+						success: false,
+						data: data as any,
+						message: (data as any).message || `Error fetching ${key} from ${url}`
+					};
+				}
+
+				// Update cache with fetched data
+				if (cached) {
+					cached.value = data as T;
+				}
+
 				return {
-					success: true
+					success: true,
+					data: data as T
 				};
+			} finally {
+				// Clean up queue when request completes (success or failure)
+				requestQueue.delete(queueKey);
 			}
+		})();
 
-			// 404 - return silently without message
-			return {
-				success: false
-			};
-		}
-
-		if (typeof data === 'object' && 'message' in data) {
-			return {
-				success: false,
-				data: data as any,
-				message: (data as any).message || `Error fetching ${key} from ${url}`
-			};
-		}
-
-		// Update cache with fetched data
-		if (cached) {
-			cached.value = data as T;
-		}
-
-		return {
-			success: true,
-			data: data as T
-		};
+		// Store in queue before returning
+		requestQueue.set(queueKey, requestPromise);
+		return requestPromise;
 	} catch (error: any) {
 		if (error.is404 || error.toString().includes('404')) {
 			return {
@@ -215,7 +242,9 @@ export async function paginatedAPIRequest<T>(
 	const maxPages = 100;
 
 	while (currentPage <= maxPages) {
-		const res = await makeClientAPIRequest<{ items: T[]; total: number }>(
+		const pageKey = `paginated-${url.replace(/\//g, '-')}-page${currentPage}-search${search}-sort${sort}`;
+		const res = await makeAPIRequest<{ items: T[]; total: number }>(
+			pageKey,
 			`${url}?page=${currentPage}&limit=100&search=${search}&sort=${sort}`,
 			token,
 			options

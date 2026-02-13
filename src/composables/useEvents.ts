@@ -416,7 +416,8 @@ export async function getRandomEvents(count: number = 5) {
 }
 
 export async function getRecentEvents(count: number = 5) {
-	const res = await makeClientAPIRequest<{ items: Event[] }>(
+	const res = await makeAPIRequest<{ items: Event[] }>(
+		`recent-events-${count}`,
 		`/v2/events?sort=desc&limit=${count}`,
 		useCurrentSessionToken()
 	);

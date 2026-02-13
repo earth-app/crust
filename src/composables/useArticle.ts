@@ -133,7 +133,8 @@ export async function getRandomArticles(count: number = 3) {
 }
 
 export async function getRecentArticles(count: number = 5) {
-	const res = await makeClientAPIRequest<{ items: Article[] }>(
+	const res = await makeAPIRequest<{ items: Article[] }>(
+		`recent-articles-${count}`,
 		`/v2/articles?sort=desc&limit=${count}`,
 		useCurrentSessionToken()
 	);
