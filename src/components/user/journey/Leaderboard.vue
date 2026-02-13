@@ -14,6 +14,7 @@
 		<UTable
 			:columns="columns"
 			:data="data"
+			:loading="data.length === 0"
 		/>
 	</div>
 </template>
