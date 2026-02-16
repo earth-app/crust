@@ -1,4 +1,9 @@
-import type { Event, EventAutocompleteSuggestion, EventData } from '~/shared/types/event';
+import {
+	type Event,
+	type EventAutocompleteSuggestion,
+	type EventData,
+	type EventImageSubmission
+} from '~/shared/types/event';
 import type { User } from '~/shared/types/user';
 import {
 	makeAPIRequest,
@@ -372,6 +377,91 @@ export function useEvent(id: string) {
 		return res;
 	};
 
+	const submissions = useState<EventImageSubmission[] | null>(
+		`event-image-submissions-${id}`,
+		() => null
+	);
+	const fetchSubmissions = async () => {
+		const res = await paginatedAPIRequest<EventImageSubmission>(
+			`/v2/events/${id}/submissions`,
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				submissions.value = null;
+				return res;
+			}
+
+			submissions.value = res.data;
+		} else {
+			submissions.value = null;
+		}
+
+		return res;
+	};
+
+	if (!submissions.value) {
+		fetchSubmissions();
+	}
+
+	const fetchSubmissionsForUser = async (user: string) => {
+		const res = await paginatedAPIRequest<EventImageSubmission>(
+			`/v2/users/${user}/events/images/${id}`,
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				console.error(`Failed to fetch submissions for user ${user}:`, res.data.message);
+			}
+
+			return res;
+		}
+
+		console.error(`Failed to fetch submissions for user ${user}:`, res.message);
+		return { success: false, message: `Failed to fetch submissions for user ${user}.`, data: [] };
+	};
+
+	const submitImage = async (file: File) => {
+		const dataUrl = await new Promise<string>((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => {
+				resolve(reader.result as string);
+			};
+			reader.onerror = (error) => {
+				reject(error);
+			};
+			reader.readAsDataURL(file);
+		});
+
+		if (!dataUrl) throw new Error('Failed to read image file');
+		if (!dataUrl.startsWith('data:image/')) throw new TypeError('File is not a valid image');
+		if (dataUrl.length > 10 * 1024 * 1024) throw new Error('Image exceeds maximum size of 10MB');
+
+		const res = await makeClientAPIRequest<{
+			message: string;
+			submission_id: string;
+			user_id: string;
+			event_id: string;
+			photo_url: string;
+		}>(`/v2/events/${id}/submissions`, useCurrentSessionToken(), {
+			method: 'POST',
+			body: JSON.stringify({ photo_url: dataUrl })
+		});
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// refresh submissions list to include the new submission
+			await fetchSubmissions();
+		}
+
+		return res;
+	};
+
 	return {
 		event,
 		fetch,
@@ -391,7 +481,11 @@ export function useEvent(id: string) {
 		thumbnailSize,
 		fetchThumbnailMetadata,
 		cancelEvent,
-		uncancelEvent
+		uncancelEvent,
+		submissions,
+		fetchSubmissions,
+		fetchSubmissionsForUser,
+		submitImage
 	};
 }
 

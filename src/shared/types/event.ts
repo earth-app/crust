@@ -102,3 +102,22 @@ export type EventAutocompleteSuggestion = {
 	distance_meters?: number;
 	types: string[];
 };
+
+export type EventImageSubmission = {
+	submission_id: string;
+	event_id: string;
+	user_id: string;
+	image: string; // data URL
+	score: {
+		score: number;
+		breakdown: {
+			id: string;
+			similarity: number;
+			normalized: number;
+			weighted: number;
+		}[];
+	};
+	caption: string;
+	scored_at: string;
+	timestamp: number;
+};

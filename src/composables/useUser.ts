@@ -1,6 +1,6 @@
 import type { MaybeRefOrGetter } from 'vue';
 import type { Activity } from '~/shared/types/activity';
-import type { Event } from '~/shared/types/event';
+import type { Event, EventImageSubmission } from '~/shared/types/event';
 import type { SortingOption } from '~/shared/types/global';
 import type {
 	User,
@@ -484,6 +484,34 @@ export function useUser(identifier: string) {
 		fetchBadges();
 	}
 
+	const eventSubmissions = useState<EventImageSubmission[]>(
+		`user-event-submissions-${identifier}`,
+		() => []
+	);
+	const fetchEventSubmissions = async () => {
+		const res = await paginatedAPIRequest<EventImageSubmission>(
+			`/v2/users/${identifier}/events/images`,
+			useCurrentSessionToken()
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				eventSubmissions.value = [];
+				return res;
+			}
+
+			eventSubmissions.value = res.data;
+		} else {
+			eventSubmissions.value = [];
+		}
+
+		return res;
+	};
+
+	if (eventSubmissions.value.length === 0) {
+		fetchEventSubmissions();
+	}
+
 	return {
 		user,
 		fetchUser,
@@ -499,7 +527,9 @@ export function useUser(identifier: string) {
 		currentEventsCount,
 		fetchCurrentEvents,
 		badges,
-		fetchBadges
+		fetchBadges,
+		eventSubmissions,
+		fetchEventSubmissions
 	};
 }
 
