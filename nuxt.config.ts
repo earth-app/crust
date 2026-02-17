@@ -127,6 +127,7 @@ export default defineNuxtConfig({
 		'@nuxt/image',
 		'nuxt-schema-org',
 		'nuxt-api-shield',
+		'@pinia/nuxt',
 		[
 			'@nuxtjs/google-fonts',
 			{

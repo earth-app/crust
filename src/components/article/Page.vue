@@ -178,7 +178,18 @@ const oceanLinks = computed(() => {
 	}));
 });
 
-const { avatar128: authorAvatar } = useUser(props.article.author_id);
+const avatarStore = useAvatarStore();
+const authorAvatarUrl = computed(() => props.article.author.account?.avatar_url);
+const authorAvatar = computed(() => {
+	const url = authorAvatarUrl.value;
+	if (!url || !url.startsWith('http')) return '/favicon.png';
+	return avatarStore.get(url)?.avatar128 || '/favicon.png';
+});
+
+// Preload author avatar
+if (authorAvatarUrl.value) {
+	avatarStore.preloadAvatar(authorAvatarUrl.value);
+}
 
 const i18n = useI18n();
 const time = computed(() => {
@@ -246,7 +257,8 @@ async function removeArticle() {
 	);
 
 	if (yes) {
-		const res = await deleteArticle(props.article.id);
+		const articleStore = useArticleStore();
+		const res = await articleStore.deleteArticle(props.article.id);
 		if (res.success) {
 			toast.add({
 				title: 'Article Deleted',
@@ -301,7 +313,8 @@ async function createQuiz() {
 		return;
 	}
 
-	const res = await createArticleQuiz(props.article);
+	const { createQuiz } = useArticle(props.article.id);
+	const res = await createQuiz();
 	if (res.success && res.data) {
 		toast.add({
 			title: 'Quiz Created',
@@ -311,8 +324,7 @@ async function createQuiz() {
 			duration: 5000
 		});
 
-		quiz.value = res.data;
-		fetchQuiz();
+		await fetchQuiz();
 	} else {
 		toast.add({
 			title: 'Error',

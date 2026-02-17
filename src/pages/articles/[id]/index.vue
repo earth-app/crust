@@ -50,11 +50,16 @@ const toast = useToast();
 const route = useRoute();
 const { user } = useAuth();
 const { setTitleSuffix } = useTitleSuffix();
-const { article } = useArticle(route.params.id as string);
+const { article, fetch } = useArticle(route.params.id as string);
 const { startTimer, stopTimer } = useTimeOnPage('articles_read_time');
 
 const relatedLoaded = ref(false);
 const relatedArticles = ref<Article[]>([]);
+
+// Fetch article data on mount
+onMounted(() => {
+	fetch();
+});
 
 watch(
 	() => article.value,
@@ -112,7 +117,8 @@ async function loadSimilar(article?: Article) {
 	if (!user.value) return;
 	relatedLoaded.value = false;
 
-	const res = await getSimilarArticles(article);
+	const { getSimilar } = useArticle(article.id);
+	const res = await getSimilar();
 	if (res.success && res.data) {
 		relatedArticles.value = res.data;
 		relatedLoaded.value = true;

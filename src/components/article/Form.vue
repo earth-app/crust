@@ -172,7 +172,8 @@ const removeTag = (index: number) => {
 async function handleSubmit() {
 	loading.value = true;
 	if (props.mode === 'create') {
-		const res = await createArticle({
+		const articleStore = useArticleStore();
+		const res = await articleStore.createArticle({
 			title: state.title,
 			description: state.description,
 			content: state.content
@@ -210,7 +211,8 @@ async function handleSubmit() {
 			});
 		}
 	} else {
-		const res = await editArticle({
+		const articleStore = useArticleStore();
+		const res = await articleStore.updateArticle({
 			id: props.article!.id,
 			title: state.title,
 			description: state.description,

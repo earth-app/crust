@@ -1,13 +1,7 @@
 import type { MaybeRefOrGetter } from 'vue';
 import type { Activity } from '~/shared/types/activity';
-import type { Event, EventImageSubmission } from '~/shared/types/event';
 import type { SortingOption } from '~/shared/types/global';
-import type {
-	User,
-	UserBadge,
-	UserJourneyLeaderboardEntry,
-	UserNotification
-} from '~/shared/types/user';
+import type { User, UserJourneyLeaderboardEntry } from '~/shared/types/user';
 import {
 	getUserDisplayName,
 	makeAPIRequest,
@@ -16,7 +10,11 @@ import {
 	paginatedAPIRequest,
 	realFullName
 } from '~/shared/util';
-import { useCurrentSessionToken } from './useLogin';
+import { useAuthStore } from '~/stores/auth';
+import { useAvatarStore } from '~/stores/avatar';
+import { useFriendsStore } from '~/stores/friends';
+import { useNotificationStore } from '~/stores/notification';
+import { useUserStore } from '~/stores/user';
 
 export function useVisitedSite() {
 	const visitedSiteCookie = useCookie('visited_site', {
@@ -37,89 +35,7 @@ export function useVisitedSite() {
 	};
 }
 
-// Make the cache reactive so computed properties know when it updates
-const globalAvatarCache = reactive(
-	new Map<string, { avatar: string; avatar32: string; avatar128: string }>()
-);
-
-const avatarFetchQueue = new Map<
-	string,
-	Promise<{ avatar: string; avatar32: string; avatar128: string }>
->();
-
-const userFetchQueue = new Map<string, Promise<void>>();
-let authFetchQueue: Promise<void> | null = null;
-
-async function fetchAvatarBlobsForUrl(
-	url: string
-): Promise<{ avatar: string; avatar32: string; avatar128: string }> {
-	// Check global cache first
-	const cached = globalAvatarCache.get(url);
-	if (cached) {
-		return cached;
-	}
-
-	// Check if already fetching this URL
-	const existing = avatarFetchQueue.get(url);
-	if (existing) {
-		return existing;
-	}
-
-	// Initialize cache with loading placeholders immediately
-	const initialCache = {
-		avatar: '/earth-app.png',
-		avatar32: '/favicon.png',
-		avatar128: '/favicon.png'
-	};
-	globalAvatarCache.set(url, initialCache);
-
-	// Create new fetch promise
-	const fetchPromise = (async () => {
-		try {
-			const token = useCurrentSessionToken();
-			const headers: HeadersInit = {};
-			if (token) headers['Authorization'] = `Bearer ${token}`;
-
-			// Fetch all sizes in parallel but update cache as each completes
-			const fetchAndUpdate = async (
-				size: 'avatar' | 'avatar32' | 'avatar128',
-				sizeParam?: string
-			) => {
-				try {
-					const fetchUrl = sizeParam ? `${url}?size=${sizeParam}` : url;
-					const response = await fetch(fetchUrl, { headers });
-					if (response.ok) {
-						const blob = await response.blob();
-						const objectUrl = URL.createObjectURL(blob);
-						// Update cache immediately for this size
-						const current = globalAvatarCache.get(url)!;
-						globalAvatarCache.set(url, { ...current, [size]: objectUrl });
-					}
-				} catch (error) {
-					console.warn(`Failed to fetch ${size} for ${url}:`, error);
-				}
-			};
-
-			// Fetch all sizes in parallel
-			await Promise.all([
-				fetchAndUpdate('avatar'),
-				fetchAndUpdate('avatar32', '32'),
-				fetchAndUpdate('avatar128', '128')
-			]);
-
-			return globalAvatarCache.get(url)!;
-		} catch (error) {
-			console.warn(`Failed to fetch avatars for ${url}:`, error);
-			return initialCache;
-		} finally {
-			// Clean up queue (but keep cache!)
-			avatarFetchQueue.delete(url);
-		}
-	})();
-
-	avatarFetchQueue.set(url, fetchPromise);
-	return fetchPromise;
-}
+// Avatar and user caching is now handled by Pinia stores
 
 export function useDisplayName(
 	user: MaybeRefOrGetter<
@@ -141,46 +57,80 @@ export function useDisplayName(
 }
 
 async function syncSessionToken() {
-	if (import.meta.server) return;
-
-	try {
-		const response = await $fetch<{ session_token: string | null }>('/api/auth/session');
-		if (response.session_token) {
-			useCurrentSessionToken(response.session_token);
-		}
-	} catch (error) {
-		console.error('Failed to sync session token:', error);
-	}
+	const authStore = useAuthStore();
+	await authStore.syncSessionToken();
 }
 
 export const useAuth = () => {
-	const base = useUser('current');
+	const authStore = useAuthStore();
+	const avatarStore = useAvatarStore();
+
+	const user = computed(() => authStore.currentUser);
+	const avatarUrl = computed(() => user.value?.account?.avatar_url);
+
+	// Computed avatar URLs using the avatar store
+	const isRemoteUrl = (url: string | undefined): boolean => {
+		if (!url) return false;
+		return url.startsWith('http://') || url.startsWith('https://');
+	};
+
+	const avatar = computed(() => {
+		const url = avatarUrl.value;
+		if (!url || !isRemoteUrl(url)) return '/earth-app.png';
+		return avatarStore.get(url)?.avatar || '/earth-app.png';
+	});
+
+	const avatar32 = computed(() => {
+		const url = avatarUrl.value;
+		if (!url || !isRemoteUrl(url)) return '/favicon.png';
+		return avatarStore.get(url)?.avatar32 || '/favicon.png';
+	});
+
+	const avatar128 = computed(() => {
+		const url = avatarUrl.value;
+		if (!url || !isRemoteUrl(url)) return '/favicon.png';
+		return avatarStore.get(url)?.avatar128 || '/favicon.png';
+	});
+
+	const preloadedUrls = new Set<string>();
+	watch(
+		avatarUrl,
+		(newUrl) => {
+			if (!newUrl || !isRemoteUrl(newUrl)) return;
+			if (preloadedUrls.has(newUrl)) return; // Already requested
+
+			preloadedUrls.add(newUrl);
+			avatarStore.preloadAvatar(newUrl);
+		},
+		{ immediate: true }
+	);
 
 	const fetchUser = async (force: boolean = false) => {
-		if (import.meta.client && force) {
-			await syncSessionToken();
-		}
-
-		return base.fetchUser();
+		return await authStore.fetchCurrentUser(force);
 	};
 
 	return {
-		...base,
-		fetchUser
+		user,
+		fetchUser,
+		avatar,
+		avatar32,
+		avatar128
 	};
 };
 
 export async function updateAccount(user: Partial<User['account']>) {
-	return await makeClientAPIRequest<User>('/v2/users/current', useCurrentSessionToken(), {
+	const authStore = useAuthStore();
+	return await makeClientAPIRequest<User>('/v2/users/current', authStore.sessionToken, {
 		method: 'PATCH',
 		body: user
 	});
 }
 
 export async function updateFieldPrivacy(privacy: Partial<User['account']['field_privacy']>) {
+	const authStore = useAuthStore();
 	return await makeClientAPIRequest<User>(
 		'/v2/users/current/field_privacy',
-		useCurrentSessionToken(),
+		authStore.sessionToken,
 		{
 			method: 'PATCH',
 			body: privacy
@@ -189,31 +139,40 @@ export async function updateFieldPrivacy(privacy: Partial<User['account']['field
 }
 
 export async function regenerateAvatar() {
-	return await makeClientAPIRequest<Blob>(
+	const authStore = useAuthStore();
+	const avatarStore = useAvatarStore();
+
+	const res = await makeClientAPIRequest<Blob>(
 		'/v2/users/current/profile_photo',
-		useCurrentSessionToken(),
+		authStore.sessionToken,
 		{
 			method: 'PUT',
 			responseType: 'blob'
 		}
 	);
+
+	// Clear avatar cache to force refetch
+	const avatarUrl = authStore.currentUser?.account?.avatar_url;
+	if (avatarUrl) {
+		avatarStore.clear(avatarUrl);
+	}
+
+	return res;
 }
 
 export async function setUserActivities(activities: string[]) {
-	return await makeClientAPIRequest<User>(
-		'/v2/users/current/activities',
-		useCurrentSessionToken(),
-		{
-			method: 'PATCH',
-			body: activities
-		}
-	);
+	const authStore = useAuthStore();
+	return await makeClientAPIRequest<User>('/v2/users/current/activities', authStore.sessionToken, {
+		method: 'PATCH',
+		body: activities
+	});
 }
 
 export async function setAccountType(id: string, type: User['account']['account_type']) {
+	const authStore = useAuthStore();
 	return await makeClientAPIRequest<User>(
 		`/v2/users/${id}/account_type?type=${type.toLowerCase()}`,
-		useCurrentSessionToken(),
+		authStore.sessionToken,
 		{
 			method: 'PUT'
 		}
@@ -223,10 +182,11 @@ export async function setAccountType(id: string, type: User['account']['account_
 // Ocean
 
 export async function getRecommendedActivities(poolLimit: number = 25) {
+	const authStore = useAuthStore();
 	const res = await makeAPIRequest<Activity[]>(
 		'recommended_activities',
 		`/v2/users/current/activities/recommend?pool_limit=${poolLimit}`,
-		useCurrentSessionToken(),
+		authStore.sessionToken,
 		{}
 	);
 
@@ -251,9 +211,10 @@ export async function getUsers(
 	search: string = '',
 	sort: SortingOption = 'desc'
 ) {
+	const authStore = useAuthStore();
 	return await paginatedAPIRequest<User>(
 		`/v2/users`,
-		useCurrentSessionToken(),
+		authStore.sessionToken,
 		{},
 		limit,
 		search,
@@ -264,69 +225,24 @@ export async function getUsers(
 async function getUser(identifier?: string) {
 	if (!identifier) return { success: true, data: undefined };
 
+	const authStore = useAuthStore();
 	return await makeAPIRequest<User>(
 		`user-${identifier}`,
 		`/v2/users/${identifier}`,
-		useCurrentSessionToken()
+		authStore.sessionToken
 	);
 }
 
 export function useUser(identifier: string) {
-	const user = useState<User | null | undefined>(`user-${identifier}`, () => undefined);
+	const userStore = useUserStore();
+	const avatarStore = useAvatarStore();
+
+	const user = computed(() => userStore.get(identifier));
 
 	const fetchUser = async (force: boolean = false) => {
 		if (!identifier) return;
-
-		// Skip if already loaded and not forcing refresh
-		if (user.value !== undefined && !force) return;
-
-		// Check if already fetching this user
-		const existingFetch = userFetchQueue.get(identifier);
-		if (existingFetch && !force) {
-			await existingFetch;
-			return;
-		}
-
-		// Create new fetch promise
-		const fetchPromise = (async () => {
-			try {
-				// Clear cache if forcing refresh
-				if (force && import.meta.client) {
-					await refreshNuxtData(`user-${identifier}`);
-				}
-
-				const res = await getUser(identifier);
-				if (res.success && res.data) {
-					if ('message' in res.data) {
-						console.warn(`Failed to fetch user ${identifier}:`, res.data.message);
-						user.value = null;
-						return;
-					}
-
-					user.value = res.data;
-				} else {
-					console.warn(`Failed to fetch user ${identifier}:`, res.message);
-					user.value = null;
-				}
-			} catch (error) {
-				console.warn(`Failed to fetch user ${identifier}:`, error);
-				user.value = null; // Set to null on error
-			} finally {
-				// Clean up queue
-				userFetchQueue.delete(identifier);
-			}
-		})();
-
-		userFetchQueue.set(identifier, fetchPromise);
-		await fetchPromise;
-
-		return user.value;
+		return await userStore.fetchUser(identifier, force);
 	};
-
-	// If user is not loaded, fetch it (only on client side after mount)
-	if (import.meta.client && user.value === undefined) {
-		fetchUser();
-	}
 
 	const avatarUrl = computed(() => user.value?.account?.avatar_url);
 
@@ -335,22 +251,18 @@ export function useUser(identifier: string) {
 		return url.startsWith('http://') || url.startsWith('https://');
 	};
 
-	// Trigger avatar fetch if not in cache
-	if (import.meta.client && user.value) {
-		const url = avatarUrl.value;
-		if (url && isRemoteUrl(url) && !globalAvatarCache.has(url)) {
-			fetchAvatarBlobsForUrl(url);
-		}
-	}
+	// Track preloaded URLs to prevent redundant fetches
+	const preloadedUrls = new Set<string>();
 
-	// Watch for user changes to trigger avatar fetch (e.g., after async user load)
 	if (import.meta.client) {
 		watch(
 			avatarUrl,
 			(newUrl) => {
-				if (newUrl && isRemoteUrl(newUrl) && !globalAvatarCache.has(newUrl)) {
-					fetchAvatarBlobsForUrl(newUrl);
-				}
+				if (!newUrl || !isRemoteUrl(newUrl)) return;
+				if (preloadedUrls.has(newUrl)) return; // Already requested
+
+				preloadedUrls.add(newUrl);
+				avatarStore.preloadAvatar(newUrl);
 			},
 			{ immediate: true }
 		);
@@ -359,158 +271,43 @@ export function useUser(identifier: string) {
 	const avatar = computed(() => {
 		const url = avatarUrl.value;
 		if (!url || !isRemoteUrl(url)) return '/earth-app.png';
-		return globalAvatarCache.get(url)?.avatar || '/earth-app.png';
+		return avatarStore.get(url)?.avatar || '/earth-app.png';
 	});
 	const avatar32 = computed(() => {
 		const url = avatarUrl.value;
 		if (!url || !isRemoteUrl(url)) return '/favicon.png';
-		return globalAvatarCache.get(url)?.avatar32 || '/favicon.png';
+		return avatarStore.get(url)?.avatar32 || '/favicon.png';
 	});
 	const avatar128 = computed(() => {
 		const url = avatarUrl.value;
 		if (!url || !isRemoteUrl(url)) return '/favicon.png';
-		return globalAvatarCache.get(url)?.avatar128 || '/favicon.png';
+		return avatarStore.get(url)?.avatar128 || '/favicon.png';
 	});
 
-	const chipColor = computed(() => {
-		if (!user.value) return undefined;
+	const chipColor = computed(() => userStore.getChipColor(user.value));
+	const maxEventAttendees = computed(() => userStore.getMaxEventAttendees(user.value));
 
-		switch (user.value.account?.account_type) {
-			case 'PRO':
-				return 'secondary';
-			case 'WRITER':
-				return 'primary';
-			case 'ORGANIZER':
-				return 'warning';
-			case 'ADMINISTRATOR':
-				return 'error';
-		}
-	});
-
-	const maxEventAttendees = computed(() => {
-		if (!user.value) return 0;
-
-		switch (user.value.account?.account_type) {
-			case 'PRO':
-			case 'WRITER':
-				return 5000;
-			case 'ORGANIZER':
-				return 1_000_000;
-			case 'ADMINISTRATOR':
-				return Infinity;
-			default:
-				return 1000;
-		}
-	});
-
-	const attendingEvents = useState<Event[]>(`events-attending-${identifier}`, () => []);
-	const attendingEventsCount = useState<number>(`events-attending-count-${identifier}`, () => 0);
+	const attendingEvents = computed(() => userStore.attendingEvents.get(identifier) || []);
+	const attendingEventsCount = computed(() => attendingEvents.value.length);
 	const fetchAttendingEvents = async () => {
-		const res = await paginatedAPIRequest<Event>(
-			`/v2/users/${identifier}/events/attending`,
-			useCurrentSessionToken()
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				attendingEvents.value = [];
-				return res;
-			}
-
-			attendingEvents.value = res.data;
-			attendingEventsCount.value = res.data.length;
-		} else {
-			attendingEvents.value = [];
-			attendingEventsCount.value = 0;
-		}
-
-		return res;
+		await userStore.fetchAttendingEvents(identifier);
 	};
 
-	if (attendingEvents.value.length === 0) {
-		fetchAttendingEvents();
-	}
-
-	const currentEvents = useState<Event[]>(`events-hosting-${identifier}`, () => []);
-	const currentEventsCount = useState<number>(`events-hosting-count-${identifier}`, () => 0);
+	const currentEvents = computed(() => userStore.hostingEvents.get(identifier) || []);
+	const currentEventsCount = computed(() => currentEvents.value.length);
 	const fetchCurrentEvents = async () => {
-		const res = await paginatedAPIRequest<Event>(
-			`/v2/users/${identifier}/events`,
-			useCurrentSessionToken()
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				currentEvents.value = [];
-				return res;
-			}
-
-			currentEvents.value = res.data;
-			currentEventsCount.value = res.data.length;
-		} else {
-			currentEvents.value = [];
-			currentEventsCount.value = 0;
-		}
-
-		return res;
+		await userStore.fetchHostingEvents(identifier);
 	};
 
-	if (currentEvents.value.length === 0) {
-		fetchCurrentEvents();
-	}
-
-	const badges = useState<UserBadge[]>(`user-badges-${identifier}`, () => []);
+	const badges = computed(() => userStore.badges.get(identifier) || []);
 	const fetchBadges = async () => {
-		const res = await makeClientAPIRequest<UserBadge[]>(
-			`/v2/users/${identifier}/badges`,
-			useCurrentSessionToken()
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				badges.value = [];
-				return res;
-			}
-
-			badges.value = res.data;
-		} else {
-			badges.value = [];
-		}
-
-		return res;
+		await userStore.fetchBadges(identifier);
 	};
 
-	if (badges.value.length === 0) {
-		fetchBadges();
-	}
-
-	const eventSubmissions = useState<EventImageSubmission[]>(
-		`user-event-submissions-${identifier}`,
-		() => []
-	);
+	const eventSubmissions = computed(() => userStore.eventSubmissions.get(identifier) || []);
 	const fetchEventSubmissions = async () => {
-		const res = await paginatedAPIRequest<EventImageSubmission>(
-			`/v2/users/${identifier}/events/images`,
-			useCurrentSessionToken()
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				eventSubmissions.value = [];
-				return res;
-			}
-
-			eventSubmissions.value = res.data;
-		} else {
-			eventSubmissions.value = [];
-		}
-
-		return res;
+		await userStore.fetchEventSubmissions(identifier);
 	};
-
-	if (eventSubmissions.value.length === 0) {
-		fetchEventSubmissions();
-	}
 
 	return {
 		user,
@@ -536,42 +333,16 @@ export function useUser(identifier: string) {
 // User Notifications
 
 export function useNotifications() {
-	const notifications = useState<UserNotification[]>('notifications', () => []);
-	const unreadCount = useState<number>('notifications-unread-count', () => 0);
-	const hasWarnings = useState<boolean>('notifications-has-warnings', () => false);
-	const hasErrors = useState<boolean>('notifications-has-errors', () => false);
+	const notificationStore = useNotificationStore();
+
+	const notifications = computed(() => notificationStore.notifications);
+	const unreadCount = computed(() => notificationStore.unreadCount);
+	const hasWarnings = computed(() => notificationStore.hasWarnings);
+	const hasErrors = computed(() => notificationStore.hasErrors);
 
 	const fetch = async () => {
-		const token = useCurrentSessionToken();
-		if (!token) {
-			notifications.value = [];
-			unreadCount.value = 0;
-			hasWarnings.value = false;
-			hasErrors.value = false;
-			return;
-		}
-
-		const res = await fetchNotifications();
-		if (res.success && res.data && 'items' in res.data) {
-			notifications.value = res.data.items;
-
-			// load individual notifications into state cache
-			if (import.meta.client) {
-				for (const n of res.data.items) {
-					const state = useState<UserNotification | null | undefined>(`notification-${n.id}`);
-					state.value = n;
-				}
-			}
-
-			unreadCount.value = res.data.unread_count;
-			hasWarnings.value = res.data.has_warnings;
-			hasErrors.value = res.data.has_errors;
-		}
+		await notificationStore.fetchNotifications();
 	};
-
-	if (notifications.value.length === 0) {
-		fetch();
-	}
 
 	return {
 		notifications,
@@ -583,155 +354,46 @@ export function useNotifications() {
 }
 
 export async function fetchNotifications() {
-	return await makeAPIRequest<{
-		unread_count: number;
-		has_warnings: boolean;
-		has_errors: boolean;
-		items: UserNotification[];
-	}>('notifications-current', '/v2/users/current/notifications', useCurrentSessionToken());
+	const notificationStore = useNotificationStore();
+	await notificationStore.fetchNotifications();
+	return {
+		success: true,
+		data: {
+			unread_count: notificationStore.unreadCount,
+			has_warnings: notificationStore.hasWarnings,
+			has_errors: notificationStore.hasErrors,
+			items: notificationStore.notifications
+		}
+	};
 }
 
 export async function markNotificationRead(id: string) {
-	const res = await makeClientAPIRequest<void>(
-		`/v2/users/current/notifications/${id}/mark_read`,
-		useCurrentSessionToken(),
-		{
-			method: 'POST'
-		}
-	);
-
-	if (res.success) {
-		const { notifications, unreadCount, fetch } = useNotifications();
-		const notification = notifications.value.find((n) => n.id === id);
-		if (notification) {
-			notification.read = true;
-			unreadCount.value = Math.max(0, unreadCount.value - 1);
-		}
-
-		// Update individual notification state regardless of whether it's in the array
-		if (import.meta.client) {
-			const individualNotification = useState<UserNotification | null | undefined>(
-				`notification-${id}`
-			);
-			if (individualNotification.value) {
-				individualNotification.value.read = true;
-			}
-		}
-
-		// Refresh cached data and re-fetch notifications to ensure all views are updated
-		if (import.meta.client) {
-			await refreshNuxtData(`notification-${id}`);
-			await refreshNuxtData('notifications-current');
-			await fetch(); // Re-fetch to sync state
-		}
-	}
-
-	return res;
+	const notificationStore = useNotificationStore();
+	return await notificationStore.markRead(id);
 }
 
 export async function markNotificationUnread(id: string) {
-	const res = await makeClientAPIRequest<void>(
-		`/v2/users/current/notifications/${id}/mark_unread`,
-		useCurrentSessionToken(),
-		{
-			method: 'POST'
-		}
-	);
-
-	if (res.success) {
-		const { notifications, unreadCount } = useNotifications();
-		const notification = notifications.value.find((n) => n.id === id);
-		if (notification) {
-			notification.read = false;
-			unreadCount.value += 1;
-
-			if (import.meta.client) {
-				const state = useState<UserNotification | null | undefined>(`notification-${id}`);
-				state.value = notification;
-			}
-		}
-	}
-
-	return res;
+	const notificationStore = useNotificationStore();
+	return await notificationStore.markUnread(id);
 }
 
 export async function markAllNotificationsRead() {
-	const res = await makeClientAPIRequest<void>(
-		`/v2/users/current/notifications/mark_all_read`,
-		useCurrentSessionToken(),
-		{
-			method: 'POST'
-		}
-	);
-
-	if (res.success) {
-		const { notifications, unreadCount } = useNotifications();
-		for (const n of notifications.value) {
-			n.read = true;
-
-			if (import.meta.client) {
-				const state = useState<UserNotification | null | undefined>(`notification-${n.id}`);
-				state.value = n;
-			}
-		}
-		unreadCount.value = 0;
-	}
-
-	return res;
+	const notificationStore = useNotificationStore();
+	return await notificationStore.markAllRead();
 }
 
 export async function markAllNotificationsUnread() {
-	const res = await makeClientAPIRequest<void>(
-		`/v2/users/current/notifications/mark_all_unread`,
-		useCurrentSessionToken(),
-		{
-			method: 'POST'
-		}
-	);
-
-	if (res.success) {
-		const { notifications, unreadCount } = useNotifications();
-		for (const n of notifications.value) {
-			n.read = false;
-
-			if (import.meta.client) {
-				const state = useState<UserNotification | null | undefined>(`notification-${n.id}`);
-				state.value = n;
-			}
-		}
-		unreadCount.value = notifications.value.length;
-	}
-
-	return res;
+	const notificationStore = useNotificationStore();
+	return await notificationStore.markAllUnread();
 }
 
 export function useNotification(id: string) {
-	const notification = useState<UserNotification | null | undefined>(
-		`notification-${id}`,
-		() => undefined
-	);
+	const notificationStore = useNotificationStore();
+	const notification = computed(() => notificationStore.cache.get(id));
 
 	const fetch = async () => {
-		// Refresh cached data to ensure we get the latest notification
-		if (import.meta.client) {
-			await refreshNuxtData(`notification-${id}`);
-		}
-
-		const res = await makeAPIRequest<UserNotification>(
-			`notification-${id}`,
-			`/v2/users/current/notifications/${id}`,
-			useCurrentSessionToken()
-		);
-		if (res.success && res.data && 'id' in res.data) {
-			notification.value = res.data;
-		} else {
-			notification.value = null;
-		}
+		await notificationStore.fetchNotification(id);
 	};
-
-	if (!notification.value) {
-		fetch();
-	}
 
 	return {
 		notification,
@@ -740,21 +402,17 @@ export function useNotification(id: string) {
 }
 
 export async function deleteNotification(id: string) {
-	return await makeClientAPIRequest<void>(
-		`/v2/users/current/notifications/${id}`,
-		useCurrentSessionToken(),
-		{
-			method: 'DELETE'
-		}
-	);
+	const notificationStore = useNotificationStore();
+	return await notificationStore.deleteNotification(id);
 }
 
 // Email Verification
 
 export async function sendVerificationEmail() {
+	const authStore = useAuthStore();
 	return await makeClientAPIRequest<{ message: string; email: string }>(
 		`/v2/users/current/send_email_verification`,
-		useCurrentSessionToken(),
+		authStore.sessionToken,
 		{
 			method: 'POST'
 		}
@@ -762,9 +420,10 @@ export async function sendVerificationEmail() {
 }
 
 export async function verifyEmail(code: string) {
+	const authStore = useAuthStore();
 	return await makeClientAPIRequest<{ message: string; email: string }>(
 		`/v2/users/current/verify_email?code=${code}`,
-		useCurrentSessionToken(),
+		authStore.sessionToken,
 		{
 			method: 'POST'
 		}
@@ -774,9 +433,10 @@ export async function verifyEmail(code: string) {
 // Password Change
 
 export async function changePassword(currentPassword: string, newPassword: string) {
+	const authStore = useAuthStore();
 	return await makeClientAPIRequest<{ message: string }>(
 		`/v2/users/current/change_password?old_password=${encodeURIComponent(currentPassword)}`,
-		useCurrentSessionToken(),
+		authStore.sessionToken,
 		{
 			method: 'POST',
 			body: {
@@ -814,7 +474,8 @@ export async function resetPassword(id: string, token: string, newPassword: stri
 // Account Deletion
 
 export async function deleteAccount(password: string) {
-	return await makeClientAPIRequest<void>(`/v2/users/current`, useCurrentSessionToken(), {
+	const authStore = useAuthStore();
+	return await makeClientAPIRequest<void>(`/v2/users/current`, authStore.sessionToken, {
 		method: 'DELETE',
 		body: {
 			password
@@ -827,18 +488,20 @@ export async function deleteAccount(password: string) {
 export async function getCurrentJourney(identifier: string, id: string) {
 	if (!id) return { success: true, data: { count: 0 } };
 
+	const authStore = useAuthStore();
 	return await makeServerRequest<{ count: number; lastWrite?: number }>(
 		`journey-${identifier}`,
 		`/api/user/journey?type=${identifier}&id=${id}`,
-		useCurrentSessionToken()
+		authStore.sessionToken
 	);
 }
 
 export async function tapCurrentJourney(identifier: string, activity?: string) {
+	const authStore = useAuthStore();
 	return await makeServerRequest<{ count: number }>(
 		null,
 		`/api/user/journey?type=${identifier}${activity ? `&activity=${activity}` : ''}`,
-		useCurrentSessionToken(),
+		authStore.sessionToken,
 		{
 			method: 'POST'
 		}
@@ -846,10 +509,11 @@ export async function tapCurrentJourney(identifier: string, activity?: string) {
 }
 
 export async function clearCurrentJourney(identifier: string) {
+	const authStore = useAuthStore();
 	return await makeServerRequest<void>(
 		null,
 		`/api/user/journey?type=${identifier}`,
-		useCurrentSessionToken(),
+		authStore.sessionToken,
 		{
 			method: 'DELETE'
 		}
@@ -857,18 +521,20 @@ export async function clearCurrentJourney(identifier: string) {
 }
 
 export async function getCurrentJourneyRank(type: string, id: string) {
+	const authStore = useAuthStore();
 	return await makeServerRequest<{ rank: number }>(
 		`journey-rank-${type}`,
 		`/api/user/journeyRank?type=${type}&id=${id}`,
-		useCurrentSessionToken()
+		authStore.sessionToken
 	);
 }
 
 export async function getJourneyLeaderboard(type: string, limit: number = 10) {
+	const authStore = useAuthStore();
 	return await makeServerRequest<Omit<UserJourneyLeaderboardEntry, 'user'>[]>(
 		`journey-leaderboard-${type}-limit-${limit}`,
 		`/api/user/journeyLeaderboard?type=${type}&limit=${limit}`,
-		useCurrentSessionToken()
+		authStore.sessionToken
 	);
 }
 
@@ -1013,208 +679,43 @@ export function authLink(provider: string) {
 // User Friends
 
 export function useFriends(id?: string) {
+	const friendsStore = useFriendsStore();
 	const dataId = id || 'current';
 
-	// friends functions
+	const friends = computed(() => friendsStore.getFriends(dataId));
+	const circle = computed(() => friendsStore.getCircle(dataId));
 
-	const friends = useState<User[]>(`user-friends-${dataId}`, () => []);
 	const fetchFriends = async (limit?: number, search?: string) => {
-		const token = useCurrentSessionToken();
-		if (!token) {
-			friends.value = [];
-			return;
-		}
-
-		const res = await paginatedAPIRequest<User>(
-			`/v2/users/${dataId}/friends`,
-			token,
-			{},
-			limit ?? 100,
-			search
-		);
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				console.error('Failed to fetch friends:', res.data.message);
-				friends.value = [];
-				return;
-			}
-
-			friends.value = res.data;
-		} else {
-			console.error('Failed to fetch friends:', res.message);
-			friends.value = [];
-		}
+		await friendsStore.fetchFriends(dataId, limit, search);
 	};
 
 	const fetchFriendsPage = async (page: number, limit: number, search: string = '') => {
-		const token = useCurrentSessionToken();
-		if (!token) {
-			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
-		}
-
-		return await makeAPIRequest<{ items: User[]; total: number }>(
-			`friends-${dataId}-page-${page}-limit-${limit}-search-${search}`,
-			`/v2/users/${dataId}/friends?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
-			token
-		);
+		return await friendsStore.fetchFriendsPage(dataId, page, limit, search);
 	};
 
 	const addFriend = async (friend: string) => {
-		const token = useCurrentSessionToken();
-		if (!token) {
-			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
-		}
-
-		const res = await makeClientAPIRequest<{ user: User; friend: User; is_mutual: boolean }>(
-			`/v2/users/${dataId}/friends?friend=${encodeURIComponent(friend)}`,
-			token,
-			{
-				method: 'PUT'
-			}
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
-			const friend = res.data.friend;
-			friends.value.push(friend);
-		}
-
-		return res;
+		return await friendsStore.addFriend(dataId, friend);
 	};
 
 	const removeFriend = async (friend: string) => {
-		const token = useCurrentSessionToken();
-		if (!token) {
-			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
-		}
-
-		const res = await makeClientAPIRequest<{ user: User; friend: User; is_mutual: boolean }>(
-			`/v2/users/${dataId}/friends?friend=${encodeURIComponent(friend)}`,
-			token,
-			{
-				method: 'DELETE'
-			}
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
-			const friend = res.data.friend;
-			friends.value = friends.value.filter((f) => f.id !== friend.id);
-			circle.value = circle.value.filter((f) => f.id !== friend.id);
-		}
-
-		return res;
+		return await friendsStore.removeFriend(dataId, friend);
 	};
 
-	if (friends.value.length === 0) {
-		fetchFriends();
-	}
-
-	// circle functions
-
-	const circle = useState<User[]>(`user-circle-${dataId}`, () => []);
 	const fetchCircle = async (limit?: number) => {
-		const token = useCurrentSessionToken();
-		if (!token) {
-			circle.value = [];
-			return;
-		}
-
-		const res = await paginatedAPIRequest<User>(
-			`/v2/users/${dataId}/circle`,
-			token,
-			{},
-			limit ?? 100
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				console.error('Failed to fetch circle:', res.data.message);
-				circle.value = [];
-				return;
-			}
-
-			circle.value = res.data;
-		} else {
-			console.error('Failed to fetch circle:', res.message);
-			circle.value = [];
-		}
+		await friendsStore.fetchCircle(dataId, limit);
 	};
 
 	const fetchCirclePage = async (page: number, limit: number) => {
-		const token = useCurrentSessionToken();
-		if (!token) {
-			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
-		}
-
-		return await makeAPIRequest<{ items: User[]; total: number }>(
-			`circle-${dataId}-page-${page}-limit-${limit}`,
-			`/v2/users/${dataId}/circle?page=${page}&limit=${limit}`,
-			token
-		);
+		return await friendsStore.fetchCirclePage(dataId, page, limit);
 	};
 
 	const addToCircle = async (friend: string) => {
-		const token = useCurrentSessionToken();
-		if (!token) {
-			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
-		}
-
-		const res = await makeClientAPIRequest<{ user: User; friend: User; is_mutual: boolean }>(
-			`/v2/users/${dataId}/circle?friend=${encodeURIComponent(friend)}`,
-			token,
-			{
-				method: 'PUT'
-			}
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
-			const friend = res.data.friend;
-			circle.value.push(friend);
-		}
-
-		return res;
+		return await friendsStore.addToCircle(dataId, friend);
 	};
 
 	const removeFromCircle = async (friend: string) => {
-		const token = useCurrentSessionToken();
-		if (!token) {
-			return { success: false, message: 'Unauthenticated. Please log in to continue.' };
-		}
-
-		const res = await makeClientAPIRequest<{ user: User; friend: User; is_mutual: boolean }>(
-			`/v2/users/${dataId}/circle?friend=${encodeURIComponent(friend)}`,
-			token,
-			{
-				method: 'DELETE'
-			}
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
-			const friend = res.data.friend;
-			circle.value = circle.value.filter((f) => f.id !== friend.id);
-		}
-
-		return res;
+		return await friendsStore.removeFromCircle(dataId, friend);
 	};
-
-	if (circle.value.length === 0) {
-		fetchCircle();
-	}
 
 	return {
 		friends,

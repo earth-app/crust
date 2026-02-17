@@ -249,24 +249,60 @@ function close() {
 	index.value = 0;
 }
 
+// Throttle update to prevent layout thrashing
+let updateTicking = false;
 function updateBoxPosition() {
 	if (!currentElementId) return;
+	if (updateTicking) return;
 
-	const element = document.getElementById(currentElementId);
-	const rect = element?.getBoundingClientRect();
+	updateTicking = true;
+	requestAnimationFrame(() => {
+		if (!currentElementId) {
+			updateTicking = false;
+			return;
+		}
 
-	if (rect) {
+		const element = document.getElementById(currentElementId);
+
+		if (!element) {
+			// Element not found - hide highlight box and center the tooltip
+			console.warn(`Element with id "${currentElementId}" not found for tour highlight.`);
+			boxStyle.value.display = 'none';
+
+			// Batch all layout reads
+			const viewportHeight = window.innerHeight;
+			const scrollY = window.scrollY;
+			const tooltipTop = scrollY + viewportHeight / 2 - 100;
+
+			// Then batch all writes
+			tooltipStyle.value = {
+				top: `${tooltipTop}px`,
+				left: '50%',
+				right: 'auto',
+				maxWidth: 'none',
+				transform: 'translateX(-50%)'
+			};
+			updateTicking = false;
+			return;
+		}
+
+		// Batch all layout reads first
+		const rect = element.getBoundingClientRect();
+		const scrollY = window.scrollY;
+		const scrollX = window.scrollX;
+		const viewportWidth = window.innerWidth;
+		const viewportHeight = window.innerHeight;
+
 		// Calculate position with padding
 		const padding = 8;
-		let top = rect.top + window.scrollY - padding;
-		let left = rect.left + window.scrollX - padding;
+		let top = rect.top + scrollY - padding;
+		let left = rect.left + scrollX - padding;
 		let width = rect.width + padding * 2;
 		let height = rect.height + padding * 2;
 
 		// Ensure the box doesn't overflow off the left or right edge
-		const viewportWidth = window.innerWidth;
 		if (left < 0) {
-			width += left; // Reduce width by the overflow amount
+			width += left;
 			left = 0;
 		}
 		if (left + width > viewportWidth) {
@@ -274,16 +310,17 @@ function updateBoxPosition() {
 		}
 
 		// Ensure the box doesn't overflow off the top
-		if (top < window.scrollY) {
-			const overflow = window.scrollY - top;
+		if (top < scrollY) {
+			const overflow = scrollY - top;
 			height -= overflow;
-			top = window.scrollY;
+			top = scrollY;
 		}
 
 		// Ensure minimum dimensions
 		width = Math.max(width, 0);
 		height = Math.max(height, 0);
 
+		// Batch all DOM writes
 		boxStyle.value = {
 			top: `${top}px`,
 			left: `${left}px`,
@@ -292,33 +329,19 @@ function updateBoxPosition() {
 			display: 'block'
 		};
 
-		// Calculate tooltip position
-		updateTooltipPosition(top, left, width, height);
-	} else {
-		// Element not found - hide highlight box and center the tooltip
-		console.warn(`Element with id "${currentElementId}" not found for tour highlight.`);
-		boxStyle.value.display = 'none';
-
-		const viewportHeight = window.innerHeight;
-		const tooltipTop = window.scrollY + viewportHeight / 2 - 100; // Offset to center vertically
-
-		tooltipStyle.value = {
-			top: `${tooltipTop}px`,
-			left: '50%',
-			right: 'auto',
-			maxWidth: 'none',
-			transform: 'translateX(-50%)'
-		};
-	}
+		// Calculate tooltip position (already computed values)
+		updateTooltipPosition(top, left, width, height, viewportWidth);
+		updateTicking = false;
+	});
 }
 
 function updateTooltipPosition(
 	boxTop: number,
 	boxLeft: number,
 	boxWidth: number,
-	boxHeight: number
+	boxHeight: number,
+	viewportWidth: number
 ) {
-	const viewportWidth = window.innerWidth;
 	const tooltipOffset = 12;
 	const padding = 16;
 

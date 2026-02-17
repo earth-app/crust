@@ -298,6 +298,14 @@ const { friends, fetchFriendsPage } = useFriends(props.user.id);
 
 const badgeVariants = ref<('outline' | 'solid')[]>([]);
 
+// Fetch user profile data on mount
+onMounted(() => {
+	fetchPrompts();
+	fetchArticles();
+	fetchCurrentEvents();
+	fetchAttendingEvents();
+});
+
 function openEmail() {
 	if (!props.user.account.email && !props.user.account.email_verified) return;
 	window.location.href = `mailto:${props.user.account.email}`;

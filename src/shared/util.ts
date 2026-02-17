@@ -3,8 +3,18 @@ import type { SortingOption } from './types/global';
 import type { User } from './types/user';
 import { DEFAULT_FULL_NAME } from './types/user';
 
-// Global request queue to prevent duplicate concurrent requests
 const requestQueue = new Map<string, Promise<any>>();
+
+// LRU cache for API responses to prevent memory leaks
+const MAX_CACHE_SIZE = 100;
+const apiCache = new Map<string, any>();
+
+const evictOldestCacheEntry = () => {
+	if (apiCache.size >= MAX_CACHE_SIZE) {
+		const firstKey = apiCache.keys().next().value;
+		if (firstKey) apiCache.delete(firstKey);
+	}
+};
 
 export async function makeRequest<T>(
 	key: string | null,
@@ -13,31 +23,24 @@ export async function makeRequest<T>(
 	options: any = {}
 ): Promise<{ success: boolean; data?: T | { code: number; message: string }; message?: string }> {
 	try {
-		// Use state for keys - check cache FIRST for best performance
-		let cached: ReturnType<typeof useState<T | null | undefined>> | null = null;
-		if (key) {
-			cached = useState<T | null | undefined>(key, () => undefined);
-
-			if (cached.value !== undefined && cached.value !== null) {
-				return {
-					success: true,
-					data: cached.value
-				};
-			}
+		// Check client-side cache first
+		if (key && apiCache.has(key)) {
+			return {
+				success: true,
+				data: apiCache.get(key)
+			};
 		}
 
 		const queueKey = key ? `${url}::${key}` : url;
 
-		// Check if this exact request is already in progress
 		const existingRequest = requestQueue.get(queueKey);
 		if (existingRequest) {
 			return existingRequest;
 		}
 
-		// Create new request promise and add to queue
+		// create new request promise and add to queue
 		const requestPromise = (async () => {
 			try {
-				// Check if this is a request for binary data (like images)
 				const isBinaryRequest = url.includes('profile_photo') || options.responseType === 'blob';
 
 				if (isBinaryRequest) {
@@ -108,9 +111,10 @@ export async function makeRequest<T>(
 					};
 				}
 
-				// Update cache with fetched data
-				if (cached) {
-					cached.value = data as T;
+				// Update LRU cache with fetched data
+				if (key) {
+					evictOldestCacheEntry();
+					apiCache.set(key, data as T);
 				}
 
 				return {

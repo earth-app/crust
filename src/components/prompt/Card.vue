@@ -81,7 +81,18 @@ watch(
 const footer = ref<string | undefined>(undefined);
 const secondaryFooter = ref<string | undefined>(undefined);
 
-const { avatar128: authorAvatar } = useUser(props.prompt.owner_id);
+const avatarStore = useAvatarStore();
+const ownerAvatarUrl = computed(() => props.prompt.owner?.account?.avatar_url);
+const authorAvatar = computed(() => {
+	const url = ownerAvatarUrl.value;
+	if (!url || !url.startsWith('http')) return '/favicon.png';
+	return avatarStore.get(url)?.avatar128 || '/favicon.png';
+});
+
+// Preload owner avatar
+if (ownerAvatarUrl.value) {
+	avatarStore.preloadAvatar(ownerAvatarUrl.value);
+}
 
 const authorAvatarChipColor = ref<any | null>(null);
 const { user } = useAuth();
@@ -132,7 +143,8 @@ const editLoading = ref(false);
 async function savePrompt() {
 	editLoading.value = true;
 
-	const res = await updatePrompt(props.prompt.id, promptText.value);
+	const promptStore = usePromptStore();
+	const res = await promptStore.updatePrompt({ id: props.prompt.id, title: promptText.value });
 
 	if (res.success) {
 		editOpen.value = false;
@@ -161,7 +173,8 @@ async function deletePrompt() {
 	const yes = confirm('Are you sure you want to delete this prompt? This action cannot be undone.');
 
 	if (yes) {
-		const res = await removePrompt(props.prompt.id);
+		const promptStore = usePromptStore();
+		const res = await promptStore.deletePrompt(props.prompt.id);
 		if (res.success) {
 			toast.add({
 				title: 'Prompt Deleted',

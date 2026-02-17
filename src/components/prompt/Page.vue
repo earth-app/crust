@@ -92,7 +92,8 @@ async function postResponse() {
 
 	posting.value = true;
 
-	const res = await createPromptResponse(props.prompt.id, newResponse.value);
+	const promptStore = usePromptStore();
+	const res = await promptStore.createResponse(props.prompt.id, { content: newResponse.value });
 	if (res.success && res.data) {
 		if ('message' in res.data) {
 			toast.add({

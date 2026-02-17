@@ -245,7 +245,8 @@ const loadingPrompts = ref(false);
 
 async function fetchPrompts() {
 	loadingPrompts.value = true;
-	const res = await getPrompts(100, promptSearch.value);
+	const { fetchAll } = usePrompts();
+	const res = await fetchAll(100, promptSearch.value);
 	if (res.data) {
 		prompts.value = res.data;
 	}
@@ -258,7 +259,8 @@ const loadingActivities = ref(false);
 
 async function fetchActivities() {
 	loadingActivities.value = true;
-	const res = await getAllActivities(100, activitySearch.value);
+	const { fetchAll } = useActivities();
+	const res = await fetchAll(100, activitySearch.value);
 	if (res.data) {
 		activities.value = res.data;
 		activityCount.value = res.data.length;

@@ -21,7 +21,12 @@
 const { setTitleSuffix } = useTitleSuffix();
 const toast = useToast();
 const route = useRoute();
-const { user: currentUser } = useUser(route.params.id as string);
+const { user: currentUser, fetchUser } = useUser(route.params.id as string);
+
+onMounted(() => {
+	fetchUser();
+});
+
 watch(
 	() => currentUser.value,
 	(user) => {

@@ -1,6 +1,8 @@
 import { makeAPIRequest, makeClientAPIRequest } from '~/shared/util';
+import { useAuthStore } from '~/stores/auth';
 
 export function useMotd() {
+	const authStore = useAuthStore();
 	const motd = useState<{
 		motd: string;
 		icon: string;
@@ -14,7 +16,7 @@ export function useMotd() {
 			ttl: number;
 			icon: string;
 			type: 'info' | 'success' | 'error' | 'warning';
-		}>('motd-data', '/v2/motd', useCurrentSessionToken());
+		}>('motd-data', '/v2/motd', authStore.sessionToken);
 		if (res.success && res.data) {
 			if ('message' in res.data) {
 				// Silently handle when MOTD isn't set
@@ -36,17 +38,13 @@ export function useMotd() {
 		}
 	};
 
-	if (!motd.value.motd) {
-		fetchMotd();
-	}
-
 	const setMotd = async (
 		message: string,
 		icon?: string,
 		type?: 'info' | 'success' | 'error' | 'warning',
 		ttlSeconds?: number
 	) => {
-		const res = await makeClientAPIRequest('/v2/motd', useCurrentSessionToken(), {
+		const res = await makeClientAPIRequest('/v2/motd', authStore.sessionToken, {
 			method: 'POST',
 			body: JSON.stringify({ motd: message, icon, type, ttl: ttlSeconds })
 		});

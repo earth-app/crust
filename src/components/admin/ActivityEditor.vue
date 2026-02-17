@@ -189,9 +189,11 @@ async function checkActivityName(newName: string) {
 
 	// alert on existing activity names
 	if (newName0.length > 3) {
-		getActivity(newName.trim().toLowerCase().replace(/\s+/g, '_')).then((res) => {
-			activityNameValid.value = !(res.success && res.data);
-		});
+		const activityStore = useActivityStore();
+		const existing = await activityStore.fetchActivity(
+			newName.trim().toLowerCase().replace(/\s+/g, '_')
+		);
+		activityNameValid.value = !existing;
 	}
 
 	if (newName0.length < 3 || newName0.length > 50) {
@@ -341,7 +343,8 @@ async function generateActivity() {
 	}
 
 	generating.value = true;
-	const res = await draftActivity(activityId.value);
+	const { draft } = useActivity(activityId.value);
+	const res = await draft();
 	if (res.success && res.data) {
 		activityDescription.value = res.data.description;
 
@@ -381,8 +384,9 @@ const loading = ref(false);
 async function createActivity() {
 	loading.value = true;
 
-	const existing = await getActivity(activityId.value);
-	if (existing.success && existing.data) {
+	const activityStore = useActivityStore();
+	const existing = await activityStore.fetchActivity(activityId.value);
+	if (existing) {
 		toast.add({
 			title: 'Error',
 			description: `An activity with the ID "${activityId.value}" already exists. Please choose a different name.`,
@@ -395,7 +399,8 @@ async function createActivity() {
 		return;
 	}
 
-	const res = await newActivity({
+	// Store already declared above, use it directly
+	const res = await activityStore.createActivity({
 		id: activityId.value,
 		name: activityName.value,
 		description: activityDescription.value,
@@ -468,7 +473,8 @@ async function updateActivity() {
 		return;
 	}
 
-	const res = await editActivity({
+	const activityStore = useActivityStore();
+	const res = await activityStore.updateActivity({
 		id: activity.value.id,
 		name: activityName.value || activity.value.name || '',
 		description: activityDescription.value || activity.value.description || '',
@@ -553,7 +559,8 @@ async function removeActivity() {
 		return;
 	}
 
-	const res = await deleteActivity(activity.value.id!);
+	const activityStore = useActivityStore();
+	const res = await activityStore.deleteActivity(activity.value.id!);
 	loading.value = false;
 	if (res.success) {
 		clearActivityData();

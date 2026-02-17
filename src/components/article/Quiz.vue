@@ -184,6 +184,7 @@ const quizCompleted = computed(() => {
 		Array.isArray(quiz.value) &&
 		quiz.value.length > 0 &&
 		quizSummary.value !== null &&
+		quizSummary.value !== undefined &&
 		userAnswers.value.length === quizSummary.value.total
 	);
 });

@@ -143,6 +143,11 @@ const randomEvents = ref<Event[]>([]);
 
 onMounted(async () => {
 	// Fetch all random content in parallel to reduce total latency
+	const { getRandom: getRandomPrompts } = usePrompts();
+	const { getRandom: getRandomActivities } = useActivities();
+	const { getRandom: getRandomArticles } = useArticles();
+	const { getRandom: getRandomEvents } = useEvents();
+
 	const [resPrompt, resActivities, resArticles, resEvents] = await Promise.all([
 		getRandomPrompts(3),
 		getRandomActivities(5),

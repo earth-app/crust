@@ -29,14 +29,18 @@ export default defineEventHandler(async (event) => {
 			});
 		}
 
-		return results.map(
-			(video) =>
-				({
-					id: video.id!,
-					title: video.title || 'YouTube Video',
-					uploaded_at: video.uploadedAt || 'Sometime in the past'
-				}) satisfies YouTubeVideo
-		);
+		// Create plain objects to avoid serialization issues with youtube-sr class instances
+		return results.map((video) => {
+			const id = String(video.id);
+			const title = String(video.title || 'YouTube Video');
+			const uploaded_at = String(video.uploadedAt || 'Sometime in the past');
+
+			return {
+				id,
+				title,
+				uploaded_at
+			} satisfies YouTubeVideo;
+		});
 	} catch (error) {
 		console.error('YouTube search error:', error);
 		throw createError({

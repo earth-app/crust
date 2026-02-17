@@ -82,7 +82,18 @@ const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const { user } = useAuth();
 const { handle: identifier } = useDisplayName(props.response.owner);
 
-const { avatar128: authorAvatar } = useUser(props.response.owner.id);
+const avatarStore = useAvatarStore();
+const ownerAvatarUrl = computed(() => props.response.owner.account?.avatar_url);
+const authorAvatar = computed(() => {
+	const url = ownerAvatarUrl.value;
+	if (!url || !url.startsWith('http')) return '/favicon.png';
+	return avatarStore.get(url)?.avatar128 || '/favicon.png';
+});
+
+// Preload owner avatar
+if (ownerAvatarUrl.value) {
+	avatarStore.preloadAvatar(ownerAvatarUrl.value);
+}
 
 const time = computed(() => {
 	const created = DateTime.fromISO(props.response.created_at, {
@@ -135,11 +146,11 @@ const editLoading = ref(false);
 
 async function saveResponse() {
 	editLoading.value = true;
-	const res = await updatePromptResponse(
-		props.response.prompt_id,
-		props.response.id,
-		responseText.value
-	);
+	const promptStore = usePromptStore();
+	const res = await promptStore.updateResponse(props.response.prompt_id, {
+		id: props.response.id,
+		content: responseText.value
+	});
 
 	if (res.success) {
 		editOpen.value = false;
@@ -170,7 +181,8 @@ async function deleteResponse() {
 	);
 
 	if (yes) {
-		const res = await removePromptResponse(props.response.prompt_id, props.response.id);
+		const promptStore = usePromptStore();
+		const res = await promptStore.deleteResponse(props.response.prompt_id, props.response.id);
 		if (res.success) {
 			toast.add({
 				title: 'Prompt Response Deleted',

@@ -71,7 +71,8 @@ const filteredGroups = computed(() => {
 	return result;
 });
 
-watch(search, (newSearch: string) => populate(newSearch), { immediate: true });
+// Watch search changes, but don't use immediate to avoid double-call with onMounted
+watch(search, (newSearch: string) => populate(newSearch));
 onMounted(() => populate(''));
 
 function populate(searchTerm: string) {
@@ -108,10 +109,11 @@ function populate(searchTerm: string) {
 
 	// populate activities
 	activitiesLoading.value = true;
-	getAllActivities(empty ? 5 : 150, searchTerm, sort).then((res) => {
+	const { fetchAll: fetchAllActivities } = useActivities();
+	fetchAllActivities(empty ? 5 : 150, searchTerm, sort).then((res) => {
 		if (res.success && res.data) {
 			const items = res.data;
-			activities.value = items.map((activity) => ({
+			activities.value = items.map((activity: any) => ({
 				id: `activity-${activity.id}`,
 				label: activity.name,
 				description: activity.description,
@@ -132,10 +134,11 @@ function populate(searchTerm: string) {
 
 	// populate prompts
 	promptsLoading.value = true;
-	getPrompts(empty ? 5 : 25, searchTerm, sort).then((res) => {
+	const { fetchAll: fetchAllPrompts } = usePrompts();
+	fetchAllPrompts(empty ? 5 : 25, searchTerm, sort).then((res) => {
 		if (res.success && res.data) {
 			const items = res.data;
-			prompts.value = items.map((prompt) => {
+			prompts.value = items.map((prompt: any) => {
 				const owner = prompt.owner;
 				const type = owner.account.account_type;
 				const isChipShown = owner.is_admin || type === 'ORGANIZER';
@@ -169,10 +172,11 @@ function populate(searchTerm: string) {
 
 	// populate articles
 	articlesLoading.value = true;
-	getArticles(empty ? 5 : 25, searchTerm, sort).then((res) => {
+	const { fetchAll: fetchAllArticles } = useArticles();
+	fetchAllArticles(empty ? 5 : 25, searchTerm, sort).then((res) => {
 		if (res.success && res.data) {
 			const items = res.data;
-			articles.value = items.map((article) => {
+			articles.value = items.map((article: any) => {
 				const owner = article.author;
 				const type = owner.account.account_type;
 				const isChipShown = owner.is_admin || type === 'ORGANIZER';
@@ -182,7 +186,7 @@ function populate(searchTerm: string) {
 					label: article.title,
 					description: `by ${getUserDisplayName(owner)} • ${article.tags
 						.slice(0, 3)
-						.map((tag) => `#${tag}`)
+						.map((tag: any) => `#${tag}`)
 						.join(' ')}`,
 					avatar: {
 						src: `${owner.account.avatar_url}?size=32`,
@@ -265,6 +269,7 @@ function randomize() {
 	const choice = Math.floor(Math.random() * 3);
 	if (choice === 0) {
 		// Random Prompt
+		const { getRandom: getRandomPrompts } = usePrompts();
 		getRandomPrompts(1).then((res) => {
 			if (res.success && res.data && !('message' in res.data)) {
 				const prompt = res.data[0];
@@ -275,6 +280,7 @@ function randomize() {
 		});
 	} else if (choice === 1) {
 		// Random Article
+		const { getRandom: getRandomArticles } = useArticles();
 		getRandomArticles(1).then((res) => {
 			if (res.success && res.data && !('message' in res.data)) {
 				const article = res.data[0];
@@ -285,6 +291,7 @@ function randomize() {
 		});
 	} else {
 		// Random Activity
+		const { getRandom: getRandomActivities } = useActivities();
 		getRandomActivities(1).then((res) => {
 			if (res.success && res.data && !('message' in res.data)) {
 				const activity = res.data[0];

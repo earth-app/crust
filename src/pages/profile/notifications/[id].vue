@@ -68,7 +68,13 @@ const { user } = useAuth();
 const route = useRoute();
 const { setTitleSuffix } = useTitleSuffix();
 
-const { notification } = useNotification(route.params.id as string);
+const { notification, fetch } = useNotification(route.params.id as string);
+
+// Fetch notification data on mount
+onMounted(() => {
+	fetch();
+});
+
 watch(
 	() => notification.value,
 	(notification) => {

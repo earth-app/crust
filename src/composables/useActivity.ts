@@ -13,77 +13,18 @@ import {
 	makeServerRequest,
 	paginatedAPIRequest
 } from '~/shared/util';
-import { useCurrentSessionToken } from './useLogin';
+import { useActivityStore } from '~/stores/activity';
+import { useAuthStore } from '~/stores/auth';
 
 // mantle - /v2/activities
 // cloud - /v1/activity
 
-export async function getAllActivities(
-	limit: number = 25,
-	search: string = '',
-	sort: SortingOption = 'desc'
-) {
-	return await paginatedAPIRequest<Activity>(
-		'/v2/activities',
-		useCurrentSessionToken(),
-		{},
-		limit,
-		search,
-		sort
-	);
-}
-
-export async function getActivities(
-	page: number = 1,
-	limit: number = 25,
-	search: string = '',
-	sort: SortingOption = 'desc'
-) {
-	const res = await makeAPIRequest<{ items: Activity[]; total: number }>(
-		`activities-${search}-${page}-${limit}-${sort}`,
-		`/v2/activities?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sort=${sort}`,
-		useCurrentSessionToken()
-	);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
-		}
-
-		// load individual activities into state
-		for (const activity of res.data.items) {
-			useState<Activity | null>(`activity-${activity.id}`, () => activity);
-		}
-	}
-
-	return res;
-}
-
-export async function getActivitiesList(
-	page: number = 1,
-	limit: number = 100,
-	search: string = ''
-) {
-	return await makeClientAPIRequest<{ items: string[]; total: number }>(
-		`/v2/activities/list?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
-		useCurrentSessionToken()
-	);
-}
-
 export function useActivitiesCount() {
-	const count = useState<number | undefined>('activities-count', () => undefined);
+	const activityStore = useActivityStore();
+	const count = computed(() => activityStore.count);
 
 	const fetchCount = async () => {
-		const res = await getActivitiesList(1, 1);
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				count.value = undefined;
-			} else {
-				count.value = res.data.total;
-			}
-		} else {
-			count.value = undefined;
-		}
+		await activityStore.fetchCount();
 	};
 
 	if (count.value === undefined) {
@@ -93,245 +34,351 @@ export function useActivitiesCount() {
 	return { count, refresh: fetchCount };
 }
 
-export async function getRandomActivities(count: number = 3) {
-	const res = await makeClientAPIRequest<Activity[]>(
-		`/v2/activities/random?count=${count}`,
-		useCurrentSessionToken()
+export function useActivities(
+	page: number = 1,
+	limit: number = 25,
+	search: string = '',
+	sort: SortingOption = 'desc'
+) {
+	const activityStore = useActivityStore();
+	const activities = useState<Activity[]>(
+		`activities-${search}-${page}-${limit}-${sort}`,
+		() => []
 	);
+	const total = useState<number>(`activities-total-${search}-${page}-${limit}-${sort}`, () => 0);
 
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
+	const fetch = async (
+		newPage: number = page,
+		newLimit: number = limit,
+		newSearch: string = search,
+		newSort: SortingOption = sort
+	) => {
+		const authStore = useAuthStore();
+
+		const res = await makeAPIRequest<{ items: Activity[]; total: number }>(
+			`activities-${newSearch}-${newPage}-${newLimit}-${newSort}`,
+			`/v2/activities?page=${newPage}&limit=${newLimit}&search=${encodeURIComponent(newSearch)}&sort=${newSort}`,
+			authStore.sessionToken
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load individual activities into store
+			if (Array.isArray(res.data.items)) {
+				activityStore.setActivities(res.data.items);
+				activities.value = res.data.items;
+				total.value = res.data.total;
+			}
+		}
+		return res;
+	};
+
+	const fetchAll = async (
+		limit: number = 25,
+		search: string = '',
+		sort: SortingOption = 'desc'
+	) => {
+		const authStore = useAuthStore();
+		return await paginatedAPIRequest<Activity>(
+			'/v2/activities',
+			authStore.sessionToken,
+			{},
+			limit,
+			search,
+			sort
+		);
+	};
+
+	const fetchList = async (page: number = 1, limit: number = 100, search: string = '') => {
+		const authStore = useAuthStore();
+		return await makeClientAPIRequest<{ items: string[]; total: number }>(
+			`/v2/activities/list?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
+			authStore.sessionToken
+		);
+	};
+
+	const getRandom = async (count: number = 3) => {
+		const authStore = useAuthStore();
+
+		const res = await makeClientAPIRequest<Activity[]>(
+			`/v2/activities/random?count=${count}`,
+			authStore.sessionToken
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load individual activities into store
+			activityStore.setActivities(res.data);
 		}
 
-		// load individual activities into state
-		for (const activity of res.data) {
-			useState<Activity | null>(`activity-${activity.id}`, () => activity);
-		}
+		return res;
+	};
+
+	const create = async (activity: Activity) => {
+		return await activityStore.createActivity(activity);
+	};
+
+	const update = async (activity: Activity) => {
+		return await activityStore.updateActivity(activity);
+	};
+
+	const remove = async (id: string) => {
+		return await activityStore.deleteActivity(id);
+	};
+
+	if (import.meta.client) {
+		onMounted(() => {
+			if (activities.value.length === 0) {
+				fetch();
+			}
+		});
 	}
 
-	return res;
+	return {
+		activities,
+		total,
+		fetch,
+		fetchAll,
+		fetchList,
+		getRandom,
+		create,
+		update,
+		remove
+	};
 }
 
-export async function getActivity(id: string) {
-	return await makeAPIRequest<Activity>(
-		`activity-${id}`,
-		`/v2/activities/${id}?include_aliases=true`,
-		useCurrentSessionToken()
-	);
-}
+export function useActivity(id: string) {
+	const activityStore = useActivityStore();
+	const activity = computed(() => activityStore.get(id) || null);
 
-export async function draftActivity(id: string) {
-	return await makeServerRequest<Activity>(
-		`draft-activity-${id}`,
-		`/api/admin/draftActivity?id=${id}`,
-		useCurrentSessionToken()
-	);
-}
+	const fetch = async () => {
+		await activityStore.fetchActivity(id);
+	};
 
-export async function newActivity(activity: Activity) {
-	return await makeClientAPIRequest<Activity>('/v2/activities', useCurrentSessionToken(), {
-		method: 'POST',
-		body: activity
-	});
-}
+	const update = async (updated: Activity) => {
+		return await activityStore.updateActivity(updated);
+	};
 
-export async function editActivity(activity: Activity) {
-	return await makeClientAPIRequest<Activity>(
-		`/v2/activities/${activity.id}`,
-		useCurrentSessionToken(),
-		{
-			method: 'PATCH',
-			body: activity
-		}
-	);
-}
+	const remove = async () => {
+		return await activityStore.deleteActivity(id);
+	};
 
-export async function deleteActivity(id: string) {
-	return await makeClientAPIRequest<void>(`/v2/activities/${id}`, useCurrentSessionToken(), {
-		method: 'DELETE'
-	});
+	const draft = async () => {
+		const authStore = useAuthStore();
+		return await makeServerRequest<Activity>(
+			`draft-activity-${id}`,
+			`/api/admin/draftActivity?id=${id}`,
+			authStore.sessionToken
+		);
+	};
+
+	return {
+		activity,
+		fetch,
+		update,
+		remove,
+		draft
+	};
 }
 
 // Activity Information Extensions
 
-export async function getActivityWikipediaSummary(title: string) {
-	return await makeServerRequest<WikipediaSummary>(
-		`wikipedia-summary-${title}`,
-		`/api/activity/wikipedia?title=${encodeURIComponent(title)}`,
-		useCurrentSessionToken()
-	);
-}
+export function useActivityInfo() {
+	const authStore = useAuthStore();
 
-export async function getActivityYouTubeSearch(query: string) {
-	return await makeServerRequest<YouTubeVideo[]>(
-		`youtube-search-${query}`,
-		`/api/activity/youtubeSearch?query=${encodeURIComponent(query)}`,
-		useCurrentSessionToken()
-	);
-}
+	const fetchWikipediaSummary = async (title: string) => {
+		return await makeServerRequest<WikipediaSummary>(
+			`wikipedia-summary-${title}`,
+			`/api/activity/wikipedia?title=${encodeURIComponent(title)}`,
+			authStore.sessionToken
+		);
+	};
 
-export async function getActivityWikipediaSearches(
-	queries: string[],
-	onArticleLoaded?: (title: string, summary: WikipediaSummary) => void
-) {
-	const results: Record<string, WikipediaSummary> = {};
-	const responses = await Promise.all(
-		queries.map(async (query) => {
-			return await makeServerRequest<{
-				query: { search: { title: string; snippet: string }[] };
-			}>(
-				`wikipedia-search-${query}`,
-				`/api/activity/wikipediaSearch?search=${encodeURIComponent(query)}`,
-				useCurrentSessionToken()
-			).then((res) => {
-				if (res.success) {
-					return res.data?.query.search || [];
-				}
+	const fetchYouTubeSearch = async (query: string) => {
+		return await makeServerRequest<YouTubeVideo[]>(
+			`youtube-search-${query}`,
+			`/api/activity/youtubeSearch?query=${encodeURIComponent(query)}`,
+			authStore.sessionToken
+		);
+	};
 
-				return [];
-			});
-		})
-	)
-		.then((res) => res.flat())
-		.then((responses) => responses.filter((r) => r.title?.trim() !== ''));
-
-	// fetch all summaries in parallel instead of sequentially
-	const seenTitles = new Set<string>();
-	await Promise.allSettled(
-		responses.map(async (r) => {
-			if (!r.title || seenTitles.has(r.title)) return;
-			seenTitles.add(r.title);
-
-			try {
-				const res = await getActivityWikipediaSummary(r.title);
-				if (res.success && res.data) {
-					if (res.data.type === 'disambiguation') return;
-
-					res.data.summarySnippet =
-						'...' +
-						r.snippet
-							.replace(/<\/?span[^>]*>/g, '') // Remove any <span> tags from snippet
-							.replace(/&quot;/g, '"') // Decode HTML entities
-							.replace(/&lt;/g, '<')
-							.replace(/&gt;/g, '>')
-							.replace(/&#39;/g, "'")
-							.replace(/&#039;s/g, "'s")
-							.replace(/&#039;/g, "'")
-							.replace(/&amp;/g, '&') // Decode &amp; last to prevent double-unescaping
-							.trim() +
-						'...';
-
-					results[r.title] = res.data;
-
-					// call callback immediately when article loads (for incremental display)
-					if (onArticleLoaded) {
-						onArticleLoaded(r.title, res.data);
+	const fetchWikipediaSearches = async (
+		queries: string[],
+		onArticleLoaded?: (title: string, summary: WikipediaSummary) => void
+	) => {
+		const results: Record<string, WikipediaSummary> = {};
+		const responses = await Promise.all(
+			queries.map(async (query) => {
+				return await makeServerRequest<{
+					query: { search: { title: string; snippet: string }[] };
+				}>(
+					`wikipedia-search-${query}`,
+					`/api/activity/wikipediaSearch?search=${encodeURIComponent(query)}`,
+					authStore.sessionToken
+				).then((res) => {
+					if (res.success) {
+						return res.data?.query.search || [];
 					}
-				}
-			} catch (error) {
-				// Ignore errors for individual summaries
-			}
-		})
-	);
 
-	return results;
-}
+					return [];
+				});
+			})
+		)
+			.then((res) => res.flat())
+			.then((responses) => responses.filter((r) => r.title?.trim() !== ''));
 
-export async function getActivityPixabayImages(
-	queries: string[],
-	onImageLoaded?: (query: string, images: PixabayImage[]) => void
-) {
-	const results: Record<string, PixabayImage[]> = {};
-	await Promise.all(
-		queries.map(async (query) => {
-			if (results[query]) return; // Already fetched
+		// fetch all summaries in parallel instead of sequentially
+		const seenTitles = new Set<string>();
+		await Promise.allSettled(
+			responses.map(async (r) => {
+				if (!r.title || seenTitles.has(r.title)) return;
+				seenTitles.add(r.title);
 
-			try {
-				const res = await makeServerRequest<PixabayImage[]>(
-					`pixabay-images-${query}`,
-					`/api/activity/pixabayImages?query=${encodeURIComponent(query)}`,
-					useCurrentSessionToken()
-				);
+				try {
+					const res = await fetchWikipediaSummary(r.title);
+					if (res.success && res.data) {
+						if (res.data.type === 'disambiguation') return;
 
-				if (res.success && res.data) {
-					results[query] = res.data;
+						res.data.summarySnippet =
+							'...' +
+							r.snippet
+								.replace(/<\/?span[^>]*>/g, '') // Remove any <span> tags from snippet
+								.replace(/&quot;/g, '"') // Decode HTML entities
+								.replace(/&lt;/g, '<')
+								.replace(/&gt;/g, '>')
+								.replace(/&#39;/g, "'")
+								.replace(/&#039;s/g, "'s")
+								.replace(/&#039;/g, "'")
+								.replace(/&amp;/g, '&') // Decode &amp; last to prevent double-unescaping
+								.trim() +
+							'...';
 
-					// call callback immediately when images load (for incremental display)
-					if (onImageLoaded) {
-						onImageLoaded(query, res.data);
+						results[r.title] = res.data;
+
+						// call callback immediately when article loads (for incremental display)
+						if (onArticleLoaded) {
+							onArticleLoaded(r.title, res.data);
+						}
 					}
-				} else {
+				} catch (error) {
+					// Ignore errors for individual summaries
+				}
+			})
+		);
+
+		return results;
+	};
+
+	const fetchPixabayImages = async (
+		queries: string[],
+		onImageLoaded?: (query: string, images: PixabayImage[]) => void
+	) => {
+		const results: Record<string, PixabayImage[]> = {};
+		await Promise.all(
+			queries.map(async (query) => {
+				if (results[query]) return;
+
+				try {
+					const res = await makeServerRequest<PixabayImage[]>(
+						`pixabay-images-${query}`,
+						`/api/activity/pixabayImages?query=${encodeURIComponent(query)}`,
+						authStore.sessionToken
+					);
+
+					if (res.success && res.data) {
+						results[query] = res.data;
+
+						// call callback immediately when images load (for incremental display)
+						if (onImageLoaded) {
+							onImageLoaded(query, res.data);
+						}
+					} else {
+						results[query] = [];
+					}
+				} catch (error) {
 					results[query] = [];
 				}
-			} catch (error) {
-				results[query] = [];
-			}
-		})
-	);
+			})
+		);
 
-	return results;
-}
+		return results;
+	};
 
-export async function getActivityPixabayVideos(
-	queries: string[],
-	onVideoLoaded?: (query: string, videos: PixabayVideo[]) => void
-) {
-	const results: Record<string, PixabayVideo[]> = {};
-	await Promise.all(
-		queries.map(async (query) => {
-			if (results[query]) return; // Already fetched
-			try {
-				const res = await makeServerRequest<PixabayVideo[]>(
-					`pixabay-videos-${query}`,
-					`/api/activity/pixabayVideos?query=${encodeURIComponent(query)}`,
-					useCurrentSessionToken()
-				);
+	const fetchPixabayVideos = async (
+		queries: string[],
+		onVideoLoaded?: (query: string, videos: PixabayVideo[]) => void
+	) => {
+		const results: Record<string, PixabayVideo[]> = {};
+		await Promise.all(
+			queries.map(async (query) => {
+				if (results[query]) return; // Already fetched
+				try {
+					const res = await makeServerRequest<PixabayVideo[]>(
+						`pixabay-videos-${query}`,
+						`/api/activity/pixabayVideos?query=${encodeURIComponent(query)}`,
+						authStore.sessionToken
+					);
 
-				if (res.success && res.data) {
-					results[query] = res.data;
+					if (res.success && res.data) {
+						results[query] = res.data;
 
-					// call callback immediately when videos load (for incremental display)
-					if (onVideoLoaded) {
-						onVideoLoaded(query, res.data);
+						// call callback immediately when videos load (for incremental display)
+						if (onVideoLoaded) {
+							onVideoLoaded(query, res.data);
+						}
+					} else {
+						results[query] = [];
 					}
-				} else {
+				} catch (error) {
 					results[query] = [];
 				}
-			} catch (error) {
-				results[query] = [];
-			}
-		})
-	);
+			})
+		);
 
-	return results;
-}
+		return results;
+	};
 
-export async function getActivityIconSearches(queries: string[]) {
-	const results: Record<string, string[]> = {};
-	await Promise.all(
-		queries.map(async (query) => {
-			if (results[query]) return; // Already fetched
+	const fetchIconSearches = async (queries: string[]) => {
+		const results: Record<string, string[]> = {};
+		await Promise.all(
+			queries.map(async (query) => {
+				if (results[query]) return; // Already fetched
 
-			try {
-				const res = await makeServerRequest<{ icons: string[]; total: number }>(
-					`icon-search-${query}`,
-					`/api/activity/iconSearch?search=${encodeURIComponent(query)}`,
-					useCurrentSessionToken()
-				);
+				try {
+					const res = await makeServerRequest<{ icons: string[]; total: number }>(
+						`icon-search-${query}`,
+						`/api/activity/iconSearch?search=${encodeURIComponent(query)}`,
+						authStore.sessionToken
+					);
 
-				if (res.success && res.data) {
-					results[query] = res.data.icons;
-				} else {
+					if (res.success && res.data) {
+						results[query] = res.data.icons;
+					} else {
+						results[query] = [];
+					}
+				} catch (error) {
 					results[query] = [];
 				}
-			} catch (error) {
-				results[query] = [];
-			}
-		})
-	);
+			})
+		);
 
-	return results;
+		return results;
+	};
+
+	return {
+		fetchWikipediaSummary,
+		fetchYouTubeSearch,
+		fetchWikipediaSearches,
+		fetchPixabayImages,
+		fetchPixabayVideos,
+		fetchIconSearches
+	};
 }
 
 // Activity Profile
@@ -357,7 +404,8 @@ export function useActivityIslands() {
 			);
 		}
 
-		getActivityIconSearches([activity.name, ...(activity.aliases || [])]).then((icons) => {
+		const { fetchIconSearches } = useActivityInfo();
+		fetchIconSearches([activity.name, ...(activity.aliases || [])]).then((icons) => {
 			let i = 0;
 			for (const icon of Object.values(icons).flat()) {
 				islands.value.push({
@@ -419,9 +467,12 @@ export function useActivityCards() {
 			}
 		};
 
+		const { fetchYouTubeSearch, fetchWikipediaSearches, fetchPixabayImages, fetchPixabayVideos } =
+			useActivityInfo();
+
 		const ytQueries = [`what is ${activity.name}`, `how to ${activity.name}`];
 		const ytPromises = ytQueries.map((q) =>
-			getActivityYouTubeSearch(q)
+			fetchYouTubeSearch(q)
 				.then((res) => {
 					if (res.success && res.data) {
 						safePush(
@@ -444,7 +495,7 @@ export function useActivityCards() {
 		// Wikipedia searches (name + aliases)
 		try {
 			const terms = [activity.name, ...(activity.aliases || [])];
-			await getActivityWikipediaSearches(terms, (_, entry) => {
+			await fetchWikipediaSearches(terms, (_, entry) => {
 				const key = `wp:${entry.pageid}`;
 				if (seen.has(key)) return;
 				seen.add(key);
@@ -465,7 +516,7 @@ export function useActivityCards() {
 		// Pixabay image searches (name + aliases)
 		try {
 			const terms = [activity.name, ...(activity.aliases || [])];
-			await getActivityPixabayImages(terms, (_, images) => {
+			await fetchPixabayImages(terms, (_, images) => {
 				safePush(
 					images.map((image) => ({
 						title: capitalizeFully(activity.name),
@@ -483,7 +534,7 @@ export function useActivityCards() {
 		// Pixabay video searches (name + aliases)
 		try {
 			const terms = [activity.name, ...(activity.aliases || [])];
-			await getActivityPixabayVideos(terms, (_, videos) => {
+			await fetchPixabayVideos(terms, (_, videos) => {
 				safePush(
 					videos.map((video) => ({
 						title: capitalizeFully(activity.name),

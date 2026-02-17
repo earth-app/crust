@@ -172,7 +172,12 @@ async function newPrompt() {
 	try {
 		loading.value = true;
 
-		const res = await createPrompt(text, visibility.value);
+		const promptStore = usePromptStore();
+		const res = await promptStore.createPrompt({
+			title: text,
+			description: text,
+			visibility: visibility.value
+		});
 		if (res.success && res.data) {
 			if ('message' in res.data) {
 				toast.add({

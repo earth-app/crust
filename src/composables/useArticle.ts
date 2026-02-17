@@ -10,233 +10,28 @@ import {
 	makeServerRequest,
 	paginatedAPIRequest
 } from '~/shared/util';
-import { useCurrentSessionToken } from './useLogin';
-
-export async function getArticles(
-	limit: number = 25,
-	search: string = '',
-	sort: SortingOption = 'desc'
-) {
-	return await paginatedAPIRequest<Article>(
-		`/v2/articles`,
-		useCurrentSessionToken(),
-		{},
-		limit,
-		search,
-		sort
-	);
-}
-
-export async function getRecommendedArticles(count: number = 3) {
-	const { user, fetchUser } = useAuth();
-	await fetchUser();
-
-	const pool = await getRandomArticles(Math.min(count * 3, 15)).then((res) =>
-		res.success ? res.data : res.message
-	);
-
-	if (!pool || typeof pool === 'string') {
-		throw new Error(`Failed to fetch random articles: ${pool}`);
-	}
-
-	if ('message' in pool) {
-		throw new Error(`Failed to fetch random articles: ${pool.code} ${pool.message}`);
-	}
-
-	if (!pool || pool.length === 0) {
-		return { success: true, data: [] };
-	}
-
-	const res = await makeServerRequest<Article[]>(
-		`user-${user.value!.id}-article_recommendations`,
-		`/api/article/recommend`,
-		useCurrentSessionToken(),
-		{
-			method: 'POST',
-			body: { count, pool }
-		}
-	);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
-		}
-
-		// load recommended articles into state
-		for (const article of res.data) {
-			useState<Article | null>(`article-${article.id}`, () => article);
-		}
-	}
-
-	return res;
-}
-
-export async function getSimilarArticles(article: Article, count: number = 5) {
-	const pool = await getRandomArticles(Math.min(count * 3, 15)).then((res) =>
-		res.success ? res.data : res.message
-	);
-
-	if (!pool || typeof pool === 'string') {
-		throw new Error(`Failed to fetch random articles: ${pool}`);
-	}
-
-	if ('message' in pool) {
-		throw new Error(`Failed to fetch random articles: ${pool.code} ${pool.message}`);
-	}
-
-	if (!pool || pool.length === 0) {
-		return { success: true, data: [] };
-	}
-
-	const res = await makeServerRequest<Article[]>(
-		`article-${article.id}-similar_articles`,
-		`/api/article/similar`,
-		useCurrentSessionToken(),
-		{
-			method: 'POST',
-			body: { article, count, pool }
-		}
-	);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
-		}
-
-		// load similar articles into state
-		for (const similarArticle of res.data) {
-			useState<Article | null>(`article-${similarArticle.id}`, () => similarArticle);
-		}
-	}
-
-	return res;
-}
-
-export async function getRandomArticles(count: number = 3) {
-	const res = await makeClientAPIRequest<Article[]>(
-		`/v2/articles/random?count=${count}`,
-		useCurrentSessionToken()
-	);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
-		}
-
-		// load individual articles into state
-		for (const article of res.data) {
-			useState<Article | null>(`article-${article.id}`, () => article);
-		}
-	}
-
-	return res;
-}
-
-export async function getRecentArticles(count: number = 5) {
-	const res = await makeAPIRequest<{ items: Article[] }>(
-		`recent-articles-${count}`,
-		`/v2/articles?sort=desc&limit=${count}`,
-		useCurrentSessionToken()
-	);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
-		}
-
-		// load individual articles into state
-		for (const article of res.data.items) {
-			useState<Article | null>(`article-${article.id}`, () => article);
-		}
-	}
-
-	return res;
-}
+import { useArticleStore } from '~/stores/article';
+import { useAuthStore } from '~/stores/auth';
 
 export function useArticle(id: string) {
-	const article = useState<Article | null | undefined>(`article-${id}`, () => undefined);
+	const articleStore = useArticleStore();
+	const authStore = useAuthStore();
+
+	const article = computed(() => articleStore.get(id) || null);
 
 	const fetch = async () => {
-		if (article.value !== undefined) return;
-		try {
-			const res = await makeAPIRequest<Article>(
-				`article-${id}`,
-				`/v2/articles/${id}`,
-				useCurrentSessionToken()
-			);
-			if (res.success && res.data) {
-				// Check if it's an error response or missing required fields
-				if ('message' in res.data || 'error' in (res.data as any) || !('id' in res.data)) {
-					article.value = null;
-					return res;
-				}
-
-				article.value = res.data;
-			} else {
-				article.value = null;
-			}
-
-			return res;
-		} catch (error) {
-			console.error('Error fetching article:', error);
-			article.value = null;
-		}
+		await articleStore.fetchArticle(id);
 	};
 
-	if (!article.value) {
-		fetch();
-	}
-
-	const quiz = useState<ArticleQuizQuestion[] | null | undefined>(
-		`article-${id}-quiz`,
-		() => undefined
-	);
-	const quizSummary = useState<{
-		total: number;
-		multiple_choice_count: number;
-		true_false_count: number;
-	} | null>(`article-${id}-quiz_summary`, () => null);
+	const quiz = computed(() => articleStore.getQuiz(id));
+	const quizSummary = computed(() => articleStore.getQuizSummary(id));
 
 	const fetchQuiz = async () => {
 		if (quiz.value !== undefined) return;
-
-		try {
-			const res = await makeAPIRequest<{
-				questions: ArticleQuizQuestion[];
-				summary: { total: number; multiple_choice_count: number; true_false_count: number };
-			}>(`article-${id}-quiz`, `/v2/articles/${id}/quiz`, useCurrentSessionToken());
-			if (res.success && res.data) {
-				if ('message' in res.data) {
-					// Quiz doesn't exist for this article
-					quiz.value = null;
-					quizSummary.value = null;
-					return res;
-				}
-
-				quiz.value = res.data.questions;
-				quizSummary.value = res.data.summary;
-			} else {
-				// Error fetching quiz
-				quiz.value = null;
-				quizSummary.value = null;
-			}
-
-			return res;
-		} catch (error) {
-			console.error('Error fetching quiz:', error);
-			quiz.value = null;
-			quizSummary.value = null;
-		}
+		await articleStore.fetchQuiz(id);
 	};
 
-	if (quiz.value === undefined) {
-		fetchQuiz();
-	}
-
-	const score = useState<ArticleQuizScoreResult | null | undefined>(
-		`article-${id}-quiz-score`,
-		() => undefined
-	);
+	const score = computed(() => articleStore.getScore(id));
 
 	const submitQuiz = async (answers: number[]) => {
 		if (!quiz.value || quiz.value.length === 0) {
@@ -261,7 +56,7 @@ export function useArticle(id: string) {
 			const res = await makeServerRequest<ArticleQuizScoreResult>(
 				`article-${id}-quiz-submit`,
 				`/api/article/quiz`,
-				useCurrentSessionToken(),
+				authStore.sessionToken,
 				{
 					method: 'POST',
 					body: { answers: answers0, articleId: id }
@@ -273,7 +68,7 @@ export function useArticle(id: string) {
 					return res;
 				}
 
-				score.value = res.data;
+				articleStore.setQuizScore(id, res.data);
 			}
 
 			return res;
@@ -285,36 +80,95 @@ export function useArticle(id: string) {
 
 	const fetchQuizScore = async () => {
 		if (score.value !== undefined) return;
-		try {
-			const res = await makeServerRequest<ArticleQuizScoreResult>(
-				`article-${id}-quiz-score`,
-				`/api/article/quiz?articleId=${id}`,
-				useCurrentSessionToken()
-			);
-
-			if (res.success && res.data) {
-				if ('message' in res.data) {
-					// No score exists yet
-					score.value = null;
-					return res;
-				}
-
-				score.value = res.data;
-			} else {
-				// Error or no score
-				score.value = null;
-			}
-
-			return res;
-		} catch (error) {
-			console.error('Error fetching quiz score:', error);
-			score.value = null;
-		}
+		await articleStore.fetchQuizScore(id);
 	};
 
 	if (score.value === undefined) {
 		fetchQuizScore();
 	}
+
+	const update = async (updatedArticle: Partial<Article> & { id: string }) => {
+		return await articleStore.updateArticle(updatedArticle);
+	};
+
+	const remove = async () => {
+		return await articleStore.deleteArticle(id);
+	};
+
+	const getSimilar = async (count: number = 5) => {
+		if (!article.value) {
+			await fetch();
+		}
+
+		if (!article.value) {
+			return { success: false, message: 'Article not found' };
+		}
+
+		const { getRandom } = useArticles();
+
+		const pool = await getRandom(Math.min(count * 3, 15)).then((res) =>
+			res.success ? res.data : res.message
+		);
+
+		if (!pool || typeof pool === 'string') {
+			throw new Error(`Failed to fetch random articles: ${pool}`);
+		}
+
+		if ('message' in pool) {
+			throw new Error(`Failed to fetch random articles: ${pool.code} ${pool.message}`);
+		}
+
+		if (!pool || pool.length === 0) {
+			return { success: true, data: [] };
+		}
+
+		const res = await makeServerRequest<Article[]>(
+			`article-${article.value.id}-similar_articles`,
+			`/api/article/similar`,
+			authStore.sessionToken,
+			{
+				method: 'POST',
+				body: { article: article.value, count, pool }
+			}
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load similar articles into store
+			articleStore.setArticles(res.data);
+		}
+
+		return res;
+	};
+
+	const createQuiz = async () => {
+		if (!article.value) {
+			await fetch();
+		}
+
+		if (!article.value) {
+			return { success: false, message: 'Article not found' };
+		}
+
+		const res = await makeServerRequest<ArticleQuizQuestion[]>(
+			`article-${id}-create-quiz`,
+			`/api/admin/createArticleQuiz`,
+			authStore.sessionToken,
+			{
+				method: 'POST',
+				body: { article: article.value }
+			}
+		);
+
+		if (res.success) {
+			await fetchQuiz();
+		}
+
+		return res;
+	};
 
 	return {
 		article,
@@ -324,34 +178,156 @@ export function useArticle(id: string) {
 		fetchQuiz,
 		submitQuiz,
 		score,
-		fetchQuizScore
+		fetchQuizScore,
+		update,
+		remove,
+		getSimilar,
+		createQuiz
 	};
 }
 
-export async function createArticle(
-	article: Partial<Article> & { title: string; description: string; content: string }
+export function useArticles(
+	page: number = 1,
+	limit: number = 25,
+	search: string = '',
+	sort: SortingOption = 'desc'
 ) {
-	return await makeClientAPIRequest<Article>('/v2/articles', useCurrentSessionToken(), {
-		method: 'POST',
-		body: article
-	});
-}
+	const articleStore = useArticleStore();
+	const authStore = useAuthStore();
+	const articles = useState<Article[]>(`articles-${search}-${page}-${limit}-${sort}`, () => []);
+	const total = useState<number>(`articles-total-${search}-${page}-${limit}-${sort}`, () => 0);
 
-export async function editArticle(article: Partial<Article> & { id: string }) {
-	return await makeClientAPIRequest<Article>(
-		`/v2/articles/${article.id}`,
-		useCurrentSessionToken(),
-		{
-			method: 'PATCH',
-			body: article
+	const fetch = async (
+		newPage: number = page,
+		newLimit: number = limit,
+		newSearch: string = search
+	) => {
+		const res = await makeAPIRequest<{ items: Article[]; total: number }>(
+			`articles-${newSearch}-${newPage}-${newLimit}-${sort}`,
+			`/v2/articles?page=${newPage}&limit=${newLimit}&search=${encodeURIComponent(newSearch)}&sort=${sort}`
+		);
+		if (res.success && res.data && !('message' in res.data) && Array.isArray(res.data.items)) {
+			articles.value = res.data.items;
+			total.value = res.data.total;
+			articleStore.setArticles(res.data.items);
 		}
-	);
-}
+		return res;
+	};
 
-export async function deleteArticle(id: string) {
-	return await makeClientAPIRequest<void>(`/v2/articles/${id}`, useCurrentSessionToken(), {
-		method: 'DELETE'
-	});
+	const fetchAll = async (
+		limit: number = 25,
+		search: string = '',
+		sort: SortingOption = 'desc'
+	) => {
+		return await paginatedAPIRequest<Article>(
+			`/v2/articles`,
+			authStore.sessionToken,
+			{},
+			limit,
+			search,
+			sort
+		);
+	};
+
+	const getRandom = async (count: number = 3) => {
+		const res = await makeClientAPIRequest<Article[]>(
+			`/v2/articles/random?count=${count}`,
+			authStore.sessionToken
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load individual articles into store
+			articleStore.setArticles(res.data);
+		}
+
+		return res;
+	};
+
+	const getRecent = async (count: number = 5) => {
+		const res = await makeAPIRequest<{ items: Article[] }>(
+			`recent-articles-${count}`,
+			`/v2/articles?sort=desc&limit=${count}`,
+			authStore.sessionToken
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load individual articles into store
+			articleStore.setArticles(res.data.items);
+		}
+
+		return res;
+	};
+
+	const getRecommended = async (count: number = 3) => {
+		const { user, fetchUser } = useAuth();
+		await fetchUser();
+
+		const pool = await getRandom(Math.min(count * 3, 15)).then((res) =>
+			res.success ? res.data : res.message
+		);
+
+		if (!pool || typeof pool === 'string') {
+			throw new Error(`Failed to fetch random articles: ${pool}`);
+		}
+
+		if ('message' in pool) {
+			throw new Error(`Failed to fetch random articles: ${pool.code} ${pool.message}`);
+		}
+
+		if (!pool || pool.length === 0) {
+			return { success: true, data: [] };
+		}
+
+		const res = await makeServerRequest<Article[]>(
+			`user-${user.value!.id}-article_recommendations`,
+			`/api/article/recommend`,
+			authStore.sessionToken,
+			{
+				method: 'POST',
+				body: { count, pool }
+			}
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load recommended articles into store
+			articleStore.setArticles(res.data);
+		}
+
+		return res;
+	};
+
+	const create = async (
+		article: Partial<Article> & { title: string; description: string; content: string }
+	) => {
+		return await articleStore.createArticle(article);
+	};
+
+	if (articles.value.length === 0) {
+		fetch();
+	}
+
+	return {
+		articles,
+		total,
+		fetch,
+		fetchAll,
+		getRandom,
+		getRecent,
+		getRecommended,
+		create
+	};
 }
 
 export function useUserArticles(
@@ -360,6 +336,7 @@ export function useUserArticles(
 	limit: number = 25,
 	sort: SortingOption = 'desc'
 ) {
+	const articleStore = useArticleStore();
 	const total = useState<number>(`user-${identifier}-articles-total`, () => 0);
 	const articles = useState<Article[]>(`user-${identifier}-articles-${page}:${limit}`, () => []);
 
@@ -379,10 +356,8 @@ export function useUserArticles(
 			articles.value = res.data.items;
 			total.value = res.data.total;
 
-			// load individual articles into state
-			for (const a of res.data.items) {
-				useState<Article | null>(`article-${a.id}`, () => a);
-			}
+			// load individual articles into store
+			articleStore.setArticles(res.data.items);
 		}
 		return res;
 	};
@@ -396,18 +371,4 @@ export function useUserArticles(
 		total,
 		fetch
 	};
-}
-
-export async function createArticleQuiz(article: Article) {
-	const res = await makeServerRequest<ArticleQuizQuestion[]>(
-		`article-${article.id}-create_quiz`,
-		`/api/admin/createArticleQuiz`,
-		useCurrentSessionToken(),
-		{
-			method: 'POST',
-			body: { article }
-		}
-	);
-
-	return res;
 }

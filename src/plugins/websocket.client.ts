@@ -11,7 +11,7 @@ export default defineNuxtPlugin((_) => {
 	onMounted(() => {
 		const { user } = useAuth();
 
-		watch(
+		const stopWatch = watch(
 			user,
 			(currentUser) => {
 				if (currentUser && !ws) {
@@ -71,6 +71,15 @@ export default defineNuxtPlugin((_) => {
 			},
 			{ immediate: true }
 		);
+
+		// Clean up on unmount
+		onUnmounted(() => {
+			stopWatch();
+			if (ws) {
+				ws.close();
+				ws = null;
+			}
+		});
 	});
 
 	return {

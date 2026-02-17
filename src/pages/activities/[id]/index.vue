@@ -23,34 +23,30 @@ const toast = useToast();
 const currentActivity = ref<Activity | null | undefined>(undefined);
 
 if (route.params.id) {
-	const res = await getActivity(route.params.id as string);
+	const activityStore = useActivityStore();
+	const activity = await activityStore.fetchActivity(route.params.id as string);
 
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			toast.add({
-				title: 'Error Fetching Activity',
-				description: res.data.message || 'An unknown error occurred.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error',
-				duration: 5000
-			});
-
-			currentActivity.value = null;
-			setTitleSuffix('Activity Profile');
-		} else {
-			currentActivity.value = res.data;
-			setTitleSuffix(currentActivity.value?.name || 'Activity Profile');
-
-			useSeoMeta({
-				ogTitle: currentActivity.value?.name || 'Activity Profile',
-				ogDescription: currentActivity.value?.description || ''
-			});
-		}
+	if (activity) {
+		currentActivity.value = activity;
+		setTitleSuffix(currentActivity.value?.name || 'Activity Profile');
 	} else {
+		toast.add({
+			title: 'Error Fetching Activity',
+			description: 'Activity not found.',
+			icon: 'mdi:alert-circle-outline',
+			color: 'error',
+			duration: 5000
+		});
+
 		currentActivity.value = null;
 		setTitleSuffix('Activity Profile');
 	}
 }
+
+useSeoMeta({
+	ogTitle: currentActivity.value?.name || 'Activity Profile',
+	ogDescription: currentActivity.value?.description || ''
+});
 
 const { user } = useAuth();
 const { count: totalActivities } = useActivitiesCount();

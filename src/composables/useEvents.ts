@@ -11,8 +11,13 @@ import {
 	makeServerRequest,
 	paginatedAPIRequest
 } from '~/shared/util';
+import { useAuthStore } from '~/stores/auth';
+import { useEventStore } from '~/stores/event';
 
 export function useEvents() {
+	const authStore = useAuthStore();
+	const eventStore = useEventStore();
+
 	const getEvents = async (
 		page: number = 1,
 		limit: number = 50,
@@ -27,12 +32,15 @@ export function useEvents() {
 		}>(
 			`events-${page}-${limit}-${search}-${upcoming}`,
 			`/v2/events?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
-			useCurrentSessionToken()
+			authStore.sessionToken
 		);
 		if (res.success && res.data) {
 			if ('message' in res.data) {
 				throw new Error(res.data.message);
 			}
+
+			// Load events into store
+			eventStore.setEvents(res.data.items);
 
 			if (upcoming) {
 				const now = new Date();
@@ -51,18 +59,76 @@ export function useEvents() {
 	};
 
 	const createEvent = async (eventData: EventData) => {
-		const res = await makeClientAPIRequest<Event>('/v2/events', useCurrentSessionToken(), {
-			method: 'POST',
-			body: eventData
-		});
+		return await eventStore.createEvent(eventData);
+	};
+
+	const deleteEvent = async (id: string) => {
+		return await eventStore.deleteEvent(id);
+	};
+
+	const getRandom = async (count: number = 5) => {
+		const res = await makeClientAPIRequest<Event[]>(
+			`/v2/events/random?count=${count}`,
+			authStore.sessionToken
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load individual events into store
+			eventStore.setEvents(res.data);
+		}
 
 		return res;
 	};
 
-	const deleteEvent = async (id: string) => {
-		const res = await makeClientAPIRequest<void>(`/v2/events/${id}`, useCurrentSessionToken(), {
-			method: 'DELETE'
-		});
+	const getRecent = async (count: number = 5) => {
+		const res = await makeAPIRequest<{ items: Event[] }>(
+			`recent-events-${count}`,
+			`/v2/events?sort=desc&limit=${count}`,
+			authStore.sessionToken
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load individual events into store
+			eventStore.setEvents(res.data.items);
+		}
+
+		return res;
+	};
+
+	const getRecommended = async (count: number = 5) => {
+		const { user, fetchUser } = useAuth();
+		await fetchUser(true);
+
+		const pool = await getRandom(Math.min(count * 3, 15)).then((res) =>
+			res.success ? res.data : res.message
+		);
+
+		const res = await makeServerRequest<Event[]>(
+			`user-${user.value!.id}-event_recommendations`,
+			`/api/event/recommend`,
+			authStore.sessionToken,
+			{
+				method: 'POST',
+				body: { user, count, pool }
+			}
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load recommended events into store
+			eventStore.setEvents(res.data);
+		}
 
 		return res;
 	};
@@ -70,11 +136,16 @@ export function useEvents() {
 	return {
 		getEvents,
 		createEvent,
-		deleteEvent
+		deleteEvent,
+		getRandom,
+		getRecent,
+		getRecommended
 	};
 }
 
 export function useEvent(id: string) {
+	const eventStore = useEventStore();
+	const authStore = useAuthStore();
 	const event = useState<Event | null | undefined>(`event-${id}`, () => undefined);
 
 	const fetch = async () => {
@@ -86,7 +157,7 @@ export function useEvent(id: string) {
 		const res = await makeAPIRequest<Event>(
 			`event-${id}`,
 			`/v2/events/${id}`,
-			useCurrentSessionToken()
+			authStore.sessionToken
 		);
 		if (res.success && res.data) {
 			if ('message' in res.data) {
@@ -102,44 +173,25 @@ export function useEvent(id: string) {
 		return res;
 	};
 
-	if (event.value === undefined && id && id !== '') {
-		fetch();
-	}
-
 	const updateEvent = async (updatedEvent: Partial<EventData>) => {
-		const res = await makeClientAPIRequest<Event>(`/v2/events/${id}`, useCurrentSessionToken(), {
-			method: 'PATCH',
-			body: updatedEvent
-		});
+		const res = await eventStore.patchEvent({ id, ...updatedEvent });
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
-			event.value = res.data;
+		if (res.success) {
+			await fetch();
 		}
 
 		return res;
 	};
 
 	const deleteEvent = async () => {
-		const res = await makeClientAPIRequest(`/v2/events/${id}`, useCurrentSessionToken(), {
-			method: 'DELETE'
-		});
-
-		if (res.success) {
-			event.value = null;
-		}
-
-		return res;
+		return await eventStore.deleteEvent(id);
 	};
 
 	const attendees = useState<User[] | null>(`event-attendees-${id}`, () => null);
 	const fetchAttendees = async () => {
 		const res = await paginatedAPIRequest<User>(
 			`/v2/events/${id}/attendees`,
-			useCurrentSessionToken()
+			authStore.sessionToken
 		);
 
 		if (res.success && res.data) {
@@ -156,58 +208,23 @@ export function useEvent(id: string) {
 		return res;
 	};
 
-	if (!attendees.value) {
-		fetchAttendees();
-	}
-
 	const signUpForEvent = async () => {
-		const res = await makeClientAPIRequest<{ user: User; event: Event }>(
-			`/v2/events/${id}/signup`,
-			useCurrentSessionToken(),
-			{
-				method: 'POST'
-			}
-		);
+		const res = await eventStore.signUpForEvent(id);
 
-		if (res.success && event.value) {
-			event.value.is_attending = true;
-			event.value.attendee_count += 1;
-
-			if (res.data && !('message' in res.data) && attendees.value) {
-				const userData = res.data as { user: User; event: Event };
-
-				if (!attendees.value.some((a) => a.id === userData.user.id)) {
-					attendees.value.push(userData.user);
-				}
-			} else {
-				await fetchAttendees();
-			}
+		if (res.success) {
+			attendees.value = null;
+			await fetchAttendees();
 		}
 
 		return res;
 	};
 
 	const leaveEvent = async () => {
-		const res = await makeClientAPIRequest<{ user: User; event: Event }>(
-			`/v2/events/${id}/leave`,
-			useCurrentSessionToken(),
-			{
-				method: 'POST'
-			}
-		);
+		const res = await eventStore.leaveEvent(id);
 
-		if (res.success && event.value) {
-			event.value.is_attending = false;
-			event.value.attendee_count -= 1;
-
-			// Remove the current user from the attendees list for immediate visual update
-			if (res.data && !('message' in res.data) && attendees.value) {
-				const userData = res.data as { user: User; event: Event };
-				attendees.value = attendees.value.filter((a) => a.id !== userData.user.id);
-			} else {
-				// Refetch attendees to ensure UI is in sync
-				await fetchAttendees();
-			}
+		if (res.success) {
+			attendees.value = null;
+			await fetchAttendees();
 		}
 
 		return res;
@@ -218,7 +235,7 @@ export function useEvent(id: string) {
 		const res = await makeServerRequest<Blob>(
 			`event-thumbnail-${id}`,
 			`/api/event/thumbnail?id=${encodeURIComponent(id)}`,
-			useCurrentSessionToken()
+			authStore.sessionToken
 		);
 
 		if (res.success && res.data) {
@@ -231,54 +248,24 @@ export function useEvent(id: string) {
 		return res;
 	};
 
-	if (!thumbnail.value) {
-		fetchThumbnail();
-	}
-
 	const thumbnailAuthor = useState<string | null>(`event-thumbnail-author-${id}`, () => null);
 	const thumbnailSize = useState<number | null>(`event-thumbnail-size-${id}`, () => null);
 
 	const fetchThumbnailMetadata = async () => {
-		const res = await makeServerRequest<{ author: string; size: number }>(
-			`event-thumbnail-metadata-${id}`,
-			`/api/event/thumbnail?id=${encodeURIComponent(id)}&metadata=true`,
-			useCurrentSessionToken()
-		);
+		const data = await eventStore.fetchThumbnailMetadata(id);
 
-		if (res.success && res.data) {
-			const author =
-				res.data.author === '<user>' ? event.value?.host.full_name || 'Host' : res.data.author;
-			thumbnailAuthor.value = author;
+		thumbnailAuthor.value = data?.author || null;
+		thumbnailSize.value = data?.size || null;
 
-			thumbnailSize.value = res.data.size;
-		} else {
-			thumbnailAuthor.value = null;
-			thumbnailSize.value = null;
-		}
-
-		return res;
+		return data;
 	};
 
-	if (!thumbnailAuthor.value || !thumbnailSize.value) {
-		fetchThumbnailMetadata();
-	}
-
 	const uploadThumbnail = async (file: File) => {
-		const formData = new FormData();
-		formData.append('photo', file);
-
-		const res = await makeServerRequest(
-			`event-thumbnail-upload-${id}`,
-			`/api/event/thumbnail?id=${encodeURIComponent(id)}`,
-			useCurrentSessionToken(),
-			{
-				method: 'POST',
-				body: formData
-			}
-		);
+		const res = await eventStore.uploadThumbnail(id, file);
 
 		if (res.success) {
 			await fetchThumbnail();
+			await fetchThumbnailMetadata();
 		}
 
 		return res;
@@ -289,18 +276,11 @@ export function useEvent(id: string) {
 			await fetch();
 		}
 
-		const res = await makeServerRequest<Blob>(
-			`event-thumbnail-generate-${id}`,
-			`/api/event/thumbnail?id=${id}&name=${encodeURIComponent(event.value?.name ?? '')}&generate=true`,
-			useCurrentSessionToken(),
-			{
-				method: 'POST'
-			}
-		);
+		const res = await eventStore.generateThumbnail(id, event.value?.name ?? '');
 
-		if (res.success && res.data) {
-			const url = URL.createObjectURL(res.data);
-			thumbnail.value = url;
+		if (res.success) {
+			await fetchThumbnail();
+			await fetchThumbnailMetadata();
 		}
 
 		return res;
@@ -310,17 +290,17 @@ export function useEvent(id: string) {
 		const res = await makeServerRequest(
 			`event-thumbnail-delete-${id}`,
 			`/api/event/thumbnail?id=${encodeURIComponent(id)}`,
-			useCurrentSessionToken(),
+			authStore.sessionToken,
 			{
 				method: 'DELETE'
 			}
 		);
 
 		if (res.success) {
-			if (thumbnail.value) {
-				URL.revokeObjectURL(thumbnail.value);
-				thumbnail.value = null;
-			}
+			eventStore.clearThumbnail(id);
+			thumbnail.value = null;
+			thumbnailAuthor.value = null;
+			thumbnailSize.value = null;
 		}
 
 		return res;
@@ -334,44 +314,20 @@ export function useEvent(id: string) {
 	};
 
 	const cancelEvent = async () => {
-		const res = await makeClientAPIRequest<Event>(
-			`/v2/events/${id}/cancel`,
-			useCurrentSessionToken(),
-			{
-				method: 'POST'
-			}
-		);
+		const res = await eventStore.cancelEvent(id);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
-			event.value = res.data;
-		} else {
-			return res;
+		if (res.success) {
+			await fetch();
 		}
 
 		return res;
 	};
 
 	const uncancelEvent = async () => {
-		const res = await makeClientAPIRequest<Event>(
-			`/v2/events/${id}/uncancel`,
-			useCurrentSessionToken(),
-			{
-				method: 'POST'
-			}
-		);
+		const res = await eventStore.uncancelEvent(id);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
-			event.value = res.data;
-		} else {
-			return res;
+		if (res.success) {
+			await fetch();
 		}
 
 		return res;
@@ -382,81 +338,74 @@ export function useEvent(id: string) {
 		() => null
 	);
 	const fetchSubmissions = async () => {
-		const res = await paginatedAPIRequest<EventImageSubmission>(
-			`/v2/events/${id}/submissions`,
-			useCurrentSessionToken()
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				submissions.value = null;
-				return res;
-			}
-
-			submissions.value = res.data;
-		} else {
-			submissions.value = null;
-		}
-
-		return res;
+		const data = await eventStore.fetchSubmissions(id);
+		submissions.value = data;
+		return data;
 	};
 
 	if (!submissions.value) {
 		fetchSubmissions();
 	}
 
-	const fetchSubmissionsForUser = async (user: string) => {
-		const res = await paginatedAPIRequest<EventImageSubmission>(
-			`/v2/users/${user}/events/images/${id}`,
-			useCurrentSessionToken()
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				console.error(`Failed to fetch submissions for user ${user}:`, res.data.message);
-			}
-
-			return res;
-		}
-
-		console.error(`Failed to fetch submissions for user ${user}:`, res.message);
-		return { success: false, message: `Failed to fetch submissions for user ${user}.`, data: [] };
-	};
+	const fetchSubmissionsForUser = async (user: string) =>
+		await eventStore.fetchSubmissionsForUser(id, user);
 
 	const submitImage = async (file: File) => {
-		const dataUrl = await new Promise<string>((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onload = () => {
-				resolve(reader.result as string);
-			};
-			reader.onerror = (error) => {
-				reject(error);
-			};
-			reader.readAsDataURL(file);
-		});
+		const res = await eventStore.submitImage(id, file);
 
-		if (!dataUrl) throw new Error('Failed to read image file');
-		if (!dataUrl.startsWith('data:image/')) throw new TypeError('File is not a valid image');
-		if (dataUrl.length > 10 * 1024 * 1024) throw new Error('Image exceeds maximum size of 10MB');
+		if (res.success) {
+			await fetchSubmissions();
+		}
 
-		const res = await makeClientAPIRequest<{
-			message: string;
-			submission_id: string;
-			user_id: string;
-			event_id: string;
-			photo_url: string;
-		}>(`/v2/events/${id}/submissions`, useCurrentSessionToken(), {
-			method: 'POST',
-			body: JSON.stringify({ photo_url: dataUrl })
-		});
+		return res;
+	};
+
+	const getSimilar = async (count: number = 5) => {
+		if (!event.value) {
+			await fetch();
+		}
+
+		if (!event.value) {
+			return { success: false, message: 'Event not found' };
+		}
+
+		const eventStore = useEventStore();
+		const authStore = useAuthStore();
+		const { getRandom } = useEvents();
+
+		const pool = await getRandom(Math.min(count * 3, 15)).then((res) =>
+			res.success ? res.data : res.message
+		);
+
+		if (!pool || typeof pool === 'string') {
+			throw new Error(`Failed to fetch random events: ${pool}`);
+		}
+
+		if ('message' in pool) {
+			throw new Error(`Failed to fetch random events: ${pool.code} ${pool.message}`);
+		}
+
+		if (!pool || pool.length === 0) {
+			return { success: true, data: [] };
+		}
+
+		const res = await makeServerRequest<Event[]>(
+			`event-${event.value.id}-similar_events`,
+			`/api/event/similar`,
+			authStore.sessionToken,
+			{
+				method: 'POST',
+				body: { event: event.value, count, pool }
+			}
+		);
 
 		if (res.success && res.data) {
 			if ('message' in res.data) {
 				return res;
 			}
 
-			// refresh submissions list to include the new submission
-			await fetchSubmissions();
+			// load similar events into store
+			eventStore.setEvents(res.data);
 		}
 
 		return res;
@@ -485,122 +434,9 @@ export function useEvent(id: string) {
 		submissions,
 		fetchSubmissions,
 		fetchSubmissionsForUser,
-		submitImage
+		submitImage,
+		getSimilar
 	};
-}
-
-export async function getRandomEvents(count: number = 5) {
-	const res = await makeClientAPIRequest<Event[]>(
-		`/v2/events/random?count=${count}`,
-		useCurrentSessionToken()
-	);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
-		}
-
-		// load individual events into state
-		for (const event of res.data) {
-			useState<Event | null>(`event-${event.id}`, () => event);
-		}
-	}
-
-	return res;
-}
-
-export async function getRecentEvents(count: number = 5) {
-	const res = await makeAPIRequest<{ items: Event[] }>(
-		`recent-events-${count}`,
-		`/v2/events?sort=desc&limit=${count}`,
-		useCurrentSessionToken()
-	);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
-		}
-
-		// load individual events into state
-		for (const event of res.data.items) {
-			useState<Event | null>(`event-${event.id}`, () => event);
-		}
-	}
-
-	return res;
-}
-
-export async function getRecommendedEvents(count: number = 5) {
-	const { user, fetchUser } = useAuth();
-	await fetchUser(true);
-
-	const pool = await getRandomEvents(Math.min(count * 3, 15)).then((res) =>
-		res.success ? res.data : res.message
-	);
-
-	const res = await makeServerRequest<Event[]>(
-		`user-${user.value!.id}-event_recommendations`,
-		`/api/event/recommend`,
-		useCurrentSessionToken(),
-		{
-			method: 'POST',
-			body: { user, count, pool }
-		}
-	);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
-		}
-
-		// load recommended events into state
-		for (const recommendedEvent of res.data) {
-			useState<Event | null>(`event-${recommendedEvent.id}`, () => recommendedEvent);
-		}
-	}
-
-	return res;
-}
-
-export async function getSimilarEvents(event: Event, count: number = 5) {
-	const pool = await getRandomEvents(Math.min(count * 3, 15)).then((res) =>
-		res.success ? res.data : res.message
-	);
-
-	if (!pool || typeof pool === 'string') {
-		throw new Error(`Failed to fetch random events: ${pool}`);
-	}
-
-	if ('message' in pool) {
-		throw new Error(`Failed to fetch random events: ${pool.code} ${pool.message}`);
-	}
-
-	if (!pool || pool.length === 0) {
-		return { success: true, data: [] };
-	}
-
-	const res = await makeServerRequest<Event[]>(
-		`event-${event.id}-similar_events`,
-		`/api/event/similar`,
-		useCurrentSessionToken(),
-		{
-			method: 'POST',
-			body: { event, count, pool }
-		}
-	);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
-		}
-
-		// load similar events into state
-		for (const similarEvent of res.data) {
-			useState<Event | null>(`event-${similarEvent.id}`, () => similarEvent);
-		}
-	}
-
-	return res;
 }
 
 export function useGeocoding() {
@@ -626,6 +462,7 @@ export function useGeocoding() {
 	}
 
 	const autocomplete = async (input: string, sessionToken: string) => {
+		const authStore = useAuthStore();
 		const res = await makeServerRequest<EventAutocompleteSuggestion[]>(
 			`event-autocomplete-${input}-${latitude.value ?? 'null'}-${longitude.value ?? 'null'}`,
 			`/api/event/autocomplete?input=${encodeURIComponent(
@@ -635,7 +472,7 @@ export function useGeocoding() {
 					? `&latitude=${latitude.value}&longitude=${longitude.value}`
 					: ''
 			}`,
-			useCurrentSessionToken()
+			authStore.sessionToken
 		);
 
 		if (res.success && res.data) {
@@ -650,10 +487,11 @@ export function useGeocoding() {
 	};
 
 	const geocode = async (address: string) => {
+		const authStore = useAuthStore();
 		const res = await makeServerRequest<{ latitude: number; longitude: number }>(
 			`event-geocode-${address}`,
 			`/api/event/geocode?address=${encodeURIComponent(address)}`,
-			useCurrentSessionToken()
+			authStore.sessionToken
 		);
 
 		if (res.success && res.data) {
@@ -668,10 +506,11 @@ export function useGeocoding() {
 	};
 
 	const reverseGeocode = async (lat: number, lng: number) => {
+		const authStore = useAuthStore();
 		const res = await makeServerRequest<{ address: string }>(
 			`event-reverse-geocode-${lat}-${lng}`,
 			`/api/event/geocode?lat=${lat}&lng=${lng}`,
-			useCurrentSessionToken()
+			authStore.sessionToken
 		);
 
 		if (res.success && res.data) {

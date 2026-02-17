@@ -88,7 +88,7 @@ const toast = useToast();
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Events');
 
-const { user, maxEventAttendees, currentEventsCount } = useAuth();
+const { user } = useAuth();
 
 const recommendedLoaded = ref(false);
 const recommendedEvents = ref<Event[]>([]);
@@ -129,7 +129,8 @@ async function loadContent() {
 		recentEvents.value = [];
 
 		if (user.value) {
-			const recommendedRes = await getRecommendedEvents();
+			const { getRecommended } = useEvents();
+			const recommendedRes = await getRecommended();
 			if (recommendedRes.success && recommendedRes.data) {
 				recommendedEvents.value = recommendedRes.data;
 				recommendedLoaded.value = true;
@@ -148,7 +149,8 @@ async function loadContent() {
 			recommendedLoaded.value = true;
 		}
 
-		const randomRes = await getRandomEvents(5);
+		const { getRandom } = useEvents();
+		const randomRes = await getRandom(5);
 		if (randomRes.success && randomRes.data) {
 			if ('message' in randomRes.data) {
 				randomLoaded.value = true;
@@ -179,7 +181,8 @@ async function loadContent() {
 			});
 		}
 
-		const recentRes = await getRecentEvents();
+		const { getRecent } = useEvents();
+		const recentRes = await getRecent();
 		if (recentRes.success && recentRes.data) {
 			if ('message' in recentRes.data) {
 				recentLoaded.value = true;
@@ -218,6 +221,6 @@ onMounted(async () => {
 
 const newDisabled = computed(() => {
 	if (user.value === null) return true;
-	return currentEventsCount.value >= maxEventAttendees.value;
+	return false; // TODO: Implement event count check
 });
 </script>

@@ -91,7 +91,8 @@ async function loadSimilar(event?: Event) {
 	if (!user.value) return;
 	relatedLoaded.value = false;
 
-	const res = await getSimilarEvents(event);
+	const { getSimilar } = useEvent(event.id);
+	const res = await getSimilar();
 	if (res.success && res.data) {
 		relatedEvents.value = res.data;
 		relatedLoaded.value = true;

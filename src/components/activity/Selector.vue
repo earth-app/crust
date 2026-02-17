@@ -143,7 +143,8 @@ function initializeActivities() {
 			// fetch activity details for IDs
 			if (activityIds.length > 0) {
 				activitiesLoading.value = true;
-				getAllActivities(-1, '').then((res) => {
+				const { fetchAll } = useActivities();
+				fetchAll(-1, '').then((res) => {
 					if (res.success && res.data) {
 						const activities = res.data
 							.filter((activity) => activityIds.includes(activity.id))
@@ -205,7 +206,8 @@ function updateActivitiesList(search: string) {
 	activitiesSearch.value = search;
 	activitiesLoading.value = true;
 
-	getAllActivities(-1, activitiesSearch.value).then((res) => {
+	const { fetchAll } = useActivities();
+	fetchAll(-1, activitiesSearch.value).then((res) => {
 		if (res.success) {
 			const activities =
 				res.data?.map((activity) => ({

@@ -89,7 +89,8 @@ onMounted(async () => {
 
 async function fetchPrompts() {
 	promptsLoading.value = true;
-	const res = await getRandomPrompts(25);
+	const { getRandom } = usePrompts();
+	const res = await getRandom(25);
 	promptsLoading.value = false;
 
 	if (res.success && res.data) {

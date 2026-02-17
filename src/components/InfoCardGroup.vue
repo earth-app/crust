@@ -109,18 +109,19 @@ onMounted(() => {
 		scrollContainer.value.addEventListener('scroll', onScroll, { passive: true });
 		// Store listener for cleanup
 		(scrollContainer.value as any)._onScroll = onScroll;
+
+		// Initial progress calculation
+		updateProgress();
 	}
 });
 
 onUnmounted(() => {
 	if (scrollContainer.value) {
-		const onScroll = (scrollContainer.value as any)._onScroll || updateProgress;
-		scrollContainer.value.removeEventListener('scroll', onScroll as any);
+		const onScroll = (scrollContainer.value as any)._onScroll;
+		if (onScroll) {
+			scrollContainer.value.removeEventListener('scroll', onScroll);
+		}
 	}
-});
-
-watchEffect(() => {
-	updateProgress();
 });
 
 const startDrag = (e: MouseEvent) => {

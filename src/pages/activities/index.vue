@@ -106,7 +106,8 @@ async function loadActivities() {
 	if (isLoading.value || !hasMore.value) return;
 	isLoading.value = true;
 
-	const res = await getActivities(page.value, 100);
+	const { fetch } = useActivities();
+	const res = await fetch(page.value, 100);
 	if (res.success && res.data) {
 		if ('message' in res.data) {
 			toast.add({

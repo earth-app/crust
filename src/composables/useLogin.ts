@@ -1,8 +1,10 @@
 import type { User } from '~/shared/types/user';
+import { useAuthStore } from '~/stores/auth';
 import { sendVerificationEmail } from './useUser';
 
 export function useSignup() {
 	const config = useRuntimeConfig();
+	const authStore = useAuthStore();
 
 	return async function signup(
 		username: string,
@@ -29,12 +31,8 @@ export function useSignup() {
 				}
 			);
 
-			const sessionCookie = useCookie('session_token', {
-				maxAge: 60 * 60 * 24 * 14,
-				secure: true,
-				sameSite: 'none'
-			});
-			sessionCookie.value = response.session_token;
+			authStore.setSessionToken(response.session_token);
+			authStore.currentUser = response.user;
 
 			if (email) {
 				// Automatically send verification email upon signup
@@ -65,6 +63,7 @@ export function useSignup() {
 
 export function useLogin() {
 	const config = useRuntimeConfig();
+	const authStore = useAuthStore();
 
 	return async function login(username: string, password: string) {
 		const auth = btoa(`${username}:${password}`);
@@ -81,12 +80,8 @@ export function useLogin() {
 				}
 			);
 
-			const sessionCookie = useCookie('session_token', {
-				maxAge: 60 * 60 * 24 * 14,
-				secure: true,
-				sameSite: 'none'
-			});
-			sessionCookie.value = response.session_token;
+			authStore.setSessionToken(response.session_token);
+			await authStore.fetchCurrentUser();
 
 			return { success: true, message: 'Login successful' };
 		} catch (error: any) {
@@ -106,27 +101,18 @@ export function useLogin() {
 
 export function useLogout() {
 	const config = useRuntimeConfig();
-
-	const sessionCookie = useCookie('session_token', {
-		maxAge: 60 * 60 * 24 * 14,
-		secure: true,
-		sameSite: 'none'
-	});
+	const authStore = useAuthStore();
 
 	return async function logout() {
 		try {
 			await $fetch(`${config.public.apiBaseUrl}/v2/users/logout`, {
 				method: 'POST',
 				headers: {
-					Authorization: `Bearer ${sessionCookie.value}`
+					Authorization: `Bearer ${authStore.sessionToken}`
 				}
 			});
 
-			sessionCookie.value = null; // Clear the session cookie
-
-			// Clear user state immediately
-			const userState = useState<User | null | undefined>('user-current');
-			userState.value = null;
+			authStore.logout();
 
 			// Force refresh all data
 			await refreshNuxtData();
@@ -140,42 +126,11 @@ export function useLogout() {
 }
 
 export function useCurrentSessionToken(value?: string | null) {
-	if (import.meta.server) {
-		if (value) {
-			setCookie(useRequestEvent()!, 'session_token', value, {
-				sameSite: 'none',
-				secure: true,
-				maxAge: 60 * 60 * 24 * 14 // 14 days
-			});
+	const authStore = useAuthStore();
 
-			return value;
-		}
-
-		const cachedToken = useState<string | null>('session_token_cache', () => null);
-		try {
-			if (!cachedToken.value) {
-				const headers = useRequestHeaders(['cookie']);
-				const cookieHeader = headers.cookie || '';
-				const match = cookieHeader.match(/session_token=([^;]+)/);
-				const token = match?.[1] || null;
-				cachedToken.value = token;
-			}
-		} catch (e) {
-			// If we can't access the Nuxt instance, return the cached value or null
-			// This happens when called in async contexts
-		}
-
-		return cachedToken.value;
-	} else {
-		const sessionCookie = useCookie('session_token', {
-			maxAge: 60 * 60 * 24 * 14,
-			secure: true,
-			sameSite: 'none'
-		});
-
-		if (value !== undefined) sessionCookie.value = value;
-
-		const token = sessionCookie.value || null;
-		return token;
+	if (value !== undefined) {
+		authStore.setSessionToken(value);
 	}
+
+	return authStore.sessionToken;
 }

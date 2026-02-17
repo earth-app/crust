@@ -13,6 +13,7 @@
 		:buttons="buttons"
 		:footer="footer"
 		:banner="banner || undefined"
+		:avatar-group="{ avatars: attendeeAvatars, max: 5 }"
 	/>
 	<ContentDrawer
 		ref="attendeesDrawerRef"
@@ -77,15 +78,25 @@ const allAttendees = computed(() => {
 
 const attendeeAvatars = computed(() => {
 	return allAttendees.value.map((attendee) => {
-		// useUser has internal caching via useState, so calling it multiple times
-		// with the same ID won't cause duplicate fetches
-		const { avatar128, chipColor } = useUser(attendee.id);
+		const url = attendee.account?.avatar_url;
+
+		// Preload avatar
+		if (url && url.startsWith('http')) {
+			avatarStore.preloadAvatar(url);
+		}
+
+		// Get avatar from store
+		const avatar =
+			url && url.startsWith('http')
+				? avatarStore.get(url)?.avatar128 || '/favicon.png'
+				: '/favicon.png';
+		const chipColor = userStore.getChipColor(attendee);
 
 		return {
-			src: avatar128.value || undefined,
+			src: avatar,
 			alt: attendee.username,
 			link: `/profile/@${attendee.username}`,
-			chip: chipColor.value ? { color: chipColor.value as any } : undefined
+			chip: chipColor ? { color: chipColor as any } : undefined
 		};
 	});
 });
@@ -355,10 +366,22 @@ const banner = computed<{
 	return null;
 });
 
-// useUser has internal caching, so this won't cause duplicate fetches
-const { avatar128: authorAvatar, chipColor: authorAvatarChipColor } = useUser(
-	reactiveEvent.value.hostId
-);
+const avatarStore = useAvatarStore();
+const userStore = useUserStore();
+
+// Use embedded host data directly
+const authorAvatarUrl = computed(() => reactiveEvent.value.host.account?.avatar_url);
+const authorAvatar = computed(() => {
+	const url = authorAvatarUrl.value;
+	if (!url || !url.startsWith('http')) return '/favicon.png';
+	return avatarStore.get(url)?.avatar128 || '/favicon.png';
+});
+const authorAvatarChipColor = computed(() => userStore.getChipColor(reactiveEvent.value.host));
+
+// Preload host avatar
+if (authorAvatarUrl.value) {
+	avatarStore.preloadAvatar(authorAvatarUrl.value);
+}
 
 const i18n = useI18n();
 const time = computed(() => {

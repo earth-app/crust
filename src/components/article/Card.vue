@@ -37,9 +37,22 @@ const props = defineProps<{
 
 const footer = ref<string | undefined>(undefined);
 
-const { avatar128: authorAvatar, chipColor: authorAvatarChipColor } = useUser(
-	props.article.author_id
-);
+const avatarStore = useAvatarStore();
+const userStore = useUserStore();
+
+// Use embedded author data directly
+const authorAvatarUrl = computed(() => props.article.author.account?.avatar_url);
+const authorAvatar = computed(() => {
+	const url = authorAvatarUrl.value;
+	if (!url || !url.startsWith('http')) return '/favicon.png';
+	return avatarStore.get(url)?.avatar128 || '/favicon.png';
+});
+const authorAvatarChipColor = computed(() => userStore.getChipColor(props.article.author));
+
+// Preload author avatar
+if (authorAvatarUrl.value) {
+	avatarStore.preloadAvatar(authorAvatarUrl.value);
+}
 
 const i18n = useI18n();
 const time = computed(() => {
