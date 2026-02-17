@@ -47,7 +47,7 @@
 						<URadioGroup
 							v-model="userAnswers[index]"
 							:items="currentOptions"
-							:disabled="score !== null"
+							:disabled="quizCompleted"
 							color="info"
 							class="self-start w-full"
 						/>

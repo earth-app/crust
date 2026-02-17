@@ -295,8 +295,8 @@ async function removeArticle() {
 const { quiz, fetchQuiz, score } = useArticle(props.article.id);
 const quizOpen = ref(false);
 
-onMounted(async () => {
-	await fetchQuiz();
+onMounted(() => {
+	fetchQuiz();
 });
 
 const quizLoading = ref(false);

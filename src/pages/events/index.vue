@@ -23,61 +23,59 @@
 				/>
 			</EventEditor>
 		</div>
-		<ClientOnly>
-			<InfoCardGroup
-				v-if="user"
-				title="Recommended for You"
-				description="Based on your interests and activities"
-				icon="mdi:calendar-star"
-			>
-				<InfoCardSkeleton
-					v-if="!recommendedLoaded"
-					v-for="n in 2"
-					:key="n"
-					content-size="small"
-				/>
-				<EventCard
-					v-for="event in recommendedEvents"
-					:key="event.id"
-					:event="event"
-				/>
-			</InfoCardGroup>
-			<InfoCardGroup
-				title="Explore Events"
-				description="Discover new and interesting events"
-				icon="mdi:compass"
-				id="events"
-			>
-				<InfoCardSkeleton
-					v-if="!randomLoaded"
-					v-for="n in 3"
-					:key="n"
-					content-size="small"
-				/>
-				<EventCard
-					v-for="event in randomEvents"
-					:key="event.id"
-					:event="event"
-				/>
-			</InfoCardGroup>
-			<InfoCardGroup
-				title="Recent Events"
-				description="Latest events from the community"
-				icon="mdi:history"
-			>
-				<InfoCardSkeleton
-					v-if="!recentLoaded"
-					v-for="n in 2"
-					:key="n"
-					content-size="small"
-				/>
-				<EventCard
-					v-for="event in recentEvents"
-					:key="event.id"
-					:event="event"
-				/>
-			</InfoCardGroup>
-		</ClientOnly>
+		<InfoCardGroup
+			v-if="user"
+			title="Recommended for You"
+			description="Based on your interests and activities"
+			icon="mdi:calendar-star"
+		>
+			<InfoCardSkeleton
+				v-if="!recommendedLoaded"
+				v-for="n in 2"
+				:key="n"
+				content-size="small"
+			/>
+			<EventCard
+				v-for="event in recommendedEvents"
+				:key="event.id"
+				:event="event"
+			/>
+		</InfoCardGroup>
+		<InfoCardGroup
+			title="Explore Events"
+			description="Discover new and interesting events"
+			icon="mdi:compass"
+			id="events"
+		>
+			<InfoCardSkeleton
+				v-if="!randomLoaded"
+				v-for="n in 3"
+				:key="n"
+				content-size="small"
+			/>
+			<EventCard
+				v-for="event in randomEvents"
+				:key="event.id"
+				:event="event"
+			/>
+		</InfoCardGroup>
+		<InfoCardGroup
+			title="Recent Events"
+			description="Latest events from the community"
+			icon="mdi:history"
+		>
+			<InfoCardSkeleton
+				v-if="!recentLoaded"
+				v-for="n in 2"
+				:key="n"
+				content-size="small"
+			/>
+			<EventCard
+				v-for="event in recentEvents"
+				:key="event.id"
+				:event="event"
+			/>
+		</InfoCardGroup>
 	</div>
 </template>
 
@@ -119,18 +117,18 @@ async function loadContent() {
 
 	isLoadingContent.value = true;
 
-	try {
-		// reset states
-		recommendedLoaded.value = false;
-		recommendedEvents.value = [];
-		randomLoaded.value = false;
-		randomEvents.value = [];
-		recentLoaded.value = false;
-		recentEvents.value = [];
+	// reset states
+	recommendedLoaded.value = false;
+	recommendedEvents.value = [];
+	randomLoaded.value = false;
+	randomEvents.value = [];
+	recentLoaded.value = false;
+	recentEvents.value = [];
 
-		if (user.value) {
-			const { getRecommended } = useEvents();
-			const recommendedRes = await getRecommended();
+	// Load content progressively for better perceived performance
+	if (user.value) {
+		const { getRecommended } = useEvents();
+		getRecommended().then((recommendedRes) => {
 			if (recommendedRes.success && recommendedRes.data) {
 				recommendedEvents.value = recommendedRes.data;
 				recommendedLoaded.value = true;
@@ -145,12 +143,13 @@ async function loadContent() {
 					color: 'error'
 				});
 			}
-		} else {
-			recommendedLoaded.value = true;
-		}
+		});
+	} else {
+		recommendedLoaded.value = true;
+	}
 
-		const { getRandom } = useEvents();
-		const randomRes = await getRandom(5);
+	const { getRandom } = useEvents();
+	getRandom(5).then((randomRes) => {
 		if (randomRes.success && randomRes.data) {
 			if ('message' in randomRes.data) {
 				randomLoaded.value = true;
@@ -180,9 +179,10 @@ async function loadContent() {
 				color: 'error'
 			});
 		}
+	});
 
-		const { getRecent } = useEvents();
-		const recentRes = await getRecent();
+	const { getRecent } = useEvents();
+	getRecent().then((recentRes) => {
 		if (recentRes.success && recentRes.data) {
 			if ('message' in recentRes.data) {
 				recentLoaded.value = true;
@@ -210,9 +210,9 @@ async function loadContent() {
 				color: 'error'
 			});
 		}
-	} finally {
-		isLoadingContent.value = false;
-	}
+	});
+
+	isLoadingContent.value = false;
 }
 
 onMounted(async () => {

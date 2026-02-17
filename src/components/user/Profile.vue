@@ -294,12 +294,13 @@ const {
 	total: totalArticles,
 	fetch: fetchArticles
 } = useUserArticles(props.user.id, 1, 25, 'rand');
-const { friends, fetchFriendsPage } = useFriends(props.user.id);
+const { friends, fetchFriends, fetchFriendsPage } = useFriends(props.user.id);
 
 const badgeVariants = ref<('outline' | 'solid')[]>([]);
 
 // Fetch user profile data on mount
 onMounted(() => {
+	fetchFriends();
 	fetchPrompts();
 	fetchArticles();
 	fetchCurrentEvents();

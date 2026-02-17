@@ -27,61 +27,59 @@
 				/>
 			</UTooltip>
 		</div>
-		<ClientOnly>
-			<InfoCardGroup
-				v-if="user"
-				title="Recommended for You"
-				description="Based on your interests and activities"
-				icon="mdi:book-open-page-variant"
-			>
-				<InfoCardSkeleton
-					v-if="!recommendedLoaded"
-					v-for="n in 2"
-					:key="n"
-					content-size="small"
-				/>
-				<ArticleCard
-					v-for="article in recommendedArticles"
-					:key="article.id"
-					:article="article"
-				/>
-			</InfoCardGroup>
-			<InfoCardGroup
-				title="Explore Articles"
-				description="Discover new and interesting reads"
-				icon="mdi:compass"
-				id="articles"
-			>
-				<InfoCardSkeleton
-					v-if="!randomLoaded"
-					v-for="n in 3"
-					:key="n"
-					content-size="small"
-				/>
-				<ArticleCard
-					v-for="article in randomArticles"
-					:key="article.id"
-					:article="article"
-				/>
-			</InfoCardGroup>
-			<InfoCardGroup
-				title="Recent Articles"
-				description="Latest articles from the community"
-				icon="mdi:history"
-			>
-				<InfoCardSkeleton
-					v-if="!recentLoaded"
-					v-for="n in 2"
-					:key="n"
-					content-size="small"
-				/>
-				<ArticleCard
-					v-for="article in recentArticles"
-					:key="article.id"
-					:article="article"
-				/>
-			</InfoCardGroup>
-		</ClientOnly>
+		<InfoCardGroup
+			v-if="user"
+			title="Recommended for You"
+			description="Based on your interests and activities"
+			icon="mdi:book-open-page-variant"
+		>
+			<InfoCardSkeleton
+				v-if="!recommendedLoaded"
+				v-for="n in 2"
+				:key="n"
+				content-size="small"
+			/>
+			<ArticleCard
+				v-for="article in recommendedArticles"
+				:key="article.id"
+				:article="article"
+			/>
+		</InfoCardGroup>
+		<InfoCardGroup
+			title="Explore Articles"
+			description="Discover new and interesting reads"
+			icon="mdi:compass"
+			id="articles"
+		>
+			<InfoCardSkeleton
+				v-if="!randomLoaded"
+				v-for="n in 3"
+				:key="n"
+				content-size="small"
+			/>
+			<ArticleCard
+				v-for="article in randomArticles"
+				:key="article.id"
+				:article="article"
+			/>
+		</InfoCardGroup>
+		<InfoCardGroup
+			title="Recent Articles"
+			description="Latest articles from the community"
+			icon="mdi:history"
+		>
+			<InfoCardSkeleton
+				v-if="!recentLoaded"
+				v-for="n in 2"
+				:key="n"
+				content-size="small"
+			/>
+			<ArticleCard
+				v-for="article in recentArticles"
+				:key="article.id"
+				:article="article"
+			/>
+		</InfoCardGroup>
 	</div>
 </template>
 
@@ -130,86 +128,89 @@ async function loadContent() {
 
 	if (user.value) {
 		const { getRecommended } = useArticles();
-		const recommendedRes = await getRecommended();
-		if (recommendedRes.success && recommendedRes.data) {
-			recommendedArticles.value = recommendedRes.data;
-			recommendedLoaded.value = true;
-		} else {
-			console.error('Failed to load recommended articles:', recommendedRes.message);
-			recommendedLoaded.value = true;
+		getRecommended().then((recommendedRes) => {
+			if (recommendedRes.success && recommendedRes.data) {
+				recommendedArticles.value = recommendedRes.data;
+				recommendedLoaded.value = true;
+			} else {
+				console.error('Failed to load recommended articles:', recommendedRes.message);
+				recommendedLoaded.value = true;
 
-			toast.add({
-				title: 'Error',
-				icon: 'mdi:alert-circle',
-				description: recommendedRes.message || 'Failed to load recommended articles.',
-				color: 'error'
-			});
-		}
+				toast.add({
+					title: 'Error',
+					icon: 'mdi:alert-circle',
+					description: recommendedRes.message || 'Failed to load recommended articles.',
+					color: 'error'
+				});
+			}
+		});
 	} else {
 		recommendedLoaded.value = true;
 	}
 
 	const { getRandom } = useArticles();
-	const randomRes = await getRandom(5);
-	if (randomRes.success && randomRes.data) {
-		if ('message' in randomRes.data) {
+	getRandom(5).then((randomRes) => {
+		if (randomRes.success && randomRes.data) {
+			if ('message' in randomRes.data) {
+				randomLoaded.value = true;
+				randomArticles.value = [];
+				console.error('Failed to load random articles:', randomRes.data.message);
+
+				toast.add({
+					title: 'Error',
+					icon: 'mdi:alert-circle',
+					description: randomRes.data.message || 'Failed to load random articles.',
+					color: 'error'
+				});
+			} else {
+				randomArticles.value = randomRes.data;
+				randomLoaded.value = true;
+			}
+		} else {
 			randomLoaded.value = true;
 			randomArticles.value = [];
-			console.error('Failed to load random articles:', randomRes.data.message);
+
+			console.error('Failed to load random articles:', randomRes.message);
 
 			toast.add({
 				title: 'Error',
 				icon: 'mdi:alert-circle',
-				description: randomRes.data.message || 'Failed to load random articles.',
+				description: randomRes.message || 'Failed to load random articles.',
 				color: 'error'
 			});
-		} else {
-			randomArticles.value = randomRes.data;
-			randomLoaded.value = true;
 		}
-	} else {
-		randomLoaded.value = true;
-		randomArticles.value = [];
-
-		console.error('Failed to load random articles:', randomRes.message);
-
-		toast.add({
-			title: 'Error',
-			icon: 'mdi:alert-circle',
-			description: randomRes.message || 'Failed to load random articles.',
-			color: 'error'
-		});
-	}
+	});
 
 	const { getRecent } = useArticles();
-	const recentRes = await getRecent();
-	if (recentRes.success && recentRes.data) {
-		if ('message' in recentRes.data) {
+	getRecent().then((recentRes) => {
+		if (recentRes.success && recentRes.data) {
+			if ('message' in recentRes.data) {
+				recentLoaded.value = true;
+				recentArticles.value = [];
+				console.error('Failed to load recent articles:', recentRes.data.message);
+
+				toast.add({
+					title: 'Error',
+					icon: 'mdi:alert-circle',
+					description: recentRes.data.message || 'Failed to load recent articles.',
+					color: 'error'
+				});
+			} else {
+				recentArticles.value = recentRes.data.items;
+				recentLoaded.value = true;
+			}
+		} else {
+			console.error('Failed to load recent articles:', recentRes.message);
 			recentLoaded.value = true;
-			recentArticles.value = [];
-			console.error('Failed to load recent articles:', recentRes.data.message);
 
 			toast.add({
 				title: 'Error',
 				icon: 'mdi:alert-circle',
-				description: recentRes.data.message || 'Failed to load recent articles.',
+				description: recentRes.message || 'Failed to load recent articles.',
 				color: 'error'
 			});
-		} else {
-			recentArticles.value = recentRes.data.items;
-			recentLoaded.value = true;
 		}
-	} else {
-		console.error('Failed to load recent articles:', recentRes.message);
-		recentLoaded.value = true;
-
-		toast.add({
-			title: 'Error',
-			icon: 'mdi:alert-circle',
-			description: recentRes.message || 'Failed to load recent articles.',
-			color: 'error'
-		});
-	}
+	});
 }
 
 onMounted(async () => {

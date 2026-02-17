@@ -51,6 +51,13 @@
 					@click="$router.push('/about')"
 					>About Us</UButton
 				>
+				<UButton
+					icon="material-symbols:settings-account-box"
+					color="warning"
+					variant="soft"
+					@click="$router.push('/privacy-policy')"
+					>Privacy Policy</UButton
+				>
 			</div>
 			<div
 				class="flex flex-col items-center justify-center w-full motion-opacity-in-0 motion-duration-1500"
@@ -75,11 +82,19 @@
 					icon="material-symbols:apps"
 					class="w-11/12"
 				>
-					<ActivityCard
-						v-for="activity in randomActivities"
-						:key="activity.id"
-						:activity="activity"
-					/>
+					<template v-if="loadingActivities">
+						<InfoCardSkeleton
+							v-for="i in 5"
+							:key="`skeleton-activity-${i}`"
+						/>
+					</template>
+					<template v-else>
+						<ActivityCard
+							v-for="activity in randomActivities"
+							:key="activity.id"
+							:activity="activity"
+						/>
+					</template>
 				</InfoCardGroup>
 				<InfoCardGroup
 					:title="user ? `A Fun Prompt` : 'Get Inspired'"
@@ -87,11 +102,19 @@
 					icon="mdi:lightbulb-on-outline"
 					class="w-11/12 mt-4"
 				>
-					<PromptCard
-						v-for="prompt in randomPrompts"
-						:key="prompt.id"
-						:prompt="prompt"
-					/>
+					<template v-if="loadingPrompts">
+						<InfoCardSkeleton
+							v-for="i in 3"
+							:key="`skeleton-prompt-${i}`"
+						/>
+					</template>
+					<template v-else>
+						<PromptCard
+							v-for="prompt in randomPrompts"
+							:key="prompt.id"
+							:prompt="prompt"
+						/>
+					</template>
 				</InfoCardGroup>
 				<InfoCardGroup
 					title="A Good Read"
@@ -99,11 +122,19 @@
 					icon="mdi:book-multiple-variant"
 					class="w-11/12 mt-4"
 				>
-					<ArticleCard
-						v-for="article in randomArticles"
-						:key="article.id"
-						:article="article"
-					/>
+					<template v-if="loadingArticles">
+						<InfoCardSkeleton
+							v-for="i in 4"
+							:key="`skeleton-article-${i}`"
+						/>
+					</template>
+					<template v-else>
+						<ArticleCard
+							v-for="article in randomArticles"
+							:key="article.id"
+							:article="article"
+						/>
+					</template>
 				</InfoCardGroup>
 				<InfoCardGroup
 					title="Join The Community"
@@ -111,11 +142,19 @@
 					icon="mdi:account-group-outline"
 					class="w-11/12 mt-4"
 				>
-					<EventCard
-						v-for="event in randomEvents"
-						:key="event.id"
-						:event="event"
-					/>
+					<template v-if="loadingEvents">
+						<InfoCardSkeleton
+							v-for="i in 5"
+							:key="`skeleton-event-${i}`"
+						/>
+					</template>
+					<template v-else>
+						<EventCard
+							v-for="event in randomEvents"
+							:key="event.id"
+							:event="event"
+						/>
+					</template>
 				</InfoCardGroup>
 			</div>
 		</ClientOnly>
@@ -141,85 +180,100 @@ const randomActivities = ref<Activity[]>([]);
 const randomArticles = ref<Article[]>([]);
 const randomEvents = ref<Event[]>([]);
 
+// Loading states for progressive rendering
+const loadingPrompts = ref(true);
+const loadingActivities = ref(true);
+const loadingArticles = ref(true);
+const loadingEvents = ref(true);
+
 onMounted(async () => {
-	// Fetch all random content in parallel to reduce total latency
-	const { getRandom: getRandomPrompts } = usePrompts();
-	const { getRandom: getRandomActivities } = useActivities();
-	const { getRandom: getRandomArticles } = useArticles();
-	const { getRandom: getRandomEvents } = useEvents();
-
-	const [resPrompt, resActivities, resArticles, resEvents] = await Promise.all([
-		getRandomPrompts(3),
-		getRandomActivities(5),
-		getRandomArticles(4),
-		getRandomEvents(5)
-	]);
-
-	if (resPrompt.success && resPrompt.data) {
-		if ('message' in resPrompt.data) {
-			randomPrompts.value = [];
-			toast.add({
-				title: 'Error Fetching Prompts',
-				description: resPrompt.data.message || 'An unknown error occurred.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error',
-				duration: 5000
-			});
-		} else {
-			randomPrompts.value = resPrompt.data;
-		}
-	}
-
-	if (resActivities.success && resActivities.data) {
-		if ('message' in resActivities.data) {
-			randomActivities.value = [];
-			toast.add({
-				title: 'Error Fetching Activities',
-				description: resActivities.data.message || 'An unknown error occurred.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error',
-				duration: 5000
-			});
-		} else {
-			randomActivities.value = resActivities.data;
-		}
-	}
-
-	if (resArticles.success && resArticles.data) {
-		if ('message' in resArticles.data) {
-			randomArticles.value = [];
-			toast.add({
-				title: 'Error Fetching Articles',
-				description: resArticles.data.message || 'An unknown error occurred.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error',
-				duration: 5000
-			});
-		} else {
-			randomArticles.value = resArticles.data;
-		}
-	}
-
-	if (resEvents.success && resEvents.data) {
-		if ('message' in resEvents.data) {
-			randomEvents.value = [];
-			toast.add({
-				title: 'Error Fetching Events',
-				description: resEvents.data.message || 'An unknown error occurred.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error',
-				duration: 5000
-			});
-		} else {
-			randomEvents.value = resEvents.data;
-		}
-	}
-
 	// Start Welcome Tour if anonymous and new
 	if (!user.value && !visitedSite.value) {
 		welcomeTour();
 	}
 	markVisited();
+
+	// Fetch content independently for progressive rendering
+	const { getRandom: getRandomPrompts } = usePrompts();
+	const { getRandom: getRandomActivities } = useActivities();
+	const { getRandom: getRandomArticles } = useArticles();
+	const { getRandom: getRandomEvents } = useEvents();
+
+	// Fetch prompts
+	getRandomPrompts(3).then((resPrompt) => {
+		if (resPrompt.success && resPrompt.data) {
+			if ('message' in resPrompt.data) {
+				randomPrompts.value = [];
+				toast.add({
+					title: 'Error Fetching Prompts',
+					description: resPrompt.data.message || 'An unknown error occurred.',
+					icon: 'mdi:alert-circle-outline',
+					color: 'error',
+					duration: 5000
+				});
+			} else {
+				randomPrompts.value = resPrompt.data;
+			}
+		}
+		loadingPrompts.value = false;
+	});
+
+	// Fetch activities
+	getRandomActivities(5).then((resActivities) => {
+		if (resActivities.success && resActivities.data) {
+			if ('message' in resActivities.data) {
+				randomActivities.value = [];
+				toast.add({
+					title: 'Error Fetching Activities',
+					description: resActivities.data.message || 'An unknown error occurred.',
+					icon: 'mdi:alert-circle-outline',
+					color: 'error',
+					duration: 5000
+				});
+			} else {
+				randomActivities.value = resActivities.data;
+			}
+		}
+		loadingActivities.value = false;
+	});
+
+	// Fetch articles
+	getRandomArticles(4).then((resArticles) => {
+		if (resArticles.success && resArticles.data) {
+			if ('message' in resArticles.data) {
+				randomArticles.value = [];
+				toast.add({
+					title: 'Error Fetching Articles',
+					description: resArticles.data.message || 'An unknown error occurred.',
+					icon: 'mdi:alert-circle-outline',
+					color: 'error',
+					duration: 5000
+				});
+			} else {
+				randomArticles.value = resArticles.data;
+			}
+		}
+		loadingArticles.value = false;
+	});
+
+	// Fetch events
+	getRandomEvents(5).then((resEvents) => {
+		if (resEvents.success && resEvents.data) {
+			if ('message' in resEvents.data) {
+				randomEvents.value = [];
+				toast.add({
+					title: 'Error Fetching Events',
+					description: resEvents.data.message || 'An unknown error occurred.',
+					icon: 'mdi:alert-circle-outline',
+					color: 'error',
+					duration: 5000
+				});
+			} else {
+				randomEvents.value = resEvents.data;
+			}
+		}
+		loadingEvents.value = false;
+	});
 });
 
 function welcomeTour() {

@@ -287,6 +287,8 @@ import { com } from '@earth-app/ocean';
 import type { InputTypeHTMLAttribute } from 'vue';
 import { OAUTH_PROVIDERS, type User } from '~/shared/types/user';
 import { capitalizeFully } from '~/shared/util';
+import { useAvatarStore } from '~/stores/avatar';
+import { useUserStore } from '~/stores/user';
 import { type EmailVerificationModalRef } from './email/VerificationModal.vue';
 import { type PasswordChangeModalRef } from './PasswordChangeModal.vue';
 
@@ -298,7 +300,8 @@ const componentProps = defineProps<{
 const toast = useToast();
 const router = useRouter();
 
-const user = ref(componentProps.user);
+// Use computed to keep reactivity with the prop
+const user = computed(() => componentProps.user);
 const changed = ref(false);
 
 const createAccountProp = (key: string) =>
@@ -451,11 +454,48 @@ function getLabel(key: keyof User['account']['field_privacy']): string {
 
 // Profile Photo
 
-const { avatar: oldAvatar, fetchUser: refetchUser } = useUser(user.value.id);
+const userStore = useUserStore();
+const avatarStore = useAvatarStore();
 const avatarLoading = ref(false);
 const avatarOverride = ref<string | null>(null);
 
-const avatar = computed(() => avatarOverride.value || oldAvatar.value || undefined);
+onMounted(() => {
+	if (user.value.id) {
+		userStore.fetchUser(user.value.id);
+	}
+});
+
+// Get avatar URL from the user
+const avatarUrl = computed(() => user.value?.account?.avatar_url);
+
+const isRemoteUrl = (url: string | undefined): boolean => {
+	if (!url) return false;
+	return url.startsWith('http://') || url.startsWith('https://');
+};
+
+watch(
+	avatarUrl,
+	(newUrl) => {
+		if (!newUrl || !isRemoteUrl(newUrl)) return;
+		avatarStore.preloadAvatar(newUrl);
+	},
+	{ immediate: true }
+);
+
+// compute avatar from store
+const storeAvatar = computed(() => {
+	const url = avatarUrl.value;
+	if (!url || !isRemoteUrl(url)) return '/earth-app.png';
+	return avatarStore.get(url)?.avatar || '/earth-app.png';
+});
+
+const avatar = computed(() => avatarOverride.value || storeAvatar.value);
+
+const refetchUser = async () => {
+	if (user.value.id) {
+		await userStore.fetchUser(user.value.id, true);
+	}
+};
 
 onBeforeUnmount(() => {
 	if (avatarOverride.value && avatarOverride.value.startsWith('blob:')) {

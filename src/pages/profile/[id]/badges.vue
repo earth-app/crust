@@ -46,11 +46,12 @@
 
 <script setup lang="ts">
 const route = useRoute();
-const { user, badges, fetchBadges } = useUser(route.params.id as string);
+const { user, fetchUser, badges, fetchBadges } = useUser(route.params.id as string);
 const { handle } = useDisplayName(user);
 
 onMounted(async () => {
-	await fetchBadges();
+	fetchUser();
+	fetchBadges();
 });
 
 const completedBadges = computed(() => badges.value.filter((b) => 'granted' in b && b.granted));

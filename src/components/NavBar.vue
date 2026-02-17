@@ -101,10 +101,9 @@
 							class="size-6 sm:size-8 lg:size-12 rounded-full shadow-lg shadow-black/50"
 						/>
 
-						<span
-							class="font-title text-md sm:text-lg md:text-xl text-shadow-2xs text-shadow-black"
-							>{{ user.username }}</span
-						>
+						<span class="text-md sm:text-lg md:text-xl text-shadow-2xs text-shadow-black">{{
+							user.username
+						}}</span>
 					</div>
 					<div class="flex space-x-1 sm:space-x-2 md:space-x-4 items-center justify-center">
 						<NuxtLink
@@ -246,8 +245,6 @@ onMounted(() => {
 
 async function logoutUser() {
 	await logout();
-
-	user.value = null;
 	refreshNuxtData('user-current'); // Invalidate user data
 
 	toast.add({
