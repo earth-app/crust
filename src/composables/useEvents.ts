@@ -146,46 +146,28 @@ export function useEvents() {
 export function useEvent(id: string) {
 	const eventStore = useEventStore();
 	const authStore = useAuthStore();
-	const event = useState<Event | null | undefined>(`event-${id}`, () => undefined);
+
+	const event = computed(() => eventStore.get(id) || null);
 
 	const fetch = async () => {
 		if (!id || id === '') {
-			event.value = null;
 			return { success: false, message: 'Invalid event ID' };
 		}
 
-		const res = await makeAPIRequest<Event>(
-			`event-${id}`,
-			`/v2/events/${id}`,
-			authStore.sessionToken
-		);
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				event.value = null;
-				return res;
-			}
-
-			event.value = res.data;
-		} else {
-			event.value = null;
-		}
-
-		return res;
+		const result = await eventStore.fetchEvent(id);
+		return result
+			? { success: true, data: result }
+			: { success: false, message: 'Event not found' };
 	};
 
-	const updateEvent = async (updatedEvent: Partial<EventData>) => {
-		const res = await eventStore.patchEvent({ id, ...updatedEvent });
+	if (!eventStore.has(id)) {
+		fetch();
+	}
 
-		if (res.success) {
-			await fetch();
-		}
+	const updateEvent = async (updatedEvent: Partial<EventData>) =>
+		await eventStore.patchEvent({ id, ...updatedEvent });
 
-		return res;
-	};
-
-	const deleteEvent = async () => {
-		return await eventStore.deleteEvent(id);
-	};
+	const deleteEvent = async () => await eventStore.deleteEvent(id);
 
 	const attendees = useState<User[] | null>(`event-attendees-${id}`, () => null);
 	const fetchAttendees = async () => {
@@ -212,6 +194,8 @@ export function useEvent(id: string) {
 		const res = await eventStore.signUpForEvent(id);
 
 		if (res.success) {
+			// refetch event to get updated data from store
+			await eventStore.fetchEvent(id, true);
 			attendees.value = null;
 			await fetchAttendees();
 		}
@@ -223,6 +207,8 @@ export function useEvent(id: string) {
 		const res = await eventStore.leaveEvent(id);
 
 		if (res.success) {
+			// refetch event to get updated data from store
+			await eventStore.fetchEvent(id, true);
 			attendees.value = null;
 			await fetchAttendees();
 		}
@@ -313,25 +299,8 @@ export function useEvent(id: string) {
 		}
 	};
 
-	const cancelEvent = async () => {
-		const res = await eventStore.cancelEvent(id);
-
-		if (res.success) {
-			await fetch();
-		}
-
-		return res;
-	};
-
-	const uncancelEvent = async () => {
-		const res = await eventStore.uncancelEvent(id);
-
-		if (res.success) {
-			await fetch();
-		}
-
-		return res;
-	};
+	const cancelEvent = async () => await eventStore.cancelEvent(id);
+	const uncancelEvent = async () => await eventStore.uncancelEvent(id);
 
 	const submissions = useState<EventImageSubmission[] | null>(
 		`event-image-submissions-${id}`,

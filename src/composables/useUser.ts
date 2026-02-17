@@ -284,6 +284,29 @@ export function useUser(identifier: string) {
 		return avatarStore.get(url)?.avatar128 || '/favicon.png';
 	});
 
+	const fetchAvatar = async (force: boolean = false) => {
+		const url = avatarUrl.value;
+		if (!url || !isRemoteUrl(url)) return;
+
+		const existingFetch = avatarStore.fetchAvatarBlobs(url);
+		if (force && existingFetch) {
+			await existingFetch;
+		}
+
+		// If not forcing and avatar already exists, return it
+		if (!force) {
+			return (
+				avatarStore.get(url) || {
+					avatar: '/earth-app.png',
+					avatar32: '/favicon.png',
+					avatar128: '/favicon.png'
+				}
+			);
+		}
+
+		return await avatarStore.fetchAvatarBlobs(url);
+	};
+
 	const chipColor = computed(() => userStore.getChipColor(user.value));
 	const maxEventAttendees = computed(() => userStore.getMaxEventAttendees(user.value));
 
@@ -315,6 +338,7 @@ export function useUser(identifier: string) {
 		avatar,
 		avatar32,
 		avatar128,
+		fetchAvatar,
 		chipColor,
 		maxEventAttendees,
 		attendingEvents,

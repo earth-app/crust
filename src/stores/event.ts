@@ -70,6 +70,12 @@ export const useEventStore = defineStore('event', () => {
 			return cache.get(id) || null;
 		}
 
+		// If force is true and there's an existing fetch, wait for it to complete first
+		// to avoid race conditions
+		if (force && existingFetch) {
+			await existingFetch;
+		}
+
 		// create new fetch promise
 		const fetchPromise = (async () => {
 			try {
@@ -302,7 +308,7 @@ export const useEventStore = defineStore('event', () => {
 	const signUpForEvent = async (id: string) => {
 		const authStore = useAuthStore();
 		const res = await makeClientAPIRequest<void>(
-			`/v2/events/${id}/attend`,
+			`/v2/events/${id}/signup`,
 			authStore.sessionToken,
 			{
 				method: 'POST'
@@ -323,13 +329,9 @@ export const useEventStore = defineStore('event', () => {
 
 	const leaveEvent = async (id: string) => {
 		const authStore = useAuthStore();
-		const res = await makeClientAPIRequest<void>(
-			`/v2/events/${id}/attend`,
-			authStore.sessionToken,
-			{
-				method: 'DELETE'
-			}
-		);
+		const res = await makeClientAPIRequest<void>(`/v2/events/${id}/leave`, authStore.sessionToken, {
+			method: 'POST'
+		});
 
 		if (res.success) {
 			attendeesCache.delete(id);
@@ -366,10 +368,10 @@ export const useEventStore = defineStore('event', () => {
 	const uncancelEvent = async (id: string) => {
 		const authStore = useAuthStore();
 		const res = await makeClientAPIRequest<void>(
-			`/v2/events/${id}/cancel`,
+			`/v2/events/${id}/uncancel`,
 			authStore.sessionToken,
 			{
-				method: 'DELETE'
+				method: 'POST'
 			}
 		);
 
