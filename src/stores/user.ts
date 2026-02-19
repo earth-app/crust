@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import type { Event, EventImageSubmission } from '~/shared/types/event';
 import type { User, UserBadge } from '~/shared/types/user';
-import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/util';
+import { makeAPIRequest, paginatedAPIRequest } from '~/shared/util';
 import { useAuthStore } from './auth';
 import { useAvatarStore } from './avatar';
 
@@ -13,6 +13,7 @@ export const useUserStore = defineStore('user', () => {
 	const hostingEvents = reactive(new Map<string, Event[]>());
 	const badges = reactive(new Map<string, UserBadge[]>());
 	const eventSubmissions = reactive(new Map<string, EventImageSubmission[]>());
+	const points = reactive(new Map<string, number>());
 
 	const get = (identifier: string): User | undefined => {
 		return cache.get(identifier);
@@ -110,7 +111,8 @@ export const useUserStore = defineStore('user', () => {
 
 	const fetchBadges = async (identifier: string): Promise<UserBadge[]> => {
 		const authStore = useAuthStore();
-		const res = await makeClientAPIRequest<UserBadge[]>(
+		const res = await makeAPIRequest<UserBadge[]>(
+			`user-${identifier}-badges`,
 			`/v2/users/${identifier}/badges`,
 			authStore.sessionToken
 		);
@@ -171,6 +173,23 @@ export const useUserStore = defineStore('user', () => {
 		}
 	};
 
+	const fetchPoints = async (identifier: string): Promise<number> => {
+		const authStore = useAuthStore();
+		const res = await makeAPIRequest<{ points: number }>(
+			`user-${identifier}-points`,
+			`/v2/users/${identifier}/points`,
+			authStore.sessionToken
+		);
+
+		if (res.success && res.data && !('message' in res.data)) {
+			points.set(identifier, res.data.points);
+			return res.data.points;
+		}
+
+		points.set(identifier, 0);
+		return 0;
+	};
+
 	const clear = (identifier?: string) => {
 		if (identifier) {
 			cache.delete(identifier);
@@ -178,12 +197,14 @@ export const useUserStore = defineStore('user', () => {
 			hostingEvents.delete(identifier);
 			badges.delete(identifier);
 			eventSubmissions.delete(identifier);
+			points.delete(identifier);
 		} else {
 			cache.clear();
 			attendingEvents.clear();
 			hostingEvents.clear();
 			badges.clear();
 			eventSubmissions.clear();
+			points.clear();
 		}
 	};
 
@@ -193,6 +214,7 @@ export const useUserStore = defineStore('user', () => {
 		hostingEvents,
 		badges,
 		eventSubmissions,
+		points,
 		get,
 		has,
 		getChipColor,
@@ -202,6 +224,7 @@ export const useUserStore = defineStore('user', () => {
 		fetchHostingEvents,
 		fetchBadges,
 		fetchEventSubmissions,
+		fetchPoints,
 		clear
 	};
 });

@@ -332,6 +332,9 @@ export function useUser(identifier: string) {
 		await userStore.fetchEventSubmissions(identifier);
 	};
 
+	const points = computed(() => userStore.points.get(identifier) ?? 0);
+	const fetchPoints = async () => await userStore.fetchPoints(identifier);
+
 	return {
 		user,
 		fetchUser,
@@ -350,7 +353,9 @@ export function useUser(identifier: string) {
 		badges,
 		fetchBadges,
 		eventSubmissions,
-		fetchEventSubmissions
+		fetchEventSubmissions,
+		points,
+		fetchPoints
 	};
 }
 
