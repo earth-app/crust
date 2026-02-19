@@ -71,6 +71,18 @@
 				class="h-full"
 			/>
 		</div>
+		<USeparator class="my-8" />
+		<div class="flex flex-1 items-stretch justify-center my-4 gap-8 h-32">
+			<!-- only display up until 3 days after event has ended (expires in KV) -->
+			<EventSubmissionPreview
+				v-if="(event.end_date || 0) + 1000 * 60 * 60 * 24 * 3 > Date.now()"
+				:submissions="submissions || []"
+			/>
+			<EventSubmissionUpload
+				:event-id="event.id"
+				@submission="fetchSubmissions"
+			/>
+		</div>
 	</div>
 	<UModal
 		title="Event Thumbnail"
@@ -103,11 +115,22 @@ const props = defineProps<{
 }>();
 
 const toast = useToast();
-const { thumbnail, thumbnailAuthor, fetchThumbnail, generateThumbnail } = useEvent(props.event.id);
+const {
+	thumbnail,
+	thumbnailAuthor,
+	fetchThumbnail,
+	generateThumbnail,
+	submissions,
+	fetchSubmissions
+} = useEvent(props.event.id);
 
 onMounted(() => {
 	if (!thumbnail.value) {
 		fetchThumbnail();
+	}
+
+	if (!submissions.value) {
+		fetchSubmissions();
 	}
 });
 

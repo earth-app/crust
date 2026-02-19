@@ -5,12 +5,7 @@ import {
 	type EventImageSubmission
 } from '~/shared/types/event';
 import type { User } from '~/shared/types/user';
-import {
-	makeAPIRequest,
-	makeClientAPIRequest,
-	makeServerRequest,
-	paginatedAPIRequest
-} from '~/shared/util';
+import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from '~/shared/util';
 import { useAuthStore } from '~/stores/auth';
 import { useEventStore } from '~/stores/event';
 
@@ -117,7 +112,7 @@ export function useEvents() {
 			authStore.sessionToken,
 			{
 				method: 'POST',
-				body: { user, count, pool }
+				body: { user: user.value, count, pool }
 			}
 		);
 
@@ -133,13 +128,33 @@ export function useEvents() {
 		return res;
 	};
 
+	const getUpcoming = async (count: number = 5) => {
+		const res = await makeAPIRequest<{ items: Event[] }>(
+			`upcoming-events-${count}`,
+			`/v2/events?sort=desc&limit=${count}&filter_is_upcoming=true`,
+			authStore.sessionToken
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load individual events into store
+			eventStore.setEvents(res.data.items);
+		}
+
+		return res;
+	};
+
 	return {
 		getEvents,
 		createEvent,
 		deleteEvent,
 		getRandom,
 		getRecent,
-		getRecommended
+		getRecommended,
+		getUpcoming
 	};
 }
 
@@ -170,25 +185,8 @@ export function useEvent(id: string) {
 	const deleteEvent = async () => await eventStore.deleteEvent(id);
 
 	const attendees = useState<User[] | null>(`event-attendees-${id}`, () => null);
-	const fetchAttendees = async () => {
-		const res = await paginatedAPIRequest<User>(
-			`/v2/events/${id}/attendees`,
-			authStore.sessionToken
-		);
-
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				attendees.value = null;
-				return res;
-			}
-
-			attendees.value = res.data;
-		} else {
-			attendees.value = null;
-		}
-
-		return res;
-	};
+	const fetchAttendees = async () =>
+		await eventStore.fetchAttendees(id).then((data) => (attendees.value = data));
 
 	const signUpForEvent = async () => {
 		const res = await eventStore.signUpForEvent(id);
@@ -311,10 +309,6 @@ export function useEvent(id: string) {
 		submissions.value = data;
 		return data;
 	};
-
-	if (!submissions.value) {
-		fetchSubmissions();
-	}
 
 	const fetchSubmissionsForUser = async (user: string) =>
 		await eventStore.fetchSubmissionsForUser(id, user);

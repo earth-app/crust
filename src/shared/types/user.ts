@@ -67,7 +67,6 @@ export type User = {
 	circle?: string[];
 	circle_count?: number;
 	max_circle_count?: number;
-	impact_points: number;
 };
 
 export type UserNotification = {

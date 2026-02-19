@@ -431,16 +431,18 @@ export const useEventStore = defineStore('event', () => {
 			reader.readAsDataURL(file);
 		});
 
-		const res = await makeClientAPIRequest<EventImageSubmission>(
-			`/v2/events/${id}/images`,
-			authStore.sessionToken,
-			{
-				method: 'POST',
-				body: {
-					photo_url: dataUrl
-				}
+		const res = await makeClientAPIRequest<{
+			message: string;
+			submission_id: string;
+			user_id: string;
+			event_id: string;
+			photo_url: string;
+		}>(`/v2/events/${id}/images`, authStore.sessionToken, {
+			method: 'POST',
+			body: {
+				photo_url: dataUrl
 			}
-		);
+		});
 
 		if (res.success && res.data && !('message' in res.data)) {
 			const submissions = submissionsCache.get(id) || [];
