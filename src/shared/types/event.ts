@@ -40,6 +40,7 @@ export type Event = {
 		is_ongoing: boolean;
 		starts_in: number;
 		ends_in?: number;
+		is_upcoming: boolean;
 	};
 	fields?: {
 		[key: string]: any;
