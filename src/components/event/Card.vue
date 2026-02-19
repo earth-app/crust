@@ -49,6 +49,7 @@ const { user } = useAuth();
 const {
 	event: eventState,
 	thumbnail,
+	fetchThumbnail,
 	unloadThumbnail,
 	attendees,
 	fetchAttendees,
@@ -56,6 +57,10 @@ const {
 	leaveEvent,
 	deleteEvent
 } = useEvent(props.event.id || '');
+onMounted(() => {
+	fetchThumbnail();
+	fetchAttendees();
+});
 
 const reactiveEvent = computed(() => eventState.value || props.event);
 
