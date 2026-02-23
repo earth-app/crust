@@ -222,17 +222,6 @@ export async function getUsers(
 	);
 }
 
-async function getUser(identifier?: string) {
-	if (!identifier) return { success: true, data: undefined };
-
-	const authStore = useAuthStore();
-	return await makeAPIRequest<User>(
-		`user-${identifier}`,
-		`/v2/users/${identifier}`,
-		authStore.sessionToken
-	);
-}
-
 export function useUser(identifier: string) {
 	const userStore = useUserStore();
 	const avatarStore = useAvatarStore();
@@ -332,7 +321,8 @@ export function useUser(identifier: string) {
 		await userStore.fetchEventSubmissions(identifier);
 	};
 
-	const points = computed(() => userStore.points.get(identifier) ?? 0);
+	const points = computed(() => userStore.points.get(identifier));
+	const pointsHistory = computed(() => userStore.pointsHistory.get(identifier));
 	const fetchPoints = async () => await userStore.fetchPoints(identifier);
 
 	return {
@@ -355,6 +345,7 @@ export function useUser(identifier: string) {
 		eventSubmissions,
 		fetchEventSubmissions,
 		points,
+		pointsHistory,
 		fetchPoints
 	};
 }

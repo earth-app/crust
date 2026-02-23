@@ -1,6 +1,6 @@
 <template>
 	<div class="flex flex-col items-center w-full mt-6">
-		<div class="flex flex-col items-center mb-8">
+		<div class="flex flex-col items-center mb-2">
 			<UAvatar
 				:src="avatar"
 				id="avatar"
@@ -30,6 +30,66 @@
 			>
 				{{ props.user.account.bio }}
 			</span>
+		</div>
+		<div class="flex gap-2 mb-10">
+			<UModal
+				title="Points History"
+				v-if="points !== undefined"
+			>
+				<UButton
+					color="neutral"
+					variant="outline"
+					icon="mdi:star-circle-outline"
+					>{{ comma(points) }}</UButton
+				>
+
+				<template #body>
+					<UTable
+						:data="pointsHistory || []"
+						:loading="pointsHistory === undefined"
+						:columns="[
+							{
+								accessorKey: 'timestamp',
+								header: 'Date',
+								cell: ({ row }) =>
+									row.original.timestamp
+										? DateTime.fromMillis(row.original.timestamp).toRelative({
+												locale: i18n.locale.value
+											})
+										: 'sometime'
+							},
+							{
+								accessorKey: 'difference',
+								header: 'Change',
+								cell: ({ row }) => {
+									const diff = row.original.difference;
+									const sign = diff > 0 ? '+' : '';
+									return h(
+										UBadge,
+										{ color: diff > 0 ? 'success' : 'error' },
+										() => `${sign}${diff}`
+									);
+								}
+							},
+							{
+								accessorKey: 'reason',
+								header: 'Reason'
+							}
+						]"
+					/>
+				</template>
+			</UModal>
+			<NuxtLink
+				v-if="badges"
+				:to="`/profile/@${props.user.username}/badges`"
+			>
+				<UButton
+					color="neutral"
+					variant="outline"
+					icon="mdi:badge-account-horizontal-outline"
+					>{{ badges.length }}</UButton
+				>
+			</NuxtLink>
 		</div>
 		<div class="flex mb-4">
 			<UBadge
@@ -256,17 +316,20 @@
 </template>
 
 <script setup lang="ts">
+import { UBadge } from '#components';
 import {
 	getLocalTimeZone,
 	today,
 	type CalendarDate,
 	type DateValue
 } from '@internationalized/date';
+import { DateTime } from 'luxon';
 import ContentDrawer from '~/components/ContentDrawer.vue';
 import type { Article } from '~/shared/types/article';
 import type { Event } from '~/shared/types/event';
 import type { Prompt } from '~/shared/types/prompts';
 import type { User } from '~/shared/types/user';
+import { comma } from '~/shared/util';
 
 const props = defineProps<{
 	user: User;
@@ -274,6 +337,7 @@ const props = defineProps<{
 }>();
 
 const { user } = useAuth();
+const i18n = useI18n();
 const { name: displayName, handle, hasFullName } = useDisplayName(() => props.user);
 
 const {
@@ -282,7 +346,12 @@ const {
 	currentEventsCount: totalEvents,
 	fetchCurrentEvents,
 	attendingEvents,
-	fetchAttendingEvents
+	fetchAttendingEvents,
+	points,
+	pointsHistory,
+	fetchPoints,
+	badges,
+	fetchBadges
 } = useUser(`@${props.user.username}`);
 const {
 	prompts,
@@ -295,7 +364,6 @@ const {
 	fetch: fetchArticles
 } = useUserArticles(props.user.id, 1, 25, 'rand');
 const { friends, fetchFriends, fetchFriendsPage } = useFriends(props.user.id);
-
 const badgeVariants = ref<('outline' | 'solid')[]>([]);
 
 // Fetch user profile data on mount
@@ -305,6 +373,8 @@ onMounted(() => {
 	fetchArticles();
 	fetchCurrentEvents();
 	fetchAttendingEvents();
+	fetchPoints();
+	fetchBadges();
 });
 
 function openEmail() {

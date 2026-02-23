@@ -102,3 +102,9 @@ export type UserJourneyLeaderboardEntry = {
 	streak: number;
 	user: User;
 };
+
+export type ImpactPointsChange = {
+	reason: string;
+	difference: number;
+	timestamp?: number;
+};

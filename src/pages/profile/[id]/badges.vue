@@ -4,6 +4,10 @@
 		class="flex flex-col items-center px-4"
 	>
 		<h2 class="text-xl font-semibold my-2 mt-28 md:mt-2">{{ handle }}'s Badges</h2>
+		<UserCard
+			:user="user"
+			class="w-full max-w-2xl mb-4"
+		/>
 		<h4 class="text-base">{{ completedBadges.length }} / {{ badges.length }} Completed</h4>
 
 		<h3 class="my-4 font-medium text-lg">Completed Badges</h3>
