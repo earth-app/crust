@@ -20,8 +20,6 @@
 </template>
 
 <script setup lang="ts">
-import { type User, OAUTH_PROVIDERS } from '~/shared/types/user';
-
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Sign Up');
 

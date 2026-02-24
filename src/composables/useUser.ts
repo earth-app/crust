@@ -1,15 +1,4 @@
 import type { MaybeRefOrGetter } from 'vue';
-import type { Activity } from '~/shared/types/activity';
-import type { SortingOption } from '~/shared/types/global';
-import type { User, UserJourneyLeaderboardEntry } from '~/shared/types/user';
-import {
-	getUserDisplayName,
-	makeAPIRequest,
-	makeClientAPIRequest,
-	makeServerRequest,
-	paginatedAPIRequest,
-	realFullName
-} from '~/shared/util';
 import { useAuthStore } from '~/stores/auth';
 import { useAvatarStore } from '~/stores/avatar';
 import { useFriendsStore } from '~/stores/friends';

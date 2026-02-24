@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
-import type { SortingOption } from './types/global';
-import type { User } from './types/user';
-import { DEFAULT_FULL_NAME } from './types/user';
+import type { SortingOption } from '../types/global';
+import type { User } from '../types/user';
+import { DEFAULT_FULL_NAME } from '../types/user';
 
 const requestQueue = new Map<string, Promise<any>>();
 

@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import { DateTime } from 'luxon';
 import type { Article } from '~/shared/types/article';
-import { trimString } from '~/shared/util';
+import { trimString } from '~/shared/utils/util';
 
 const props = defineProps<{
 	article: Article;

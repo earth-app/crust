@@ -9,7 +9,7 @@ import {
 	makeClientAPIRequest,
 	makeServerRequest,
 	paginatedAPIRequest
-} from '~/shared/util';
+} from '~/shared/utils/util';
 import { useArticleStore } from '~/stores/article';
 import { useAuthStore } from '~/stores/auth';
 

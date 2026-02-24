@@ -62,7 +62,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Activity } from '~/shared/types/activity';
 import ActivityEditorModal from '../admin/ActivityEditorModal.vue';
 
 const props = defineProps<{

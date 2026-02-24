@@ -55,7 +55,6 @@
 
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import type { EventImageSubmission } from '~/shared/types/event';
 
 const props = defineProps<{
 	submissions: EventImageSubmission[];

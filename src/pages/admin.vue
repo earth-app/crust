@@ -215,10 +215,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Activity } from '~/shared/types/activity';
-import type { Prompt } from '~/shared/types/prompts';
-import type { User } from '~/shared/types/user';
-
 const { user } = useAuth();
 const { motd, ttl, fetchMotd, setMotd } = useMotd();
 

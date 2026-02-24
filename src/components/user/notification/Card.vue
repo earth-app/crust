@@ -76,7 +76,7 @@ import {
 	deleteNotification as removeNotification
 } from '~/composables/useUser';
 import type { UserNotification } from '~/shared/types/user';
-import { trimString } from '~/shared/util';
+import { trimString } from '~/shared/utils/util';
 
 const props = defineProps<{
 	notification: UserNotification;

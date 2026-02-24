@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
 import type { Activity } from '~/shared/types/activity';
-import { capitalizeFully } from '~/shared/util';
+import { capitalizeFully } from '~/shared/utils/util';
 
 interface ActivityItem {
 	label: string;

@@ -15,8 +15,6 @@
 </template>
 
 <script setup lang="ts">
-import { OAUTH_PROVIDERS } from '~/shared/types/user';
-
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Login');
 

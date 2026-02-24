@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia';
-import type { Event, EventImageSubmission } from '~/shared/types/event';
-import type { ImpactPointsChange, User, UserBadge } from '~/shared/types/user';
-import { makeAPIRequest, paginatedAPIRequest } from '~/shared/util';
+import type { Event } from '~/shared/types/event';
 import { useAuthStore } from './auth';
 import { useAvatarStore } from './avatar';
 

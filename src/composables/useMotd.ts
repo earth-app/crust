@@ -1,4 +1,4 @@
-import { makeAPIRequest, makeClientAPIRequest } from '~/shared/util';
+import { makeAPIRequest, makeClientAPIRequest } from '~/shared/utils/util';
 import { useAuthStore } from '~/stores/auth';
 
 export function useMotd() {

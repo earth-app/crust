@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { Prompt, PromptResponse } from '~/shared/types/prompts';
-import { makeClientAPIRequest } from '~/shared/util';
+import { makeClientAPIRequest } from '~/shared/utils/util';
 import { useAuthStore } from './auth';
 
 export const usePromptStore = defineStore('prompt', () => {

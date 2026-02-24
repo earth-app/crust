@@ -58,7 +58,7 @@
 <script setup lang="ts">
 import { DateTime } from 'luxon';
 import type { Prompt } from '~/shared/types/prompts';
-import { withSuffix } from '~/shared/util';
+import { withSuffix } from '~/shared/utils/util';
 
 const props = defineProps<{
 	prompt: Prompt;

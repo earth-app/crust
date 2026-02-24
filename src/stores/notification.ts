@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { UserNotification } from '~/shared/types/user';
-import { makeAPIRequest, makeClientAPIRequest } from '~/shared/util';
+import { makeAPIRequest, makeClientAPIRequest } from '~/shared/utils/util';
 import { useAuthStore } from './auth';
 
 export const useNotificationStore = defineStore('notification', () => {

@@ -95,7 +95,7 @@
 
 <script setup lang="ts">
 import z from 'zod';
-import { passwordSchema } from '~/shared/schemas';
+import { passwordSchema } from '~/shared/utils/schemas';
 
 const oldPassword = ref('');
 const newPassword = ref('');

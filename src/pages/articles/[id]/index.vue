@@ -44,8 +44,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Article } from '~/shared/types/article';
-
 const toast = useToast();
 const route = useRoute();
 const { user } = useAuth();

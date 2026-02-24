@@ -109,7 +109,7 @@
 </template>
 <script setup lang="ts">
 import type { User } from '~/shared/types/user';
-import { withSuffix } from '~/shared/util';
+import { withSuffix } from '~/shared/utils/util';
 
 const props = defineProps<{
 	user: User;

@@ -98,7 +98,6 @@
 
 <script setup lang="ts">
 import type ContentDrawer from '~/components/ContentDrawer.vue';
-import { comma } from '~/shared/util';
 
 const route = useRoute();
 const router = useRouter();

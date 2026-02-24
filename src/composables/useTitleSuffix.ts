@@ -1,6 +1,5 @@
-import { SITE_NAME } from './useUtilities';
-
 export const useTitleSuffix = () => {
+	const appConfig = useAppConfig();
 	const suffix = useState<string>('titleSuffix', () => '');
 
 	const setTitleSuffix = (s: string | null | undefined) => {
@@ -15,7 +14,7 @@ export const useTitleSuffix = () => {
 				{
 					name: 'og:title',
 					content: () => {
-						return suffix.value ? `${suffix.value} | ${SITE_NAME}` : SITE_NAME;
+						return suffix.value ? `${suffix.value} | ${appConfig.name}` : appConfig.name;
 					}
 				}
 			]

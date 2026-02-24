@@ -1,5 +1,3 @@
-import type { Article } from '~/shared/types/article';
-
 export default defineEventHandler(async (event) => {
 	const config = useRuntimeConfig();
 	const body = await readBody<{ article: Article; count: number; pool: Article[] }>(event);

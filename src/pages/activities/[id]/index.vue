@@ -15,8 +15,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Activity } from '~/shared/types/activity';
-
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
 const toast = useToast();

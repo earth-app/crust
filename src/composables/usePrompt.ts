@@ -1,7 +1,7 @@
 import type { com } from '@earth-app/ocean';
 import type { SortingOption } from '~/shared/types/global';
 import type { Prompt } from '~/shared/types/prompts';
-import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/util';
+import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/utils/util';
 import { useAuthStore } from '~/stores/auth';
 import { usePromptStore } from '~/stores/prompt';
 

@@ -35,7 +35,7 @@ defineOptions({
 import { DateTime } from 'luxon';
 import ContentDrawer from '~/components/ContentDrawer.vue';
 import type { Event } from '~/shared/types/event';
-import { capitalizeFully, comma, trimString, withSuffix } from '~/shared/util';
+import { capitalizeFully, comma, trimString, withSuffix } from '~/shared/utils/util';
 
 const props = defineProps<{
 	event: Event;

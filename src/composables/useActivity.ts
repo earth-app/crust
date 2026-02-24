@@ -12,7 +12,7 @@ import {
 	makeClientAPIRequest,
 	makeServerRequest,
 	paginatedAPIRequest
-} from '~/shared/util';
+} from '~/shared/utils/util';
 import { useActivityStore } from '~/stores/activity';
 import { useAuthStore } from '~/stores/auth';
 

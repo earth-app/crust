@@ -162,10 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Activity } from '~/shared/types/activity';
-import type { Article } from '~/shared/types/article';
 import type { Event } from '~/shared/types/event';
-import type { Prompt } from '~/shared/types/prompts';
 
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Home');

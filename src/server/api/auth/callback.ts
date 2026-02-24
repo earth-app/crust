@@ -1,5 +1,4 @@
 import { exchangeCodeForToken } from '~/server/utils';
-import { OAUTH_PROVIDERS, OAuthProvider } from '~/shared/types/user';
 
 export default defineEventHandler(async (event) => {
 	const query = getQuery(event);

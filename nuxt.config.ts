@@ -37,6 +37,9 @@ export default defineNuxtConfig({
 	devtools: { enabled: process.env.NODE_ENV !== 'production' },
 	srcDir: 'src',
 	serverDir: 'src/server',
+	dir: {
+		shared: 'src/shared'
+	},
 	css: ['~/assets/css/main.css'],
 	// Add global head optimizations (preconnect + dns-prefetch) for critical external domains
 	app: {

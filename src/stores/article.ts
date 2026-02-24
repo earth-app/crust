@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { Article, ArticleQuizQuestion, ArticleQuizScoreResult } from '~/shared/types/article';
-import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from '~/shared/util';
+import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from '~/shared/utils/util';
 import { useAuthStore } from './auth';
 
 export const useArticleStore = defineStore('article', () => {

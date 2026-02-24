@@ -5,7 +5,7 @@ import {
 	type EventImageSubmission
 } from '~/shared/types/event';
 import type { User } from '~/shared/types/user';
-import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from '~/shared/util';
+import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from '~/shared/utils/util';
 import { useAuthStore } from '~/stores/auth';
 import { useEventStore } from '~/stores/event';
 

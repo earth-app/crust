@@ -1,8 +1,4 @@
 import { ensureLoggedIn } from '~/server/utils';
-import {
-	EventAutocompleteSuggestion,
-	type RawEventAutocompleteSuggestion
-} from '~/shared/types/event';
 
 export default defineEventHandler(async (event) => {
 	await ensureLoggedIn(event);

@@ -6,7 +6,7 @@ import {
 	makeClientAPIRequest,
 	makeServerRequest,
 	paginatedAPIRequest
-} from '~/shared/util';
+} from '~/shared/utils/util';
 import { useAuthStore } from './auth';
 
 export const useEventStore = defineStore('event', () => {

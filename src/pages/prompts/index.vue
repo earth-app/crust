@@ -57,8 +57,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Prompt } from '~/shared/types/prompts';
-
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Prompts');
 

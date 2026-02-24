@@ -1,5 +1,4 @@
 import { ensureLoggedIn } from '~/server/utils';
-import { Event } from '~/shared/types/event';
 
 export default defineEventHandler(async (event) => {
 	const user = await ensureLoggedIn(event);

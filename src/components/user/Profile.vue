@@ -325,11 +325,7 @@ import {
 } from '@internationalized/date';
 import { DateTime } from 'luxon';
 import ContentDrawer from '~/components/ContentDrawer.vue';
-import type { Article } from '~/shared/types/article';
 import type { Event } from '~/shared/types/event';
-import type { Prompt } from '~/shared/types/prompts';
-import type { User } from '~/shared/types/user';
-import { comma } from '~/shared/util';
 
 const props = defineProps<{
 	user: User;
@@ -562,7 +558,7 @@ const formattedCurrentDay = computed(() => {
 	});
 });
 
-function isSelectedDate(day: DateValue): boolean {
+function isSelectedDate(day: any): boolean {
 	if (!selectedDate.value) return false;
 	return (
 		selectedDate.value.year === day.year &&
@@ -571,7 +567,7 @@ function isSelectedDate(day: DateValue): boolean {
 	);
 }
 
-function eventsCountOn(day: DateValue): number {
+function eventsCountOn(day: any): number {
 	if (!attendingEvents.value) return 0;
 
 	return attendingEvents.value.filter((event) => {
@@ -586,7 +582,7 @@ function eventsCountOn(day: DateValue): number {
 	}).length;
 }
 
-function hasEventsOnDate(day: DateValue): boolean {
+function hasEventsOnDate(day: any): boolean {
 	return eventsCountOn(day) > 0;
 }
 

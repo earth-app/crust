@@ -6,7 +6,9 @@
 	</UApp>
 </template>
 
-<script setup>
+<script setup lang="ts">
+const appConfig = useAppConfig();
+
 useSeoMeta({
 	charset: 'utf-8',
 	viewport: {
@@ -16,27 +18,27 @@ useSeoMeta({
 		maximumScale: 1,
 		userScalable: 'no'
 	},
-	applicationName: SITE_NAME,
-	title: SITE_NAME,
-	description: SITE_DESCRIPTION,
-	ogTitle: SITE_NAME,
+	applicationName: appConfig.name,
+	title: appConfig.name,
+	description: appConfig.description,
+	ogTitle: appConfig.name,
 	author: 'Gregory Mitchell',
 	creator: 'Gregory Mitchell',
-	ogDescription: SITE_DESCRIPTION,
+	ogDescription: appConfig.description,
 	ogImage: 'https://cdn.earth-app.com/earth-app.png',
 	ogLocale: 'en_US',
 	ogType: 'website',
-	ogSiteName: SITE_NAME,
+	ogSiteName: appConfig.name,
 	ogUrl: 'https://earth-app.com',
-	twitterTitle: SITE_NAME,
-	twitterDescription: SITE_DESCRIPTION,
+	twitterTitle: appConfig.name,
+	twitterDescription: appConfig.description,
 	twitterCard: 'summary_large_image',
 	twitterCreator: '@the_earth_app',
 	themeColor: {
-		content: THEME_COLOR,
+		content: appConfig.themeColor,
 		media: '(prefers-color-scheme: dark)'
 	},
-	msapplicationTileColor: THEME_COLOR,
+	msapplicationTileColor: appConfig.themeColor,
 	msapplicationTileImage: '/earth-app.png',
 	mobileWebAppCapable: 'yes',
 	appleMobileWebAppCapable: 'yes',
