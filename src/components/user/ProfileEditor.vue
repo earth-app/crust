@@ -44,7 +44,7 @@
 			:onFinish="updateUser"
 		/>
 
-		<h3 class="text-2xl font-semibold text-gray-200 mt-8">Bio</h3>
+		<h3 class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8">Bio</h3>
 		<EditableValue
 			v-model="bio"
 			class="text-lg mt-2 w-3/4"
@@ -54,7 +54,7 @@
 		/>
 
 		<h3
-			class="text-2xl font-semibold text-gray-200 mt-8"
+			class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8"
 			id="activities"
 		>
 			Activities
@@ -66,7 +66,14 @@
 		/>
 
 		<h3
-			class="text-2xl font-semibold text-gray-200 mt-10"
+			class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8"
+			id="cosmetics"
+		>
+			Cosmetics
+		</h3>
+
+		<h3
+			class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-10"
 			id="settings"
 		>
 			Settings
