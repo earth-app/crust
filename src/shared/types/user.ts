@@ -12,6 +12,8 @@ export const OAUTH_PROVIDERS: OAuthProvider[] = [
 	// 'facebook'
 ];
 
+export type Rarity = 'normal' | 'rare' | 'amazing' | 'green';
+
 export type User = {
 	id: string;
 	username: string;
@@ -86,7 +88,7 @@ export type Badge = {
 	name: string;
 	description: string;
 	icon: string;
-	rarity: 'normal' | 'rare' | 'amazing' | 'green';
+	rarity: Rarity;
 	tracker_id?: string;
 };
 
@@ -107,4 +109,10 @@ export type ImpactPointsChange = {
 	reason: string;
 	difference: number;
 	timestamp?: number;
+};
+
+export type AvatarCosmetic = {
+	key: string;
+	price: number;
+	rarity: Rarity;
 };

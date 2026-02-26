@@ -285,14 +285,17 @@ export function useUser(identifier: string) {
 		return await avatarStore.fetchAvatarBlobs(url);
 	};
 
+	const cosmetics = computed(
+		() => avatarStore.userCosmetics.get(identifier) || { current: null, unlocked: [] }
+	);
+	const fetchCosmetics = async () => await avatarStore.fetchCosmeticsForUser(identifier);
+
 	const chipColor = computed(() => userStore.getChipColor(user.value));
 	const maxEventAttendees = computed(() => userStore.getMaxEventAttendees(user.value));
 
 	const attendingEvents = computed(() => userStore.attendingEvents.get(identifier) || []);
 	const attendingEventsCount = computed(() => attendingEvents.value.length);
-	const fetchAttendingEvents = async () => {
-		await userStore.fetchAttendingEvents(identifier);
-	};
+	const fetchAttendingEvents = async () => await userStore.fetchAttendingEvents(identifier);
 
 	const currentEvents = computed(() => userStore.hostingEvents.get(identifier) || []);
 	const currentEventsCount = computed(() => currentEvents.value.length);
@@ -321,6 +324,8 @@ export function useUser(identifier: string) {
 		avatar32,
 		avatar128,
 		fetchAvatar,
+		cosmetics,
+		fetchCosmetics,
 		chipColor,
 		maxEventAttendees,
 		attendingEvents,

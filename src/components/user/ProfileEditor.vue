@@ -69,15 +69,129 @@
 			class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8"
 			id="cosmetics"
 		>
-			Cosmetics
+			Points Shop
 		</h3>
-
-		<h3
-			class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-10"
-			id="settings"
+		<div
+			class="flex flex-col items-center px-4 mt-2 border-t-4 border-black dark:border-white w-full max-w-4xl"
 		>
-			Settings
-		</h3>
+			<div class="flex items-center gap-2 my-2">
+				<h4 class="font-semibold">{{ points }} points</h4>
+				<UPopover mode="hover">
+					<UButton
+						icon="mdi:progress-question"
+						color="secondary"
+						variant="subtle"
+						size="sm"
+					/>
+
+					<template #content>
+						<div class="flex flex-col p-4">
+							<span class="text-sm">Earn points through journies, badges, and quests!</span>
+							<span class="text-xs opacity-80"
+								>Impact Points go up as you engage with The Earth App and the world around
+								you.</span
+							>
+						</div>
+					</template>
+				</UPopover>
+			</div>
+			<UButton
+				icon="mdi:rotate-left"
+				:loading="resettingCosmetic"
+				variant="subtle"
+				color="neutral"
+				class="font-semibold text-center mb-4 mt-1"
+				@click="resetCosmetic"
+			>
+				Reset
+			</UButton>
+			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 py-4 w-full">
+				<div
+					v-for="cosmetic in cosmetics"
+					:key="cosmetic.key"
+					class="min-w-40 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+					:class="cosmetic.state === 'selected' ? 'ring-2 ring-green-500 rounded-lg' : ''"
+					@click="handleCosmeticClick(cosmetic)"
+				>
+					<UserCosmetic
+						:cosmetic-key="cosmetic.key"
+						:state="cosmetic.state"
+						:rarity="cosmetic.rarity"
+						:price="cosmetic.price"
+					/>
+				</div>
+			</div>
+		</div>
+
+		<!-- Cosmetic Purchase Modal -->
+		<Teleport to="body">
+			<UModal
+				v-model:open="showCosmeticModal"
+				:title="`${selectedCosmeticForPurchase ? capitalizeFully(selectedCosmeticForPurchase.key.replace('_', ' ')) : 'Cosmetic'}`"
+			>
+				<template #header>
+					<div class="flex items-center justify-between w-full">
+						<h2 class="text-xl font-bold">
+							{{
+								selectedCosmeticForPurchase
+									? capitalizeFully(selectedCosmeticForPurchase.key.replace('_', ' '))
+									: 'Cosmetic'
+							}}
+						</h2>
+						<UButton
+							icon="mdi:close"
+							color="neutral"
+							variant="ghost"
+							size="sm"
+							@click="showCosmeticModal = false"
+						/>
+					</div>
+				</template>
+
+				<template #body>
+					<div
+						v-if="selectedCosmeticForPurchase"
+						class="flex flex-col items-center gap-4"
+					>
+						<UserCosmetic
+							:cosmetic-key="selectedCosmeticForPurchase.key"
+							state="available"
+							:rarity="selectedCosmeticForPurchase.rarity"
+							:price="selectedCosmeticForPurchase.price"
+						/>
+						<p class="text-sm text-gray-400">{{ selectedCosmeticForPurchase.price }} points</p>
+						<div class="flex gap-2">
+							<UButton
+								v-if="selectedCosmeticForPurchase.state === 'locked'"
+								color="primary"
+								class="flex-1"
+								icon="mdi:cart"
+								:loading="purchaseLoadingStates.get(selectedCosmeticForPurchase.key) || false"
+								:disabled="purchaseLoadingStates.get(selectedCosmeticForPurchase.key) || false"
+								@click="handlePurchaseClick(selectedCosmeticForPurchase.key)"
+							>
+								Purchase
+							</UButton>
+							<UButton
+								v-else
+								color="success"
+								class="flex-1"
+								icon="mdi:check"
+								:loading="selectLoadingStates.get(selectedCosmeticForPurchase.key) || false"
+								:disabled="
+									selectedCosmeticForPurchase.state === 'selected' ||
+									selectLoadingStates.get(selectedCosmeticForPurchase.key) ||
+									false
+								"
+								@click="handleSelectClick(selectedCosmeticForPurchase.key)"
+							>
+								{{ selectedCosmeticForPurchase.state === 'selected' ? 'Selected' : 'Select' }}
+							</UButton>
+						</div>
+					</div>
+				</template>
+			</UModal>
+		</Teleport>
 		<div class="px-4 mt-2 border-t-4 border-black dark:border-white w-full max-w-4xl">
 			<div class="mt-4 w-full flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-x-4">
 				<h2 class="text-xl font-medium">Account Visibility</h2>
@@ -562,6 +676,245 @@ async function regenerateProfilePhoto() {
 			color: 'error',
 			duration: 5000
 		});
+	}
+}
+
+/// Profile Cosmetics
+
+const points = computed(() => userStore.points.get(user.value.id) || 0);
+
+type CosmeticWithState = AvatarCosmetic & { state: 'selected' | 'available' | 'locked' };
+
+onMounted(() => {
+	userStore.fetchPoints(user.value.id);
+	avatarStore.fetchAllCosmetics();
+	avatarStore.fetchCosmeticsForUser(user.value.id);
+});
+
+const cosmetics = computed((): CosmeticWithState[] =>
+	avatarStore.allCosmetics.map((cosmetic) => {
+		let state: 'selected' | 'available' | 'locked' = 'locked';
+		if (user.value) {
+			const userCosmetics = avatarStore.userCosmetics.get(user.value.id);
+			if (userCosmetics?.current === cosmetic.key) {
+				state = 'selected';
+			} else if (userCosmetics?.unlocked.includes(cosmetic.key)) {
+				state = 'available';
+			}
+		}
+
+		return {
+			...cosmetic,
+			state
+		};
+	})
+);
+
+const showCosmeticModal = ref(false);
+const selectedCosmeticForPurchase = ref<CosmeticWithState | null>(null);
+const purchaseLoadingStates = reactive(new Map<string, boolean>());
+const selectLoadingStates = reactive(new Map<string, boolean>());
+const resettingCosmetic = ref(false);
+
+function handleCosmeticClick(cosmetic: CosmeticWithState) {
+	if (cosmetic.state === 'selected') {
+		return;
+	}
+
+	if (cosmetic.state === 'available') {
+		// Directly select available cosmetics
+		handleSelectClick(cosmetic.key);
+	} else if (cosmetic.state === 'locked') {
+		// Open modal for locked cosmetics
+		const freshCosmetic = cosmetics.value.find((c) => c.key === cosmetic.key);
+		if (!freshCosmetic) return;
+
+		selectedCosmeticForPurchase.value = freshCosmetic;
+		showCosmeticModal.value = true;
+	}
+}
+
+async function resetCosmetic() {
+	if (!user.value) return;
+	if (resettingCosmetic.value) return;
+
+	resettingCosmetic.value = true;
+	try {
+		// Clear the cosmetic by setting it to null
+		await avatarStore.setCosmeticForUser(user.value.id, null);
+
+		// Clear avatar cache to force reload
+		const avatarUrl = user.value?.account?.avatar_url;
+		if (avatarUrl && avatarUrl.startsWith('http')) {
+			avatarStore.clear(avatarUrl);
+			// Refetch user to get fresh avatar
+			await refetchUser();
+		}
+
+		toast.add({
+			title: 'Cosmetic Reset',
+			description: 'Cosmetic has been removed.',
+			color: 'success',
+			icon: 'mdi:check-circle',
+			duration: 3000
+		});
+	} catch (error: any) {
+		console.error('Failed to reset cosmetic:', error);
+		toast.add({
+			title: 'Error',
+			description: error.statusMessage || error.message || 'Failed to reset cosmetic.',
+			icon: 'mdi:alert-circle',
+			color: 'error',
+			duration: 5000
+		});
+	} finally {
+		resettingCosmetic.value = false;
+	}
+}
+
+/**
+ * Handle purchase button click in modal
+ */
+async function handlePurchaseClick(cosmeticKey: AvatarCosmetic['key']) {
+	if (!user.value) return;
+
+	purchaseLoadingStates.set(cosmeticKey, true);
+
+	try {
+		const res = await avatarStore.purchaseCosmetic(user.value.id, cosmeticKey);
+
+		if (res.success) {
+			await nextTick();
+
+			const freshCosmetic = cosmetics.value.find((c) => c.key === cosmeticKey);
+			if (freshCosmetic) {
+				selectedCosmeticForPurchase.value = freshCosmetic;
+			}
+
+			toast.add({
+				title: 'Purchase Successful',
+				description: `You have successfully purchased the ${capitalizeFully(cosmeticKey.replace('_', ' '))} cosmetic!`,
+				color: 'success',
+				icon: 'mdi:check-circle',
+				duration: 3000
+			});
+
+			showCosmeticModal.value = false;
+		} else {
+			console.error(res.message || 'Failed to purchase cosmetic.');
+			toast.add({
+				title: 'Error',
+				description: res.message || 'Failed to purchase cosmetic.',
+				color: 'error',
+				duration: 5000
+			});
+		}
+	} catch (error: any) {
+		toast.add({
+			title: 'Error',
+			description: error.statusMessage || error.message || 'Failed to purchase cosmetic.',
+			icon: 'mdi:cart-off',
+			color: 'error',
+			duration: 5000
+		});
+
+		console.error('Failed to purchase cosmetic:', error);
+	} finally {
+		purchaseLoadingStates.set(cosmeticKey, false);
+	}
+}
+
+/**
+ * Handle select button click in modal for already unlocked cosmetics
+ */
+async function handleSelectClick(cosmeticKey: AvatarCosmetic['key']) {
+	if (!user.value) return;
+
+	selectLoadingStates.set(cosmeticKey, true);
+
+	try {
+		const res = await avatarStore.setCosmeticForUser(user.value.id, cosmeticKey);
+
+		if (res.success) {
+			await nextTick();
+
+			const freshCosmetic = cosmetics.value.find((c) => c.key === cosmeticKey);
+			if (freshCosmetic) {
+				selectedCosmeticForPurchase.value = freshCosmetic;
+			}
+
+			// Clear avatar cache and refetch to show cosmetic changes
+			const avatarUrl = user.value?.account?.avatar_url;
+			if (avatarUrl && avatarUrl.startsWith('http')) {
+				avatarStore.clear(avatarUrl);
+				await refetchUser();
+			}
+
+			toast.add({
+				title: 'Cosmetic Updated',
+				description: 'Your profile cosmetic has been successfully updated.',
+				color: 'success',
+				icon: 'mdi:check-circle',
+				duration: 3000
+			});
+
+			// Close modal on success
+			showCosmeticModal.value = false;
+		} else {
+			console.error(res.message || 'Failed to update cosmetic.');
+			toast.add({
+				title: 'Error',
+				description: res.message || 'Failed to update cosmetic.',
+				color: 'error',
+				duration: 5000
+			});
+		}
+	} finally {
+		selectLoadingStates.set(cosmeticKey, false);
+	}
+}
+
+async function setCurrentCosmetic(key: AvatarCosmetic['key']) {
+	const res = await avatarStore.setCosmeticForUser(user.value.id, key);
+	if (res.success) {
+		toast.add({
+			title: 'Cosmetic Updated',
+			description: 'Your profile cosmetic has been successfully updated.',
+			color: 'success',
+			icon: 'mdi:check-circle',
+			duration: 3000
+		});
+	} else {
+		console.error(res.message || 'Failed to update cosmetic.');
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to update cosmetic.',
+			color: 'error',
+			duration: 5000
+		});
+	}
+}
+
+async function purchaseCosmetic(key: AvatarCosmetic['key'], price: number) {
+	const res = await avatarStore.purchaseCosmetic(user.value.id, key);
+
+	if (res.success) {
+		toast.add({
+			title: 'Purchase Successful',
+			description: `You have successfully purchased the ${capitalizeFully(key)} cosmetic!`,
+			color: 'success',
+			icon: 'mdi:check-circle',
+			duration: 3000
+		});
+	} else {
+		console.error(res.message || 'Failed to purchase cosmetic.');
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to purchase cosmetic.',
+			color: 'error',
+			duration: 5000
+		});
+		return;
 	}
 }
 
