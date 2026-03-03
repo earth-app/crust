@@ -3,6 +3,8 @@ import type { Prompt, PromptResponse } from '~/shared/types/prompts';
 import { makeClientAPIRequest } from '~/shared/utils/util';
 import { useAuthStore } from './auth';
 
+const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export const usePromptStore = defineStore('prompt', () => {
 	const MAX_CACHE_SIZE = 100; // Limit cache to prevent memory leaks
 	const cache = reactive(new Map<string, Prompt>());
@@ -10,6 +12,7 @@ export const usePromptStore = defineStore('prompt', () => {
 
 	const responsesCache = reactive(new Map<string, PromptResponse[]>());
 	const responsesLoadingState = reactive(new Map<string, boolean>());
+	const randomCache = reactive(new Map<string, { items: Prompt[]; timestamp: number }>());
 
 	// LRU cache eviction
 	const evictOldestIfNeeded = () => {
@@ -29,6 +32,18 @@ export const usePromptStore = defineStore('prompt', () => {
 
 	const has = (id: string): boolean => {
 		return cache.has(id);
+	};
+
+	const getRandomCached = (count: number): Prompt[] | null => {
+		const entry = randomCache.get(`random-${count}`);
+		if (entry && Date.now() - entry.timestamp < RANDOM_CACHE_TTL) {
+			return entry.items;
+		}
+		return null;
+	};
+
+	const setRandomCached = (count: number, items: Prompt[]) => {
+		randomCache.set(`random-${count}`, { items, timestamp: Date.now() });
 	};
 
 	const getResponses = (
@@ -269,6 +284,8 @@ export const usePromptStore = defineStore('prompt', () => {
 		responsesLoadingState,
 		get,
 		has,
+		getRandomCached,
+		setRandomCached,
 		getResponses,
 		isLoadingResponses,
 		fetchPrompt,

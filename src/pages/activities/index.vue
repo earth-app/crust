@@ -12,10 +12,11 @@
 				:key="n"
 				content-size="small"
 			/>
-			<ActivityCard
+			<LazyActivityCard
 				v-for="activity in recommendedActivities"
 				:key="activity.id"
 				:activity="activity"
+				hydrate-on-visible
 			/>
 		</InfoCardGroup>
 	</div>
@@ -29,7 +30,7 @@
 	</div>
 	<div class="flex flex-col w-full justify-between items-center">
 		<div
-			class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 place-items-center w-9/10 px-4 gap-x-4 gap-y-12 *:mx-2 *:max-w-100 *:lg:w-1/2 *:xl:w-1/3"
+			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 place-items-center w-9/10 px-4 gap-x-4 gap-y-12 *:mx-2 *:max-w-100 *:lg:w-1/2 *:xl:w-1/3"
 		>
 			<InfoCardSkeleton
 				v-if="allActivities.length === 0"
@@ -37,19 +38,20 @@
 				:key="n"
 				content-size="small"
 			/>
-			<ActivityCard
+			<LazyActivityCard
 				v-for="activity in allActivities"
 				:key="activity.id"
 				:activity="activity"
+				hydrate-on-visible
 			/>
 		</div>
 	</div>
 
 	<div
 		v-if="isLoading"
-		class="text-center py-4"
+		class="flex justify-center py-4"
 	>
-		<UIcon name="eos-icons:loading" />
+		<Loading />
 	</div>
 
 	<div

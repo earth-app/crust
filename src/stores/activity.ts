@@ -3,11 +3,14 @@ import type { Activity } from '~/shared/types/activity';
 import { makeAPIRequest, makeClientAPIRequest } from '~/shared/utils/util';
 import { useAuthStore } from './auth';
 
+const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export const useActivityStore = defineStore('activity', () => {
 	const MAX_CACHE_SIZE = 200; // Limit cache to prevent memory leaks
 	const cache = reactive(new Map<string, Activity>());
 	const fetchQueue = new Map<string, Promise<void>>();
 	const count = ref<number | undefined>(undefined);
+	const randomCache = reactive(new Map<string, { items: Activity[]; timestamp: number }>());
 
 	// LRU cache eviction
 	const evictOldestIfNeeded = () => {
@@ -23,6 +26,18 @@ export const useActivityStore = defineStore('activity', () => {
 
 	const has = (id: string): boolean => {
 		return cache.has(id);
+	};
+
+	const getRandomCached = (count: number): Activity[] | null => {
+		const entry = randomCache.get(`random-${count}`);
+		if (entry && Date.now() - entry.timestamp < RANDOM_CACHE_TTL) {
+			return entry.items;
+		}
+		return null;
+	};
+
+	const setRandomCached = (count: number, items: Activity[]) => {
+		randomCache.set(`random-${count}`, { items, timestamp: Date.now() });
 	};
 
 	const fetchActivity = async (id: string, force: boolean = false): Promise<Activity | null> => {
@@ -159,6 +174,8 @@ export const useActivityStore = defineStore('activity', () => {
 		count,
 		get,
 		has,
+		getRandomCached,
+		setRandomCached,
 		fetchActivity,
 		setActivities,
 		fetchCount,

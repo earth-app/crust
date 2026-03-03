@@ -83,7 +83,7 @@ export function useArticle(id: string) {
 		await articleStore.fetchQuizScore(id);
 	};
 
-	if (score.value === undefined) {
+	if (import.meta.client && score.value === undefined) {
 		fetchQuizScore();
 	}
 
@@ -230,6 +230,12 @@ export function useArticles(
 	};
 
 	const getRandom = async (count: number = 3) => {
+		// Return cached result if still fresh
+		const cached = articleStore.getRandomCached(count);
+		if (cached) {
+			return { success: true as const, data: cached, message: '' };
+		}
+
 		const res = await makeClientAPIRequest<Article[]>(
 			`/v2/articles/random?count=${count}`,
 			authStore.sessionToken
@@ -240,8 +246,9 @@ export function useArticles(
 				return res;
 			}
 
-			// load individual articles into store
+			// load individual articles into store and cache random result
 			articleStore.setArticles(res.data);
+			articleStore.setRandomCached(count, res.data);
 		}
 
 		return res;

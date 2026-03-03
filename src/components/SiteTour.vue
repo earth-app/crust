@@ -29,16 +29,17 @@
 			pointerEvents: 'auto'
 		}"
 	>
-		<UCard class="shadow-lg min-w-80 w-[40vw] max-w-200">
+		<LazyUCard class="shadow-lg min-w-80 w-[40vw] max-w-200">
 			<template #header>
 				<div class="flex justify-between items-center">
 					<h3 class="text-lg font-semibold">{{ step.title }}</h3>
-					<UButton
+					<LazyUButton
 						icon="i-heroicons-x-mark"
 						color="neutral"
 						variant="ghost"
 						size="sm"
 						@click="close"
+						hydrate-on-interaction
 					/>
 				</div>
 			</template>
@@ -59,7 +60,7 @@
 						Step {{ visibleStepIndex + 1 }}&nbsp;of&nbsp;{{ visibleSteps.length }}
 					</span>
 					<div class="flex flex-col sm:flex-row gap-2">
-						<UButton
+						<LazyUButton
 							v-if="index > 1"
 							label="Previous"
 							color="info"
@@ -67,8 +68,9 @@
 							variant="outline"
 							size="sm"
 							@click="gotoPreviousStep"
+							hydrate-on-interaction
 						/>
-						<UButton
+						<LazyUButton
 							:label="visibleStepIndex >= visibleSteps.length - 1 ? 'Finish' : 'Next'"
 							color="primary"
 							:trailing-icon="
@@ -78,11 +80,12 @@
 							"
 							size="sm"
 							@click="gotoNextStep"
+							hydrate-on-interaction
 						/>
 					</div>
 				</div>
 			</template>
-		</UCard>
+		</LazyUCard>
 	</div>
 </template>
 

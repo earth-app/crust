@@ -20,33 +20,25 @@ export default defineEventHandler(async (event) => {
 	try {
 		const results = (await YouTube.search(query, { limit: 20, type: 'video', safeSearch: true }))
 			.filter((video) => video.id && !video.live && !video.shorts && !video.unlisted)
-			.filter((_, index) => index < 5); // Limit to 5 results;
-
-		if (!results || results.length === 0) {
-			throw createError({
-				statusCode: 404,
-				statusMessage: 'No results found'
-			});
-		}
+			.filter((_, index) => index < 5); // Limit to 5 results
 
 		// Create plain objects to avoid serialization issues with youtube-sr class instances
-		return results.map((video) => {
-			const id = String(video.id);
-			const title = String(video.title || 'YouTube Video');
-			const uploaded_at = String(video.uploadedAt || 'Sometime in the past');
-
-			return {
-				id,
-				title,
-				uploaded_at
-			} satisfies YouTubeVideo;
-		});
-	} catch (error) {
-		console.error('YouTube search error:', error);
-		throw createError({
-			cause: error,
-			statusCode: 500,
-			statusMessage: 'An error occurred while searching YouTube'
-		});
+		return results
+			.map((video) => {
+				try {
+					return {
+						id: String(video.id),
+						title: String(video.title || 'YouTube Video'),
+						uploaded_at: String(video.uploadedAt || 'Sometime in the past')
+					} satisfies YouTubeVideo;
+				} catch {
+					return null;
+				}
+			})
+			.filter((v): v is YouTubeVideo => v !== null);
+	} catch {
+		// youtube-sr can fail on malformed results (e.g. missing channel browseId);
+		// return empty array so the caller degrades gracefully
+		return [] as YouTubeVideo[];
 	}
 });

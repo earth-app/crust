@@ -60,7 +60,8 @@ export default defineNuxtConfig({
 		}
 	},
 	vite: {
-		plugins: [tailwindcss()]
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		plugins: [tailwindcss() as any]
 	},
 	nitro: {
 		preset: 'cloudflare_module',
@@ -101,11 +102,13 @@ export default defineNuxtConfig({
 		'/activities': { isr: 14400 }, // Regenerate every 4 hours
 		'/articles': { isr: 3600 }, // Regenerate every hour
 		'/prompts': { isr: 900 }, // Regenerate every 15 minutes
+		'/events': { isr: 600 }, // Regenerate every 10 minutes (events change frequently)
 
 		// Individual content pages (SWR)
 		'/activities/**': { swr: 14400 }, // Cache 4 hours
 		'/articles/**': { swr: 3600 }, // Cache 1 hour
 		'/prompts/**': { swr: 1800 }, // Cache 30 minutes
+		'/events/**': { swr: 1800 }, // Cache 30 minutes
 
 		// API routes
 		'/api/**': { cors: false },
@@ -131,6 +134,7 @@ export default defineNuxtConfig({
 		'nuxt-schema-org',
 		'nuxt-api-shield',
 		'@pinia/nuxt',
+		'@nuxt/hints',
 		[
 			'@nuxtjs/google-fonts',
 			{
@@ -173,7 +177,8 @@ export default defineNuxtConfig({
 		}
 	},
 	experimental: {
-		renderJsonPayloads: true
+		renderJsonPayloads: true,
+		viewTransition: true
 	},
 	schemaOrg: {
 		identity: defineOrganization({

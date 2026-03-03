@@ -9,6 +9,8 @@ import {
 } from '~/shared/utils/util';
 import { useAuthStore } from './auth';
 
+const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export const useEventStore = defineStore('event', () => {
 	const MAX_CACHE_SIZE = 100; // Limit cache to prevent memory leaks
 	const cache = reactive(new Map<string, Event>());
@@ -18,6 +20,7 @@ export const useEventStore = defineStore('event', () => {
 	const thumbnailCache = reactive(new Map<string, string>());
 	const thumbnailMetadataCache = reactive(new Map<string, { author: string; size: number }>());
 	const submissionsCache = reactive(new Map<string, EventImageSubmission[]>());
+	const randomCache = reactive(new Map<string, { items: Event[]; timestamp: number }>());
 
 	// LRU cache eviction
 	const evictOldestIfNeeded = () => {
@@ -39,6 +42,18 @@ export const useEventStore = defineStore('event', () => {
 
 	const has = (id: string): boolean => {
 		return cache.has(id);
+	};
+
+	const getRandomCached = (count: number): Event[] | null => {
+		const entry = randomCache.get(`random-${count}`);
+		if (entry && Date.now() - entry.timestamp < RANDOM_CACHE_TTL) {
+			return entry.items;
+		}
+		return null;
+	};
+
+	const setRandomCached = (count: number, items: Event[]) => {
+		randomCache.set(`random-${count}`, { items, timestamp: Date.now() });
 	};
 
 	const getAttendees = (id: string): User[] | undefined => {
@@ -460,6 +475,8 @@ export const useEventStore = defineStore('event', () => {
 		submissionsCache,
 		get,
 		has,
+		getRandomCached,
+		setRandomCached,
 		getAttendees,
 		getThumbnail,
 		getThumbnailMetadata,

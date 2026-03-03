@@ -47,10 +47,11 @@
 				content-size="xs"
 				class="mb-4"
 			/>
-			<PromptCard
+			<LazyPromptCard
 				v-for="prompt in prompts"
 				:key="prompt.id"
 				:prompt="prompt"
+				hydrate-on-visible
 			/>
 		</div>
 	</div>

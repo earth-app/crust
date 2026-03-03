@@ -25,10 +25,15 @@ export default defineEventHandler(async (event) => {
 		);
 
 		return response;
-	} catch (error) {
+	} catch (error: any) {
+		// Propagate the actual upstream status so callers can distinguish
+		// not-found (404) from genuine failures — makeServerRequest suppresses
+		// console logging for 404s, avoiding log spam for pages without summaries
+		const status: number = error?.status ?? error?.statusCode ?? 500;
 		throw createError({
-			statusCode: 500,
-			statusMessage: 'Failed to fetch Wikipedia summary'
+			statusCode: status,
+			statusMessage:
+				status === 404 ? 'Wikipedia page not found' : 'Failed to fetch Wikipedia summary'
 		});
 	}
 });

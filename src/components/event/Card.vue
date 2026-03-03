@@ -20,10 +20,11 @@
 		:title="`Event Attendees (${comma(reactiveEvent.attendee_count)})`"
 		:is-loading="false"
 	>
-		<UserCard
+		<LazyUserCard
 			v-for="attendee in allAttendees"
 			:key="attendee.id"
 			:user="attendee"
+			hydrate-on-visible
 		/>
 	</ContentDrawer>
 </template>
@@ -59,7 +60,7 @@ const {
 } = useEvent(props.event.id || '');
 onMounted(() => {
 	fetchThumbnail();
-	fetchAttendees();
+	// attendees are fetched lazily only when the drawer opens
 });
 
 const reactiveEvent = computed(() => eventState.value || props.event);

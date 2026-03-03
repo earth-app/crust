@@ -18,9 +18,10 @@
 					@click="genThumbnail"
 					>Generate Thumbnail</UButton
 				>
-				<UserCard
+				<LazyUserCard
 					:user="event.host"
 					class="my-2"
+					hydrate-on-idle
 				/>
 				<USeparator class="my-2" />
 				<div class="flex flex-col justify-center px-2">
@@ -64,11 +65,12 @@
 				</div>
 			</div>
 
-			<EventCard
+			<LazyEventCard
 				:event="event"
 				no-link
 				full
 				class="h-full"
+				hydrate-on-idle
 			/>
 		</div>
 		<USeparator class="my-8" />

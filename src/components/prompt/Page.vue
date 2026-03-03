@@ -1,9 +1,10 @@
 <template>
 	<div class="flex flex-col items-center w-full px-16">
 		<div class="flex flex-col items-center justify-center w-full px-4">
-			<PromptCard
+			<LazyPromptCard
 				:prompt="prompt"
 				no-link
+				hydrate-on-idle
 			/>
 			<div class="flex w-full justify-center items-center my-2">
 				<UTextarea

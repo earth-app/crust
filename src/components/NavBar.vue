@@ -157,14 +157,14 @@
 					v-else-if="user === null"
 					class="flex items-center"
 				>
-					<UserSignupPopup />
-					<UserLoginPopup />
+					<LazyUserSignupPopup hydrate-on-interaction />
+					<LazyUserLoginPopup hydrate-on-interaction />
 				</div>
 			</ClientOnly>
 		</div>
 	</div>
 	<ClientOnly>
-		<UBanner
+		<LazyUBanner
 			v-if="user?.account.email && user?.account.email_verified === false"
 			class="mb-4"
 			icon="mdi:email-alert"
@@ -174,7 +174,7 @@
 			:actions="actions"
 			close
 		>
-		</UBanner>
+		</LazyUBanner>
 		<UserEmailVerificationModal
 			v-model:open="emailVerificationOpen"
 			@verified="

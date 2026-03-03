@@ -29,6 +29,7 @@
   "dependencies": {
     "@earth-app/ocean": "1.0.1",
     "@internationalized/date": "^3.11.0",
+    "@nuxt/hints": "^1.0.0-alpha.10",
     "@nuxt/icon": "^2.2.1",
     "@nuxt/image": "^2.0.0",
     "@nuxt/kit": "^4.3.1",

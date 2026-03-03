@@ -12,12 +12,13 @@
 				<h2 class="text-2xl font-bold p-4">
 					{{ title }}
 				</h2>
-				<UInput
+				<LazyUInput
 					v-model="search"
 					type="search"
 					placeholder="Search..."
 					class="mb-4 mx-4 w-11/12"
 					icon="mdi:magnify"
+					hydrate-on-interaction
 				/>
 				<div class="grid grid-cols-1 gap-4 w-full p-4">
 					<slot :search="search" />
@@ -25,9 +26,9 @@
 
 				<div
 					v-if="isLoading"
-					class="text-center py-4"
+					class="flex justify-center py-4"
 				>
-					<UIcon name="eos-icons:loading" />
+					<Loading />
 				</div>
 
 				<div

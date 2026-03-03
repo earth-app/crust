@@ -62,6 +62,12 @@ export function useEvents() {
 	};
 
 	const getRandom = async (count: number = 5) => {
+		// Return cached result if still fresh
+		const cached = eventStore.getRandomCached(count);
+		if (cached) {
+			return { success: true as const, data: cached, message: '' };
+		}
+
 		const res = await makeClientAPIRequest<Event[]>(
 			`/v2/events/random?count=${count}`,
 			authStore.sessionToken
@@ -72,8 +78,9 @@ export function useEvents() {
 				return res;
 			}
 
-			// load individual events into store
+			// load individual events into store and cache random result
 			eventStore.setEvents(res.data);
+			eventStore.setRandomCached(count, res.data);
 		}
 
 		return res;
@@ -214,22 +221,21 @@ export function useEvent(id: string) {
 		return res;
 	};
 
-	const thumbnail = useState<string | null>(`event-thumbnail-${id}`, () => null);
+	const thumbnail = useState<string | null>(
+		`event-thumbnail-${id}`,
+		() => eventStore.getThumbnail(id) ?? null
+	);
 	const fetchThumbnail = async () => {
-		const res = await makeServerRequest<Blob>(
-			`event-thumbnail-${id}`,
-			`/api/event/thumbnail?id=${encodeURIComponent(id)}`,
-			authStore.sessionToken
-		);
-
-		if (res.success && res.data) {
-			const url = URL.createObjectURL(res.data);
-			thumbnail.value = url;
-		} else {
-			thumbnail.value = null;
+		// Return cached thumbnail from store if available
+		const cached = eventStore.getThumbnail(id);
+		if (cached) {
+			thumbnail.value = cached;
+			return { success: true, data: cached };
 		}
 
-		return res;
+		const url = await eventStore.fetchThumbnail(id);
+		thumbnail.value = url;
+		return { success: url !== null };
 	};
 
 	const thumbnailAuthor = useState<string | null>(`event-thumbnail-author-${id}`, () => null);
@@ -291,10 +297,8 @@ export function useEvent(id: string) {
 	};
 
 	const unloadThumbnail = () => {
-		if (thumbnail.value) {
-			URL.revokeObjectURL(thumbnail.value);
-			thumbnail.value = null;
-		}
+		// Only clear the local reactive state; the store manages the object URL lifecycle
+		thumbnail.value = null;
 	};
 
 	const cancelEvent = async () => await eventStore.cancelEvent(id);

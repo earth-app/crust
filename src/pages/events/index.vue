@@ -38,10 +38,11 @@
 					:key="n"
 					content-size="small"
 				/>
-				<EventCard
+				<LazyEventCard
 					v-for="event in recommendedEvents"
 					:key="event.id"
 					:event="event"
+					hydrate-on-visible
 				/>
 			</InfoCardGroup>
 		</ClientOnly>
@@ -56,10 +57,11 @@
 				:key="n"
 				content-size="small"
 			/>
-			<EventCard
+			<LazyEventCard
 				v-for="event in upcomingEvents"
 				:key="event.id"
 				:event="event"
+				hydrate-on-visible
 			/>
 		</InfoCardGroup>
 		<InfoCardGroup
@@ -74,10 +76,11 @@
 				:key="n"
 				content-size="small"
 			/>
-			<EventCard
+			<LazyEventCard
 				v-for="event in randomEvents"
 				:key="event.id"
 				:event="event"
+				hydrate-on-visible
 			/>
 		</InfoCardGroup>
 		<InfoCardGroup
@@ -91,10 +94,11 @@
 				:key="n"
 				content-size="small"
 			/>
-			<EventCard
+			<LazyEventCard
 				v-for="event in recentEvents"
 				:key="event.id"
 				:event="event"
+				hydrate-on-visible
 			/>
 		</InfoCardGroup>
 	</div>

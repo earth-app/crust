@@ -73,6 +73,12 @@ export function usePrompts(
 	};
 
 	const getRandom = async (count: number = 10) => {
+		// Return cached result if still fresh
+		const cached = promptStore.getRandomCached(count);
+		if (cached) {
+			return { success: true as const, data: cached, message: '' };
+		}
+
 		const res = await makeClientAPIRequest<Prompt[]>(`/v2/prompts/random?count=${count}`);
 
 		if (res.success && res.data) {
@@ -80,8 +86,9 @@ export function usePrompts(
 				return res;
 			}
 
-			// load individual prompts into store
+			// load individual prompts into store and cache random result
 			promptStore.setPrompts(res.data);
+			promptStore.setRandomCached(count, res.data);
 		}
 
 		return res;

@@ -79,10 +79,11 @@
 				:title="`Event Attendees (${comma(event.attendee_count)})`"
 				:is-loading="false"
 			>
-				<UserCard
+				<LazyUserCard
 					v-for="attendee in allAttendees"
 					:key="attendee.id"
 					:user="attendee"
+					hydrate-on-visible
 				/>
 			</ContentDrawer>
 		</div>

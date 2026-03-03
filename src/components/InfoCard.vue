@@ -7,7 +7,7 @@
 			'will-change-[opacity,transform]'
 		]"
 	>
-		<UBanner
+		<LazyUBanner
 			v-if="banner"
 			:title="banner.text"
 			:color="banner.color || 'info'"
@@ -15,6 +15,7 @@
 			:link="banner.link || undefined"
 			:actions="banner.actions || undefined"
 			class="absolute top-0 left-0 w-full rounded-t-lg z-40"
+			hydrate-on-visible
 		/>
 		<div
 			v-if="banner"
@@ -101,7 +102,7 @@
 						v-if="content || image || youtubeId || video"
 						class="border-gray-500 light:border-black my-2 w-11/12"
 					/>
-					<NuxtImg
+					<LazyNuxtImg
 						v-if="image"
 						:src="image"
 						:alt="title"
@@ -197,13 +198,13 @@
 						</div>
 					</div>
 					<div v-if="avatarGroup">
-						<UAvatarGroup :max="avatarGroup.max">
+						<LazyUAvatarGroup :max="avatarGroup.max">
 							<NuxtLink
 								:to="avatar.link"
 								v-for="(avatar, index) in avatarGroup.avatars"
 								:key="`avatar-link-${index}`"
 							>
-								<UAvatar
+								<LazyUAvatar
 									:src="avatar.src"
 									:alt="avatar.alt"
 									:icon="avatar.icon"
@@ -211,15 +212,16 @@
 									:chip="avatar.chip || undefined"
 								/>
 							</NuxtLink>
-						</UAvatarGroup>
+						</LazyUAvatarGroup>
 					</div>
 					<USeparator
 						v-if="footer"
 						class="border-gray-500 my-2 w-11/12"
 					/>
-					<UTooltip
+					<LazyUTooltip
 						v-if="footerTooltip"
 						:text="footerTooltip"
+						hydrate-on-interaction="mouseover"
 					>
 						<p
 							v-if="footer"
@@ -227,7 +229,7 @@
 						>
 							{{ footer }}
 						</p>
-					</UTooltip>
+					</LazyUTooltip>
 					<p
 						v-else-if="footer && !footerTooltip"
 						class="text-gray-500 light:text-gray-800 text-xs sm:text-sm"
@@ -243,13 +245,13 @@
 				</div>
 			</div>
 			<div
-				v-if="buttons"
+				v-if="buttons && buttons.length > 0"
 				class="flex flex-col items-center ml-4 min-w-22 sm:min-w-26 md:min-w-30 lg:min-w-34"
 			>
 				<h2 class="text-sm md:text-md text-center font-semibold text-gray-500 light:text-gray-800">
 					Actions
 				</h2>
-				<UButton
+				<LazyUButton
 					v-for="(button, index) in buttons"
 					:key="`button-${index}`"
 					:color="button.color || 'primary'"
@@ -257,7 +259,8 @@
 					:icon="button.icon"
 					@click="() => button.onClick && button.onClick()"
 					class="my-1 hover:opacity-90 hover:cursor-pointer transition-all duration-300 w-full"
-					>{{ button.text }}</UButton
+					hydrate-on-visible
+					>{{ button.text }}</LazyUButton
 				>
 			</div>
 		</div>

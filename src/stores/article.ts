@@ -3,6 +3,8 @@ import type { Article, ArticleQuizQuestion, ArticleQuizScoreResult } from '~/sha
 import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from '~/shared/utils/util';
 import { useAuthStore } from './auth';
 
+const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export const useArticleStore = defineStore('article', () => {
 	const MAX_CACHE_SIZE = 100; // Limit cache to prevent memory leaks
 	const cache = reactive(new Map<string, Article>());
@@ -13,6 +15,7 @@ export const useArticleStore = defineStore('article', () => {
 		new Map<string, { total: number; multiple_choice_count: number; true_false_count: number }>()
 	);
 	const scoreCache = reactive(new Map<string, ArticleQuizScoreResult>());
+	const randomCache = reactive(new Map<string, { items: Article[]; timestamp: number }>());
 
 	// LRU cache eviction
 	const evictOldestIfNeeded = () => {
@@ -33,6 +36,18 @@ export const useArticleStore = defineStore('article', () => {
 
 	const has = (id: string): boolean => {
 		return cache.has(id);
+	};
+
+	const getRandomCached = (count: number): Article[] | null => {
+		const entry = randomCache.get(`random-${count}`);
+		if (entry && Date.now() - entry.timestamp < RANDOM_CACHE_TTL) {
+			return entry.items;
+		}
+		return null;
+	};
+
+	const setRandomCached = (count: number, items: Article[]) => {
+		randomCache.set(`random-${count}`, { items, timestamp: Date.now() });
 	};
 
 	const getQuiz = (id: string): ArticleQuizQuestion[] | undefined => {
@@ -229,6 +244,8 @@ export const useArticleStore = defineStore('article', () => {
 		scoreCache,
 		get,
 		has,
+		getRandomCached,
+		setRandomCached,
 		getQuiz,
 		getQuizSummary,
 		getScore,

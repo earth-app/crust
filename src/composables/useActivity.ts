@@ -103,6 +103,12 @@ export function useActivities(
 	const getRandom = async (count: number = 3) => {
 		const authStore = useAuthStore();
 
+		// Return cached result if still fresh
+		const cached = activityStore.getRandomCached(count);
+		if (cached) {
+			return { success: true as const, data: cached, message: '' };
+		}
+
 		const res = await makeClientAPIRequest<Activity[]>(
 			`/v2/activities/random?count=${count}`,
 			authStore.sessionToken
@@ -113,8 +119,9 @@ export function useActivities(
 				return res;
 			}
 
-			// load individual activities into store
+			// load individual activities into store and cache random result
 			activityStore.setActivities(res.data);
+			activityStore.setRandomCached(count, res.data);
 		}
 
 		return res;

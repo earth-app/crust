@@ -22,11 +22,12 @@
 						:key="n"
 						content-size="small"
 					/>
-					<EventCard
+					<LazyEventCard
 						v-else
 						v-for="event in relatedEvents"
 						:key="event.id"
 						:event="event"
+						hydrate-on-visible
 					/>
 				</InfoCardGroup>
 			</div>

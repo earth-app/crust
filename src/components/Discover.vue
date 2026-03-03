@@ -9,13 +9,14 @@
 		/>
 
 		<template #content>
-			<UCommandPalette
+			<LazyUCommandPalette
 				v-model:search-term="search"
 				close
 				:loading="loading"
 				:groups="filteredGroups"
 				@update:open="open = $event"
 				:ui="{ itemDescription: 'text-[10px]' }"
+				hydrate-on-interaction
 			/>
 		</template>
 	</UModal>
@@ -94,11 +95,12 @@ function populate(searchTerm: string) {
 				},
 				to: `/profile/@${user.username}`,
 				onSelect: close
-			}));
+			})) as CommandPaletteItem[];
 
-			groups.value = groups.value.map((group) =>
-				group.id === 'users' ? { ...group, items: users.value } : group
-			);
+			const userGroupIdx = (groups.value as any[]).findIndex((g) => g.id === 'users');
+			if (userGroupIdx !== -1) {
+				(groups.value[userGroupIdx] as any).items = users.value;
+			}
 		} else {
 			users.value = [];
 		}
@@ -119,11 +121,12 @@ function populate(searchTerm: string) {
 				icon: activity.fields['icon'] || 'mdi:earth',
 				to: `/activities/${activity.id}`,
 				onSelect: close
-			}));
+			})) as any;
 
-			groups.value = groups.value.map((group) =>
-				group.id === 'activities' ? { ...group, items: activities.value } : group
-			);
+			const activityGroupIdx = (groups.value as any[]).findIndex((g) => g.id === 'activities');
+			if (activityGroupIdx !== -1) {
+				(groups.value[activityGroupIdx] as any).items = activities.value;
+			}
 		} else {
 			activities.value = [];
 		}
@@ -157,11 +160,12 @@ function populate(searchTerm: string) {
 					to: `/prompts/${prompt.id}`,
 					onSelect: close
 				};
-			});
+			}) as any;
 
-			groups.value = groups.value.map((group) =>
-				group.id === 'prompts' ? { ...group, items: prompts.value } : group
-			);
+			const promptGroupIdx = (groups.value as any[]).findIndex((g) => g.id === 'prompts');
+			if (promptGroupIdx !== -1) {
+				(groups.value[promptGroupIdx] as any).items = prompts.value;
+			}
 		} else {
 			prompts.value = [];
 		}
@@ -199,11 +203,12 @@ function populate(searchTerm: string) {
 					onSelect: close,
 					ui: { itemLabel: 'font-semibold' }
 				};
-			});
+			}) as any;
 
-			groups.value = groups.value.map((group) =>
-				group.id === 'articles' ? { ...group, items: articles.value } : group
-			);
+			const articleGroupIdx = (groups.value as any[]).findIndex((g) => g.id === 'articles');
+			if (articleGroupIdx !== -1) {
+				(groups.value[articleGroupIdx] as any).items = articles.value;
+			}
 		} else {
 			articles.value = [];
 		}

@@ -160,10 +160,11 @@
 				@icon-click="openFriends"
 				class="w-11/12 my-4"
 			>
-				<UserCard
+				<LazyUserCard
 					v-for="friend in friends"
 					:key="friend.id"
 					:user="friend"
+					hydrate-on-visible
 				/>
 			</InfoCardGroup>
 			<h2 v-else>
@@ -209,10 +210,11 @@
 						class="w-full sm:w-11/12 my-4"
 						show-progress
 					>
-						<EventCard
+						<LazyEventCard
 							v-for="event in attendingEventsDay.slice(0, 25)"
 							:key="event.id"
 							:event="event"
+							hydrate-on-visible
 						/>
 					</InfoCardGroup>
 				</div>
@@ -233,10 +235,11 @@
 				class="w-11/12 my-4"
 				show-progress
 			>
-				<PromptCard
+				<LazyPromptCard
 					v-for="prompt in prompts"
 					:key="prompt.id"
 					:prompt="prompt"
+					hydrate-on-visible
 				/>
 			</InfoCardGroup>
 			<InfoCardGroup
@@ -249,10 +252,11 @@
 				class="w-11/12 my-4"
 				show-progress
 			>
-				<ArticleCard
+				<LazyArticleCard
 					v-for="article in articles"
 					:key="article.id"
 					:article="article"
+					hydrate-on-visible
 				/>
 			</InfoCardGroup>
 			<InfoCardGroup
@@ -265,10 +269,11 @@
 				class="w-11/12 my-4"
 				show-progress
 			>
-				<EventCard
+				<LazyEventCard
 					v-for="event in events.slice(0, 25)"
 					:key="event.id"
 					:event="event"
+					hydrate-on-visible
 				/>
 			</InfoCardGroup>
 			<h2 v-if="prompts.length === 0 && articles.length === 0">
@@ -282,35 +287,40 @@
 		:is-loading="isLoading"
 		@load-more="handleLoadMore"
 	>
-		<UserCard
+		<LazyUserCard
 			v-if="mode === 'friends'"
 			v-for="friend in filteredFriends"
 			:key="friend.id"
 			:user="friend"
+			hydrate-on-visible
 		/>
-		<PromptCard
+		<LazyPromptCard
 			v-else-if="mode === 'prompts'"
 			v-for="prompt in filteredPrompts"
 			:key="prompt.id"
 			:prompt="prompt"
+			hydrate-on-visible
 		/>
-		<ArticleCard
+		<LazyArticleCard
 			v-else-if="mode === 'articles'"
 			v-for="article in filteredArticles"
 			:key="article.id"
 			:article="article"
+			hydrate-on-visible
 		/>
-		<EventCard
+		<LazyEventCard
 			v-else-if="mode === 'hosting-events'"
 			v-for="event in filteredEvents"
 			:key="`${event.hostId}-${event.id}`"
 			:event="event"
+			hydrate-on-visible
 		/>
-		<EventCard
+		<LazyEventCard
 			v-else-if="mode === 'attending-events'"
 			v-for="event in filteredAttendingEvents"
 			:key="event.id"
 			:event="event"
+			hydrate-on-visible
 		/>
 	</ContentDrawer>
 </template>

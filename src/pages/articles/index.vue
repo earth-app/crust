@@ -39,10 +39,11 @@
 				:key="n"
 				content-size="small"
 			/>
-			<ArticleCard
+			<LazyArticleCard
 				v-for="article in recommendedArticles"
 				:key="article.id"
 				:article="article"
+				hydrate-on-visible
 			/>
 		</InfoCardGroup>
 		<InfoCardGroup
@@ -57,10 +58,11 @@
 				:key="n"
 				content-size="small"
 			/>
-			<ArticleCard
+			<LazyArticleCard
 				v-for="article in randomArticles"
 				:key="article.id"
 				:article="article"
+				hydrate-on-visible
 			/>
 		</InfoCardGroup>
 		<InfoCardGroup
@@ -74,10 +76,11 @@
 				:key="n"
 				content-size="small"
 			/>
-			<ArticleCard
+			<LazyArticleCard
 				v-for="article in recentArticles"
 				:key="article.id"
 				:article="article"
+				hydrate-on-visible
 			/>
 		</InfoCardGroup>
 	</div>

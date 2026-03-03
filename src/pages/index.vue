@@ -69,10 +69,11 @@
 					icon="mdi:star"
 					class="w-11/12"
 				>
-					<ActivityCard
+					<LazyActivityCard
 						v-for="activity in user.activities"
 						:key="activity.id"
 						:activity="activity"
+						hydrate-on-visible
 					/>
 				</InfoCardGroup>
 
@@ -89,10 +90,11 @@
 						/>
 					</template>
 					<template v-else>
-						<ActivityCard
+						<LazyActivityCard
 							v-for="activity in randomActivities"
 							:key="activity.id"
 							:activity="activity"
+							hydrate-on-visible
 						/>
 					</template>
 				</InfoCardGroup>
@@ -109,10 +111,11 @@
 						/>
 					</template>
 					<template v-else>
-						<PromptCard
+						<LazyPromptCard
 							v-for="prompt in randomPrompts"
 							:key="prompt.id"
 							:prompt="prompt"
+							hydrate-on-visible
 						/>
 					</template>
 				</InfoCardGroup>
@@ -129,10 +132,11 @@
 						/>
 					</template>
 					<template v-else>
-						<ArticleCard
+						<LazyArticleCard
 							v-for="article in randomArticles"
 							:key="article.id"
 							:article="article"
+							hydrate-on-visible
 						/>
 					</template>
 				</InfoCardGroup>
@@ -149,10 +153,11 @@
 						/>
 					</template>
 					<template v-else>
-						<EventCard
+						<LazyEventCard
 							v-for="event in randomEvents"
 							:key="event.id"
 							:event="event"
+							hydrate-on-visible
 						/>
 					</template>
 				</InfoCardGroup>
