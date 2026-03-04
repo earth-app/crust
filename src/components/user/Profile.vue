@@ -87,7 +87,7 @@
 					color="neutral"
 					variant="outline"
 					icon="mdi:badge-account-horizontal-outline"
-					>{{ badges.length }}</UButton
+					>{{ grantedBadges.length }}</UButton
 				>
 			</NuxtLink>
 		</div>
@@ -357,6 +357,7 @@ const {
 	pointsHistory,
 	fetchPoints,
 	badges,
+	grantedBadges,
 	fetchBadges
 } = useUser(`@${props.user.username}`);
 const {

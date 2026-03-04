@@ -17,7 +17,7 @@
 				size="2xl"
 			/>
 			<h2 class="font-semibold text-sm text-center line-clamp-2">
-				{{ capitalizeFully(props.cosmeticKey.replace('_', ' ')) }}
+				{{ capitalizeFully(props.cosmeticKey.replaceAll('_', ' ')) }}
 			</h2>
 			<UBadge
 				v-if="props.rarity"

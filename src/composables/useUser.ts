@@ -304,6 +304,7 @@ export function useUser(identifier: string) {
 	};
 
 	const badges = computed(() => userStore.badges.get(identifier) || []);
+	const grantedBadges = computed(() => badges.value.filter((b) => b.granted));
 	const fetchBadges = async () => {
 		await userStore.fetchBadges(identifier);
 	};
@@ -335,6 +336,7 @@ export function useUser(identifier: string) {
 		currentEventsCount,
 		fetchCurrentEvents,
 		badges,
+		grantedBadges,
 		fetchBadges,
 		eventSubmissions,
 		fetchEventSubmissions,
