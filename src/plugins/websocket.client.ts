@@ -1,79 +1,99 @@
 import type { UserNotification } from '~/shared/types/user';
+import { useAuthStore } from '~/stores/auth';
 
-export default defineNuxtPlugin((_) => {
+export default defineNuxtPlugin((nuxtApp) => {
 	const toast = useToast();
 	const router = useRouter();
 	const config = useRuntimeConfig();
 
 	let ws: WebSocket | null = null;
+	// "https://" -> "wss://"
+	const websocketRoot = config.public.cloudBaseUrl.replace(/http/g, 'ws');
 
-	// Initialize WebSocket when user is available
-	onMounted(() => {
+	// Initialize WebSocket when the app is mounted
+	nuxtApp.hook('app:mounted', () => {
 		const { user } = useAuth();
+		const authStore = useAuthStore();
+
+		const connect = async (userId: string, token: string | null) => {
+			const { ticket } = await $fetch<{ ticket: string }>(
+				`${config.public.cloudBaseUrl}/ws/users/${userId}/ticket`,
+				{
+					headers: {
+						Authorization: `Bearer ${token}`
+					}
+				}
+			);
+
+			ws = new WebSocket(
+				`${websocketRoot}/ws/users/${userId}/notifications?ticket=${encodeURIComponent(ticket)}`
+			);
+
+			ws.onopen = () => {
+				console.log(`WebSocket connection established to users:${userId}`);
+			};
+
+			ws.onmessage = (event: MessageEvent) => {
+				const message = JSON.parse(event.data) satisfies { type: string; data: any };
+				if (!message.type) {
+					console.warn('Received WebSocket message without type:', message);
+					return;
+				}
+
+				switch (message.type) {
+					case 'notification': {
+						const notification = message.data as UserNotification;
+
+						toast.add({
+							title: notification.title,
+							description: notification.message,
+							icon: 'mdi:bell-ring',
+							color: notification.type,
+							actions: notification.link
+								? [
+										{
+											label: 'View',
+											trailingIcon: 'mdi:arrow-right-circle',
+											color: 'neutral',
+											onClick: () => {
+												router.push(notification.link!);
+											}
+										}
+									]
+								: undefined
+						});
+						break;
+					}
+					default: {
+						console.warn('Received unknown WebSocket message type:', message.type);
+						break;
+					}
+				}
+			};
+
+			ws.onclose = () => {
+				console.log('WebSocket connection closed');
+			};
+
+			ws.onerror = (error: Event) => {
+				console.error('WebSocket error:', error);
+			};
+		};
 
 		const stopWatch = watch(
 			user,
 			(currentUser) => {
 				if (currentUser && !ws) {
-					const userId = currentUser.id;
-					ws = new WebSocket(`wss://${config.public.cloudBaseUrl}/ws/users:${userId}`);
-
-					ws.onopen = () => {
-						console.log(`WebSocket connection established to users:${userId}`);
-					};
-
-					ws.onmessage = (event) => {
-						const message = JSON.parse(event.data) satisfies { type: string; data: any };
-						if (!message.type) {
-							console.warn('Received WebSocket message without type:', message);
-							return;
-						}
-
-						switch (message.type) {
-							case 'notification': {
-								const notification = message.data as UserNotification;
-
-								toast.add({
-									title: notification.title,
-									description: notification.message,
-									icon: 'mdi:bell-ring',
-									color: notification.type,
-									actions: notification.link
-										? [
-												{
-													label: 'View',
-													trailingIcon: 'mdi:arrow-right-circle',
-													color: 'neutral',
-													onClick: () => {
-														router.push(notification.link!);
-													}
-												}
-											]
-										: undefined
-								});
-								break;
-							}
-							default: {
-								console.warn('Received unknown WebSocket message type:', message.type);
-								break;
-							}
-						}
-					};
-
-					ws.onclose = () => {
-						console.log('WebSocket connection closed');
-					};
-
-					ws.onerror = (error) => {
-						console.error('WebSocket error:', error);
-					};
+					connect(currentUser.id, authStore.sessionToken).catch((error) => {
+						console.error('Failed to establish WebSocket connection:', error);
+					});
 				}
 			},
 			{ immediate: true }
 		);
 
-		// Clean up on unmount
-		onUnmounted(() => {
+		// Clean up when the page is unloaded
+		window.addEventListener('beforeunload', () => {
 			stopWatch();
 			if (ws) {
 				ws.close();
