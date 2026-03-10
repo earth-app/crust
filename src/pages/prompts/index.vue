@@ -79,13 +79,6 @@ const newDisabled = computed(() => {
 			return total.value >= 1;
 	}
 });
-onMounted(async () => {
-	await fetchUser(); // ensure user is loaded
-	if (!user.value) return;
-	const { total: total0 } = useUserPrompts(user.value.id);
-	total.value = total0.value;
-});
-
 async function fetchPrompts() {
 	promptsLoading.value = true;
 	const { getRandom } = usePrompts();
@@ -108,7 +101,6 @@ async function fetchPrompts() {
 
 		prompts.value = res.data;
 	} else {
-		const toast = useToast();
 		toast.add({
 			title: 'Error',
 			description: res.message || 'Failed to load prompts.',
@@ -118,11 +110,14 @@ async function fetchPrompts() {
 
 		console.error('Failed to load prompts:', res.message);
 	}
-
-	promptsLoading.value = false;
 }
 
 onMounted(async () => {
+	await fetchUser(); // ensure user is loaded
+	if (user.value) {
+		const { total: total0 } = useUserPrompts(user.value.id);
+		total.value = total0.value;
+	}
 	await fetchPrompts();
 });
 </script>
