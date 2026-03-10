@@ -46,7 +46,8 @@ const welcomeTour: SiteTourStep[] = [
 		title: 'Activities Page',
 		description:
 			'The Activities page is where you can discover and participate in various activities. Engage with the community and find events that interest you!',
-		footer: 'There are a lot of things to explore. Click Next to continue.'
+		footer: 'There are a lot of things to explore. Click Next to continue.',
+		prerendered: true
 	},
 	{
 		url: '/articles',
@@ -102,6 +103,31 @@ const welcomeTour: SiteTourStep[] = [
 		anonymous: false
 	},
 	{
+		id: 'notifications',
+		title: 'Notifications',
+		description:
+			'Stay updated with the latest news, updates, and interactions through your notifications. Click on the bell icon to view your notifications and stay connected with the community!',
+		footer:
+			'You can view your notifications through the bell icon in the navigation bar. Click Next to continue.',
+		anonymous: false
+	},
+	{
+		id: 'badges',
+		title: 'Badges',
+		description:
+			'Badges are a fun way to show off your achievements and interests on the Earth App. You can earn badges by engaging with content and participating in activities.',
+		footer: 'You can view your badges on your profile through this button. Click Next to continue.',
+		anonymous: false
+	},
+	{
+		id: 'quests',
+		title: 'Quests',
+		description:
+			'Quests are a new feature on the Earth App that encourage you to explore and engage with content in a fun and interactive way. Completing quests can earn you rewards and help you discover new interests!',
+		footer: 'You can view your quests on your profile through this button. Click Next to continue.',
+		anonymous: false
+	},
+	{
 		url: `/profile/@${user.value?.username}`,
 		id: 'navbar',
 		title: 'Your Public Profile',
@@ -111,6 +137,32 @@ const welcomeTour: SiteTourStep[] = [
 			'You may be able to see fields that other users cannot based on your settings. The avatar is public!',
 		anonymous: false,
 		prerendered: true
+	},
+	{
+		id: 'points-history',
+		title: 'Points History',
+		description:
+			'Engaging with The Earth App rewards you Impact Points! You can view your points history to see how you have earned points over time. Keep engaging with content and activities to earn more points and climb the leaderboard!',
+		footer:
+			'You can view your points history by clicking on the "Points History" button on your profile. Click Next to continue.',
+		anonymous: false
+	},
+	{
+		id: 'user-activities',
+		title: 'Your Activities',
+		description:
+			"Your activities are the things you selected you're interested in. Your experience is tailored based on what you select here, so make sure to keep it updated! Your activities also show up on your profile, and are a fun way for other users to see what you're interested in at a glance.",
+		footer:
+			'Keep exploring to increase the streak. The more you engage, the more your activities grow!',
+		anonymous: false
+	},
+	{
+		id: 'user-friends',
+		title: 'Your Friends',
+		description:
+			'Your friends are the people you connect with on the Earth App. You can view their profiles, see their activities, and engage with their content. Building a network of friends can enhance your experience and help you discover new interests!',
+		footer: 'Connect with friends to see their activities and content. Click Next to continue.',
+		anonymous: false
 	},
 	{
 		id: 'user-journeys',
@@ -128,16 +180,6 @@ const welcomeTour: SiteTourStep[] = [
 			'All the articles and prompts you have created will be displayed here. Share your knowledge and creativity with the Earth App community!',
 		footer:
 			'The more content you create, the more you contribute to the community. Keep sharing your ideas, thoughts, stories!',
-		anonymous: false
-	},
-	{
-		url: '/profile/@cloud',
-		title: 'Cloud',
-		id: 'avatar',
-		description:
-			"Cloud is the Earth App automaton and mascot. You can view Cloud's profile here to see example content and get inspiration for your own profile!",
-		footer:
-			"Feel free to explore Cloud's profile and see how you can make your own unique presence on the Earth App. Thank you for taking the tour!",
 		anonymous: false
 	}
 ];
