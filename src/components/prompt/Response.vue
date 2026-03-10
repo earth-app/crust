@@ -1,67 +1,65 @@
 <template>
-	<ClientOnly>
-		<div class="w-full flex items-center justify-center my-8">
-			<InfoCard
-				:external="false"
-				variant="subtle"
-				:title="identifier"
-				:content="responseText"
-				:footer="time"
-				:footer-tooltip="tooltip"
-				:avatar="authorAvatar"
-				avatar-size="md"
-				:avatar-chip="user?.account.account_type ? true : false"
-				:avatar-chip-color="
-					user?.account.account_type === 'ORGANIZER'
-						? 'warning'
-						: user?.is_admin
-							? 'error'
-							: undefined
-				"
-				:buttons="
-					hasButtons
-						? [
-								{
-									text: 'Edit',
-									color: 'secondary',
-									onClick: () => {
-										editOpen = true;
-									}
-								},
-								{
-									text: 'Delete',
-									color: 'error',
-									onClick: () => {
-										deleteResponse();
-									}
-								}
-							]
+	<div class="w-full flex items-center justify-center my-8">
+		<InfoCard
+			:external="false"
+			variant="subtle"
+			:title="identifier"
+			:content="responseText"
+			:footer="time"
+			:footer-tooltip="tooltip"
+			:avatar="authorAvatar"
+			avatar-size="md"
+			:avatar-chip="user?.account.account_type ? true : false"
+			:avatar-chip-color="
+				user?.account.account_type === 'ORGANIZER'
+					? 'warning'
+					: user?.is_admin
+						? 'error'
 						: undefined
-				"
-			/>
-		</div>
-		<UModal
-			v-if="hasButtons"
-			title="Edit"
-			size="2xl"
-			:closeable="true"
-			v-model:open="editOpen"
-			:overlay="false"
-		>
-			<template #body>
-				<div class="flex flex-col space-y-4">
-					<h2 class="font-medium">New Response:</h2>
-					<UInput v-model="responseText" />
-					<UButton
-						@click="saveResponse"
-						:loading="editLoading"
-						:disabled="editLoading || responseText.trim().length === 0"
-						>Save</UButton
-					>
-				</div>
-			</template>
-		</UModal>
-	</ClientOnly>
+			"
+			:buttons="
+				hasButtons
+					? [
+							{
+								text: 'Edit',
+								color: 'secondary',
+								onClick: () => {
+									editOpen = true;
+								}
+							},
+							{
+								text: 'Delete',
+								color: 'error',
+								onClick: () => {
+									deleteResponse();
+								}
+							}
+						]
+					: undefined
+			"
+		/>
+	</div>
+	<UModal
+		v-if="hasButtons"
+		title="Edit"
+		size="2xl"
+		:closeable="true"
+		v-model:open="editOpen"
+		:overlay="false"
+	>
+		<template #body>
+			<div class="flex flex-col space-y-4">
+				<h2 class="font-medium">New Response:</h2>
+				<UInput v-model="responseText" />
+				<UButton
+					@click="saveResponse"
+					:loading="editLoading"
+					:disabled="editLoading || responseText.trim().length === 0"
+					>Save</UButton
+				>
+			</div>
+		</template>
+	</UModal>
 </template>
 
 <script setup lang="ts">
@@ -78,7 +76,7 @@ const emit = defineEmits<{
 
 const i18n = useI18n();
 const toast = useToast();
-const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const timezone = import.meta.client ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
 const { user } = useAuth();
 const { handle: identifier } = useDisplayName(props.response.owner);
 

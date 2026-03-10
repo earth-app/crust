@@ -66,7 +66,7 @@ const items = ref<DropdownMenuItem[][]>([
 		{
 			label: 'View Profile',
 			icon: 'mdi:account',
-			onSelect: () => router.push(`/profile/${user.id}`)
+			onSelect: () => router.push(`/profile/@${user.username}`)
 		}
 	]
 ]);

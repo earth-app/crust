@@ -16,10 +16,11 @@
 			v-if="completedBadges.length"
 			class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center items-center gap-4"
 		>
-			<UserBadgeCard
+			<LazyUserBadgeCard
 				v-for="badge in completedBadges"
 				:key="badge.id"
 				:badge="badge"
+				hydrate-on-visible
 			/>
 		</div>
 
@@ -27,10 +28,11 @@
 		<div
 			class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center items-center gap-4"
 		>
-			<UserBadgeCard
+			<LazyUserBadgeCard
 				v-for="badge in badges"
 				:key="badge.id"
 				:badge="badge"
+				hydrate-on-visible
 			/>
 		</div>
 	</div>
@@ -54,7 +56,7 @@ const route = useRoute();
 const { user, fetchUser, badges, fetchBadges } = useUser(route.params.id as string);
 const { handle } = useDisplayName(user);
 
-onMounted(async () => {
+onMounted(() => {
 	fetchUser();
 	fetchBadges();
 });

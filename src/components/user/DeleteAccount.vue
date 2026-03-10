@@ -1,79 +1,77 @@
 <template>
-	<ClientOnly>
-		<div
-			v-if="user"
-			class="flex flex-col w-full min-w-100 px-8"
-		>
-			<div class="flex flex-col w-full mb-4">
-				<strong class="text-sm sm:text-md mb-2">@{{ user.username }}</strong>
-				<p class="text-xs sm:text-sm md:text-md">
-					Deleting your account is irreversible. Please make sure that this is something you want to
-					do before you proceed.
-				</p>
-				<p class="text-xs sm:text-sm md:text-md">
-					To delete your account, please enter your password and confirm your choice.
-				</p>
-			</div>
+	<div
+		v-if="user"
+		class="flex flex-col w-full min-w-100 px-8"
+	>
+		<div class="flex flex-col w-full mb-4">
+			<strong class="text-sm sm:text-md mb-2">@{{ user.username }}</strong>
+			<p class="text-xs sm:text-sm md:text-md">
+				Deleting your account is irreversible. Please make sure that this is something you want to
+				do before you proceed.
+			</p>
+			<p class="text-xs sm:text-sm md:text-md">
+				To delete your account, please enter your password and confirm your choice.
+			</p>
+		</div>
 
-			<div class="flex flex-col min-w-50 w-1/2">
-				<UInput
-					v-model="password"
-					type="password"
-					:disabled="loading"
-					:ui="{ base: 'peer' }"
+		<div class="flex flex-col min-w-50 w-1/2">
+			<UInput
+				v-model="password"
+				type="password"
+				:disabled="loading"
+				:ui="{ base: 'peer' }"
+			>
+				<label
+					class="pointer-events-none absolute left-0 -top-2.5 text-highlighted text-xs font-medium px-1.5 transition-all peer-focus:-top-2.5 peer-focus:text-highlighted peer-focus:text-xs peer-focus:font-medium peer-placeholder-shown:text-sm peer-placeholder-shown:text-dimmed peer-placeholder-shown:top-1.5 peer-placeholder-shown:font-normal"
 				>
-					<label
-						class="pointer-events-none absolute left-0 -top-2.5 text-highlighted text-xs font-medium px-1.5 transition-all peer-focus:-top-2.5 peer-focus:text-highlighted peer-focus:text-xs peer-focus:font-medium peer-placeholder-shown:text-sm peer-placeholder-shown:text-dimmed peer-placeholder-shown:top-1.5 peer-placeholder-shown:font-normal"
-					>
-						<span class="inline-flex bg-default px-1">Password</span>
-					</label>
-				</UInput>
+					<span class="inline-flex bg-default px-1">Password</span>
+				</label>
+			</UInput>
 
-				<UButton
-					color="error"
-					class="mt-4 w-full"
-					variant="solid"
-					icon="mdi:account-cancel"
-					:loading="loading"
-					:disabled="!password || loading || disabled"
-					@click="confirmDelete"
-					>Delete Account</UButton
-				>
+			<UButton
+				color="error"
+				class="mt-4 w-full"
+				variant="solid"
+				icon="mdi:account-cancel"
+				:loading="loading"
+				:disabled="!password || loading || disabled"
+				@click="confirmDelete"
+				>Delete Account</UButton
+			>
 
-				<TurnstileWidget
-					class="mt-4"
-					@received-token="loading = true"
-					@error="
-						loading = false;
-						disabled = true;
-						error = 'Turnstile verification failed. Please re-open and try again.';
-					"
-					@expired="
-						loading = false;
-						disabled = true;
-						error = 'Turnstile verification expired. Please re-open and try again.';
-					"
-					@verified="
-						loading = false;
-						disabled = false;
-					"
-				/>
+			<TurnstileWidget
+				class="mt-4"
+				@received-token="loading = true"
+				@error="
+					loading = false;
+					disabled = true;
+					error = 'Turnstile verification failed. Please re-open and try again.';
+				"
+				@expired="
+					loading = false;
+					disabled = true;
+					error = 'Turnstile verification expired. Please re-open and try again.';
+				"
+				@verified="
+					loading = false;
+					disabled = false;
+				"
+			/>
 
-				<div
-					v-if="error"
-					class="text-red-500 mt-2"
-				>
-					{{ error }}
-				</div>
+			<div
+				v-if="error"
+				class="text-red-500 mt-2"
+			>
+				{{ error }}
 			</div>
 		</div>
-		<div
-			v-else
-			class="flex flex-col w-full h-full items-center justify-center"
-		>
-			<p class="text-center text-gray-600">Please log in.</p>
-		</div>
-	</ClientOnly>
+	</div>
+	<div
+		v-else
+		class="flex flex-col w-full h-full items-center justify-center"
+	>
+		<p class="text-center text-gray-600">Please log in.</p>
+	</div>
 </template>
 
 <script setup lang="ts">

@@ -1,24 +1,22 @@
 <template>
-	<ClientOnly>
-		<div
-			v-if="user"
-			class="w-full h-full px-2 sm:px-4 md:px-8 lg:px-12 py-4 mt-24 sm:mt-0"
-		>
-			<h1 class="text-2xl font-bold text-white">Notifications for @{{ user.username }}</h1>
-			<h5 class="text-md mb-4 text-gray-300 light:text-gray-500">{{ unreadCount }} unread</h5>
-			<UserNotificationList :additional="true" />
-		</div>
-		<Loading v-else-if="user === undefined" />
-		<!-- Only show message when user is explicitly null (not loading) -->
-		<div
-			v-else-if="user === null"
-			class="w-full h-full flex items-center justify-center"
-		>
-			<p class="text-gray-400 light:text-gray-600 mb-4">
-				You need to be logged in to view your notifications.
-			</p>
-		</div>
-	</ClientOnly>
+	<div
+		v-if="user"
+		class="w-full h-full px-2 sm:px-4 md:px-8 lg:px-12 py-4 mt-24 sm:mt-0"
+	>
+		<h1 class="text-2xl font-bold text-white">Notifications for @{{ user.username }}</h1>
+		<h5 class="text-md mb-4 text-gray-300 light:text-gray-500">{{ unreadCount }} unread</h5>
+		<UserNotificationList :additional="true" />
+	</div>
+	<Loading v-else-if="user === undefined" />
+	<!-- Only show message when user is explicitly null (not loading) -->
+	<div
+		v-else-if="user === null"
+		class="w-full h-full flex items-center justify-center"
+	>
+		<p class="text-gray-400 light:text-gray-600 mb-4">
+			You need to be logged in to view your notifications.
+		</p>
+	</div>
 </template>
 
 <script setup lang="ts">

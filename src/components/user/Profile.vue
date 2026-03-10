@@ -34,6 +34,7 @@
 		<div class="flex gap-2 mb-10">
 			<UModal
 				title="Points History"
+				id="points-history"
 				v-if="points !== undefined"
 			>
 				<UButton
@@ -117,7 +118,10 @@
 				class="mr-2"
 			/>
 		</div>
-		<div class="flex items-center justify-center flex-wrap max-w-200">
+		<div
+			class="flex items-center justify-center flex-wrap max-w-200"
+			id="user-activities"
+		>
 			<UBadge
 				v-for="(activity, i) in props.user.activities"
 				:label="activity.name"
@@ -334,8 +338,12 @@ import {
 	type DateValue
 } from '@internationalized/date';
 import { DateTime } from 'luxon';
+import { h } from 'vue';
 import ContentDrawer from '~/components/ContentDrawer.vue';
 import type { Event } from '~/shared/types/event';
+import { withSuffix } from '~/shared/utils/util';
+
+const comma = (n: number | undefined) => (n !== undefined ? withSuffix(n) : '—');
 
 const props = defineProps<{
 	user: User;
@@ -374,14 +382,17 @@ const { friends, fetchFriends, fetchFriendsPage } = useFriends(props.user.id);
 const badgeVariants = ref<('outline' | 'solid')[]>([]);
 
 // Fetch user profile data on mount
-onMounted(() => {
+onMounted(async () => {
 	fetchFriends();
 	fetchPrompts();
 	fetchArticles();
 	fetchCurrentEvents();
-	fetchAttendingEvents();
 	fetchPoints();
 	fetchBadges();
+
+	await fetchAttendingEvents();
+	selectedDate.value = today(getLocalTimeZone()) as DateValue;
+	showEvents(selectedDate.value as any);
 });
 
 function openEmail() {
@@ -617,12 +628,6 @@ async function showEvents(day: CalendarDate | DateValue | undefined) {
 }
 
 // Initialize calendar with today's events
-onMounted(async () => {
-	await Promise.all([fetchAttendingEvents(), fetchCurrentEvents()]);
-
-	selectedDate.value = today(getLocalTimeZone()) as DateValue;
-	showEvents(selectedDate.value as any);
-});
 
 async function openCurrentDayEvents() {
 	if (drawerRef.value) drawerRef.value.search = '';

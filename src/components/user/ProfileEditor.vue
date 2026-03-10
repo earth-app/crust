@@ -874,50 +874,6 @@ async function handleSelectClick(cosmeticKey: AvatarCosmetic['key']) {
 	}
 }
 
-async function setCurrentCosmetic(key: AvatarCosmetic['key']) {
-	const res = await avatarStore.setCosmeticForUser(user.value.id, key);
-	if (res.success) {
-		toast.add({
-			title: 'Cosmetic Updated',
-			description: 'Your profile cosmetic has been successfully updated.',
-			color: 'success',
-			icon: 'mdi:check-circle',
-			duration: 3000
-		});
-	} else {
-		console.error(res.message || 'Failed to update cosmetic.');
-		toast.add({
-			title: 'Error',
-			description: res.message || 'Failed to update cosmetic.',
-			color: 'error',
-			duration: 5000
-		});
-	}
-}
-
-async function purchaseCosmetic(key: AvatarCosmetic['key'], price: number) {
-	const res = await avatarStore.purchaseCosmetic(user.value.id, key);
-
-	if (res.success) {
-		toast.add({
-			title: 'Purchase Successful',
-			description: `You have successfully purchased the ${capitalizeFully(key)} cosmetic!`,
-			color: 'success',
-			icon: 'mdi:check-circle',
-			duration: 3000
-		});
-	} else {
-		console.error(res.message || 'Failed to purchase cosmetic.');
-		toast.add({
-			title: 'Error',
-			description: res.message || 'Failed to purchase cosmetic.',
-			color: 'error',
-			duration: 5000
-		});
-		return;
-	}
-}
-
 // Activities
 
 const userActivities = computed({
@@ -1003,11 +959,7 @@ async function updateAccountVisibility(value: User['account']['visibility']) {
 			duration: 5000
 		});
 	}
-
-	visibilityLoading.value = false;
 }
-
-// Email Verification
 const emailVerificationModal = ref<EmailVerificationModalRef | null>(null);
 
 async function handleSendVerificationEmail(): Promise<boolean> {

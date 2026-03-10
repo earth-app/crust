@@ -17,7 +17,7 @@
 				<div class="flex space-x-8 font-medium">
 					<h2
 						class="text-sm sm:text-md mb-4 text-gray-400 hover:cursor-pointer"
-						@click="notifications.forEach((n) => (n.read = true))"
+						@click="markAllRead"
 					>
 						Mark All as Read
 					</h2>
@@ -48,6 +48,10 @@ const props = defineProps<{
 }>();
 
 const { notifications } = useNotifications();
+
+async function markAllRead() {
+	await markAllNotificationsRead();
+}
 
 const displayed = computed(() => {
 	return props.additional ? notifications.value : notifications.value.slice(0, 4);

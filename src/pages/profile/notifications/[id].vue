@@ -1,64 +1,62 @@
 <template>
-	<ClientOnly>
-		<div
-			v-if="user && notification"
-			class="w-full px-4 py-8 mt-16 sm:mt-0"
-		>
-			<div class="flex flex-col items-center">
-				<h2 class="text-lg font-semibold">{{ notification.title }}</h2>
-				<UTooltip
-					:text="relativeTime"
-					arrow
+	<div
+		v-if="user && notification"
+		class="w-full px-4 py-8 mt-16 sm:mt-0"
+	>
+		<div class="flex flex-col items-center">
+			<h2 class="text-lg font-semibold">{{ notification.title }}</h2>
+			<UTooltip
+				:text="relativeTime"
+				arrow
+			>
+				<h3 class="text-md text-gray-400 mb-4">{{ time }}</h3>
+			</UTooltip>
+			<UChip
+				:color="notification.type"
+				:ui="{ base: 'size-4 lg:size-6' }"
+				:title="capitalizeFully(notification.type)"
+			>
+				<div
+					class="p-4 bg-gray-800 border-2 border-gray-200 light:border-gray-400 rounded-lg w-full max-w-3xl"
 				>
-					<h3 class="text-md text-gray-400 mb-4">{{ time }}</h3>
-				</UTooltip>
-				<UChip
-					:color="notification.type"
-					:ui="{ base: 'size-4 lg:size-6' }"
-					:title="capitalizeFully(notification.type)"
-				>
-					<div
-						class="p-4 bg-gray-800 border-2 border-gray-200 light:border-gray-400 rounded-lg w-full max-w-3xl"
+					<p
+						class="text-gray-300 text-sm md:text-md lg:text-lg mb-4"
+						v-html="message"
+					></p>
+					<USeparator
+						v-if="notification.link"
+						class="my-4"
+					/>
+					<a
+						v-if="notification.link"
+						:href="notification.link"
+						class="text-blue-400 hover:underline break-all"
 					>
-						<p
-							class="text-gray-300 text-sm md:text-md lg:text-lg mb-4"
-							v-html="message"
-						></p>
-						<USeparator
-							v-if="notification.link"
-							class="my-4"
-						/>
-						<a
-							v-if="notification.link"
-							:href="notification.link"
-							class="text-blue-400 hover:underline break-all"
-						>
-							{{ notification.link.startsWith('http') ? notification.link : 'Open Link' }}
-						</a>
-						<p class="text-gray-500 text-xs mt-2">
-							From: {{ notification.source }} | Type: {{ capitalizeFully(notification.type) }} | ID:
-							{{ notification.id }}
-						</p>
-					</div>
-				</UChip>
-			</div>
+						{{ notification.link.startsWith('http') ? notification.link : 'Open Link' }}
+					</a>
+					<p class="text-gray-500 text-xs mt-2">
+						From: {{ notification.source }} | Type: {{ capitalizeFully(notification.type) }} | ID:
+						{{ notification.id }}
+					</p>
+				</div>
+			</UChip>
 		</div>
-		<Loading v-else-if="user && notification === undefined" />
-		<div
-			v-else-if="user && notification === null"
-			class="flex flex-col items-center justify-center h-screen"
-		>
-			<p class="text-gray-600">Notification doesn't exist. Maybe look at the URL again?</p>
-		</div>
-		<Loading v-else-if="user === undefined" />
-		<!-- Only show "Please log in" when user is explicitly null (not loading) -->
-		<div
-			v-else-if="user === null"
-			class="flex flex-col w-full h-full items-center justify-center"
-		>
-			<p class="text-center text-gray-600">Please log in to view your notifications.</p>
-		</div>
-	</ClientOnly>
+	</div>
+	<Loading v-else-if="user && notification === undefined" />
+	<div
+		v-else-if="user && notification === null"
+		class="flex flex-col items-center justify-center h-screen"
+	>
+		<p class="text-gray-600">Notification doesn't exist. Maybe look at the URL again?</p>
+	</div>
+	<Loading v-else-if="user === undefined" />
+	<!-- Only show "Please log in" when user is explicitly null (not loading) -->
+	<div
+		v-else-if="user === null"
+		class="flex flex-col w-full h-full items-center justify-center"
+	>
+		<p class="text-center text-gray-600">Please log in to view your notifications.</p>
+	</div>
 </template>
 <script setup lang="ts">
 import { DateTime } from 'luxon';

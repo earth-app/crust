@@ -194,9 +194,8 @@ if (authorAvatarUrl.value) {
 const i18n = useI18n();
 const time = computed(() => {
 	if (!props.article.created_at) return 'sometime';
-	const created = DateTime.fromISO(props.article.created_at, {
-		zone: Intl.DateTimeFormat().resolvedOptions().timeZone
-	});
+	const zone = import.meta.client ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
+	const created = DateTime.fromISO(props.article.created_at, { zone });
 
 	return created.setLocale(i18n.locale.value).toLocaleString(DateTime.DATETIME_FULL);
 });

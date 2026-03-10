@@ -78,9 +78,6 @@ watch(
 	}
 );
 
-const footer = ref<string | undefined>(undefined);
-const secondaryFooter = ref<string | undefined>(undefined);
-
 const avatarStore = useAvatarStore();
 const ownerAvatarUrl = computed(() => props.prompt.owner?.account?.avatar_url);
 const authorAvatar = computed(() => {
@@ -94,16 +91,13 @@ if (ownerAvatarUrl.value) {
 	avatarStore.preloadAvatar(ownerAvatarUrl.value);
 }
 
-const authorAvatarChipColor = ref<any | null>(null);
 const { user } = useAuth();
 
 const i18n = useI18n();
 const time = computed(() => {
 	if (!props.prompt.created_at) return 'sometime';
-	const created = DateTime.fromISO(props.prompt.created_at, {
-		zone: Intl.DateTimeFormat().resolvedOptions().timeZone
-	});
-
+	const zone = import.meta.client ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
+	const created = DateTime.fromISO(props.prompt.created_at, { zone });
 	return created.setLocale(i18n.locale.value).toLocaleString(DateTime.DATETIME_SHORT);
 });
 
@@ -113,29 +107,27 @@ const hasButtons = computed(() => {
 
 const updatedTime = computed(() => {
 	if (!props.prompt.updated_at) return 'sometime';
-	const updated = DateTime.fromISO(props.prompt.updated_at, {
-		zone: Intl.DateTimeFormat().resolvedOptions().timeZone
-	});
-
+	const zone = import.meta.client ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
+	const updated = DateTime.fromISO(props.prompt.updated_at, { zone });
 	return updated.toRelative({ locale: i18n.locale.value }) || 'sometime';
 });
 
-onMounted(async () => {
-	if (props.prompt.created_at !== props.prompt.updated_at) {
-		secondaryFooter.value = `Updated ${updatedTime.value}`;
-	}
-
-	const author = props.prompt.owner;
-	switch (author.account.account_type) {
+const authorAvatarChipColor = computed(() => {
+	switch (props.prompt.owner.account.account_type) {
 		case 'ORGANIZER':
-			authorAvatarChipColor.value = 'warning';
-			break;
+			return 'warning';
 		case 'ADMINISTRATOR':
-			authorAvatarChipColor.value = 'error';
-			break;
+			return 'error';
+		default:
+			return null;
 	}
-	footer.value = `@${author.username} - ${time.value}`;
 });
+
+const footer = computed(() => `@${props.prompt.owner.username} - ${time.value}`);
+
+const secondaryFooter = computed(() =>
+	props.prompt.created_at !== props.prompt.updated_at ? `Updated ${updatedTime.value}` : undefined
+);
 
 const editOpen = ref(false);
 const editLoading = ref(false);
