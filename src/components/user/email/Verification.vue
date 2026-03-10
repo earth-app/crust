@@ -74,14 +74,14 @@
 			v-else
 			class="w-full h-full flex items-center justify-center"
 		>
-			<UBanner
+			<LazyUBanner
 				title="Please log in to verify your email address."
 				color="info"
 				icon="mdi:email-check-outline"
 				:ui="{ root: 'flex items-center', title: 'font-semibold' }"
 				close
 			>
-			</UBanner>
+			</LazyUBanner>
 		</div>
 	</ClientOnly>
 </template>
