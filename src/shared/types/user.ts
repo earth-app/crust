@@ -116,3 +116,56 @@ export type AvatarCosmetic = {
 	price: number;
 	rarity: Rarity;
 };
+
+export type Quest = {
+	id: string;
+	title: string;
+	description: string;
+	icon: string;
+	rarity: Rarity;
+	mobile_only?: boolean;
+	steps: (QuestStep | QuestStep[])[]; // single step (required) or alternative steps (user can complete any one of them)
+	reward: number;
+	permissions: ('camera' | 'location' | 'record')[]; // e.g. ['camera', 'location']
+};
+
+export type QuestStep = {
+	type: string;
+	description: string;
+	parameters: any[];
+	reward?: number;
+	delay?: number; // delay in seconds before this step can be completed after the previous one
+};
+
+export type QuestProgressEntry = {
+	type: string;
+	index?: number; // which one was completed
+	altIndex?: number; // if it was an alternative step, which one
+	submittedAt: number; // unix ms timestamp
+	data?: string; // data url for completed photo/audio steps
+	// type-specific data
+	r2Key?: string; // for photo and audio uploads
+	score?: number; // both activity quiz steps / validation score for photos & audio
+	prompt?: string; // for photo caption steps
+	lat?: number; // for location steps
+	lng?: number; // for location steps
+	eventId?: string; // for event attendance steps
+	timestamp?: number; // for event attendance steps (timestamp of attendance)
+	scoreKey?: string; // for activity quiz steps
+};
+
+export type QuestHistoryEntry = {
+	quest: Quest;
+	questId: Quest['id'];
+	completedAt: number;
+	progress: (QuestProgressEntry | QuestProgressEntry[])[]; // you can do multiple alternative steps
+};
+
+export type UserQuestProgress = {
+	quest: Quest;
+	questId: Quest['id'];
+	currentStep: QuestStep;
+	currentStepIndex: number;
+	completed: boolean;
+	progress: (QuestProgressEntry | QuestProgressEntry[])[];
+};

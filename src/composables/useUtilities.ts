@@ -4,58 +4,72 @@ export function useTimeOnPage(field: string) {
 	const authStore = useAuthStore();
 	const timeOnPage = ref(0);
 	const isTimerRunning = ref(false);
+	const timerPending = ref(false);
 
 	const startTimer = async () => {
-		if (isTimerRunning.value) return; // timer already running
+		if (isTimerRunning.value || timerPending.value) return;
+		timerPending.value = true;
 
-		const res = await makeServerRequest<void>(null, '/api/user/timer', authStore.sessionToken, {
-			method: 'POST',
-			body: { action: 'start', field }
-		});
+		try {
+			const res = await makeServerRequest<void>(null, '/api/user/timer', authStore.sessionToken, {
+				method: 'POST',
+				body: { action: 'start', field }
+			});
 
-		if (!res.success) {
-			console.error('Failed to start timer:', res.message);
-			return;
+			if (!res.success) {
+				console.error('Failed to start timer:', res.message);
+				return;
+			}
+
+			isTimerRunning.value = true;
+		} finally {
+			timerPending.value = false;
 		}
-
-		isTimerRunning.value = true;
 	};
 
 	const stopTimer = async () => {
-		if (!isTimerRunning.value) return; // timer not started
+		if (!isTimerRunning.value || timerPending.value) return;
+		timerPending.value = true;
 
-		const res = await makeServerRequest<{ durationMs: number }>(
-			null,
-			'/api/user/timer',
-			authStore.sessionToken,
-			{
-				method: 'POST',
-				body: { action: 'stop', field }
+		try {
+			const res = await makeServerRequest<{ durationMs: number }>(
+				null,
+				'/api/user/timer',
+				authStore.sessionToken,
+				{
+					method: 'POST',
+					body: { action: 'stop', field }
+				}
+			);
+
+			if (!res.success || !res.data) {
+				console.error('Failed to stop timer:', res.message);
+				return;
 			}
-		);
 
-		if (!res.success || !res.data) {
-			console.error('Failed to stop timer:', res.message);
-			return;
+			isTimerRunning.value = false;
+			timeOnPage.value += res.data.durationMs;
+		} finally {
+			timerPending.value = false;
 		}
+	};
 
-		isTimerRunning.value = false;
-		timeOnPage.value += res.data.durationMs;
+	const onVisibilityChange = () => {
+		if (document.visibilityState === 'hidden') {
+			stopTimer();
+		} else {
+			startTimer();
+		}
 	};
 
 	onMounted(() => {
-		// pause when tab is not active
-		document.addEventListener('visibilitychange', () => {
-			if (document.visibilityState === 'hidden') {
-				stopTimer();
-			} else {
-				startTimer();
-			}
-		});
+		// visibilitychange covers both tab-switching and window focus/blur;
+		// using it alone avoids the double-fire that occurs when pairing it with focus/blur.
+		document.addEventListener('visibilitychange', onVisibilityChange);
+	});
 
-		// pause when tabbing out of the window
-		window.addEventListener('focus', startTimer);
-		window.addEventListener('blur', stopTimer);
+	onUnmounted(() => {
+		document.removeEventListener('visibilitychange', onVisibilityChange);
 	});
 
 	return {

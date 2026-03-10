@@ -1,51 +1,47 @@
 <template>
 	<div class="flex flex-col pt-20 sm:pt-0">
-		<ClientOnly>
-			<div class="flex justify-center mt-2 gap-x-2">
+		<div class="flex justify-center mt-2 gap-x-2">
+			<UButton
+				title="Refresh"
+				icon="i-lucide-refresh-cw"
+				color="neutral"
+				variant="outline"
+				:loading="loading"
+				:disabled="loading"
+				class="mt-2"
+				@click="loadContent"
+			/>
+			<EventEditor mode="create">
 				<UButton
-					title="Refresh"
-					icon="i-lucide-refresh-cw"
-					color="neutral"
+					v-if="user"
+					title="Create Event"
+					icon="i-lucide-plus"
+					color="primary"
 					variant="outline"
-					:loading="loading"
-					:disabled="loading"
 					class="mt-2"
-					@click="loadContent"
+					:disabled="newDisabled"
 				/>
-				<EventEditor mode="create">
-					<UButton
-						v-if="user"
-						title="Create Event"
-						icon="i-lucide-plus"
-						color="primary"
-						variant="outline"
-						class="mt-2"
-						:disabled="newDisabled"
-					/>
-				</EventEditor>
-			</div>
-		</ClientOnly>
-		<ClientOnly>
-			<InfoCardGroup
-				v-if="user"
-				title="Recommended for You"
-				description="Based on your interests and activities"
-				icon="mdi:calendar-star"
-			>
-				<InfoCardSkeleton
-					v-if="!recommendedLoaded"
-					v-for="n in 2"
-					:key="n"
-					content-size="small"
-				/>
-				<LazyEventCard
-					v-for="event in recommendedEvents"
-					:key="event.id"
-					:event="event"
-					hydrate-on-visible
-				/>
-			</InfoCardGroup>
-		</ClientOnly>
+			</EventEditor>
+		</div>
+		<InfoCardGroup
+			v-if="user"
+			title="Recommended for You"
+			description="Based on your interests and activities"
+			icon="mdi:calendar-star"
+		>
+			<InfoCardSkeleton
+				v-if="!recommendedLoaded"
+				v-for="n in 2"
+				:key="n"
+				content-size="small"
+			/>
+			<LazyEventCard
+				v-for="event in recommendedEvents"
+				:key="event.id"
+				:event="event"
+				hydrate-on-visible
+			/>
+		</InfoCardGroup>
 		<InfoCardGroup
 			title="Upcoming Events"
 			description="Don't miss out on these!"

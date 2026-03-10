@@ -202,7 +202,7 @@ onMounted(async () => {
 	const { getRandom: getRandomEvents } = useEvents();
 
 	// Fetch prompts
-	getRandomPrompts(3).then((resPrompt) => {
+	getRandomPrompts(5).then((resPrompt) => {
 		if (resPrompt.success && resPrompt.data) {
 			if ('message' in resPrompt.data) {
 				randomPrompts.value = [];
@@ -221,7 +221,7 @@ onMounted(async () => {
 	});
 
 	// Fetch activities
-	getRandomActivities(5).then((resActivities) => {
+	getRandomActivities(10).then((resActivities) => {
 		if (resActivities.success && resActivities.data) {
 			if ('message' in resActivities.data) {
 				randomActivities.value = [];
@@ -240,7 +240,7 @@ onMounted(async () => {
 	});
 
 	// Fetch articles
-	getRandomArticles(4).then((resArticles) => {
+	getRandomArticles(8).then((resArticles) => {
 		if (resArticles.success && resArticles.data) {
 			if ('message' in resArticles.data) {
 				randomArticles.value = [];
@@ -259,7 +259,7 @@ onMounted(async () => {
 	});
 
 	// Fetch events
-	getRandomEvents(5).then((resEvents) => {
+	getRandomEvents(10).then((resEvents) => {
 		if (resEvents.success && resEvents.data) {
 			if ('message' in resEvents.data) {
 				randomEvents.value = [];

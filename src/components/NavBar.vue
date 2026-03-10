@@ -109,6 +109,7 @@
 						<NuxtLink
 							to="/profile/notifications"
 							class="size-5 lg:size-7 relative"
+							id="notifications"
 						>
 							<UChip
 								:color="chipColor"
@@ -125,6 +126,7 @@
 						<NuxtLink
 							class="size-5 lg:size-7"
 							to="/profile"
+							id="settings"
 						>
 							<UIcon
 								name="material-symbols:settings-rounded"
@@ -133,8 +135,9 @@
 						</NuxtLink>
 						<NuxtLink
 							class="size-5 lg:size-7"
-							:to="`/profile/${user.id}/badges`"
+							:to="`/profile/@${user.username}/badges`"
 							title="Your Badges"
+							id="badges"
 						>
 							<UIcon
 								name="mdi:shield-star-outline"
@@ -145,6 +148,7 @@
 							class="size-5 lg:size-7"
 							to="/profile/quests/"
 							title="Your Quests"
+							id="quests"
 						>
 							<UIcon
 								name="mdi:sword"
@@ -215,14 +219,11 @@ const toast = useToast();
 const router = useRouter();
 const logout = useLogout();
 const { motd, fetchMotd } = useMotd();
+const isNavbarVisible = ref(true);
 
 onMounted(async () => {
 	await fetchMotd();
-});
 
-const isNavbarVisible = ref(true);
-
-onMounted(() => {
 	if (import.meta.client) {
 		let ticking = false;
 

@@ -187,3 +187,110 @@ export async function exchangeCodeForToken(provider: OAuthProvider, code: string
 			throw new Error(`Unknown provider: ${provider}`);
 	}
 }
+
+export function parseUserAgent(ua: string): {
+	make: string;
+	model: string;
+	os: string;
+	version?: string;
+} {
+	if (!ua) return { make: 'unknown', model: 'unknown', os: 'unknown' };
+
+	// iOS / iPadOS
+	const iosMatch = ua.match(/\((\w+);\s*CPU(?:\s+iPhone)?\s+OS\s+([\d_]+)/);
+	if (iosMatch) {
+		const device = iosMatch[1] ?? 'iPhone'; // "iPhone" or "iPad"
+		const osRaw = iosMatch[2] ?? '';
+		const osVersion = osRaw.replace(/_/g, '.');
+		const version = osVersion || undefined;
+		return { make: 'apple', model: device, os: 'ios', version };
+	}
+
+	// Android
+	const androidMatch = ua.match(/Android\s+([\d.]+);\s*([^)]+)\)/);
+	if (androidMatch) {
+		const verRaw = androidMatch[1] ?? '';
+		const version = verRaw || undefined;
+		const modelRaw = (androidMatch[2] ?? '').trim() || 'Android';
+
+		let make = 'android';
+
+		// Samsung  — SM-*, SGH-*, GT-*, SCH-* prefixes or explicit "Samsung"
+		if (/samsung/i.test(modelRaw) || /^(SM|SGH|GT|SCH)-/i.test(modelRaw)) {
+			make = 'samsung';
+		}
+
+		// Google Pixel
+		else if (/pixel/i.test(modelRaw) || /google/i.test(modelRaw)) {
+			make = 'google';
+		}
+
+		// OnePlus
+		else if (/oneplus|le\s*x/i.test(modelRaw)) {
+			make = 'oneplus';
+		}
+
+		// Huawei
+		else if (/huawei|honor/i.test(modelRaw)) {
+			make = 'huawei';
+		}
+
+		// Xiaomi / Redmi / POCO
+		else if (/xiaomi|redmi|poco|mi\s/i.test(modelRaw)) {
+			make = 'xiaomi';
+		}
+
+		// LG
+		else if (/lg[-\s]/i.test(modelRaw)) {
+			make = 'lg';
+		}
+
+		// Motorola
+		else if (/motorola|moto\s/i.test(modelRaw)) {
+			make = 'motorola';
+		}
+
+		// Sony
+		else if (/sony|xperia/i.test(modelRaw)) {
+			make = 'sony';
+		}
+
+		// Nokia
+		else if (/nokia/i.test(modelRaw)) {
+			make = 'nokia';
+		}
+
+		return { make, model: modelRaw, os: 'android', version };
+	}
+
+	// macOS
+	const macMatch = ua.match(/Macintosh.*Mac OS X ([\d_]+)/);
+	if (macMatch) {
+		const verRaw = macMatch[1] ?? '';
+		const version = verRaw ? verRaw.replace(/_/g, '.') : undefined;
+		return { make: 'apple', model: 'Mac', os: 'macos', version };
+	}
+
+	// Windows
+	const winMatch = ua.match(/Windows NT ([\d.]+)/);
+	if (winMatch) {
+		const ntMap: Record<string, string> = {
+			'10.0': '10/11',
+			'6.3': '8.1',
+			'6.2': '8',
+			'6.1': '7'
+		};
+		const key = winMatch[1] ?? '';
+		const mapped = ntMap[key] ?? key;
+		const version = mapped || undefined;
+		return { make: 'microsoft', model: 'PC', os: 'windows', version };
+	}
+
+	// Linux desktop
+	if (/Linux/i.test(ua) && !/Android/i.test(ua)) {
+		const version = ua.match(/Linux\s([\d.]+)/)?.[1] ?? undefined;
+		return { make: 'linux', model: 'Desktop', os: 'linux', version };
+	}
+
+	return { make: 'unknown', model: 'unknown', os: 'unknown' };
+}

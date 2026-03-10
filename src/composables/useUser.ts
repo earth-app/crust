@@ -299,24 +299,41 @@ export function useUser(identifier: string) {
 
 	const currentEvents = computed(() => userStore.hostingEvents.get(identifier) || []);
 	const currentEventsCount = computed(() => currentEvents.value.length);
-	const fetchCurrentEvents = async () => {
-		await userStore.fetchHostingEvents(identifier);
-	};
+	const fetchCurrentEvents = async () => await userStore.fetchHostingEvents(identifier);
 
 	const badges = computed(() => userStore.badges.get(identifier) || []);
 	const grantedBadges = computed(() => badges.value.filter((b) => b.granted));
-	const fetchBadges = async () => {
-		await userStore.fetchBadges(identifier);
-	};
+	const fetchBadges = async () => await userStore.fetchBadges(identifier);
 
 	const eventSubmissions = computed(() => userStore.eventSubmissions.get(identifier) || []);
-	const fetchEventSubmissions = async () => {
-		await userStore.fetchEventSubmissions(identifier);
-	};
+	const fetchEventSubmissions = async () => await userStore.fetchEventSubmissions(identifier);
 
 	const points = computed(() => userStore.points.get(identifier));
 	const pointsHistory = computed(() => userStore.pointsHistory.get(identifier));
 	const fetchPoints = async () => await userStore.fetchPoints(identifier);
+
+	const quest = computed(() => userStore.quest.get(identifier));
+	const fetchQuest = async (force: boolean = false) =>
+		await userStore.fetchQuest(identifier, force);
+	const fetchQuestStep = async (index: number) => await userStore.fetchQuestStep(identifier, index);
+	const startQuest = async (questId: string, override: boolean = false) =>
+		await userStore.startQuest(identifier, questId, override);
+	const updateQuest = async (
+		stepResponse: {
+			type: string;
+			index: number;
+			altIndex?: number;
+			dataUrl?: string;
+			[x: string]: any;
+		},
+		lat: number | null,
+		lng: number | null
+	) => await userStore.updateQuest(identifier, stepResponse, lat, lng);
+	const endQuest = async () => await userStore.endQuest(identifier);
+	const questHistory = computed(
+		() => userStore.questHistory.get(identifier) || new Map<string, QuestHistoryEntry>()
+	);
+	const fetchQuestHistory = async () => await userStore.fetchQuestHistory(identifier);
 
 	return {
 		user,
@@ -342,7 +359,26 @@ export function useUser(identifier: string) {
 		fetchEventSubmissions,
 		points,
 		pointsHistory,
-		fetchPoints
+		fetchPoints,
+		quest,
+		fetchQuest,
+		fetchQuestStep,
+		startQuest,
+		updateQuest,
+		endQuest,
+		questHistory,
+		fetchQuestHistory
+	};
+}
+
+export function useQuests() {
+	const userStore = useUserStore();
+	const quests = computed(() => userStore.questsList);
+	const fetchQuests = async () => await userStore.fetchQuestsList();
+
+	return {
+		quests,
+		fetchQuests
 	};
 }
 
@@ -744,5 +780,52 @@ export function useFriends(id?: string) {
 		fetchCirclePage,
 		addToCircle,
 		removeFromCircle
+	};
+}
+
+// Geolocation
+
+export function useGeolocation() {
+	const lat = ref<number | null>(null);
+	const lng = ref<number | null>(null);
+	const alt = ref<number | null>(null);
+	const accuracy = ref<number | null>(null);
+	const altAccuracy = ref<number | null>(null);
+	const speed = ref<number | null>(null);
+	const error = ref<string | null>(null);
+
+	const fetchLocation = () => {
+		if (!navigator.geolocation) {
+			error.value = 'Geolocation is not supported by your browser.';
+			return;
+		}
+
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				lat.value = position.coords.latitude;
+				lng.value = position.coords.longitude;
+				alt.value = position.coords.altitude;
+				accuracy.value = position.coords.accuracy;
+				altAccuracy.value = position.coords.altitudeAccuracy;
+				speed.value = position.coords.speed;
+				error.value = null;
+			},
+			(err) => {
+				error.value =
+					err.message ||
+					'Unable to retrieve your location. Please allow location access and try again.';
+			}
+		);
+	};
+
+	return {
+		lat,
+		lng,
+		alt,
+		accuracy,
+		altAccuracy,
+		speed,
+		error,
+		fetchLocation
 	};
 }
