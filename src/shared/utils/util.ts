@@ -213,8 +213,11 @@ export async function makeServerRequest<T>(
 		}
 
 		const data = await $fetch<T>(suburl, {
-			headers,
-			...options
+			...options,
+			headers: {
+				...headers,
+				...(options.headers ?? {})
+			}
 		});
 
 		return {
@@ -228,7 +231,8 @@ export async function makeServerRequest<T>(
 
 		return {
 			success: false,
-			message: error.message || 'An error occurred while fetching server data.'
+			message:
+				error.data?.message || error.message || 'An error occurred while fetching server data.'
 		};
 	}
 }
