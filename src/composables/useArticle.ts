@@ -19,8 +19,8 @@ export function useArticle(id: string) {
 
 	const article = computed(() => articleStore.get(id) || null);
 
-	const fetch = async () => {
-		await articleStore.fetchArticle(id);
+	const fetch = async (force: boolean = false) => {
+		await articleStore.fetchArticle(id, force);
 	};
 
 	const quiz = computed(() => articleStore.getQuiz(id));
@@ -34,6 +34,10 @@ export function useArticle(id: string) {
 	const score = computed(() => articleStore.getScore(id));
 
 	const submitQuiz = async (answers: number[]) => {
+		if (!article.value) {
+			await fetch(true);
+		}
+
 		if (!quiz.value || quiz.value.length === 0) {
 			throw new Error('Quiz must be loaded before submitting answers');
 		}
@@ -52,6 +56,8 @@ export function useArticle(id: string) {
 			index: a
 		}));
 
+		const articleTypes = article.value!.tags.map((t) => t.toUpperCase().replace(/\s+/g, '_'));
+
 		try {
 			const res = await makeServerRequest<ArticleQuizScoreResult>(
 				`article-${id}-quiz-submit`,
@@ -59,7 +65,7 @@ export function useArticle(id: string) {
 				authStore.sessionToken,
 				{
 					method: 'POST',
-					body: { answers: answers0, articleId: id }
+					body: { answers: answers0, articleId: id, articleTypes }
 				}
 			);
 
@@ -146,7 +152,7 @@ export function useArticle(id: string) {
 
 	const createQuiz = async () => {
 		if (!article.value) {
-			await fetch();
+			await fetch(true);
 		}
 
 		if (!article.value) {

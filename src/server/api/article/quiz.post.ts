@@ -4,9 +4,10 @@ export default defineEventHandler(async (event) => {
 	const user = await ensureLoggedIn(event);
 	const config = useRuntimeConfig();
 
-	const { answers, articleId } = await readBody<{
+	const { answers, articleId, articleTypes } = await readBody<{
 		answers: { question: string; text: string; index: number }[];
 		articleId: string;
+		articleTypes: string[];
 	}>(event);
 
 	if (!answers || !articleId) {
@@ -26,7 +27,8 @@ export default defineEventHandler(async (event) => {
 		body: {
 			answers,
 			articleId,
-			userId: user.id
+			userId: user.id,
+			articleTypes
 		}
 	});
 
