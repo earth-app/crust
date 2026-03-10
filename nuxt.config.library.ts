@@ -8,14 +8,17 @@ export default defineNuxtConfig({
 			microsoftClientId: process.env.NUXT_PUBLIC_MICROSOFT_CLIENT_ID || '',
 			githubClientId: process.env.NUXT_PUBLIC_GITHUB_CLIENT_ID || '',
 			discordClientId: process.env.NUXT_PUBLIC_DISCORD_CLIENT_ID || '',
-			facebookClientId: process.env.NUXT_PUBLIC_FACEBOOK_CLIENT_ID || ''
+			facebookClientId: process.env.NUXT_PUBLIC_FACEBOOK_CLIENT_ID || '',
+			// public keys
+			mapsApiKey: process.env.NUXT_PUBLIC_MAPS_API_KEY || ''
 		}
 	},
-	compatibilityDate: '2025-06-20',
+	compatibilityDate: '2025-12-13',
 	srcDir: 'src',
 	css: ['~/assets/css/main.css'],
 	vite: {
-		plugins: [tailwindcss()]
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		plugins: [tailwindcss() as any]
 	},
 	modules: [
 		'@nuxt/ui',
@@ -36,5 +39,8 @@ export default defineNuxtConfig({
 	i18n: {
 		locales: [{ code: 'en', language: 'en-US' }],
 		defaultLocale: 'en'
+	},
+	image: {
+		provider: 'none'
 	}
 });
