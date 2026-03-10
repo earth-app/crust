@@ -80,25 +80,44 @@ export default defineNuxtPlugin((nuxtApp) => {
 			};
 		};
 
+		let connectedUserId: string | null = null;
+
+		const disconnect = () => {
+			if (ws) {
+				ws.close();
+				ws = null;
+			}
+			connectedUserId = null;
+		};
+
 		const stopWatch = watch(
 			user,
 			(currentUser) => {
-				if (currentUser && !ws) {
+				if (!currentUser) {
+					disconnect();
+					return;
+				}
+
+				if (connectedUserId && connectedUserId !== currentUser.id) {
+					// different user logged in — close the old connection first
+					disconnect();
+				}
+
+				if (!ws) {
+					connectedUserId = currentUser.id;
 					connect(currentUser.id, authStore.sessionToken).catch((error) => {
 						console.error('Failed to establish WebSocket connection:', error);
+						connectedUserId = null;
 					});
 				}
 			},
 			{ immediate: true }
 		);
 
-		// Clean up when the page is unloaded
+		// only tear down on actual tab/window close, not on SPA navigations
 		window.addEventListener('beforeunload', () => {
 			stopWatch();
-			if (ws) {
-				ws.close();
-				ws = null;
-			}
+			disconnect();
 		});
 	});
 
