@@ -28,25 +28,10 @@
 					/>
 
 					<Score :score="item.score.score" />
-
-					<div class="flex flex-col">
-						<UAvatar
-							src="/cloud.png"
-							size="xl"
-							class="-mb-1"
-						/>
-						<p class="font-medium text-lg bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
-							"{{ item.caption }}" -
-							<NuxtLink
-								to="/profile/@cloud"
-								class="text-blue-600 font-semibold"
-								>@cloud</NuxtLink
-							>
-						</p>
-						<p class="opacity-80 text-sm mt-2">
-							{{ formatTimestamp(item.timestamp) }}
-						</p>
-					</div>
+					<Quote
+						:text="item.caption"
+						:timestamp="item.timestamp"
+					/>
 				</div>
 			</template>
 		</UModal>
@@ -54,8 +39,6 @@
 </template>
 
 <script setup lang="ts">
-import { DateTime } from 'luxon';
-
 const props = defineProps<{
 	submissions: EventImageSubmission[];
 }>();
@@ -82,11 +65,4 @@ const items = computed(() => {
 		};
 	});
 });
-
-const i18n = useI18n();
-function formatTimestamp(timestamp: number) {
-	return DateTime.fromMillis(timestamp).toLocaleString(DateTime.DATETIME_MED_WITH_WEEKDAY, {
-		locale: i18n.locale.value
-	});
-}
 </script>
