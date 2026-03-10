@@ -129,7 +129,7 @@ async function loadContent() {
 
 	if (user.value) {
 		const { getRecommended } = useArticles();
-		getRecommended().then((recommendedRes) => {
+		getRecommended(10).then((recommendedRes) => {
 			if (recommendedRes.success && recommendedRes.data) {
 				recommendedArticles.value = recommendedRes.data;
 				recommendedLoaded.value = true;
@@ -149,8 +149,8 @@ async function loadContent() {
 		recommendedLoaded.value = true;
 	}
 
-	const { getRandom } = useArticles();
-	getRandom(5).then((randomRes) => {
+	const { getRandom, getRecent } = useArticles();
+	getRandom(15).then((randomRes) => {
 		if (randomRes.success && randomRes.data) {
 			if ('message' in randomRes.data) {
 				randomLoaded.value = true;
@@ -182,8 +182,7 @@ async function loadContent() {
 		}
 	});
 
-	const { getRecent } = useArticles();
-	getRecent().then((recentRes) => {
+	getRecent(15).then((recentRes) => {
 		if (recentRes.success && recentRes.data) {
 			if ('message' in recentRes.data) {
 				recentLoaded.value = true;

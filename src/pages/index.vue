@@ -28,7 +28,9 @@
 				/>
 				<p class="text-lg font-semibold">Welcome, @{{ user.username }}</p>
 			</div>
-			<div class="flex flex-col sm:flex-row my-3 gap-x-2 gap-y-2">
+			<div
+				class="flex flex-col items-center justify-center flex-wrap sm:flex-row my-3 gap-x-2 gap-y-2 max-w-md"
+			>
 				<UButton
 					icon="mdi:account-arrow-right"
 					color="success"
@@ -50,6 +52,13 @@
 					variant="soft"
 					@click="$router.push('/about')"
 					>About Us</UButton
+				>
+				<UButton
+					icon="material-symbols:rule"
+					color="secondary"
+					variant="soft"
+					@click="$router.push('/terms-of-service')"
+					>Terms of Service</UButton
 				>
 				<UButton
 					icon="material-symbols:settings-account-box"

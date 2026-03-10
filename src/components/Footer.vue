@@ -4,7 +4,7 @@
 	>
 		<div class="flex flex-col items-start">
 			<span class="text-[10px] sm:text-xs"
-				>Copyright © 2025 The Earth App. All Rights Reserved.</span
+				>Copyright © 2026 The Earth App. All Rights Reserved.</span
 			>
 			<div
 				class="flex text-[10px] sm:text-xs space-x-1 sm:space-x-2 md:space-x-4 text-gray-500 *:hover:text-gray-300 *:transition-colors *:duration-200"

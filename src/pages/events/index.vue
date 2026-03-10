@@ -175,7 +175,7 @@ async function loadContent() {
 	}
 
 	const { getRandom, getRecent, getUpcoming } = useEvents();
-	getRandom(5).then((randomRes) => {
+	getRandom(10).then((randomRes) => {
 		if (randomRes.success && randomRes.data) {
 			if ('message' in randomRes.data) {
 				randomLoaded.value = true;
@@ -207,7 +207,7 @@ async function loadContent() {
 		}
 	});
 
-	getRecent().then((recentRes) => {
+	getRecent(10).then((recentRes) => {
 		if (recentRes.success && recentRes.data) {
 			if ('message' in recentRes.data) {
 				recentLoaded.value = true;
@@ -237,7 +237,7 @@ async function loadContent() {
 		}
 	});
 
-	getUpcoming(5).then((upcomingRes) => {
+	getUpcoming(10).then((upcomingRes) => {
 		if (upcomingRes.success && upcomingRes.data) {
 			if ('message' in upcomingRes.data) {
 				upcomingLoaded.value = true;
