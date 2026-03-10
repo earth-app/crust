@@ -108,7 +108,7 @@
 					<div class="flex space-x-1 sm:space-x-2 md:space-x-4 items-center justify-center">
 						<NuxtLink
 							to="/profile/notifications"
-							class="size-5 lg:size-8 relative"
+							class="size-5 lg:size-7 relative"
 						>
 							<UChip
 								:color="chipColor"
@@ -118,36 +118,46 @@
 							>
 								<UIcon
 									name="mdi:bell"
-									class="size-5 lg:size-8 hover:cursor-pointer"
+									class="size-5 lg:size-7 hover:cursor-pointer"
 								/>
 							</UChip>
 						</NuxtLink>
 						<NuxtLink
-							class="size-5 lg:size-8"
+							class="size-5 lg:size-7"
 							to="/profile"
 						>
 							<UIcon
 								name="material-symbols:settings-rounded"
-								class="size-5 lg:size-8 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-5 lg:size-7 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
 							/>
 						</NuxtLink>
 						<NuxtLink
-							class="size-5 lg:size-8"
+							class="size-5 lg:size-7"
 							:to="`/profile/${user.id}/badges`"
 							title="Your Badges"
 						>
 							<UIcon
 								name="mdi:shield-star-outline"
-								class="size-5 lg:size-8 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-5 lg:size-7 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
 							/>
 						</NuxtLink>
 						<NuxtLink
-							class="size-5 lg:size-8"
+							class="size-5 lg:size-7"
+							to="/profile/quests/"
+							title="Your Quests"
+						>
+							<UIcon
+								name="mdi:sword"
+								class="size-5 lg:size-7 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
+							/>
+						</NuxtLink>
+						<NuxtLink
+							class="size-5 lg:size-7"
 							to="/"
 						>
 							<UIcon
 								name="material-symbols:logout-rounded"
-								class="size-5 lg:size-8 ml-3 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-5 lg:size-7 ml-3 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
 								@click="logoutUser"
 							/>
 						</NuxtLink>
@@ -188,7 +198,7 @@
 			"
 		/>
 	</ClientOnly>
-	<UBanner
+	<LazyUBanner
 		v-if="motd.motd"
 		class="mb-4"
 		:icon="motd.icon || 'mdi:earth'"
