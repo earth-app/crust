@@ -113,17 +113,17 @@
 					:class="cosmetic.state === 'selected' ? 'ring-2 ring-green-500 rounded-lg' : ''"
 					@click="handleCosmeticClick(cosmetic)"
 				>
-					<UserCosmetic
+					<LazyUserCosmetic
 						:cosmetic-key="cosmetic.key"
 						:state="cosmetic.state"
 						:rarity="cosmetic.rarity"
 						:price="cosmetic.price"
+						hydrate-on-visible
 					/>
 				</div>
 			</div>
 		</div>
 
-		<!-- Cosmetic Purchase Modal -->
 		<Teleport to="body">
 			<UModal
 				v-model:open="showCosmeticModal"
@@ -153,7 +153,7 @@
 						v-if="selectedCosmeticForPurchase"
 						class="flex flex-col items-center gap-4"
 					>
-						<UserCosmetic
+						<LazyUserCosmetic
 							:cosmetic-key="selectedCosmeticForPurchase.key"
 							state="available"
 							:rarity="selectedCosmeticForPurchase.rarity"
@@ -346,7 +346,7 @@
 				<div class="flex flex-col w-full max-w-3xl items-center my-4">
 					<h2 class="text-xl font-medium flex-1 mb-1">OAuth Providers</h2>
 					<div class="flex">
-						<UserOAuthButton
+						<LazyUserOAuthButton
 							v-for="provider in OAUTH_PROVIDERS"
 							:key="provider"
 							:provider="provider"

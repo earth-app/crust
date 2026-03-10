@@ -61,6 +61,12 @@ export default defineEventHandler(async (event) => {
 	}
 
 	const file = photo[0];
+	if (!file || !file.type) {
+		throw createError({
+			statusCode: 400,
+			statusMessage: 'Invalid file upload'
+		});
+	}
 
 	// images will be converted to webp in the backend
 	if (!file.type?.startsWith('image/')) {
