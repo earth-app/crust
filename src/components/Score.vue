@@ -3,7 +3,7 @@
 		<UBadge
 			:color="color"
 			class="flex justify-center aspect-square! text-3xl font-bold rounded-full border-4 border-current/30"
-			>{{ letter }}<span class="text-lg self-start -ml-1">{{ symbol }}</span></UBadge
+			>{{ letter }}<span class="text-lg self-start -ml-2">{{ symbol }}</span></UBadge
 		>
 		<UBadge
 			variant="soft"
@@ -16,10 +16,16 @@
 
 <script setup lang="ts">
 const props = defineProps<{
-	score: number; // 0.0 - 1.0
+	score: number; // 0.0 - 1.0 or 0-100
 }>();
 
-const score100 = computed(() => Math.round(props.score * 10000) / 100.0);
+const score100 = computed(() => {
+	if (props.score > 1) {
+		return Math.round(props.score);
+	}
+
+	return Math.round(props.score * 100);
+});
 
 const color = computed(() => {
 	if (score100.value >= 90) return 'primary';
@@ -38,6 +44,9 @@ const letter = computed(() => {
 });
 
 const symbol = computed(() => {
+	if (score100.value >= 97) return '+';
+	if (score100.value <= 63) return '-';
+
 	const decimal = score100.value % 10;
 	if (decimal >= 7) return '+';
 	if (decimal <= 3) return '-';
