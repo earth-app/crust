@@ -83,10 +83,69 @@
 				hydrate-on-visible
 			/>
 		</InfoCardGroup>
+		<InfoCardGroup
+			title="Older Articles"
+			description="Explore the archives"
+			icon="mdi:archive"
+		>
+			<InfoCardSkeleton
+				v-if="!olderLoaded"
+				v-for="n in 2"
+				:key="n"
+				content-size="small"
+			/>
+			<LazyArticleCard
+				v-for="article in olderArticles"
+				:key="article.id"
+				:article="article"
+				hydrate-on-visible
+			/>
+		</InfoCardGroup>
+		<InfoCardGroup
+			title="By Cloud"
+			description="Articles from the automaton himself"
+			icon="mdi:cloud"
+		>
+			<InfoCardSkeleton
+				v-if="!byCloudLoaded"
+				v-for="n in 2"
+				:key="n"
+				content-size="small"
+			/>
+			<LazyArticleCard
+				v-for="article in byCloudArticles"
+				:key="article.id"
+				:article="article"
+				hydrate-on-visible
+			/>
+		</InfoCardGroup>
+		<LazyInfoCardGroup
+			v-for="tag in byTagLoaded.keys()"
+			:key="tag"
+			:title="`${capitalizeFully(tag.replace(/_/g, ' '))} Articles`"
+			:description="`Explore articles related to the ${tag.replace(/_/g, ' ').toLowerCase()} tag`"
+			icon="mdi:tag"
+		>
+			<LazyInfoCardSkeleton
+				v-if="!byTagLoaded.get(tag)"
+				v-for="n in 2"
+				:key="n"
+				content-size="small"
+				hydrate-on-visible
+			/>
+			<LazyArticleCard
+				v-for="article in byTagArticles.get(tag) || []"
+				:key="article.id"
+				:article="article"
+				hydrate-on-visible
+			/>
+		</LazyInfoCardGroup>
 	</div>
 </template>
 
 <script setup lang="ts">
+import { com } from '@earth-app/ocean';
+
 const toast = useToast();
 const { user } = useAuth();
 const newDisabled = computed(() => {
@@ -109,6 +168,15 @@ const randomArticles = ref<Article[]>([]);
 const recentLoaded = ref(false);
 const recentArticles = ref<Article[]>([]);
 
+const olderLoaded = ref(false);
+const olderArticles = ref<Article[]>([]);
+
+const byCloudLoaded = ref(false);
+const byCloudArticles = ref<Article[]>([]);
+
+const byTagLoaded = reactive(new Map<string, boolean>());
+const byTagArticles = reactive(new Map<string, Article[]>());
+
 const loading = computed(() => {
 	const loaded = !randomLoaded.value || !recentLoaded.value;
 	if (!user.value) {
@@ -126,6 +194,12 @@ async function loadContent() {
 	randomArticles.value = [];
 	recentLoaded.value = false;
 	recentArticles.value = [];
+	olderLoaded.value = false;
+	olderArticles.value = [];
+	byCloudLoaded.value = false;
+	byCloudArticles.value = [];
+	byTagLoaded.clear();
+	byTagArticles.clear();
 
 	if (user.value) {
 		const { getRecommended } = useArticles();
@@ -149,7 +223,7 @@ async function loadContent() {
 		recommendedLoaded.value = true;
 	}
 
-	const { getRandom, getRecent } = useArticles();
+	const { getRandom, getRecent, getOldest } = useArticles();
 	getRandom(15).then((randomRes) => {
 		if (randomRes.success && randomRes.data) {
 			if ('message' in randomRes.data) {
@@ -211,6 +285,103 @@ async function loadContent() {
 			});
 		}
 	});
+
+	getOldest(15).then((oldestRes) => {
+		if (oldestRes.success && oldestRes.data) {
+			if ('message' in oldestRes.data) {
+				olderLoaded.value = true;
+				olderArticles.value = [];
+				console.error('Failed to load older articles:', oldestRes.data.message);
+
+				toast.add({
+					title: 'Error',
+					icon: 'mdi:alert-circle',
+					description: oldestRes.data.message || 'Failed to load older articles.',
+					color: 'error'
+				});
+			} else {
+				olderArticles.value = oldestRes.data.items;
+				olderLoaded.value = true;
+			}
+		} else {
+			console.error('Failed to load older articles:', oldestRes.message);
+			olderLoaded.value = true;
+
+			toast.add({
+				title: 'Error',
+				icon: 'mdi:alert-circle',
+				description: oldestRes.message || 'Failed to load older articles.',
+				color: 'error'
+			});
+		}
+	});
+
+	getRandom(15, '1').then((byCloudRes) => {
+		if (byCloudRes.success && byCloudRes.data) {
+			if ('message' in byCloudRes.data) {
+				byCloudLoaded.value = true;
+				byCloudArticles.value = [];
+				console.error('Failed to load By Cloud articles:', byCloudRes.data.message);
+
+				toast.add({
+					title: 'Error',
+					icon: 'mdi:alert-circle',
+					description: byCloudRes.data.message || 'Failed to load By Cloud articles.',
+					color: 'error'
+				});
+			} else {
+				byCloudArticles.value = byCloudRes.data;
+				byCloudLoaded.value = true;
+			}
+		} else {
+			console.error('Failed to load By Cloud articles:', byCloudRes.message);
+			byCloudLoaded.value = true;
+
+			toast.add({
+				title: 'Error',
+				icon: 'mdi:alert-circle',
+				description: byCloudRes.message || 'Failed to load By Cloud articles.',
+				color: 'error'
+			});
+		}
+	});
+
+	const randomTypes = com.earthapp.activity.ActivityType.values().sort(
+		(a, b) => Math.random() - 0.5
+	);
+	for (const type of randomTypes) {
+		const tag = type.name.toLowerCase();
+		getRandom(15, undefined, tag).then((byTagRes) => {
+			if (byTagRes.success && byTagRes.data) {
+				if ('message' in byTagRes.data) {
+					byTagLoaded.set(tag, true);
+					byTagArticles.set(tag, []);
+					console.error(`Failed to load articles for tag ${tag}:`, byTagRes.data.message);
+
+					toast.add({
+						title: 'Error',
+						icon: 'mdi:alert-circle',
+						description: byTagRes.data.message || `Failed to load articles for tag ${tag}.`,
+						color: 'error'
+					});
+				} else {
+					byTagArticles.set(tag, byTagRes.data);
+					byTagLoaded.set(tag, true);
+				}
+			} else {
+				console.error(`Failed to load articles for tag ${tag}:`, byTagRes.message);
+				byTagLoaded.set(tag, true);
+				byTagArticles.set(tag, []);
+
+				toast.add({
+					title: 'Error',
+					icon: 'mdi:alert-circle',
+					description: byTagRes.message || `Failed to load articles for tag ${tag}.`,
+					color: 'error'
+				});
+			}
+		});
+	}
 }
 
 onMounted(async () => {

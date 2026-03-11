@@ -235,15 +235,16 @@ export function useArticles(
 		);
 	};
 
-	const getRandom = async (count: number = 3) => {
+	const getRandom = async (count: number = 3, author?: string, tags?: string | string[]) => {
 		// Return cached result if still fresh
 		const cached = articleStore.getRandomCached(count);
 		if (cached) {
 			return { success: true as const, data: cached, message: '' };
 		}
 
+		const tags0 = Array.isArray(tags) ? tags.join(',') : tags;
 		const res = await makeClientAPIRequest<Article[]>(
-			`/v2/articles/random?count=${count}`,
+			`/v2/articles/random?count=${count}&author=${encodeURIComponent(author || '')}&tags=${encodeURIComponent(tags0 || '')}`,
 			authStore.sessionToken
 		);
 
@@ -264,6 +265,25 @@ export function useArticles(
 		const res = await makeAPIRequest<{ items: Article[] }>(
 			`recent-articles-${count}`,
 			`/v2/articles?sort=desc&limit=${count}`,
+			authStore.sessionToken
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load individual articles into store
+			articleStore.setArticles(res.data.items);
+		}
+
+		return res;
+	};
+
+	const getOldest = async (count: number = 5) => {
+		const res = await makeAPIRequest<{ items: Article[] }>(
+			`oldest-articles-${count}`,
+			`/v2/articles?sort=asc&limit=${count}`,
 			authStore.sessionToken
 		);
 
@@ -338,6 +358,7 @@ export function useArticles(
 		fetchAll,
 		getRandom,
 		getRecent,
+		getOldest,
 		getRecommended,
 		create
 	};
