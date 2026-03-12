@@ -208,6 +208,21 @@
 		:icon="motd.icon || 'mdi:earth'"
 		:title="motd.motd"
 		:color="motd.type || 'info'"
+		:actions="
+			motd.link
+				? [
+						{
+							label: 'Learn More',
+							color: 'info',
+							variant: 'outline',
+							onClick: () => {
+								navigateTo(motd.link, { external: motd.link?.startsWith('http') });
+							},
+							ui: { base: 'hover:cursor-pointer' }
+						}
+					]
+				: []
+		"
 		:ui="{ root: 'flex items-center', title: 'font-semibold' }"
 		close
 	/>

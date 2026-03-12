@@ -3,18 +3,18 @@
 		<div class="container mx-auto my-8 px-4 py-8 bg-gray-900 border-8 border-gray-950 rounded-lg">
 			<h1 class="text-2xl">MOTD Panel</h1>
 			<span class="mt-2 text-gray-500">Manage the Message of the Day from this panel.</span>
-			<div class="flex mt-4 w-full">
+			<div class="flex flex-wrap gap-2 mt-4 w-full">
 				<UInput
 					v-model="motd.motd"
 					placeholder="Set the Message of the Day..."
-					class="mr-2 w-2/5"
+					class="w-2/5"
 					:disabled="motdLoading"
 				/>
 				<UInput
 					v-model="motd.icon"
 					:icon="motd.icon"
 					placeholder="Icon (optional, e.g. mdi:earth)"
-					class="mr-2 w-1/4"
+					class="w-1/4"
 					:disabled="motdLoading"
 				/>
 				<USelect
@@ -26,7 +26,13 @@
 						{ label: 'Error', value: 'error', icon: 'mdi:close-circle' }
 					]"
 					placeholder="Type"
-					class="mr-2 w-1/8"
+					class="w-1/8"
+					:disabled="motdLoading"
+				/>
+				<UInput
+					v-model="motd.link"
+					placeholder="Link (optional)"
+					class="w-1/4"
 					:disabled="motdLoading"
 				/>
 				<UInput
@@ -34,7 +40,7 @@
 					type="number"
 					:min="300"
 					placeholder="TTL (seconds)"
-					class="mr-2 w-1/12"
+					class="w-1/12"
 					:disabled="motdLoading"
 				/>
 			</div>
@@ -272,7 +278,7 @@ const activityToEdit = ref<Partial<Activity> | undefined>(undefined);
 const motdLoading = ref(false);
 async function handleMotdUpdate() {
 	motdLoading.value = true;
-	await setMotd(motd.value.motd, motd.value.icon, motd.value.type, ttl.value);
+	await setMotd(motd.value.motd, motd.value.icon, motd.value.type, motd.value.link, ttl.value);
 	await fetchMotd();
 
 	toast.add({
