@@ -2,6 +2,22 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineNuxtConfig } from 'nuxt/config';
 
 export default defineNuxtConfig({
+	alias: {
+		'~/shared': './src/shared',
+		'~/stores': './src/stores'
+	},
+	typescript: {
+		tsConfig: {
+			compilerOptions: {
+				paths: {
+					'~/shared': ['./src/shared'],
+					'~/shared/*': ['./src/shared/*'],
+					'~/stores': ['./src/stores'],
+					'~/stores/*': ['./src/stores/*']
+				}
+			}
+		}
+	},
 	runtimeConfig: {
 		public: {
 			googleClientId: process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || '',
