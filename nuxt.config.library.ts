@@ -36,7 +36,6 @@ export default defineNuxtConfig({
 		'@nuxt/image',
 		'nuxt-viewport',
 		'@pinia/nuxt',
-		'@nuxt/hints',
 		[
 			'@nuxt/icon',
 			{
