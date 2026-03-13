@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { reactive } from 'vue';
 import { useAuthStore } from './auth';
 
 interface AvatarSizes {

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import type { User } from 'types/user';
+import { computed, ref } from 'vue';
 
 export const useAuthStore = defineStore('auth', () => {
 	const currentUser = ref<User | null | undefined>(undefined);

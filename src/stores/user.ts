@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import type { Event } from 'types/event';
+import { reactive, ref } from 'vue';
 import { useAuthStore } from './auth';
 import { useAvatarStore } from './avatar';
 

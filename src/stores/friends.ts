@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import type { User } from 'types/user';
 import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from 'utils';
+import { reactive } from 'vue';
 import { useAuthStore } from './auth';
 import { useUserStore } from './user';
 

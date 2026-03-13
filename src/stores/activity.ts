@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import type { Activity } from 'types/activity';
 import { makeAPIRequest, makeClientAPIRequest } from 'utils';
+import { reactive, ref } from 'vue';
 import { useAuthStore } from './auth';
 
 const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
