@@ -15,6 +15,9 @@ export default defineNuxtConfig({
 	},
 	compatibilityDate: '2025-12-13',
 	srcDir: 'src',
+	dir: {
+		shared: 'src/shared'
+	},
 	css: ['~/assets/css/main.css'],
 	vite: {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,6 +28,8 @@ export default defineNuxtConfig({
 		'@nuxtjs/i18n',
 		'@nuxt/image',
 		'nuxt-viewport',
+		'@pinia/nuxt',
+		'@nuxt/hints',
 		[
 			'@nuxt/icon',
 			{
