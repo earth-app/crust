@@ -94,8 +94,8 @@
 </template>
 
 <script setup lang="ts">
+import { passwordSchema } from 'schemas';
 import z from 'zod';
-import { passwordSchema } from '~/shared/utils/schemas';
 
 const oldPassword = ref('');
 const newPassword = ref('');

@@ -74,8 +74,8 @@
 </template>
 
 <script setup lang="ts">
+import { passwordSchema, usernameSchema } from 'schemas';
 import z from 'zod';
-import { passwordSchema, usernameSchema } from '~/shared/utils/schemas';
 
 const username = ref('');
 const password = ref('');

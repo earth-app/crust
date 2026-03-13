@@ -69,8 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { type Prompt, type PromptResponse } from '~/shared/types/prompts';
-import { makeClientAPIRequest } from '~/shared/utils/util';
+import { makeClientAPIRequest } from 'utils';
 
 const { user, avatar128 } = useAuth();
 const { handle } = useDisplayName(user);

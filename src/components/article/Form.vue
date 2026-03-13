@@ -125,8 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Article } from '~/shared/types/article';
-import { articleSchema } from '~/shared/utils/schemas';
+import { articleSchema } from 'schemas';
 
 const props = defineProps<{
 	article?: Article;

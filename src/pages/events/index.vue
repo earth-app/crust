@@ -101,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { type Event } from '~/shared/types/event';
+import { type Event } from 'types/event';
 
 const toast = useToast();
 const { setTitleSuffix } = useTitleSuffix();

@@ -21,8 +21,7 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui';
-import type { User } from '~/shared/types/user';
-import { capitalizeFully } from '~/shared/utils/util';
+import { capitalizeFully } from 'utils';
 
 const props = defineProps<{
 	type: 'event' | 'prompt' | 'article';

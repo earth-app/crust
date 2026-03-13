@@ -50,8 +50,6 @@
 </template>
 
 <script setup lang="ts">
-import type { EventImageSubmission } from '~/shared/types/event';
-
 defineProps<{
 	submissions: EventImageSubmission[];
 }>();

@@ -104,14 +104,8 @@
 </template>
 
 <script setup lang="ts">
+import { emailSchema, fullNameSchema, passwordSchema, usernameSchema } from 'schemas';
 import z from 'zod';
-import type { User } from '~/shared/types/user';
-import {
-	emailSchema,
-	fullNameSchema,
-	passwordSchema,
-	usernameSchema
-} from '~/shared/utils/schemas';
 
 const fullName = ref('');
 const email = ref('');

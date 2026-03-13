@@ -65,8 +65,6 @@
 </template>
 
 <script setup lang="ts">
-import type { User } from '~/shared/types/user';
-
 const badgeVariants = ref<('subtle' | 'solid')[]>([]);
 
 const props = defineProps<{

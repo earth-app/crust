@@ -6,6 +6,7 @@ export default defineNuxtConfig({
 	alias: {
 		types: fileURLToPath(new URL('./src/shared/types', import.meta.url)),
 		utils: fileURLToPath(new URL('./src/shared/utils/util', import.meta.url)),
+		schemas: fileURLToPath(new URL('./src/shared/utils/schemas', import.meta.url)),
 		stores: fileURLToPath(new URL('./src/stores', import.meta.url))
 	},
 	runtimeConfig: {

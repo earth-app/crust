@@ -405,9 +405,9 @@
 
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
+import { OAUTH_PROVIDERS, type User } from 'types/user';
+import { capitalizeFully } from 'utils';
 import type { InputTypeHTMLAttribute } from 'vue';
-import { OAUTH_PROVIDERS, type User } from '~/shared/types/user';
-import { capitalizeFully } from '~/shared/utils/util';
 import { useAvatarStore } from '~/stores/avatar';
 import { useUserStore } from '~/stores/user';
 import { type EmailVerificationModalRef } from './email/VerificationModal.vue';

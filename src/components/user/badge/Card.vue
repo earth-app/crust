@@ -76,8 +76,7 @@
 </template>
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import type { Badge, UserBadge } from '~/shared/types/user';
-import { capitalizeFully } from '~/shared/utils/util';
+import { capitalizeFully } from 'utils';
 
 const props = defineProps<{
 	badge: Badge | UserBadge;

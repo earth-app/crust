@@ -57,8 +57,7 @@
 
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import type { Prompt } from '~/shared/types/prompts';
-import { withSuffix } from '~/shared/utils/util';
+import { withSuffix } from 'utils';
 
 const props = defineProps<{
 	prompt: Prompt;
@@ -119,7 +118,7 @@ const authorAvatarChipColor = computed(() => {
 		case 'ADMINISTRATOR':
 			return 'error';
 		default:
-			return null;
+			return undefined;
 	}
 });
 

@@ -260,7 +260,7 @@
 
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui';
-import type { Event, EventActivity, EventData } from '~/shared/types/event';
+import type { Event } from 'types/event';
 
 const props = defineProps<{
 	mode: 'create' | 'edit';

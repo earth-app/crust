@@ -64,7 +64,6 @@
 
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import { type PromptResponse } from '~/shared/types/prompts';
 
 const props = defineProps<{
 	response: PromptResponse;

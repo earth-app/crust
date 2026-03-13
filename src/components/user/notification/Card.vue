@@ -62,7 +62,7 @@
 					name="mdi:delete"
 					class="size-4 sm:size-5 md:size-6 text-gray-500 hover:text-red-500 hover:cursor-pointer transition-colors duration-200"
 					title="Delete Notification"
-					@click="deleteNotification"
+					@click="removeNotification"
 				/>
 			</div>
 		</div>
@@ -71,12 +71,7 @@
 
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import {
-	markNotificationRead,
-	deleteNotification as removeNotification
-} from '~/composables/useUser';
-import type { UserNotification } from '~/shared/types/user';
-import { trimString } from '~/shared/utils/util';
+import { trimString } from 'utils';
 
 const props = defineProps<{
 	notification: UserNotification;
@@ -114,8 +109,8 @@ async function markAsRead() {
 	}
 }
 
-async function deleteNotification() {
-	const res = await removeNotification(props.notification.id);
+async function removeNotification() {
+	const res = await deleteNotification(props.notification.id);
 	const toast = useToast();
 
 	if (res.success) {

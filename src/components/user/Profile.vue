@@ -338,10 +338,10 @@ import {
 	type DateValue
 } from '@internationalized/date';
 import { DateTime } from 'luxon';
+import type { Event } from 'types/event';
+import { withSuffix } from 'utils';
 import { h } from 'vue';
 import ContentDrawer from '~/components/ContentDrawer.vue';
-import type { Event } from '~/shared/types/event';
-import { withSuffix } from '~/shared/utils/util';
 
 const comma = (n: number | undefined) => (n !== undefined ? withSuffix(n) : '—');
 

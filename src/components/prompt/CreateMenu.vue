@@ -97,7 +97,6 @@
 
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
-import type { Prompt } from '~/shared/types/prompts';
 
 const emit = defineEmits<{
 	(event: 'prompt-created', prompt: Prompt): void;

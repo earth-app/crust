@@ -60,8 +60,6 @@
 </template>
 
 <script setup lang="ts">
-import type { EventAutocompleteSuggestion } from '~/shared/types/event';
-
 const props = defineProps<{
 	modelValue: {
 		latitude: number;

@@ -26,8 +26,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Activity } from '~/shared/types/activity';
-
 defineProps<{
 	title?: string;
 	description?: string;

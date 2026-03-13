@@ -150,8 +150,7 @@
 
 <script setup lang="ts">
 import { DateTime } from 'luxon';
-import type { Article } from '~/shared/types/article';
-import { parseLooseDate, trimString } from '~/shared/utils/util';
+import { parseLooseDate, trimString } from 'utils';
 
 const props = defineProps<{
 	article: Article;
