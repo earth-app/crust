@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { User } from '~/shared/types/user';
+import type { User } from 'types/user';
 
 export const useAuthStore = defineStore('auth', () => {
 	const currentUser = ref<User | null | undefined>(undefined);

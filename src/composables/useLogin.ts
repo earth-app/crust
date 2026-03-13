@@ -1,5 +1,5 @@
-import type { User } from '~/shared/types/user';
-import { useAuthStore } from '~/stores/auth';
+import { useAuthStore } from 'stores/auth';
+import type { User } from 'types/user';
 import { sendVerificationEmail } from './useUser';
 
 export function useSignup() {

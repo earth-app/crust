@@ -1,4 +1,4 @@
-import { PixabayVideo } from '~/shared/types/activity';
+import { PixabayVideo } from 'types/activity';
 
 export default defineEventHandler(async (event) => {
 	const { query } = getQuery(event);

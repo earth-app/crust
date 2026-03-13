@@ -1,13 +1,13 @@
+import { useAuthStore } from 'stores/auth';
+import { useEventStore } from 'stores/event';
 import {
 	type Event,
 	type EventAutocompleteSuggestion,
 	type EventData,
 	type EventImageSubmission
-} from '~/shared/types/event';
-import type { User } from '~/shared/types/user';
-import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from '~/shared/utils/util';
-import { useAuthStore } from '~/stores/auth';
-import { useEventStore } from '~/stores/event';
+} from 'types/event';
+import type { User } from 'types/user';
+import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from 'utils';
 
 export function useEvents() {
 	const authStore = useAuthStore();

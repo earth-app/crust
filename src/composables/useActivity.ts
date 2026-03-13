@@ -1,20 +1,20 @@
+import { useActivityStore } from 'stores/activity';
+import { useAuthStore } from 'stores/auth';
 import {
 	type Activity,
 	type PixabayImage,
 	type PixabayVideo,
 	type WikipediaSummary,
 	type YouTubeVideo
-} from '~/shared/types/activity';
-import type { SortingOption } from '~/shared/types/global';
+} from 'types/activity';
+import type { SortingOption } from 'types/global';
 import {
 	capitalizeFully,
 	makeAPIRequest,
 	makeClientAPIRequest,
 	makeServerRequest,
 	paginatedAPIRequest
-} from '~/shared/utils/util';
-import { useActivityStore } from '~/stores/activity';
-import { useAuthStore } from '~/stores/auth';
+} from 'utils';
 
 // mantle - /v2/activities
 // cloud - /v1/activity

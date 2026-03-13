@@ -1,5 +1,5 @@
+import type { YouTubeVideo } from 'types/activity';
 import { YouTube } from 'youtube-sr';
-import type { YouTubeVideo } from '~/shared/types/activity';
 
 export default defineEventHandler(async (event) => {
 	const { query } = getQuery(event);

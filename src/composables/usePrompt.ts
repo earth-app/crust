@@ -1,9 +1,9 @@
 import type { com } from '@earth-app/ocean';
-import type { SortingOption } from '~/shared/types/global';
-import type { Prompt } from '~/shared/types/prompts';
-import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/utils/util';
-import { useAuthStore } from '~/stores/auth';
-import { usePromptStore } from '~/stores/prompt';
+import { useAuthStore } from 'stores/auth';
+import { usePromptStore } from 'stores/prompt';
+import type { SortingOption } from 'types/global';
+import type { Prompt } from 'types/prompts';
+import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from 'utils';
 
 export function usePrompt(id: string) {
 	const promptStore = usePromptStore();

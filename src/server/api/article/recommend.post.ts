@@ -1,5 +1,5 @@
+import type { Article } from 'types/article';
 import { ensureLoggedIn } from '~/server/utils';
-import type { Article } from '~/shared/types/article';
 
 export default defineEventHandler(async (event) => {
 	const user = await ensureLoggedIn(event);

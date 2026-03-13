@@ -1,4 +1,4 @@
-import { PixabayImage } from '~/shared/types/activity';
+import { PixabayImage } from 'types/activity';
 
 export default defineEventHandler(async (event) => {
 	const { query } = getQuery(event);

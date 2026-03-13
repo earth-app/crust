@@ -1,22 +1,5 @@
 {
   // https://nuxt.com/docs/guide/concepts/typescript
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "~/shared": [
-        "./src/shared"
-      ],
-      "~/shared/*": [
-        "./src/shared/*"
-      ],
-      "~/stores": [
-        "./src/stores"
-      ],
-      "~/stores/*": [
-        "./src/stores/*"
-      ]
-    }
-  },
   "files": [],
   "references": [
     {

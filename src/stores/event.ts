@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia';
-import type { Event, EventImageSubmission } from '~/shared/types/event';
-import type { User } from '~/shared/types/user';
+import type { Event, EventImageSubmission } from 'types/event';
+import type { User } from 'types/user';
 import {
 	makeAPIRequest,
 	makeClientAPIRequest,
 	makeServerRequest,
 	paginatedAPIRequest
-} from '~/shared/utils/util';
+} from 'utils';
 import { useAuthStore } from './auth';
 
 const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes

@@ -1,8 +1,14 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineOrganization } from 'nuxt-schema-org/schema';
 import { defineNuxtConfig } from 'nuxt/config';
+import { fileURLToPath } from 'url';
 
 export default defineNuxtConfig({
+	alias: {
+		types: fileURLToPath(new URL('./src/shared/types', import.meta.url)),
+		utils: fileURLToPath(new URL('./src/shared/utils/util', import.meta.url)),
+		stores: fileURLToPath(new URL('./src/stores', import.meta.url))
+	},
 	runtimeConfig: {
 		adminApiKey: process.env.NUXT_ADMIN_API_KEY || '',
 		pixabayApiKey: process.env.NUXT_PIXABAY_API_KEY || '',

@@ -1,4 +1,4 @@
-import { useAuthStore } from '~/stores/auth';
+import { useAuthStore } from 'stores/auth';
 
 export function useTimeOnPage(field: string) {
 	const authStore = useAuthStore();

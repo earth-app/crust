@@ -1,4 +1,4 @@
-import { Event } from '~/shared/types/event';
+import { Event } from 'types/event';
 
 export default defineEventHandler(async (event) => {
 	const config = useRuntimeConfig();

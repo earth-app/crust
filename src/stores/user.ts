@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { Event } from '~/shared/types/event';
+import type { Event } from 'types/event';
 import { useAuthStore } from './auth';
 import { useAvatarStore } from './avatar';
 

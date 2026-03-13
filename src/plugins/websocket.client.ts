@@ -1,5 +1,5 @@
-import type { UserNotification } from '~/shared/types/user';
-import { useAuthStore } from '~/stores/auth';
+import { useAuthStore } from 'stores/auth';
+import type { UserNotification } from 'types/user';
 
 export default defineNuxtPlugin((nuxtApp) => {
 	const toast = useToast();

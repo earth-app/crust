@@ -1,22 +1,12 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineNuxtConfig } from 'nuxt/config';
+import { fileURLToPath } from 'url';
 
 export default defineNuxtConfig({
 	alias: {
-		'~/shared': './src/shared',
-		'~/stores': './src/stores'
-	},
-	typescript: {
-		tsConfig: {
-			compilerOptions: {
-				paths: {
-					'~/shared': ['./src/shared'],
-					'~/shared/*': ['./src/shared/*'],
-					'~/stores': ['./src/stores'],
-					'~/stores/*': ['./src/stores/*']
-				}
-			}
-		}
+		types: fileURLToPath(new URL('./src/shared/types', import.meta.url)),
+		utils: fileURLToPath(new URL('./src/shared/utils/util', import.meta.url)),
+		stores: fileURLToPath(new URL('./src/stores', import.meta.url))
 	},
 	runtimeConfig: {
 		public: {

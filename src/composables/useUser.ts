@@ -1,9 +1,9 @@
+import { useAuthStore } from 'stores/auth';
+import { useAvatarStore } from 'stores/avatar';
+import { useFriendsStore } from 'stores/friends';
+import { useNotificationStore } from 'stores/notification';
+import { useUserStore } from 'stores/user';
 import type { MaybeRefOrGetter } from 'vue';
-import { useAuthStore } from '~/stores/auth';
-import { useAvatarStore } from '~/stores/avatar';
-import { useFriendsStore } from '~/stores/friends';
-import { useNotificationStore } from '~/stores/notification';
-import { useUserStore } from '~/stores/user';
 
 export function useVisitedSite() {
 	const visitedSiteCookie = useCookie('visited_site', {

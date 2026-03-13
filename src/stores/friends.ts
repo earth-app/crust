@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
-import type { User } from '~/shared/types/user';
-import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from '~/shared/utils/util';
+import type { User } from 'types/user';
+import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from 'utils';
 import { useAuthStore } from './auth';
 import { useUserStore } from './user';
 

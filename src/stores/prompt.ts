@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
-import type { Prompt, PromptResponse } from '~/shared/types/prompts';
-import { makeClientAPIRequest } from '~/shared/utils/util';
+import type { Prompt, PromptResponse } from 'types/prompts';
+import { makeClientAPIRequest } from 'utils';
 import { useAuthStore } from './auth';
 
 const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes

@@ -1,5 +1,5 @@
-import { makeAPIRequest, makeClientAPIRequest } from '~/shared/utils/util';
-import { useAuthStore } from '~/stores/auth';
+import { useAuthStore } from 'stores/auth';
+import { makeAPIRequest, makeClientAPIRequest } from 'utils';
 
 export function useMotd() {
 	const authStore = useAuthStore();

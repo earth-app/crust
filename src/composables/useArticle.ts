@@ -1,17 +1,13 @@
-import {
-	type Article,
-	type ArticleQuizQuestion,
-	type ArticleQuizScoreResult
-} from '~/shared/types/article';
-import type { SortingOption } from '~/shared/types/global';
+import { useArticleStore } from 'stores/article';
+import { useAuthStore } from 'stores/auth';
+import { type Article, type ArticleQuizQuestion, type ArticleQuizScoreResult } from 'types/article';
+import type { SortingOption } from 'types/global';
 import {
 	makeAPIRequest,
 	makeClientAPIRequest,
 	makeServerRequest,
 	paginatedAPIRequest
-} from '~/shared/utils/util';
-import { useArticleStore } from '~/stores/article';
-import { useAuthStore } from '~/stores/auth';
+} from 'utils';
 
 export function useArticle(id: string) {
 	const articleStore = useArticleStore();
