@@ -510,6 +510,14 @@ const props: {
 	{
 		name: 'Biography',
 		id: 'bio'
+	},
+	{
+		name: 'Badges',
+		id: 'badges'
+	},
+	{
+		name: 'Impact Points',
+		id: 'impact_points'
 	}
 ];
 
