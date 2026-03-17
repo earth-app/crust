@@ -23,9 +23,16 @@
 				hydrate-on-visible
 			/>
 		</div>
+		<div
+			v-else
+			class="flex items-center"
+		>
+			<Loading />
+		</div>
 
 		<h3 class="my-4 font-medium text-lg">All Badges</h3>
 		<div
+			v-if="badges.length > 0"
 			class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center items-center gap-4"
 		>
 			<LazyUserBadgeCard
@@ -34,6 +41,12 @@
 				:badge="badge"
 				hydrate-on-visible
 			/>
+		</div>
+		<div
+			v-else
+			class="flex items-center"
+		>
+			<Loading />
 		</div>
 	</div>
 	<div

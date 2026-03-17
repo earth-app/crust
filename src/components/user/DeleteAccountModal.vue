@@ -8,7 +8,7 @@
 
 		<template #body>
 			<div class="flex w-full h-full items-center justify-center mb-4 p-4">
-				<UserDeleteAccount
+				<LazyUserDeleteAccount
 					@deleted="
 						emit('deleted');
 						open = false;

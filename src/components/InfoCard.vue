@@ -38,18 +38,20 @@
 							:size="avatarChipSize || 'md'"
 							class="mr-2"
 						>
-							<UAvatar
+							<LazyUAvatar
 								v-if="avatar"
 								:src="avatar"
 								:size="avatarSize || 'md'"
 								class="mr-2"
+								hydrate-on-visible
 							/>
 						</UChip>
-						<UAvatar
+						<LazyUAvatar
 							v-else-if="avatar"
 							:src="avatar"
 							:size="avatarSize || 'md'"
 							class="mr-2"
+							hydrate-on-visible
 						/>
 						<NuxtLink
 							v-if="link && external"
@@ -78,18 +80,20 @@
 							:size="secondaryAvatarChipSize || 'sm'"
 							class="ml-2 self-start md:block hidden"
 						>
-							<UAvatar
+							<LazyUAvatar
 								v-if="secondaryAvatar"
 								:src="secondaryAvatar"
 								:size="secondaryAvatarSize || 'sm'"
 								class="ml-2 self-start md:block hidden"
+								hydrate-on-visible
 							/>
 						</UChip>
-						<UAvatar
+						<LazyUAvatar
 							v-else-if="secondaryAvatar"
 							:src="secondaryAvatar"
 							:size="secondaryAvatarSize || 'sm'"
 							class="ml-2 self-start md:block hidden"
+							hydrate-on-visible
 						/>
 					</div>
 					<p
@@ -113,7 +117,7 @@
 						class="w-full h-48 object-cover rounded-lg mb-2"
 						:preload="{ fetchPriority: 'low' }"
 					/>
-					<ClientOnly>
+					<LazyClientOnly hydrate-on-visible>
 						<iframe
 							v-if="youtubeId"
 							:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1&origin=${origin}`"
@@ -130,8 +134,8 @@
 							loading="lazy"
 							referrerpolicy="strict-origin-when-cross-origin"
 						></iframe>
-					</ClientOnly>
-					<ClientOnly>
+					</LazyClientOnly>
+					<LazyClientOnly hydrate-on-visible>
 						<video
 							v-if="video"
 							class="w-full h-48 object-cover rounded-lg mb-2"
@@ -150,7 +154,7 @@
 								type="video/webm"
 							/>
 						</video>
-					</ClientOnly>
+					</LazyClientOnly>
 					<span
 						v-if="content"
 						class="text-xs sm:text-sm md:text-md text-gray-300 light:text-gray-700 hover:cursor-text"

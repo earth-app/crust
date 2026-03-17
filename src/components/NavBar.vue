@@ -204,6 +204,7 @@
 	</ClientOnly>
 	<LazyUBanner
 		v-if="motd.motd"
+		id="motd"
 		class="mb-4"
 		:icon="motd.icon || 'mdi:earth'"
 		:title="motd.motd"

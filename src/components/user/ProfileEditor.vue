@@ -1,7 +1,7 @@
 <template>
 	<div class="flex flex-col items-center w-full mt-6">
 		<div class="flex flex-col items-center mb-8">
-			<UAvatar
+			<LazyUAvatar
 				:src="avatar"
 				class="w-32 h-32 rounded-full shadow-lg shadow-black/50 mb-4 hover:scale-110 transition-transform duration-300 hover:cursor-pointer"
 				id="avatar"
@@ -281,7 +281,7 @@
 							:disabled="prop.disabled"
 						/>
 						<ClientOnly>
-							<UInputMenu
+							<LazyUInputMenu
 								v-if="prop.type === 'dropdown' && prop.computed"
 								:model-value="
 									prop.dropdownItems?.find((item) => item.value === prop.computed!.value)
@@ -309,7 +309,7 @@
 										<span>{{ item.label }}</span>
 									</div>
 								</template>
-							</UInputMenu>
+							</LazyUInputMenu>
 							<template #fallback>
 								<UButton
 									v-if="prop.type === 'dropdown' && prop.computed"
@@ -324,7 +324,7 @@
 						</ClientOnly>
 					</div>
 					<ClientOnly>
-						<UBadge
+						<LazyUBadge
 							v-if="prop.unverified === true"
 							class="mt-1 transition-all duration-300 hover:cursor-pointer shrink-0"
 							color="warning"
@@ -337,7 +337,8 @@
 							tabindex="0"
 							@keydown.enter="if (prop.verify) prop.verify();"
 							@keydown.space.prevent="if (prop.verify) prop.verify();"
-							>Unverified</UBadge
+							hydrate-on-visible
+							>Unverified</LazyUBadge
 						>
 					</ClientOnly>
 				</div>
@@ -372,25 +373,27 @@
 							ref="passwordChangeModal"
 							@changed="handlePasswordChange"
 						>
-							<UButton
+							<LazyUButton
 								color="warning"
 								variant="outline"
 								trailing-icon="mdi:shield-lock"
 								class="font-semibold hover:cursor-pointer"
 								@click="passwordChangeModal?.open()"
+								hydrate-on-visible
 							>
 								Change Password
-							</UButton>
+							</LazyUButton>
 						</UserPasswordChangeModal>
 						<UserDeleteAccountModal @deleted="handleAccountDeletion">
-							<UButton
+							<LazyUButton
 								color="error"
 								variant="outline"
 								trailing-icon="mdi:account-cancel"
 								class="font-semibold hover:cursor-pointer"
+								hydrate-on-visible
 							>
 								Delete Account
-							</UButton>
+							</LazyUButton>
 						</UserDeleteAccountModal>
 					</div>
 				</div>

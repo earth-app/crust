@@ -1,7 +1,7 @@
 <template>
 	<div class="flex flex-col items-center justify-center w-full h-full min-h-64 py-8">
 		<div class="relative">
-			<NuxtImg
+			<LazyNuxtImg
 				src="/cloud.png"
 				alt="Loading..."
 				format="webp"
@@ -9,6 +9,7 @@
 				quality="70"
 				crossorigin="anonymous"
 				:preload="{ fetchPriority: 'high' }"
+				hydrate-on-visible
 			/>
 			<UIcon
 				name="mdi:loading"

@@ -1,7 +1,7 @@
 <template>
 	<div class="flex flex-col items-center w-full mt-6">
 		<div class="flex flex-col items-center mb-2">
-			<UAvatar
+			<LazyUAvatar
 				:src="avatar"
 				id="avatar"
 				class="size-20 sm:size-24 md:size-28 lg:size-32 rounded-full shadow-lg shadow-black/50 mb-4 hover:scale-110 transition-transform duration-300"
