@@ -142,13 +142,19 @@
 			class="min-w-130 max-w-4xl mt-4"
 			id="user-friends"
 		>
-			<UserFriends :user="props.user" />
+			<LazyUserFriends
+				:user="props.user"
+				hydrate-on-visible
+			/>
 		</div>
 		<div
 			class="min-w-80 max-w-3xl mt-4"
 			id="user-journeys"
 		>
-			<UserJourneyList :user="props.user" />
+			<LazyUserJourneyList
+				:user="props.user"
+				hydrate-on-visible
+			/>
 		</div>
 		<div
 			class="flex flex-col items-center mt-12 w-full"
@@ -469,7 +475,7 @@ async function loadFriends() {
 	if (isLoading.value || !friendsHasMore.value) return;
 	isLoading.value = true;
 
-	const res = await fetchFriendsPage(friendsPage.value, 100, search.value);
+	const res = await fetchFriendsPage(friendsPage.value, 30, search.value);
 	if (res.success && res.data) {
 		if ('message' in res.data) {
 			friendsHasMore.value = false;
@@ -489,7 +495,7 @@ async function loadPrompts() {
 	if (isLoading.value || !promptsHasMore.value) return;
 	isLoading.value = true;
 
-	const res = await fetchPrompts(promptsPage.value, 100, search.value);
+	const res = await fetchPrompts(promptsPage.value, 30, search.value);
 	if (res.success && res.data) {
 		if ('message' in res.data) {
 			promptsHasMore.value = false;
@@ -509,7 +515,7 @@ async function loadArticles() {
 	if (isLoading.value || !articlesHasMore.value) return;
 	isLoading.value = true;
 
-	const res = await fetchArticles(articlesPage.value, 100, search.value);
+	const res = await fetchArticles(articlesPage.value, 30, search.value);
 	if (res.success && res.data) {
 		if ('message' in res.data) {
 			articlesHasMore.value = false;
