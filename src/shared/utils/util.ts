@@ -245,15 +245,24 @@ export async function paginatedAPIRequest<T>(
 	search: string = '',
 	sort: SortingOption = 'desc'
 ) {
+	if (limit === 0) return { success: true, data: [] };
+
 	const allItems: T[] = [];
 	let currentPage = 1;
 	const maxPages = 100;
+	const encodedSearch = encodeURIComponent(search);
 
 	while (currentPage <= maxPages) {
-		const pageKey = `paginated-${url.replace(/\//g, '-')}-page${currentPage}-search${search}-sort${sort}`;
+		const pageSize = limit > 0 ? Math.min(100, Math.max(limit - (currentPage - 1) * 100, 0)) : 100;
+
+		if (pageSize === 0) {
+			break;
+		}
+
+		const pageKey = `paginated-${url.replace(/\//g, '-')}-page${currentPage}-pageSize${pageSize}-limit${limit}-search${encodedSearch}-sort${sort}`;
 		const res = await makeAPIRequest<{ items: T[]; total: number }>(
 			pageKey,
-			`${url}?page=${currentPage}&limit=100&search=${search}&sort=${sort}`,
+			`${url}?page=${currentPage}&limit=${pageSize}&search=${encodedSearch}&sort=${sort}`,
 			token,
 			options
 		);
@@ -269,14 +278,14 @@ export async function paginatedAPIRequest<T>(
 		allItems.push(...res.data.items);
 
 		// Stop if we've reached the limit or got fewer items than requested
-		if (res.data.items.length < 100 || (limit !== -1 && allItems.length >= limit)) {
+		if (res.data.items.length < pageSize || (limit > 0 && allItems.length >= limit)) {
 			break;
 		}
 
 		currentPage++;
 	}
 
-	return { success: true, data: limit !== -1 ? allItems.slice(0, limit) : allItems };
+	return { success: true, data: limit > 0 ? allItems.slice(0, limit) : allItems };
 }
 
 // Non-request related
