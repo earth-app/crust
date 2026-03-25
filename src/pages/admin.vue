@@ -114,7 +114,7 @@
 					{{ loadingActivities ? 'Loading...' : `Fetch Activities (${activityCount})` }}
 				</UButton>
 				<UButton
-					color="primary"
+					color="secondary"
 					class="ml-2"
 					@click="createActivityModal = true"
 				>

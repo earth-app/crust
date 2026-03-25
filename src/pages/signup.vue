@@ -28,6 +28,7 @@ const { user } = useAuth();
 const toast = useToast();
 const route = useRoute();
 const router = useRouter();
+const redirectingAfterSubmit = ref(false);
 
 const { error } = route.query;
 if (error) {
@@ -68,8 +69,8 @@ if (error) {
 watch(
 	() => user.value,
 	(currentUser) => {
-		if (currentUser) {
-			router.push('/');
+		if (currentUser && !redirectingAfterSubmit.value) {
+			router.replace('/');
 
 			// add buffer if just signed up
 			if (new Date(currentUser.created_at).getTime() + 60 * 1000 <= Date.now()) {
@@ -87,9 +88,11 @@ watch(
 );
 
 function handleSignupSuccess(_: User, hasEmail: boolean) {
+	redirectingAfterSubmit.value = true;
+
 	// Redirect to home page or verify email after successful login
 	if (hasEmail) {
-		router.push('/verify-email');
+		router.replace('/verify-email');
 		toast.add({
 			title: 'Verification Email Sent',
 			description: 'Please check your email to verify your account.',
@@ -98,7 +101,7 @@ function handleSignupSuccess(_: User, hasEmail: boolean) {
 			duration: 5000
 		});
 	} else {
-		router.push('/');
+		router.replace('/');
 	}
 }
 </script>

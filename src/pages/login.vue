@@ -22,6 +22,7 @@ const { user } = useAuth();
 const toast = useToast();
 const route = useRoute();
 const router = useRouter();
+const redirectingAfterSubmit = ref(false);
 
 const { error, redirect } = route.query;
 if (error) {
@@ -70,8 +71,8 @@ if (error) {
 watch(
 	() => user.value,
 	(currentUser) => {
-		if (currentUser) {
-			router.push('/');
+		if (currentUser && !redirectingAfterSubmit.value) {
+			router.replace('/');
 
 			if (!error)
 				toast.add({
@@ -87,6 +88,8 @@ watch(
 );
 
 function handleLoginSuccess() {
+	redirectingAfterSubmit.value = true;
+
 	let redirect0 = '/';
 	if (redirect && typeof redirect === 'string') {
 		if (!redirect.startsWith('/')) {
@@ -97,12 +100,11 @@ function handleLoginSuccess() {
 				color: 'warning',
 				duration: 5000
 			});
+		} else {
+			redirect0 = redirect;
 		}
-
-		redirect0 = redirect;
 	}
 
-	router.push(redirect0);
-	refreshNuxtData(); // Refresh user data
+	router.replace(redirect0);
 }
 </script>
