@@ -1,15 +1,5 @@
 <template>
 	<div class="container mx-auto px-4 pb-8">
-		<UButton
-			v-if="!props.activity"
-			color="secondary"
-			class="text-white font-semibold"
-			@click="generateActivity"
-			:loading="generating"
-			:disabled="generating"
-		>
-			Generate Activity...
-		</UButton>
 		<div class="my-4 flex flex-col gap-4">
 			<h1>Settings</h1>
 			<UInput
@@ -73,7 +63,7 @@
 			<h1>Activity Fields</h1>
 			<div class="flex flex-col items-center max-h-44 overflow-y-auto justify-around gap-y-2">
 				<div
-					v-for="(value, key) in activityFields"
+					v-for="(_, key) in activityFields"
 					:key="key"
 					class="flex items-center gap-2"
 				>
@@ -123,38 +113,51 @@
 				</div>
 			</div>
 		</div>
-		<UButton
-			color="primary"
-			@click="
-				if (props.activity) {
-					updateActivity();
-				} else {
-					createActivity();
-				}
-			"
-			:icon="activityFields['icon'] || 'mdi:plus'"
-			:loading="loading"
-			:disabled="loading"
-		>
-			{{ props.activity ? 'Update Activity' : 'Create Activity' }}
-		</UButton>
-		<UButton
-			color="secondary"
-			class="ml-4"
-			@click="clearActivityData"
-			:disabled="loading"
-		>
-			Clear Activity Data
-		</UButton>
-		<UButton
-			v-if="props.activity"
-			color="error"
-			class="ml-4"
-			@click="removeActivity"
-			:disabled="loading"
-		>
-			Delete Activity
-		</UButton>
+		<div class="flex items-center gap-2">
+			<UButton
+				v-if="!props.activity"
+				color="info"
+				class="font-semibold"
+				icon="mdi:refresh"
+				@click="generateActivity"
+				:loading="generating"
+				:disabled="generating"
+			>
+				Generate Activity
+			</UButton>
+			<UButton
+				color="primary"
+				@click="
+					if (props.activity) {
+						updateActivity();
+					} else {
+						createActivity();
+					}
+				"
+				:icon="activityFields['icon'] || 'mdi:plus'"
+				:loading="loading"
+				:disabled="loading"
+			>
+				{{ props.activity ? 'Update Activity' : 'Create Activity' }}
+			</UButton>
+			<UButton
+				color="secondary"
+				icon="mdi:pencil-off"
+				@click="clearActivityData"
+				:disabled="loading"
+			>
+				Clear Activity Data
+			</UButton>
+			<UButton
+				v-if="props.activity"
+				color="error"
+				icon="mdi:delete-outline"
+				@click="removeActivity"
+				:disabled="loading"
+			>
+				Delete Activity
+			</UButton>
+		</div>
 	</div>
 </template>
 

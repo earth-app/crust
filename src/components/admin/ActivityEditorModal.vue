@@ -7,7 +7,7 @@
 			variant: 'solid',
 			icon: 'i-heroicons-x-mark-solid'
 		}"
-		:ui="{ content: content || 'min-w-1/3' }"
+		:ui="{ content: content || 'min-w-3/5' }"
 		v-model:open="open"
 	>
 		<slot />
