@@ -16,71 +16,30 @@
 					decoding="async"
 				/>
 			</NuxtLink>
-			<div class="flex min-w-30 sm:min-w-70 md:min-w-60 w-3/5 max-w-120">
+			<div class="flex sm:min-w-70 md:min-w-60 max-w-120">
 				<Discover class="mx-1 sm:ml-4 md:ml-8 lg:ml-12" />
 			</div>
-			<div class="hidden md:flex items-center mr-12 justify-between">
+			<div class="hidden lg:flex items-center mr-12 justify-between">
 				<NuxtLink
 					to="/activities"
-					class="text-md md:text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
+					class="text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
 					>Activities</NuxtLink
 				>
 				<NuxtLink
 					to="/prompts"
-					class="text-md md:text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
+					class="text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
 					>Prompts</NuxtLink
 				>
 				<NuxtLink
 					to="/articles"
-					class="text-md md:text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
+					class="text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
 					>Articles</NuxtLink
 				>
 				<NuxtLink
 					to="/events"
-					class="text-md md:text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
+					class="text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
 					>Events</NuxtLink
 				>
-			</div>
-			<div
-				class="fixed left-4 w-2/3 z-100 transition-all duration-300 ease-in-out md:hidden space-x-2"
-				:class="isNavbarVisible ? 'top-22' : '-top-32'"
-			>
-				<NuxtLink to="/activities">
-					<UBadge
-						variant="subtle"
-						color="info"
-						size="xl"
-						icon="mdi:run"
-						>Activities</UBadge
-					>
-				</NuxtLink>
-				<NuxtLink to="/prompts">
-					<UBadge
-						variant="subtle"
-						color="warning"
-						size="xl"
-						icon="mdi:lightbulb-on-outline"
-						>Prompts</UBadge
-					>
-				</NuxtLink>
-				<NuxtLink to="/articles">
-					<UBadge
-						variant="subtle"
-						color="secondary"
-						size="xl"
-						icon="mdi:newspaper"
-						>Articles</UBadge
-					>
-				</NuxtLink>
-				<NuxtLink to="/events">
-					<UBadge
-						variant="subtle"
-						color="success"
-						size="xl"
-						icon="mdi:calendar-star"
-						>Events</UBadge
-					>
-				</NuxtLink>
 			</div>
 		</div>
 		<div class="ml-auto">
@@ -105,10 +64,10 @@
 							user.username
 						}}</span>
 					</div>
-					<div class="flex space-x-1 sm:space-x-2 md:space-x-4 items-center justify-center">
+					<div class="flex space-x-2 md:space-x-4 items-center justify-center">
 						<NuxtLink
 							to="/profile/notifications"
-							class="size-5 lg:size-7 relative"
+							class="size-6 lg:size-7 relative"
 							id="notifications"
 						>
 							<UChip
@@ -119,49 +78,49 @@
 							>
 								<UIcon
 									name="mdi:bell"
-									class="size-5 lg:size-7 hover:cursor-pointer"
+									class="size-6 lg:size-7 hover:cursor-pointer"
 								/>
 							</UChip>
 						</NuxtLink>
 						<NuxtLink
-							class="size-5 lg:size-7"
+							class="size-6 lg:size-7"
 							to="/profile"
 							id="settings"
 						>
 							<UIcon
 								name="material-symbols:settings-rounded"
-								class="size-5 lg:size-7 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-6 lg:size-7 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
 							/>
 						</NuxtLink>
 						<NuxtLink
-							class="size-5 lg:size-7"
+							class="size-6 lg:size-7"
 							:to="`/profile/@${user.username}/badges`"
 							title="Your Badges"
 							id="badges"
 						>
 							<UIcon
 								name="mdi:shield-star-outline"
-								class="size-5 lg:size-7 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-6 lg:size-7 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
 							/>
 						</NuxtLink>
 						<NuxtLink
-							class="size-5 lg:size-7"
+							class="size-6 lg:size-7"
 							to="/profile/quests/"
 							title="Your Quests"
 							id="quests"
 						>
 							<UIcon
 								name="mdi:sword"
-								class="size-5 lg:size-7 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-6 lg:size-7 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
 							/>
 						</NuxtLink>
 						<NuxtLink
-							class="size-5 lg:size-7"
+							class="md:ml-3 size-6 lg:size-7"
 							to="/"
 						>
 							<UIcon
 								name="material-symbols:logout-rounded"
-								class="size-5 lg:size-7 ml-3 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-6 lg:size-7 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
 								@click="logoutUser"
 							/>
 						</NuxtLink>
@@ -214,11 +173,11 @@
 				? [
 						{
 							label: 'Learn More',
-							color: 'info',
+							color: 'neutral',
 							variant: 'outline',
-							onClick: () => {
-								navigateTo(motd.link, { external: motd.link?.startsWith('http') });
-							},
+							trailingIcon: 'mdi:arrow-right',
+							onClick: openMotdLink,
+							size: 'sm',
 							ui: { base: 'hover:cursor-pointer' }
 						}
 					]
@@ -227,6 +186,44 @@
 		:ui="{ root: 'flex items-center', title: 'font-semibold' }"
 		close
 	/>
+	<div class="flex gap-2 flex-wrap mt-2 ml-2 lg:hidden">
+		<NuxtLink to="/activities">
+			<UBadge
+				variant="subtle"
+				color="info"
+				size="xl"
+				icon="mdi:run"
+				>Activities</UBadge
+			>
+		</NuxtLink>
+		<NuxtLink to="/prompts">
+			<UBadge
+				variant="subtle"
+				color="warning"
+				size="xl"
+				icon="mdi:lightbulb-on-outline"
+				>Prompts</UBadge
+			>
+		</NuxtLink>
+		<NuxtLink to="/articles">
+			<UBadge
+				variant="subtle"
+				color="secondary"
+				size="xl"
+				icon="mdi:newspaper"
+				>Articles</UBadge
+			>
+		</NuxtLink>
+		<NuxtLink to="/events">
+			<UBadge
+				variant="subtle"
+				color="success"
+				size="xl"
+				icon="mdi:calendar-star"
+				>Events</UBadge
+			>
+		</NuxtLink>
+	</div>
 </template>
 
 <script setup lang="ts">
@@ -235,39 +232,16 @@ const toast = useToast();
 const router = useRouter();
 const logout = useLogout();
 const { motd, fetchMotd } = useMotd();
-const isNavbarVisible = ref(true);
+
+async function openMotdLink() {
+	if (!motd.value.link) return;
+	await navigateTo(motd.value.link, {
+		external: motd.value.link.startsWith('http')
+	});
+}
 
 onMounted(async () => {
 	await fetchMotd();
-
-	if (import.meta.client) {
-		let ticking = false;
-
-		const onScroll = () => {
-			const currentScrollY = window.scrollY;
-
-			if (currentScrollY < 80) {
-				isNavbarVisible.value = true;
-			} else {
-				isNavbarVisible.value = false;
-			}
-
-			ticking = false;
-		};
-
-		const throttledScroll = () => {
-			if (!ticking) {
-				requestAnimationFrame(onScroll);
-				ticking = true;
-			}
-		};
-
-		window.addEventListener('scroll', throttledScroll, { passive: true });
-
-		onUnmounted(() => {
-			window.removeEventListener('scroll', throttledScroll);
-		});
-	}
 });
 
 async function logoutUser() {

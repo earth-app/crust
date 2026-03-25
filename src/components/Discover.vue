@@ -1,7 +1,7 @@
 <template>
 	<UModal v-model:open="open">
 		<UButton
-			label="Discover"
+			:label="isLabelVisible ? 'Discover' : undefined"
 			color="neutral"
 			icon="mdi:compass"
 			variant="outline"
@@ -27,6 +27,7 @@ import type { CommandPaletteGroup, CommandPaletteItem } from '#ui/types';
 
 const { user } = useAuth();
 const router = useRouter();
+const viewport = useViewport();
 const open = ref(false);
 
 const users = ref<CommandPaletteItem[]>([]);
@@ -37,6 +38,8 @@ const prompts = ref<CommandPaletteItem[]>([]);
 const promptsLoading = ref(false);
 const articles = ref<CommandPaletteItem[]>([]);
 const articlesLoading = ref(false);
+
+const isLabelVisible = computed(() => !viewport.isLessOrEquals('mobileMedium'));
 
 const loading = computed(
 	() =>
