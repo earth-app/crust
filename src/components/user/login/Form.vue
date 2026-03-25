@@ -106,9 +106,6 @@ async function handleLogin() {
 		// Fetch user data and ensure state is updated before emitting
 		await fetchUser(true);
 
-		// Force refresh all cached data
-		await refreshNuxtData();
-
 		toast.add({
 			title: 'Login Successful',
 			description: `Welcome back, @${username.value}!`,

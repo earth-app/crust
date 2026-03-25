@@ -1,18 +1,16 @@
 <template>
 	<UPopover
 		v-model:open="isOpen"
-		mode="hover"
+		mode="click"
 		:popper="{ placement: 'bottom-end' }"
 	>
-		<NuxtLink to="/signup">
-			<UButton
-				color="neutral"
-				variant="link"
-				class="text-md md:text-lg lg:text-xl font-semibold hover:text-gray-300 mx-2 lg:mx-6 cursor-pointer"
-			>
-				Sign&nbsp;Up
-			</UButton>
-		</NuxtLink>
+		<UButton
+			color="neutral"
+			variant="link"
+			class="text-md md:text-lg lg:text-xl font-semibold hover:text-gray-300 mx-2 lg:mx-6 cursor-pointer"
+		>
+			Sign&nbsp;Up
+		</UButton>
 
 		<template #content>
 			<UserSignupForm @signup-success="handleSignupSuccess" />

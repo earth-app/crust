@@ -160,9 +160,6 @@ async function handleSignup() {
 		const userState = useState<User | null | undefined>('user-current');
 		userState.value = result.user;
 
-		// Force refresh all cached data
-		await refreshNuxtData();
-
 		toast.add({
 			title: 'Sign Up Successful',
 			description: 'You have successfully signed up. Welcome!',
