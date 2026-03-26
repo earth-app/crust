@@ -46,7 +46,7 @@
 
 				<template #body>
 					<UTable
-						:data="pointsHistory || []"
+						:data="pointsHistory?.reverse() || []"
 						:loading="pointsHistory === undefined"
 						:columns="[
 							{
