@@ -126,6 +126,7 @@ export default defineNuxtConfig({
 		// No-cache API routes
 		'/api/user/journey': { cache: false },
 		'/api/turnstile': { cache: false },
+		'/api/auth/session': { cache: false },
 		'/api/article/recommend': { cache: false }, // User-specific
 		'/api/article/similar': { cache: false }, // Article-specific
 		'/api/admin/**': { cache: false },

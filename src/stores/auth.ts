@@ -28,17 +28,20 @@ export const useAuthStore = defineStore('auth', () => {
 		if (import.meta.server) return;
 
 		try {
-			const response = await $fetch<{ session_token: string | null }>('/api/auth/session');
-			if (response.session_token) {
-				setSessionToken(response.session_token);
-			}
+			const response = await $fetch<{ session_token: string | null }>('/api/auth/session', {
+				cache: 'no-store',
+				credentials: 'include'
+			});
+			setSessionToken(response.session_token || null);
 		} catch (error) {
 			console.error('Failed to sync session token:', error);
 		}
 	};
 
 	const fetchCurrentUser = async (force: boolean = false) => {
-		if (currentUser.value !== undefined && !force && !fetchPromise.value) {
+		const noUser = currentUser.value === null && !!sessionToken.value;
+
+		if (currentUser.value !== undefined && !force && !fetchPromise.value && !noUser) {
 			return currentUser.value;
 		}
 
@@ -51,7 +54,10 @@ export const useAuthStore = defineStore('auth', () => {
 
 		fetchPromise.value = (async () => {
 			try {
-				if (import.meta.client && force) {
+				if (
+					import.meta.client &&
+					(force || (currentUser.value === undefined && !sessionToken.value))
+				) {
 					await syncSessionToken();
 				}
 
@@ -71,6 +77,12 @@ export const useAuthStore = defineStore('auth', () => {
 				currentUser.value = response;
 			} catch (error: any) {
 				console.warn('Failed to fetch current user:', error);
+				const statusCode = error?.response?.status || error?.statusCode || error?.status;
+
+				if (statusCode === 401 || statusCode === 403) {
+					setSessionToken(null);
+				}
+
 				currentUser.value = null;
 			} finally {
 				isLoading.value = false;
