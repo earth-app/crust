@@ -3,6 +3,8 @@ import type { User } from 'types/user';
 import { computed, ref } from 'vue';
 
 export const useAuthStore = defineStore('auth', () => {
+	const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+
 	const currentUser = ref<User | null | undefined>(undefined);
 	const sessionToken = ref<string | null>(null);
 	const isLoading = ref(false);
@@ -11,16 +13,34 @@ export const useAuthStore = defineStore('auth', () => {
 	const isAuthenticated = computed(() => !!sessionToken.value && !!currentUser.value);
 	const isAdmin = computed(() => currentUser.value?.is_admin || false);
 
+	const normalizeSessionToken = (token: string | null | undefined): string | null => {
+		if (!token) return null;
+
+		let normalized = token.trim();
+		try {
+			normalized = decodeURIComponent(normalized);
+		} catch {
+			// keep the raw token if it's not URL encoded
+		}
+
+		if (normalized.length >= 2 && normalized.startsWith('"') && normalized.endsWith('"')) {
+			normalized = normalized.slice(1, -1);
+		}
+
+		return normalized || null;
+	};
+
 	const setSessionToken = (token: string | null) => {
-		sessionToken.value = token;
+		const normalized = normalizeSessionToken(token);
+		sessionToken.value = normalized;
 
 		if (import.meta.client) {
 			const sessionCookie = useCookie('session_token', {
-				maxAge: 60 * 60 * 24 * 14,
+				maxAge: SESSION_COOKIE_MAX_AGE,
 				secure: true,
 				sameSite: 'none'
 			});
-			sessionCookie.value = token;
+			sessionCookie.value = normalized;
 		}
 	};
 
@@ -32,21 +52,19 @@ export const useAuthStore = defineStore('auth', () => {
 				cache: 'no-store',
 				credentials: 'include'
 			});
-			setSessionToken(response.session_token || null);
+			setSessionToken(response.session_token);
 		} catch (error) {
 			console.error('Failed to sync session token:', error);
 		}
 	};
 
 	const fetchCurrentUser = async (force: boolean = false) => {
-		const noUser = currentUser.value === null && !!sessionToken.value;
-
-		if (currentUser.value !== undefined && !force && !fetchPromise.value && !noUser) {
+		if (fetchPromise.value) {
+			await fetchPromise.value;
 			return currentUser.value;
 		}
 
-		if (fetchPromise.value && !force) {
-			await fetchPromise.value;
+		if (currentUser.value && !force) {
 			return currentUser.value;
 		}
 
@@ -54,10 +72,7 @@ export const useAuthStore = defineStore('auth', () => {
 
 		fetchPromise.value = (async () => {
 			try {
-				if (
-					import.meta.client &&
-					(force || (currentUser.value === undefined && !sessionToken.value))
-				) {
+				if (import.meta.client && (force || !sessionToken.value)) {
 					await syncSessionToken();
 				}
 
@@ -75,6 +90,8 @@ export const useAuthStore = defineStore('auth', () => {
 				});
 
 				currentUser.value = response;
+				// Slide cookie expiration on successful auth reads.
+				setSessionToken(sessionToken.value);
 			} catch (error: any) {
 				console.warn('Failed to fetch current user:', error);
 				const statusCode = error?.response?.status || error?.statusCode || error?.status;
@@ -108,18 +125,18 @@ export const useAuthStore = defineStore('auth', () => {
 	// initialize session token from cookie on client
 	if (import.meta.client) {
 		const sessionCookie = useCookie('session_token', {
-			maxAge: 60 * 60 * 24 * 14,
+			maxAge: SESSION_COOKIE_MAX_AGE,
 			secure: true,
 			sameSite: 'none'
 		});
-		sessionToken.value = sessionCookie.value || null;
+		sessionToken.value = normalizeSessionToken(sessionCookie.value);
 	} else {
 		// server-side; read from request headers
 		try {
 			const headers = useRequestHeaders(['cookie']);
 			const cookieHeader = headers.cookie || '';
 			const match = cookieHeader.match(/session_token=([^;]+)/);
-			sessionToken.value = match?.[1] || null;
+			sessionToken.value = normalizeSessionToken(match?.[1] || null);
 		} catch (e) {
 			sessionToken.value = null;
 		}

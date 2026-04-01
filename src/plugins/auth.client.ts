@@ -1,11 +1,11 @@
-export default defineNuxtPlugin(async (_) => {
-	const { user, fetchUser } = useAuth();
+export default defineNuxtPlugin((nuxtApp) => {
+	const { fetchUser } = useAuth();
 
-	if (user.value == null) {
+	nuxtApp.hook('app:mounted', async () => {
 		try {
 			await fetchUser(true);
 		} catch (error) {
 			console.error('Failed to initialize user authentication:', error);
 		}
-	}
+	});
 });

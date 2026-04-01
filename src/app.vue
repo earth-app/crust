@@ -48,7 +48,7 @@ useSeoMeta({
 // Global Variables
 
 const { fetchUser } = useAuth();
-onMounted(() => {
-	fetchUser();
+onMounted(async () => {
+	await fetchUser(true);
 });
 </script>
