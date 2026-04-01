@@ -1,34 +1,47 @@
 <template>
-	<UDropdownMenu
-		v-if="props.editor"
-		arrow
-		:items="editorItems"
+	<span
+		v-if="
+			props.editor ||
+			(props.user.account?.account_type && props.user.account.account_type !== 'FREE')
+		"
+		v-bind="attrs"
 	>
+		<UDropdownMenu
+			v-if="props.editor"
+			arrow
+			:items="editorItems"
+		>
+			<UBadge
+				:label="badgeLabel"
+				:class="badgeStyling"
+				:ui="{ base: 'justify-center' }"
+				class="px-1 sm:px-2 md:px-3 py-1 rounded-full text-white text-sm font-semibold hover:cursor-pointer"
+			/>
+		</UDropdownMenu>
 		<UBadge
+			v-else
 			:label="badgeLabel"
 			:class="badgeStyling"
 			:ui="{ base: 'justify-center' }"
-			class="px-1 sm:px-2 md:px-3 py-1 rounded-full text-white text-sm font-semibold hover:cursor-pointer"
+			class="px-1 sm:px-2 md:px-3 py-1 rounded-full text-white text-sm font-semibold"
 		/>
-	</UDropdownMenu>
-	<UBadge
-		v-else
-		v-if="props.user.account?.account_type && props.user.account.account_type !== 'FREE'"
-		:label="badgeLabel"
-		:class="badgeStyling"
-		:ui="{ base: 'justify-center' }"
-		class="px-1 sm:px-2 md:px-3 py-1 rounded-full text-white text-sm font-semibold"
-	/>
+	</span>
 </template>
 
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
 import { capitalizeFully } from 'utils';
 
+defineOptions({
+	inheritAttrs: false
+});
+
 const props = defineProps<{
 	user: User;
 	editor?: boolean;
 }>();
+
+const attrs = useAttrs();
 
 const badgeLabel = computed(() => {
 	const type = props.user.account?.account_type;
