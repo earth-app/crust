@@ -245,7 +245,18 @@ onMounted(async () => {
 });
 
 async function logoutUser() {
-	await logout();
+	const result = await logout();
+	if (!result.success) {
+		toast.add({
+			title: 'Logout Failed',
+			description: result.message || 'Unable to log out right now. Please try again.',
+			icon: 'mdi:alert-circle',
+			color: 'error',
+			duration: 4000
+		});
+		return;
+	}
+
 	refreshNuxtData('user-current'); // Invalidate user data
 
 	toast.add({
