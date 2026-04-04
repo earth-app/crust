@@ -44,11 +44,4 @@ useSeoMeta({
 	appleMobileWebAppCapable: 'yes',
 	appleMobileWebAppStatusBarStyle: 'black'
 });
-
-// Global Variables
-
-const { fetchUser } = useAuth();
-onMounted(async () => {
-	await fetchUser(true);
-});
 </script>

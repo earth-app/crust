@@ -19,9 +19,20 @@ const route = useRoute();
 const { user, fetchUser } = useAuth();
 
 onMounted(async () => {
-	const { force_refresh } = route.query;
-	if (force_refresh) {
+	if (route.query.force_refresh) {
 		await fetchUser(true);
+
+		const query = { ...route.query };
+		delete query.force_refresh;
+
+		await navigateTo(
+			{
+				path: route.path,
+				query,
+				hash: route.hash
+			},
+			{ replace: true }
+		);
 	}
 });
 
