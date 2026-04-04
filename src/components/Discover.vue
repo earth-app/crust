@@ -27,6 +27,7 @@ import type { CommandPaletteGroup, CommandPaletteItem } from '#ui/types';
 
 const { user } = useAuth();
 const { fetchAll: fetchAllUsers } = useUsers();
+const avatarStore = useAvatarStore();
 const router = useRouter();
 const viewport = useViewport();
 const open = ref(false);
@@ -75,9 +76,22 @@ const filteredGroups = computed(() => {
 	return result;
 });
 
-// Watch search changes, but don't use immediate to avoid double-call with onMounted
+// watch search changes, but don't use immediate to avoid double-call with onMounted
 watch(search, (newSearch: string) => populate(newSearch));
 onMounted(() => populate(''));
+
+function getAvatar32Url(url: string | undefined) {
+	if (!url) {
+		return undefined;
+	}
+
+	const cached = avatarStore.get(url)?.avatar32;
+	if (cached) {
+		return cached;
+	}
+
+	return `${url}${url.includes('?') ? '&' : '?'}size=32`;
+}
 
 function populate(searchTerm: string) {
 	const empty = searchTerm.length === 0;
@@ -85,19 +99,31 @@ function populate(searchTerm: string) {
 
 	// populate users
 	usersLoading.value = true;
-	fetchAllUsers(empty ? 5 : 150, searchTerm, sort).then((res) => {
+	fetchAllUsers(empty ? 5 : 150, searchTerm, sort).then(async (res) => {
 		if (res.success && res.data) {
 			const items = res.data;
 
-			users.value = items.map((user) => ({
-				id: `user-${user.id}`,
-				label: getUserDisplayName(user),
-				suffix: `@${user.username}`,
+			await Promise.all(
+				items.map((searchedUser) => {
+					const avatarUrl = searchedUser.account?.avatar_url;
+					if (!avatarUrl) {
+						return Promise.resolve();
+					}
+
+					return avatarStore.fetchAvatarBlobs(avatarUrl);
+				})
+			);
+
+			users.value = items.map((searchedUser) => ({
+				id: `user-${searchedUser.id}`,
+				label: getUserDisplayName(searchedUser),
+				suffix: `@${searchedUser.username}`,
 				avatar: {
-					src: `${user.account.avatar_url}?size=32`,
-					icon: 'mdi:account'
+					src: getAvatar32Url(searchedUser.account?.avatar_url),
+					icon: 'mdi:account',
+					alt: searchedUser.username
 				},
-				to: `/profile/@${user.username}`,
+				to: `/profile/@${searchedUser.username}`,
 				onSelect: close
 			})) as CommandPaletteItem[];
 
