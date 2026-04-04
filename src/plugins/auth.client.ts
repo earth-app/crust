@@ -3,7 +3,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
 	nuxtApp.hook('app:mounted', async () => {
 		try {
-			await fetchUser(true);
+			await fetchUser();
 		} catch (error) {
 			console.error('Failed to initialize user authentication:', error);
 		}

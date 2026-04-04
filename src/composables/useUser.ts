@@ -643,14 +643,20 @@ export function useJourneyLeaderboard(type: string) {
 			const userPromises = res.data.map(async (entry) => {
 				const { user, fetchUser } = useUser(entry.id);
 				await fetchUser();
+				if (!user.value) {
+					return null;
+				}
+
 				return {
-					user: user.value!,
+					user: user.value,
 					id: entry.id,
 					streak: entry.streak
 				};
 			});
 
-			leaderboard.value = await Promise.all(userPromises);
+			leaderboard.value = (await Promise.all(userPromises)).filter(
+				(entry): entry is UserJourneyLeaderboardEntry => entry !== null
+			);
 		} else {
 			leaderboard.value = [];
 		}

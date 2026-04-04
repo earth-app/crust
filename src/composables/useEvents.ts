@@ -107,14 +107,37 @@ export function useEvents() {
 
 	const fetchRecommended = async (count: number = 5) => {
 		const { user, fetchUser } = useAuth();
-		await fetchUser(true);
+
+		if (!authStore.sessionToken) {
+			return { success: false, message: 'User not authenticated' };
+		}
+
+		if (!user.value) {
+			await fetchUser();
+		}
+
+		if (!user.value) {
+			return { success: false, message: 'User not authenticated' };
+		}
 
 		const pool = await fetchRandom(Math.min(count * 3, 15)).then((res) =>
 			res.success ? res.data : res.message
 		);
 
+		if (!pool || typeof pool === 'string') {
+			throw new Error(`Failed to fetch random events: ${pool}`);
+		}
+
+		if ('message' in pool) {
+			throw new Error(`Failed to fetch random events: ${pool.code} ${pool.message}`);
+		}
+
+		if (!pool || pool.length === 0) {
+			return { success: true, data: [] };
+		}
+
 		const res = await makeServerRequest<Event[]>(
-			`user-${user.value!.id}-event_recommendations`,
+			`user-${user.value.id}-event_recommendations`,
 			`/api/event/recommend`,
 			authStore.sessionToken,
 			{

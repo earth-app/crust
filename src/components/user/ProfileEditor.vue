@@ -411,8 +411,6 @@ import { com } from '@earth-app/ocean';
 import { OAUTH_PROVIDERS, type User } from 'types/user';
 import { capitalizeFully } from 'utils';
 import type { InputTypeHTMLAttribute } from 'vue';
-import { useAvatarStore } from '~/stores/avatar';
-import { useUserStore } from '~/stores/user';
 import { type EmailVerificationModalRef } from './email/VerificationModal.vue';
 import { type PasswordChangeModalRef } from './PasswordChangeModal.vue';
 
@@ -423,6 +421,7 @@ const componentProps = defineProps<{
 
 const toast = useToast();
 const router = useRouter();
+const authStore = useAuthStore();
 
 // Use computed to keep reactivity with the prop
 const user = computed(() => componentProps.user);
@@ -1108,16 +1107,13 @@ watch(subscribed, async (newValue) => {
 });
 
 // Account Deletion
-function handleAccountDeletion() {
-	// Remove session token
-	const sessionCookie = useCookie('session_token');
-	sessionCookie.value = null;
+async function handleAccountDeletion() {
+	// Keep auth-store state and logout suppression in sync with cookie/session cleanup.
+	authStore.logout();
 
-	// Clear state
-	refreshNuxtData();
+	await refreshNuxtData();
+	await router.push('/');
 
-	// Redirect to homepage
-	router.push('/');
 	toast.add({
 		title: 'Account Deleted',
 		description: 'Your account has been successfully deleted.',

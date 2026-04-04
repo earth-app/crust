@@ -34,6 +34,10 @@ export function useArticle(id: string) {
 			await fetch(true);
 		}
 
+		if (!article.value) {
+			throw new Error('Article must be loaded before submitting quiz answers');
+		}
+
 		if (!quiz.value || quiz.value.length === 0) {
 			throw new Error('Quiz must be loaded before submitting answers');
 		}
@@ -52,7 +56,7 @@ export function useArticle(id: string) {
 			index: a
 		}));
 
-		const articleTypes = article.value!.tags.map((t) => t.toUpperCase().replace(/\s+/g, '_'));
+		const articleTypes = article.value.tags.map((t) => t.toUpperCase().replace(/\s+/g, '_'));
 
 		try {
 			const res = await makeServerRequest<ArticleQuizScoreResult>(
@@ -297,7 +301,18 @@ export function useArticles(
 
 	const fetchRecommended = async (count: number = 3) => {
 		const { user, fetchUser } = useAuth();
-		await fetchUser();
+
+		if (!authStore.sessionToken) {
+			return { success: false, message: 'User not authenticated' };
+		}
+
+		if (!user.value) {
+			await fetchUser();
+		}
+
+		if (!user.value) {
+			return { success: false, message: 'User not authenticated' };
+		}
 
 		const pool = await fetchRandom(Math.min(count * 3, 15)).then((res) =>
 			res.success ? res.data : res.message
@@ -316,7 +331,7 @@ export function useArticles(
 		}
 
 		const res = await makeServerRequest<Article[]>(
-			`user-${user.value!.id}-article_recommendations`,
+			`user-${user.value.id}-article_recommendations`,
 			`/api/article/recommend`,
 			authStore.sessionToken,
 			{

@@ -104,7 +104,7 @@ async function handleLogin() {
 		message.value = 'Welcome!';
 
 		// Fetch user data and ensure state is updated before emitting
-		await fetchUser(true);
+		await fetchUser();
 
 		toast.add({
 			title: 'Login Successful',
