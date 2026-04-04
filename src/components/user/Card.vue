@@ -7,11 +7,7 @@
 				:to="`/profile/@${user.username}`"
 				:name="user.full_name"
 				:description="`@${user.username}`"
-				:avatar="
-					user.account?.avatar_url
-						? { src: `${user.account.avatar_url}?size=128`, loading: 'lazy', alt: user.username }
-						: undefined
-				"
+				:avatar="userAvatar"
 				size="xl"
 				class="mr-2"
 			/>
@@ -72,4 +68,33 @@ const props = defineProps<{
 }>();
 
 const { user: currentUser } = useAuth();
+const avatarStore = useAvatarStore();
+
+const userAvatar = computed(() => {
+	const avatarUrl = props.user.account?.avatar_url;
+	if (!avatarUrl) {
+		return undefined;
+	}
+
+	const cached = avatarStore.get(avatarUrl)?.avatar128;
+	const src = cached || `${avatarUrl}${avatarUrl.includes('?') ? '&' : '?'}size=128`;
+
+	return {
+		src,
+		loading: 'lazy' as const,
+		alt: props.user.username
+	};
+});
+
+watch(
+	() => props.user.account?.avatar_url,
+	(newUrl) => {
+		if (!newUrl) {
+			return;
+		}
+
+		void avatarStore.fetchAvatarBlobs(newUrl);
+	},
+	{ immediate: true }
+);
 </script>
