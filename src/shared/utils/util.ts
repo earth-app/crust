@@ -42,15 +42,17 @@ export async function makeRequest<T>(
 		const requestPromise = (async () => {
 			try {
 				const isBinaryRequest = url.includes('profile_photo') || options.responseType === 'blob';
+				const authHeaders: Record<string, string> = {};
+				if (token) {
+					authHeaders['Authorization'] = `Bearer ${token}`;
+				}
 
 				if (isBinaryRequest) {
-					const headers: Record<string, string> = {};
-					if (token) {
-						headers['Authorization'] = `Bearer ${token}`;
-					}
-
 					const blob = await $fetch<Blob>(url, {
-						headers,
+						headers: {
+							...authHeaders,
+							...(options.headers ?? {})
+						},
 						...options
 					});
 
@@ -63,7 +65,8 @@ export async function makeRequest<T>(
 				// Handle regular JSON requests
 				const data = await $fetch<T>(url, {
 					headers: {
-						Authorization: `Bearer ${token}`
+						...authHeaders,
+						...(options.headers ?? {})
 					},
 					ignoreResponseError: true,
 					...options
@@ -79,7 +82,6 @@ export async function makeRequest<T>(
 
 					throw {
 						message: `Error fetching ${key} from ${url}: ${error}`,
-						data,
 						error,
 						toString: () => error.toString()
 					};
