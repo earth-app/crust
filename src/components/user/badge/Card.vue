@@ -46,8 +46,7 @@
 					v-if="'granted' in badge && badge.granted"
 					class="text-sm opacity-90 mt-2"
 				>
-					Congratulations! You've earned this badge on
-					{{ grantedAt }}.
+					{{ grantedTo }} earned this badge on {{ grantedAt }}.
 				</span>
 				<div
 					v-else-if="'progress' in badge"
@@ -82,6 +81,7 @@ const props = defineProps<{
 	badge: Badge | UserBadge;
 }>();
 
+const userStore = useUserStore();
 const showDetails = ref(false);
 
 const rarityColor = computed(() => {
@@ -102,4 +102,21 @@ const grantedAt = computed(() =>
 		'granted_at' in props.badge && props.badge.granted_at ? props.badge.granted_at : ''
 	).toLocaleString(DateTime.DATETIME_MED)
 );
+
+const grantedTo = computed(() => {
+	if (!('user_id' in props.badge)) return null;
+	const { user, fetchUser } = useUser(props.badge.user_id);
+	if (!user.value) {
+		fetchUser();
+	}
+
+	const { handle } = useDisplayName(user);
+	return handle.value;
+});
+
+onMounted(() => {
+	if ('user_id' in props.badge) {
+		userStore.fetchUser(props.badge.user_id);
+	}
+});
 </script>
