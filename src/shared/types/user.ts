@@ -55,6 +55,7 @@ export type User = {
 			badges: typeof com.earthapp.account.Privacy.prototype.name;
 		};
 	};
+	disabled: boolean;
 	email_change_pending?: string;
 	message?: string;
 	activities?: Activity[];
