@@ -63,7 +63,7 @@
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Activities');
 
-const { user } = useAuth();
+const { user, fetchRecommendedActivities } = useAuth();
 const toast = useToast();
 
 const recommendedLoaded = ref(false);
@@ -72,7 +72,7 @@ watch(
 	() => user.value,
 	async (newUser) => {
 		if (newUser) {
-			const res = await getRecommendedActivities();
+			const res = await fetchRecommendedActivities();
 			if (res.success && res.data) {
 				if ('message' in res.data) {
 					// No recommendations available

@@ -53,6 +53,7 @@ const props = defineProps<{
 }>();
 
 const toast = useToast();
+const { fetchCurrentJourney, fetchCurrentJourneyRank } = useAuth();
 
 const loading = ref(false);
 const state = reactive({
@@ -72,7 +73,7 @@ onMounted(async () => {
 	await Promise.all(
 		journeyTypes.map(async (type) => {
 			// Fetch count
-			const countRes = await getCurrentJourney(type, props.user.id);
+			const countRes = await fetchCurrentJourney(type, props.user.id);
 			if (countRes.success && countRes.data) {
 				if ('message' in countRes.data) {
 					toast.add({
@@ -95,7 +96,7 @@ onMounted(async () => {
 
 			// Fetch rank
 			if (type !== 'activity') {
-				const rankRes = await getCurrentJourneyRank(type, props.user.id);
+				const rankRes = await fetchCurrentJourneyRank(type, props.user.id);
 				if (rankRes.success && rankRes.data && 'rank' in rankRes.data) {
 					state[type].rank = rankRes.data.rank;
 				}

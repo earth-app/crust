@@ -46,14 +46,14 @@ useSeoMeta({
 	ogDescription: currentActivity.value?.description || ''
 });
 
-const { user } = useAuth();
+const { user, fetchCurrentJourney, tapCurrentJourney } = useAuth();
 const { count: totalActivities } = useActivitiesCount();
 
 onMounted(async () => {
 	if (!route.params.id) return;
 	if (!user.value) return;
 
-	const count = await getCurrentJourney('activity', user.value.id);
+	const count = await fetchCurrentJourney('activity', user.value.id);
 	if (!count.success || !count.data) return; // silently ignore errors
 	if ('message' in count.data) return;
 

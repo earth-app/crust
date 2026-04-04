@@ -71,6 +71,8 @@ const props = defineProps<{
 	field: keyof User['account']['field_privacy'];
 }>();
 
+const { updateFieldPrivacy } = useAuth();
+
 const user = props.user;
 
 const loading = ref(false);

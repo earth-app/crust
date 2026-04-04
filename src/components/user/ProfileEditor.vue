@@ -426,6 +426,7 @@ const router = useRouter();
 
 // Use computed to keep reactivity with the prop
 const user = computed(() => componentProps.user);
+const { sendVerificationEmail, updateAccount, regenerateAvatar, setUserActivities } = useAuth();
 const changed = ref(false);
 
 const createAccountProp = (key: string) =>

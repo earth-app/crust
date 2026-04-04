@@ -13,7 +13,7 @@ export function useEvents() {
 	const authStore = useAuthStore();
 	const eventStore = useEventStore();
 
-	const getEvents = async (
+	const fetch = async (
 		page: number = 1,
 		limit: number = 50,
 		search: string = '',
@@ -61,7 +61,7 @@ export function useEvents() {
 		return await eventStore.deleteEvent(id);
 	};
 
-	const getRandom = async (count: number = 5) => {
+	const fetchRandom = async (count: number = 5) => {
 		// Return cached result if still fresh
 		const cached = eventStore.getRandomCached(count);
 		if (cached) {
@@ -86,7 +86,7 @@ export function useEvents() {
 		return res;
 	};
 
-	const getRecent = async (count: number = 5) => {
+	const fetchRecent = async (count: number = 5) => {
 		const res = await makeAPIRequest<{ items: Event[] }>(
 			`recent-events-${count}`,
 			`/v2/events?sort=desc&limit=${count}`,
@@ -105,11 +105,11 @@ export function useEvents() {
 		return res;
 	};
 
-	const getRecommended = async (count: number = 5) => {
+	const fetchRecommended = async (count: number = 5) => {
 		const { user, fetchUser } = useAuth();
 		await fetchUser(true);
 
-		const pool = await getRandom(Math.min(count * 3, 15)).then((res) =>
+		const pool = await fetchRandom(Math.min(count * 3, 15)).then((res) =>
 			res.success ? res.data : res.message
 		);
 
@@ -135,7 +135,7 @@ export function useEvents() {
 		return res;
 	};
 
-	const getUpcoming = async (count: number = 5) => {
+	const fetchUpcoming = async (count: number = 5) => {
 		const res = await makeAPIRequest<{ items: Event[] }>(
 			`upcoming-events-${count}`,
 			`/v2/events?sort=desc&limit=${count}&filter_is_upcoming=true`,
@@ -155,13 +155,13 @@ export function useEvents() {
 	};
 
 	return {
-		getEvents,
+		fetch,
 		createEvent,
 		deleteEvent,
-		getRandom,
-		getRecent,
-		getRecommended,
-		getUpcoming
+		fetchRandom,
+		fetchRecent,
+		fetchRecommended,
+		fetchUpcoming
 	};
 }
 
@@ -327,7 +327,7 @@ export function useEvent(id: string) {
 		return res;
 	};
 
-	const getSimilar = async (count: number = 5) => {
+	const fetchSimilar = async (count: number = 5) => {
 		if (!event.value) {
 			await fetch();
 		}
@@ -338,9 +338,9 @@ export function useEvent(id: string) {
 
 		const eventStore = useEventStore();
 		const authStore = useAuthStore();
-		const { getRandom } = useEvents();
+		const { fetchRandom } = useEvents();
 
-		const pool = await getRandom(Math.min(count * 3, 15)).then((res) =>
+		const pool = await fetchRandom(Math.min(count * 3, 15)).then((res) =>
 			res.success ? res.data : res.message
 		);
 
@@ -402,7 +402,7 @@ export function useEvent(id: string) {
 		fetchSubmissions,
 		fetchSubmissionsForUser,
 		submitImage,
-		getSimilar
+		fetchSimilar
 	};
 }
 

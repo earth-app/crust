@@ -205,13 +205,13 @@ onMounted(async () => {
 	markVisited();
 
 	// Fetch content independently for progressive rendering
-	const { getRandom: getRandomPrompts } = usePrompts();
-	const { getRandom: getRandomActivities } = useActivities();
-	const { getRandom: getRandomArticles } = useArticles();
-	const { getRandom: getRandomEvents } = useEvents();
+	const { fetchRandom: fetchRandomPrompts } = usePrompts();
+	const { fetchRandom: fetchRandomActivities } = useActivities();
+	const { fetchRandom: fetchRandomArticles } = useArticles();
+	const { fetchRandom: fetchRandomEvents } = useEvents();
 
 	// Fetch prompts
-	getRandomPrompts(5).then((resPrompt) => {
+	fetchRandomPrompts(5).then((resPrompt) => {
 		if (resPrompt.success && resPrompt.data) {
 			if ('message' in resPrompt.data) {
 				randomPrompts.value = [];
@@ -230,7 +230,7 @@ onMounted(async () => {
 	});
 
 	// Fetch activities
-	getRandomActivities(10).then((resActivities) => {
+	fetchRandomActivities(10).then((resActivities) => {
 		if (resActivities.success && resActivities.data) {
 			if ('message' in resActivities.data) {
 				randomActivities.value = [];
@@ -249,7 +249,7 @@ onMounted(async () => {
 	});
 
 	// Fetch articles
-	getRandomArticles(8).then((resArticles) => {
+	fetchRandomArticles(8).then((resArticles) => {
 		if (resArticles.success && resArticles.data) {
 			if ('message' in resArticles.data) {
 				randomArticles.value = [];
@@ -268,7 +268,7 @@ onMounted(async () => {
 	});
 
 	// Fetch events
-	getRandomEvents(10).then((resEvents) => {
+	fetchRandomEvents(10).then((resEvents) => {
 		if (resEvents.success && resEvents.data) {
 			if ('message' in resEvents.data) {
 				randomEvents.value = [];

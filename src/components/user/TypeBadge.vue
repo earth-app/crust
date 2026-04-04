@@ -41,6 +41,8 @@ const props = defineProps<{
 	editor?: boolean;
 }>();
 
+const { setAccountType } = useUser(props.user.id);
+
 const attrs = useAttrs();
 
 const badgeLabel = computed(() => {
@@ -78,7 +80,7 @@ async function handleSetAccountType(type: typeof com.earthapp.account.AccountTyp
 	const toast = useToast();
 
 	props.user.account.account_type = type;
-	const res = await setAccountType(props.user.id, type);
+	const res = await setAccountType(type);
 
 	if (!res.success) {
 		console.error('Failed to update account type:', res.message);

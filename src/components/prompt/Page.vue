@@ -71,7 +71,7 @@
 <script setup lang="ts">
 import { makeClientAPIRequest } from 'utils';
 
-const { user, avatar128 } = useAuth();
+const { user, avatar128, tapCurrentJourney } = useAuth();
 const { handle } = useDisplayName(user);
 
 const toast = useToast();

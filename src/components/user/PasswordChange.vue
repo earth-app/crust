@@ -97,6 +97,8 @@
 import { passwordSchema } from 'schemas';
 import z from 'zod';
 
+const { changePassword } = useAuth();
+
 const oldPassword = ref('');
 const newPassword = ref('');
 const loading = ref(false);

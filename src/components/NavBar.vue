@@ -227,7 +227,7 @@
 </template>
 
 <script setup lang="ts">
-const { user, avatar128 } = useAuth();
+const { user, avatar128, sendVerificationEmail } = useAuth();
 const toast = useToast();
 const router = useRouter();
 const logout = useLogout();

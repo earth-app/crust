@@ -46,7 +46,7 @@
 <script setup lang="ts">
 const toast = useToast();
 const route = useRoute();
-const { user } = useAuth();
+const { user, fetchCurrentJourney, tapCurrentJourney } = useAuth();
 const { setTitleSuffix } = useTitleSuffix();
 const { article, fetch } = useArticle(route.params.id as string);
 const { startTimer, stopTimer } = useTimeOnPage('articles_read_time');
@@ -102,7 +102,7 @@ useSeoMeta({
 onMounted(async () => {
 	if (!article.value || 'error' in (article.value as any)) return;
 	if (user.value) {
-		const count = await getCurrentJourney('article', user.value.id);
+		const count = await fetchCurrentJourney('article', user.value.id);
 		if (!count.success || !count.data) return; // silently ignore errors
 		if ('message' in count.data) return;
 
@@ -132,8 +132,8 @@ async function loadSimilar(article?: Article) {
 	relatedLoaded.value = false;
 
 	try {
-		const { getSimilar } = useArticle(article.id);
-		const res = await getSimilar();
+		const { fetchSimilar } = useArticle(article.id);
+		const res = await fetchSimilar();
 		if (res.success && res.data) {
 			relatedArticles.value = res.data;
 			similarLoadedFor.value = article.id;

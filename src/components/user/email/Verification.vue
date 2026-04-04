@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-const { user } = useAuth();
+const { user, sendVerificationEmail, verifyEmail } = useAuth();
 
 const value = ref<string[]>([]);
 const errorMessage = ref<string>('');

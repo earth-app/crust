@@ -81,6 +81,7 @@ const props = defineProps<{
 const emit = defineEmits<{
 	(event: 'deleted', notification: UserNotification): void;
 }>();
+const { markNotificationRead } = useNotifications();
 
 const timestamp = computed(() => {
 	const time = DateTime.fromMillis(props.notification.created_at * 1000);

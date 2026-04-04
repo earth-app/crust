@@ -45,7 +45,7 @@ const props = defineProps<{
 	additional?: boolean;
 }>();
 
-const { notifications } = useNotifications();
+const { notifications, markAllNotificationsRead } = useNotifications();
 
 async function markAllRead() {
 	await markAllNotificationsRead();

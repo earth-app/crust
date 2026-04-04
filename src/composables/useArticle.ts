@@ -97,7 +97,7 @@ export function useArticle(id: string) {
 		return await articleStore.deleteArticle(id);
 	};
 
-	const getSimilar = async (count: number = 5) => {
+	const fetchSimilar = async (count: number = 5) => {
 		if (!article.value) {
 			await fetch();
 		}
@@ -106,9 +106,9 @@ export function useArticle(id: string) {
 			return { success: false, message: 'Article not found' };
 		}
 
-		const { getRandom } = useArticles();
+		const { fetchRandom } = useArticles();
 
-		const pool = await getRandom(Math.min(count * 3, 15)).then((res) =>
+		const pool = await fetchRandom(Math.min(count * 3, 15)).then((res) =>
 			res.success ? res.data : res.message
 		);
 
@@ -183,7 +183,7 @@ export function useArticle(id: string) {
 		fetchQuizScore,
 		update,
 		remove,
-		getSimilar,
+		fetchSimilar,
 		createQuiz
 	};
 }
@@ -231,7 +231,7 @@ export function useArticles(
 		);
 	};
 
-	const getRandom = async (count: number = 3, author?: string, tags?: string | string[]) => {
+	const fetchRandom = async (count: number = 3, author?: string, tags?: string | string[]) => {
 		// Return cached result if still fresh
 		const cached = articleStore.getRandomCached(count);
 		if (cached) {
@@ -257,7 +257,7 @@ export function useArticles(
 		return res;
 	};
 
-	const getRecent = async (count: number = 5) => {
+	const fetchRecent = async (count: number = 5) => {
 		const res = await makeAPIRequest<{ items: Article[] }>(
 			`recent-articles-${count}`,
 			`/v2/articles?sort=desc&limit=${count}`,
@@ -276,7 +276,7 @@ export function useArticles(
 		return res;
 	};
 
-	const getOldest = async (count: number = 5) => {
+	const fetchOldest = async (count: number = 5) => {
 		const res = await makeAPIRequest<{ items: Article[] }>(
 			`oldest-articles-${count}`,
 			`/v2/articles?sort=asc&limit=${count}`,
@@ -295,11 +295,11 @@ export function useArticles(
 		return res;
 	};
 
-	const getRecommended = async (count: number = 3) => {
+	const fetchRecommended = async (count: number = 3) => {
 		const { user, fetchUser } = useAuth();
 		await fetchUser();
 
-		const pool = await getRandom(Math.min(count * 3, 15)).then((res) =>
+		const pool = await fetchRandom(Math.min(count * 3, 15)).then((res) =>
 			res.success ? res.data : res.message
 		);
 
@@ -352,10 +352,10 @@ export function useArticles(
 		total,
 		fetch,
 		fetchAll,
-		getRandom,
-		getRecent,
-		getOldest,
-		getRecommended,
+		fetchRandom,
+		fetchRecent,
+		fetchOldest,
+		fetchRecommended,
 		create
 	};
 }

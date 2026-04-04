@@ -26,6 +26,7 @@
 import type { CommandPaletteGroup, CommandPaletteItem } from '#ui/types';
 
 const { user } = useAuth();
+const { fetchAll: fetchAllUsers } = useUsers();
 const router = useRouter();
 const viewport = useViewport();
 const open = ref(false);
@@ -84,7 +85,7 @@ function populate(searchTerm: string) {
 
 	// populate users
 	usersLoading.value = true;
-	getUsers(empty ? 5 : 150, searchTerm, sort).then((res) => {
+	fetchAllUsers(empty ? 5 : 150, searchTerm, sort).then((res) => {
 		if (res.success && res.data) {
 			const items = res.data;
 
@@ -276,8 +277,8 @@ function randomize() {
 	const choice = Math.floor(Math.random() * 3);
 	if (choice === 0) {
 		// Random Prompt
-		const { getRandom: getRandomPrompts } = usePrompts();
-		getRandomPrompts(1).then((res) => {
+		const { fetchRandom: fetchRandomPrompts } = usePrompts();
+		fetchRandomPrompts(1).then((res) => {
 			if (res.success && res.data && !('message' in res.data)) {
 				const prompt = res.data[0];
 				if (prompt) {
@@ -287,8 +288,8 @@ function randomize() {
 		});
 	} else if (choice === 1) {
 		// Random Article
-		const { getRandom: getRandomArticles } = useArticles();
-		getRandomArticles(1).then((res) => {
+		const { fetchRandom: fetchRandomArticles } = useArticles();
+		fetchRandomArticles(1).then((res) => {
 			if (res.success && res.data && !('message' in res.data)) {
 				const article = res.data[0];
 				if (article) {
@@ -298,8 +299,8 @@ function randomize() {
 		});
 	} else {
 		// Random Activity
-		const { getRandom: getRandomActivities } = useActivities();
-		getRandomActivities(1).then((res) => {
+		const { fetchRandom: fetchRandomActivities } = useActivities();
+		fetchRandomActivities(1).then((res) => {
 			if (res.success && res.data && !('message' in res.data)) {
 				const activity = res.data[0];
 				if (activity) {

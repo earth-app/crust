@@ -100,7 +100,7 @@ export function useActivities(
 		);
 	};
 
-	const getRandom = async (count: number = 3) => {
+	const fetchRandom = async (count: number = 3) => {
 		const authStore = useAuthStore();
 
 		// Return cached result if still fresh
@@ -153,7 +153,7 @@ export function useActivities(
 		fetch,
 		fetchAll,
 		fetchList,
-		getRandom,
+		fetchRandom,
 		create,
 		update,
 		remove

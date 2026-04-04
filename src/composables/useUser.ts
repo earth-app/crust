@@ -50,12 +50,7 @@ export function useDisplayName(
 	return { name, handle, fullName, hasFullName };
 }
 
-async function syncSessionToken() {
-	const authStore = useAuthStore();
-	await authStore.syncSessionToken();
-}
-
-export const useAuth = () => {
+export function useAuth() {
 	const authStore = useAuthStore();
 	const avatarStore = useAvatarStore();
 
@@ -103,117 +98,276 @@ export const useAuth = () => {
 		return await authStore.fetchCurrentUser(force);
 	};
 
+	const sendVerificationEmail = async () => {
+		return await makeClientAPIRequest<{ message: string; email: string }>(
+			`/v2/users/current/send_email_verification`,
+			authStore.sessionToken,
+			{
+				method: 'POST'
+			}
+		);
+	};
+
+	const verifyEmail = async (code: string) => {
+		return await makeClientAPIRequest<{ message: string; email: string }>(
+			`/v2/users/current/verify_email?code=${code}`,
+			authStore.sessionToken,
+			{
+				method: 'POST'
+			}
+		);
+	};
+
+	const changePassword = async (currentPassword: string, newPassword: string) => {
+		return await makeClientAPIRequest<{ message: string }>(
+			`/v2/users/current/change_password?old_password=${encodeURIComponent(currentPassword)}`,
+			authStore.sessionToken,
+			{
+				method: 'POST',
+				body: {
+					new_password: newPassword
+				}
+			}
+		);
+	};
+
+	const sendResetPasswordEmail = async (email: string) => {
+		return await makeAPIRequest<void>(
+			`reset-password-email-${email}`,
+			`/v2/users/reset_password?email=${encodeURIComponent(email)}`,
+			null,
+			{
+				method: 'POST'
+			}
+		);
+	};
+
+	const resetPassword = async (id: string, token: string, newPassword: string) => {
+		return await makeAPIRequest<{ message: string }>(
+			`reset-password-${token}`,
+			`/v2/users/${id}/change_password?token=${encodeURIComponent(token)}`,
+			null,
+			{
+				method: 'POST',
+				body: {
+					new_password: newPassword
+				}
+			}
+		);
+	};
+
+	const deleteAccount = async (password: string) => {
+		return await makeClientAPIRequest<void>(`/v2/users/current`, authStore.sessionToken, {
+			method: 'DELETE',
+			body: {
+				password
+			}
+		});
+	};
+
+	const fetchCurrentJourney = async (identifier: string, id: string) => {
+		if (!id) return { success: true, data: { count: 0 } };
+
+		return await makeServerRequest<{ count: number; lastWrite?: number }>(
+			`journey-${identifier}`,
+			`/api/user/journey?type=${identifier}&id=${id}`,
+			authStore.sessionToken
+		);
+	};
+
+	const tapCurrentJourney = async (identifier: string, activity?: string) => {
+		return await makeServerRequest<{ count: number }>(
+			null,
+			`/api/user/journey?type=${identifier}${activity ? `&activity=${activity}` : ''}`,
+			authStore.sessionToken,
+			{
+				method: 'POST'
+			}
+		);
+	};
+
+	const clearCurrentJourney = async (identifier: string) => {
+		return await makeServerRequest<void>(
+			null,
+			`/api/user/journey?type=${identifier}`,
+			authStore.sessionToken,
+			{
+				method: 'DELETE'
+			}
+		);
+	};
+
+	const fetchCurrentJourneyRank = async (type: string, id: string) => {
+		return await makeServerRequest<{ rank: number }>(
+			`journey-rank-${type}`,
+			`/api/user/journeyRank?type=${type}&id=${id}`,
+			authStore.sessionToken
+		);
+	};
+
+	const updateAccount = async (account: Partial<User['account']>) => {
+		return await makeClientAPIRequest<User>('/v2/users/current', authStore.sessionToken, {
+			method: 'PATCH',
+			body: account
+		});
+	};
+
+	const updateFieldPrivacy = async (privacy: Partial<User['account']['field_privacy']>) => {
+		return await makeClientAPIRequest<User>(
+			'/v2/users/current/field_privacy',
+			authStore.sessionToken,
+			{
+				method: 'PATCH',
+				body: privacy
+			}
+		);
+	};
+
+	const regenerateAvatar = async () => {
+		const res = await makeClientAPIRequest<Blob>(
+			'/v2/users/current/profile_photo',
+			authStore.sessionToken,
+			{
+				method: 'PUT',
+				responseType: 'blob'
+			}
+		);
+
+		// Clear avatar cache to force refetch
+		const currentAvatarUrl = authStore.currentUser?.account?.avatar_url || avatarUrl.value;
+		if (currentAvatarUrl) {
+			avatarStore.clear(currentAvatarUrl);
+		}
+
+		return res;
+	};
+
+	const setUserActivities = async (activities: string[]) => {
+		return await makeClientAPIRequest<User>(
+			'/v2/users/current/activities',
+			authStore.sessionToken,
+			{
+				method: 'PATCH',
+				body: activities
+			}
+		);
+	};
+
+	const fetchRecommendedActivities = async (poolLimit: number = 25) => {
+		const res = await makeAPIRequest<Activity[]>(
+			'recommended_activities',
+			`/v2/users/current/activities/recommend?pool_limit=${poolLimit}`,
+			authStore.sessionToken,
+			{}
+		);
+
+		if (res.success && res.data) {
+			if ('message' in res.data) {
+				return res;
+			}
+
+			// load recommended activities into state
+			for (const activity of res.data) {
+				useState<Activity | null>(`activity-${activity.id}`, () => activity);
+			}
+		}
+
+		return res;
+	};
+
 	return {
 		user,
 		fetchUser,
 		avatar,
 		avatar32,
-		avatar128
+		avatar128,
+		sendVerificationEmail,
+		verifyEmail,
+		changePassword,
+		sendResetPasswordEmail,
+		resetPassword,
+		deleteAccount,
+		fetchCurrentJourney,
+		tapCurrentJourney,
+		clearCurrentJourney,
+		fetchCurrentJourneyRank,
+		updateAccount,
+		updateFieldPrivacy,
+		regenerateAvatar,
+		setUserActivities,
+		fetchRecommendedActivities
 	};
-};
-
-export async function updateAccount(user: Partial<User['account']>) {
-	const authStore = useAuthStore();
-	return await makeClientAPIRequest<User>('/v2/users/current', authStore.sessionToken, {
-		method: 'PATCH',
-		body: user
-	});
 }
 
-export async function updateFieldPrivacy(privacy: Partial<User['account']['field_privacy']>) {
-	const authStore = useAuthStore();
-	return await makeClientAPIRequest<User>(
-		'/v2/users/current/field_privacy',
-		authStore.sessionToken,
-		{
-			method: 'PATCH',
-			body: privacy
-		}
-	);
-}
-
-export async function regenerateAvatar() {
+export function useUsers() {
+	const userStore = useUserStore();
 	const authStore = useAuthStore();
 	const avatarStore = useAvatarStore();
 
-	const res = await makeClientAPIRequest<Blob>(
-		'/v2/users/current/profile_photo',
-		authStore.sessionToken,
-		{
-			method: 'PUT',
-			responseType: 'blob'
-		}
-	);
+	const users = computed(() => userStore.users);
 
-	// Clear avatar cache to force refetch
-	const avatarUrl = authStore.currentUser?.account?.avatar_url;
-	if (avatarUrl) {
-		avatarStore.clear(avatarUrl);
-	}
+	const fetch = async (
+		page: number = 1,
+		limit: number = 25,
+		search: string = '',
+		sort: SortingOption = 'desc'
+	) => {
+		const res = await makeAPIRequest<{ items: User[]; total: number }>(
+			`users-${search}-${page}-${limit}-${sort}`,
+			`/v2/users?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sort=${sort}`,
+			authStore.sessionToken
+		);
 
-	return res;
-}
+		if (res.success && res.data && !('message' in res.data) && Array.isArray(res.data.items)) {
+			for (const user of res.data.items) {
+				userStore.cache.set(user.id, user);
+				if (user.username) {
+					userStore.cache.set(user.username, user);
+					userStore.cache.set(`@${user.username}`, user);
+				}
 
-export async function setUserActivities(activities: string[]) {
-	const authStore = useAuthStore();
-	return await makeClientAPIRequest<User>('/v2/users/current/activities', authStore.sessionToken, {
-		method: 'PATCH',
-		body: activities
-	});
-}
-
-export async function setAccountType(id: string, type: User['account']['account_type']) {
-	const authStore = useAuthStore();
-	return await makeClientAPIRequest<User>(
-		`/v2/users/${id}/account_type?type=${type.toLowerCase()}`,
-		authStore.sessionToken,
-		{
-			method: 'PUT'
-		}
-	);
-}
-
-// Ocean
-
-export async function getRecommendedActivities(poolLimit: number = 25) {
-	const authStore = useAuthStore();
-	const res = await makeAPIRequest<Activity[]>(
-		'recommended_activities',
-		`/v2/users/current/activities/recommend?pool_limit=${poolLimit}`,
-		authStore.sessionToken,
-		{}
-	);
-
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			return res;
+				avatarStore.preloadAvatar(user.account?.avatar_url);
+			}
 		}
 
-		// load recommended activities into state
-		for (const activity of res.data) {
-			useState<Activity | null>(`activity-${activity.id}`, () => activity);
+		return res;
+	};
+
+	const fetchAll = async (
+		limit: number = 25,
+		search: string = '',
+		sort: SortingOption = 'desc'
+	) => {
+		const res = await paginatedAPIRequest<User>(
+			`/v2/users`,
+			authStore.sessionToken,
+			{},
+			limit,
+			search,
+			sort
+		);
+
+		if (res.success && res.data && !('message' in res.data)) {
+			for (const user of res.data) {
+				userStore.cache.set(user.id, user);
+
+				if (user.username) {
+					userStore.cache.set(user.username, user);
+					userStore.cache.set(`@${user.username}`, user);
+				}
+
+				avatarStore.preloadAvatar(user.account?.avatar_url);
+			}
 		}
-	}
 
-	return res;
-}
+		return res;
+	};
 
-// Other Users
-
-export async function getUsers(
-	limit: number = 25,
-	search: string = '',
-	sort: SortingOption = 'desc'
-) {
-	const authStore = useAuthStore();
-	return await paginatedAPIRequest<User>(
-		`/v2/users`,
-		authStore.sessionToken,
-		{},
-		limit,
-		search,
-		sort
-	);
+	return {
+		users,
+		fetch,
+		fetchAll
+	};
 }
 
 export function useUser(identifier: string) {
@@ -340,6 +494,10 @@ export function useUser(identifier: string) {
 	);
 	const fetchQuestHistory = async () => await userStore.fetchQuestHistory(identifier);
 
+	const setAccountType = async (type: User['account']['account_type']) => {
+		return await userStore.setAccountType(identifier, type);
+	};
+
 	return {
 		user,
 		fetchUser,
@@ -372,7 +530,8 @@ export function useUser(identifier: string) {
 		updateQuest,
 		endQuest,
 		questHistory,
-		fetchQuestHistory
+		fetchQuestHistory,
+		setAccountType
 	};
 }
 
@@ -397,8 +556,37 @@ export function useNotifications() {
 	const hasWarnings = computed(() => notificationStore.hasWarnings);
 	const hasErrors = computed(() => notificationStore.hasErrors);
 
-	const fetch = async () => {
+	const fetchNotifications = async () => {
 		await notificationStore.fetchNotifications();
+		return {
+			success: true,
+			data: {
+				unread_count: notificationStore.unreadCount,
+				has_warnings: notificationStore.hasWarnings,
+				has_errors: notificationStore.hasErrors,
+				items: notificationStore.notifications
+			}
+		};
+	};
+
+	const markNotificationRead = async (id: string) => {
+		return await notificationStore.markRead(id);
+	};
+
+	const markNotificationUnread = async (id: string) => {
+		return await notificationStore.markUnread(id);
+	};
+
+	const markAllNotificationsRead = async () => {
+		return await notificationStore.markAllRead();
+	};
+
+	const markAllNotificationsUnread = async () => {
+		return await notificationStore.markAllUnread();
+	};
+
+	const fetch = async () => {
+		await fetchNotifications();
 	};
 
 	return {
@@ -406,42 +594,13 @@ export function useNotifications() {
 		unreadCount,
 		hasWarnings,
 		hasErrors,
-		fetch
+		fetch,
+		fetchNotifications,
+		markNotificationRead,
+		markNotificationUnread,
+		markAllNotificationsRead,
+		markAllNotificationsUnread
 	};
-}
-
-export async function fetchNotifications() {
-	const notificationStore = useNotificationStore();
-	await notificationStore.fetchNotifications();
-	return {
-		success: true,
-		data: {
-			unread_count: notificationStore.unreadCount,
-			has_warnings: notificationStore.hasWarnings,
-			has_errors: notificationStore.hasErrors,
-			items: notificationStore.notifications
-		}
-	};
-}
-
-export async function markNotificationRead(id: string) {
-	const notificationStore = useNotificationStore();
-	return await notificationStore.markRead(id);
-}
-
-export async function markNotificationUnread(id: string) {
-	const notificationStore = useNotificationStore();
-	return await notificationStore.markUnread(id);
-}
-
-export async function markAllNotificationsRead() {
-	const notificationStore = useNotificationStore();
-	return await notificationStore.markAllRead();
-}
-
-export async function markAllNotificationsUnread() {
-	const notificationStore = useNotificationStore();
-	return await notificationStore.markAllUnread();
 }
 
 export function useNotification(id: string) {
@@ -463,146 +622,23 @@ export async function deleteNotification(id: string) {
 	return await notificationStore.deleteNotification(id);
 }
 
-// Email Verification
-
-export async function sendVerificationEmail() {
-	const authStore = useAuthStore();
-	return await makeClientAPIRequest<{ message: string; email: string }>(
-		`/v2/users/current/send_email_verification`,
-		authStore.sessionToken,
-		{
-			method: 'POST'
-		}
-	);
-}
-
-export async function verifyEmail(code: string) {
-	const authStore = useAuthStore();
-	return await makeClientAPIRequest<{ message: string; email: string }>(
-		`/v2/users/current/verify_email?code=${code}`,
-		authStore.sessionToken,
-		{
-			method: 'POST'
-		}
-	);
-}
-
-// Password Change
-
-export async function changePassword(currentPassword: string, newPassword: string) {
-	const authStore = useAuthStore();
-	return await makeClientAPIRequest<{ message: string }>(
-		`/v2/users/current/change_password?old_password=${encodeURIComponent(currentPassword)}`,
-		authStore.sessionToken,
-		{
-			method: 'POST',
-			body: {
-				new_password: newPassword
-			}
-		}
-	);
-}
-
-export async function sendResetPasswordEmail(email: string) {
-	return await makeAPIRequest<void>(
-		`reset-password-email-${email}`,
-		`/v2/users/reset_password?email=${encodeURIComponent(email)}`,
-		null,
-		{
-			method: 'POST'
-		}
-	);
-}
-
-export async function resetPassword(id: string, token: string, newPassword: string) {
-	return await makeAPIRequest<{ message: string }>(
-		`reset-password-${token}`,
-		`/v2/users/${id}/change_password?token=${encodeURIComponent(token)}`,
-		null,
-		{
-			method: 'POST',
-			body: {
-				new_password: newPassword
-			}
-		}
-	);
-}
-
-// Account Deletion
-
-export async function deleteAccount(password: string) {
-	const authStore = useAuthStore();
-	return await makeClientAPIRequest<void>(`/v2/users/current`, authStore.sessionToken, {
-		method: 'DELETE',
-		body: {
-			password
-		}
-	});
-}
-
-// User Journeys
-
-export async function getCurrentJourney(identifier: string, id: string) {
-	if (!id) return { success: true, data: { count: 0 } };
-
-	const authStore = useAuthStore();
-	return await makeServerRequest<{ count: number; lastWrite?: number }>(
-		`journey-${identifier}`,
-		`/api/user/journey?type=${identifier}&id=${id}`,
-		authStore.sessionToken
-	);
-}
-
-export async function tapCurrentJourney(identifier: string, activity?: string) {
-	const authStore = useAuthStore();
-	return await makeServerRequest<{ count: number }>(
-		null,
-		`/api/user/journey?type=${identifier}${activity ? `&activity=${activity}` : ''}`,
-		authStore.sessionToken,
-		{
-			method: 'POST'
-		}
-	);
-}
-
-export async function clearCurrentJourney(identifier: string) {
-	const authStore = useAuthStore();
-	return await makeServerRequest<void>(
-		null,
-		`/api/user/journey?type=${identifier}`,
-		authStore.sessionToken,
-		{
-			method: 'DELETE'
-		}
-	);
-}
-
-export async function getCurrentJourneyRank(type: string, id: string) {
-	const authStore = useAuthStore();
-	return await makeServerRequest<{ rank: number }>(
-		`journey-rank-${type}`,
-		`/api/user/journeyRank?type=${type}&id=${id}`,
-		authStore.sessionToken
-	);
-}
-
-export async function getJourneyLeaderboard(type: string, limit: number = 10) {
-	const authStore = useAuthStore();
-	return await makeServerRequest<Omit<UserJourneyLeaderboardEntry, 'user'>[]>(
-		`journey-leaderboard-${type}-limit-${limit}`,
-		`/api/user/journeyLeaderboard?type=${type}&limit=${limit}`,
-		authStore.sessionToken
-	);
-}
-
 export function useJourneyLeaderboard(type: string) {
 	const leaderboard = useState<UserJourneyLeaderboardEntry[]>(
 		`journey-leaderboard-${type}`,
 		() => []
 	);
+	const authStore = useAuthStore();
+
+	const fetchLeaderboardData = async (limit: number = 10) => {
+		return await makeServerRequest<Omit<UserJourneyLeaderboardEntry, 'user'>[]>(
+			`journey-leaderboard-${type}-limit-${limit}`,
+			`/api/user/journeyLeaderboard?type=${type}&limit=${limit}`,
+			authStore.sessionToken
+		);
+	};
 
 	const fetchLeaderboard = async (limit: number = 10) => {
-		const res = await getJourneyLeaderboard(type, limit);
+		const res = await fetchLeaderboardData(limit);
 		if (res.success && res.data) {
 			const userPromises = res.data.map(async (entry) => {
 				const { user, fetchUser } = useUser(entry.id);

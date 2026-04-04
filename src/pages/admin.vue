@@ -227,6 +227,7 @@ const { motd, ttl, fetchMotd, setMotd } = useMotd();
 const toast = useToast();
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Admin Panel');
+const { fetchAll: fetchAllUsers } = useUsers();
 
 const users = ref<User[]>([]);
 const userSearch = ref<string>('');
@@ -234,7 +235,7 @@ const loadingUsers = ref(false);
 
 async function fetchUsers() {
 	loadingUsers.value = true;
-	const res = await getUsers(100, userSearch.value);
+	const res = await fetchAllUsers(100, userSearch.value);
 	if (res.data) {
 		users.value = res.data;
 	}

@@ -202,8 +202,8 @@ async function loadContent() {
 	byTagArticles.clear();
 
 	if (user.value) {
-		const { getRecommended } = useArticles();
-		getRecommended(10).then((recommendedRes) => {
+		const { fetchRecommended } = useArticles();
+		fetchRecommended(10).then((recommendedRes) => {
 			if (recommendedRes.success && recommendedRes.data) {
 				recommendedArticles.value = recommendedRes.data;
 				recommendedLoaded.value = true;
@@ -223,8 +223,8 @@ async function loadContent() {
 		recommendedLoaded.value = true;
 	}
 
-	const { getRandom, getRecent, getOldest } = useArticles();
-	getRandom(15).then((randomRes) => {
+	const { fetchRandom, fetchRecent, fetchOldest } = useArticles();
+	fetchRandom(15).then((randomRes) => {
 		if (randomRes.success && randomRes.data) {
 			if ('message' in randomRes.data) {
 				randomLoaded.value = true;
@@ -256,7 +256,7 @@ async function loadContent() {
 		}
 	});
 
-	getRecent(15).then((recentRes) => {
+	fetchRecent(15).then((recentRes) => {
 		if (recentRes.success && recentRes.data) {
 			if ('message' in recentRes.data) {
 				recentLoaded.value = true;
@@ -286,7 +286,7 @@ async function loadContent() {
 		}
 	});
 
-	getOldest(15).then((oldestRes) => {
+	fetchOldest(15).then((oldestRes) => {
 		if (oldestRes.success && oldestRes.data) {
 			if ('message' in oldestRes.data) {
 				olderLoaded.value = true;
@@ -316,7 +316,7 @@ async function loadContent() {
 		}
 	});
 
-	getRandom(15, '1').then((byCloudRes) => {
+	fetchRandom(15, '1').then((byCloudRes) => {
 		if (byCloudRes.success && byCloudRes.data) {
 			if ('message' in byCloudRes.data) {
 				byCloudLoaded.value = true;
@@ -351,7 +351,7 @@ async function loadContent() {
 	);
 	for (const type of randomTypes) {
 		const tag = type.name.toLowerCase();
-		getRandom(15, undefined, tag).then((byTagRes) => {
+		fetchRandom(15, undefined, tag).then((byTagRes) => {
 			if (byTagRes.success && byTagRes.data) {
 				if ('message' in byTagRes.data) {
 					byTagLoaded.set(tag, true);

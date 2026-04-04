@@ -72,7 +72,7 @@ export function usePrompts(
 		);
 	};
 
-	const getRandom = async (count: number = 10) => {
+	const fetchRandom = async (count: number = 10) => {
 		// Return cached result if still fresh
 		const cached = promptStore.getRandomCached(count);
 		if (cached) {
@@ -110,7 +110,7 @@ export function usePrompts(
 		total,
 		fetch,
 		fetchAll,
-		getRandom,
+		fetchRandom,
 		create
 	};
 }

@@ -153,8 +153,8 @@ async function loadContent() {
 
 	// Load content progressively for better perceived performance
 	if (user.value) {
-		const { getRecommended } = useEvents();
-		getRecommended().then((recommendedRes) => {
+		const { fetchRecommended } = useEvents();
+		fetchRecommended().then((recommendedRes) => {
 			if (recommendedRes.success && recommendedRes.data) {
 				recommendedEvents.value = recommendedRes.data;
 				recommendedLoaded.value = true;
@@ -174,8 +174,8 @@ async function loadContent() {
 		recommendedLoaded.value = true;
 	}
 
-	const { getRandom, getRecent, getUpcoming } = useEvents();
-	getRandom(10).then((randomRes) => {
+	const { fetchRandom, fetchRecent, fetchUpcoming } = useEvents();
+	fetchRandom(10).then((randomRes) => {
 		if (randomRes.success && randomRes.data) {
 			if ('message' in randomRes.data) {
 				randomLoaded.value = true;
@@ -207,7 +207,7 @@ async function loadContent() {
 		}
 	});
 
-	getRecent(10).then((recentRes) => {
+	fetchRecent(10).then((recentRes) => {
 		if (recentRes.success && recentRes.data) {
 			if ('message' in recentRes.data) {
 				recentLoaded.value = true;
@@ -237,7 +237,7 @@ async function loadContent() {
 		}
 	});
 
-	getUpcoming(10).then((upcomingRes) => {
+	fetchUpcoming(10).then((upcomingRes) => {
 		if (upcomingRes.success && upcomingRes.data) {
 			if ('message' in upcomingRes.data) {
 				upcomingLoaded.value = true;

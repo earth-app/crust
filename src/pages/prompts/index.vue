@@ -81,8 +81,8 @@ const newDisabled = computed(() => {
 });
 async function fetchPrompts() {
 	promptsLoading.value = true;
-	const { getRandom } = usePrompts();
-	const res = await getRandom(25);
+	const { fetchRandom } = usePrompts();
+	const res = await fetchRandom(25);
 	promptsLoading.value = false;
 
 	if (res.success && res.data) {

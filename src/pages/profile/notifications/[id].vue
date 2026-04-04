@@ -62,6 +62,7 @@
 import { DateTime } from 'luxon';
 
 const { user } = useAuth();
+const { markNotificationRead } = useNotifications();
 const route = useRoute();
 const { setTitleSuffix } = useTitleSuffix();
 

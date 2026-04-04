@@ -1,11 +1,23 @@
 import { defineStore } from 'pinia';
 import type { Event } from 'types/event';
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { useAuthStore } from './auth';
 import { useAvatarStore } from './avatar';
 
 export const useUserStore = defineStore('user', () => {
 	const cache = reactive(new Map<string, User>());
+	const users = computed(() => {
+		const seen = new Set<string>();
+		const entries: User[] = [];
+
+		for (const user of cache.values()) {
+			if (seen.has(user.id)) continue;
+			seen.add(user.id);
+			entries.push(user);
+		}
+
+		return entries;
+	});
 	const fetchQueue = new Map<string, Promise<void>>();
 
 	const attendingEvents = reactive(new Map<string, Event[]>());
@@ -350,6 +362,40 @@ export const useUserStore = defineStore('user', () => {
 		return [];
 	};
 
+	const setAccountType = async (identifier: string, type: User['account']['account_type']) => {
+		const authStore = useAuthStore();
+		const res = await makeClientAPIRequest<User>(
+			`/v2/users/${identifier}/account_type?type=${type.toLowerCase()}`,
+			authStore.sessionToken,
+			{
+				method: 'PUT'
+			}
+		);
+
+		if (res.success && res.data && !('message' in res.data)) {
+			cache.set(res.data.id, res.data);
+
+			if (res.data.username) {
+				cache.set(res.data.username, res.data);
+				cache.set(`@${res.data.username}`, res.data);
+			}
+
+			if (
+				identifier &&
+				identifier !== res.data.id &&
+				identifier !== res.data.username &&
+				identifier !== `@${res.data.username}`
+			) {
+				cache.set(identifier, res.data);
+			}
+
+			const avatarStore = useAvatarStore();
+			avatarStore.preloadAvatar(res.data.account?.avatar_url);
+		}
+
+		return res;
+	};
+
 	const clear = (identifier?: string) => {
 		if (identifier) {
 			cache.delete(identifier);
@@ -377,6 +423,7 @@ export const useUserStore = defineStore('user', () => {
 
 	return {
 		cache,
+		users,
 		attendingEvents,
 		hostingEvents,
 		badges,
@@ -403,6 +450,7 @@ export const useUserStore = defineStore('user', () => {
 		endQuest,
 		fetchQuestHistory,
 		fetchQuestsList,
+		setAccountType,
 		clear
 	};
 });

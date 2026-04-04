@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-const { user } = useAuth();
+const { user, deleteAccount } = useAuth();
 const toast = useToast();
 
 const loading = ref(false);
