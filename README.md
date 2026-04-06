@@ -12,6 +12,7 @@ deployed on **Cloudflare Workers** via **NuxtHub**.
 - **Framework**: [Nuxt 4](https://nuxt.com/) (Vue 3 + Server-Side Rendering)
 - **Runtime**: [Bun](https://bun.sh/) (development & package management)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) + [@nuxt/ui](https://ui.nuxt.com/)
+- **State Management**: [Pinia](https://pinia.vuejs.org/) stores + composables
 - **Type Safety**: TypeScript with strict type checking
 - **Validation**: [Zod](https://zod.dev/) schemas for runtime validation
 - **Date/Time**: [Luxon](https://moment.github.io/luxon/) for timezone-aware operations
@@ -29,9 +30,10 @@ src/
 ├── error.vue            # Global error handling page
 ├── assets/css/          # Global styles (Tailwind config)
 ├── components/          # Reusable Vue components
-├── composables/         # Composable functions (state management)
+├── composables/         # Composable functions (domain logic + store orchestration)
 ├── layouts/             # Page layouts (default.vue)
 ├── pages/               # File-based routing
+├── stores/              # Pinia stores (auth, users, content caches)
 ├── server/              # Nitro server routes (API proxy)
 │   ├── api/             # API endpoints
 │   └── utils.ts         # Server utilities (auth guards)
@@ -48,10 +50,12 @@ Crust leverages Nuxt's flexible rendering modes for optimal performance:
 - **ISR (Incremental Static Regeneration)**: For content listing pages
   - Homepage: regenerates every hour (`isr: 3600`)
   - Activities: every 4 hours (`isr: 14400`)
+  - Events: every 10 minutes (`isr: 600`)
   - Prompts: every 15 minutes (`isr: 900`)
 - **SWR (Stale-While-Revalidate)**: For individual content pages
   - Activities cached for 4 hours
   - Articles cached for 1 hour
+  - Events cached for 30 minutes
   - Prompts cached for 30 minutes
 - **Client-Side Only**: For authenticated pages (profiles, admin, auth flows)
 
@@ -60,8 +64,10 @@ Crust leverages Nuxt's flexible rendering modes for optimal performance:
 routeRules: {
   '/': { isr: 3600 },                    // ISR for homepage
   '/activities/**': { swr: 14400 },       // SWR for activity pages
+  '/events/**': { swr: 1800 },            // SWR for event pages
   '/profile/**': { ssr: false },          // Client-only for user pages
-  '/api/activity/**': { cors: true, cache: { maxAge: 3600 } }
+  '/api/**': { cors: false },             // CORS handled via server middleware
+  '/api/activity/**': { cache: { maxAge: 3600 } }
 }
 ```
 
@@ -69,16 +75,16 @@ routeRules: {
 
 The server layer (`src/server/api/`) acts as a secure proxy to:
 
-- **External APIs**: Wikipedia, YouTube, Iconify (for icon search)
-- **Backend Services**: The Earth App's main API (`@earth-app/mantle`)
+- **External APIs**: Wikipedia, YouTube, Iconify, Pixabay, Google Maps/Places
+- **Backend Services**: The Earth App API (`/v2/*`) and cloud recommendation services
 - **Third-Party Services**: Cloudflare Turnstile verification
 
 **Benefits**:
 
 - Hides API keys from client-side code
 - Implements server-side authentication guards
-- Provides caching and rate limiting
-- Enables CORS configuration per endpoint
+- Provides caching and request shaping
+- Centralizes CORS policy in server middleware
 
 **Example**: Icon search endpoint (`src/server/api/activity/iconSearch.get.ts`)
 
@@ -95,7 +101,8 @@ export default defineEventHandler(async (event) => {
 
 ### 3. **Authentication & Authorization**
 
-- **Token-based Auth**: JWT tokens stored client-side, validated server-side
+- **Token-based Auth**: JWT session tokens synced via secure cookies and validated server-side
+- **Store-Backed Session State**: `useAuthStore()` (Pinia) manages user/session loading and auth state
 - **Composable Hooks**:
   - `useAuth()`: Current user state & avatar management
   - `useCurrentSessionToken()`: Session token retrieval
@@ -112,6 +119,13 @@ export default defineEventHandler(async (event) => {
 	// Admin logic here...
 });
 ```
+
+**Session Flow**:
+
+1. Session token is persisted in a `session_token` cookie (`Secure`, `SameSite=None`)
+2. Client bootstraps auth state through `/api/auth/session`
+3. `useAuthStore()` fetches `/v2/users/current` and keeps auth state reactive across pages
+4. OAuth callback routes can issue/update session cookies when linking or signing in
 
 ### 4. **Type Safety & Validation**
 
@@ -139,7 +153,7 @@ export type User = {
 
 #### Zod Schemas
 
-Runtime validation with Zod (`src/shared/schemas.ts`):
+Runtime validation with Zod (`src/shared/utils/schemas.ts`):
 
 ```typescript
 export const usernameSchema = z
@@ -156,9 +170,10 @@ export const passwordSchema = z
 
 ### 5. **API Request Utilities**
 
-Centralized request handling in `src/shared/util.ts`:
+Centralized request handling in `src/shared/utils/util.ts`:
 
-- **`makeAPIRequest<T>()`**: SSR-friendly requests with `useAsyncData()`
+- **`makeRequest<T>()`**: Base request wrapper with dedupe + cache
+- **`makeAPIRequest<T>()`**: Typed backend API requests
 - **`makeClientAPIRequest<T>()`**: Client-side only requests
 - **`makeServerRequest<T>()`**: Server-to-server communication
 - **`paginatedAPIRequest<T>()`**: Automatic pagination handling
@@ -168,7 +183,8 @@ Centralized request handling in `src/shared/util.ts`:
 - Automatic error handling (404, 401, 429, 500)
 - Binary data support (profile photos)
 - Token injection
-- Response caching
+- Request deduplication queue
+- In-memory LRU response cache (bounded)
 
 **Example**:
 
@@ -189,6 +205,7 @@ export async function getActivity(id: string) {
 - **`activity/`**: Activity cards, profiles, admin editors
 - **`admin/`**: Activity editor, modal dialogs
 - **`article/`**: Article cards, full-page readers
+- **`event/`**: Event cards, editors, location and submission flows
 - **`prompt/`**: Prompt cards, creation menus, responses
 - **`user/`**: Profiles, login/signup forms, settings modals
 
@@ -217,7 +234,7 @@ Configured in `app.vue` with `useSeoMeta()`:
 
 - Static file at `public/_robots.txt`
 - Managed by `@nuxtjs/robots` module
-- Blocks sensitive routes (`/admin`, `/verify-email`, etc.)
+- Currently allows crawling by default
 
 ### 8. **Internationalization (i18n)**
 
@@ -239,9 +256,10 @@ Configured via `@nuxtjs/i18n`:
 
 ```json
 {
-	"dev": "bunx nuxi dev --host --port 3000",
-	"dev:remote": "bunx nuxi dev --dotenv .config/production.env",
-	"build": "nuxt build",
+	"dev": "bunx nuxi dev --dotenv .config/local.env --no-restart --public --port 3000",
+	"dev:remote": "bunx nuxi dev --dotenv .config/production.env --dotenv .env --dotenv .env.local --no-restart --public --port 3000",
+	"build": "NODE_OPTIONS='--max-old-space-size=4096' nuxt build",
+	"postinstall": "nuxt prepare",
 	"prettier": "bunx prettier --write .",
 	"prettier:check": "bunx prettier --check ."
 }
@@ -258,7 +276,9 @@ Configured via `@nuxtjs/i18n`:
 ```bash
 NUXT_PUBLIC_API_BASE_URL=https://api.earth-app.com
 NUXT_PUBLIC_CLOUD_BASE_URL=https://cloud.earth-app.com
+NUXT_PUBLIC_MAPS_API_KEY=<public-key>
 NUXT_TURNSTILE_SECRET_KEY=<secret>
+NUXT_PIXABAY_API_KEY=<secret>
 NUXT_ADMIN_API_KEY=<secret>
 ```
 
@@ -270,6 +290,7 @@ NUXT_ADMIN_API_KEY=<secret>
 - **`nuxt`**: Framework core
 - **`vue`** & **`vue-router`**: UI framework & routing
 - **`tailwindcss`** & **`@nuxt/ui`**: Styling system
+- **`@pinia/nuxt`**: Store integration
 - **`zod`**: Schema validation
 - **`luxon`**: Date/time handling
 - **`youtube-sr`**: YouTube search integration
@@ -282,6 +303,9 @@ NUXT_ADMIN_API_KEY=<secret>
 - **`@nuxtjs/google-fonts`**: Noto Sans font loading
 - **`@nuxtjs/robots`** & **`@nuxtjs/sitemap`**: SEO tooling
 - **`nuxt-viewport`**: Responsive breakpoint utilities
+- **`@nuxt/image`**: Image optimization pipeline
+- **`nuxt-schema-org`**: Structured metadata generation
+- **`nuxt-api-shield`**: Route-level API throttling/protection
 
 ### Icon Collections
 
@@ -296,7 +320,7 @@ NUXT_ADMIN_API_KEY=<secret>
 
 ### Cloudflare Workers (via NuxtHub)
 
-**Build Command**: `nuxt build`
+**Build Command**: `NODE_OPTIONS='--max-old-space-size=4096' nuxt build`
 **Output**: Cloudflare Workers module
 **Features**:
 
@@ -317,6 +341,8 @@ NUXT_ADMIN_API_KEY=<secret>
 Static routes generated at build time:
 
 - `/about` (fully static)
+- `/terms-of-service` (fully static)
+- `/privacy-policy` (fully static)
 - `/sitemap.xml` (SEO)
 
 Dynamic routes use ISR/SWR for on-demand regeneration.
@@ -325,8 +351,8 @@ Dynamic routes use ISR/SWR for on-demand regeneration.
 
 1. **Cloudflare Turnstile**: Bot protection on auth forms
 2. **Server-Side Token Validation**: All API requests validated via backend
-3. **CORS Configuration**: Explicit CORS rules per API route
-4. **Rate Limiting**: Handled by backend API (429 responses)
+3. **CORS Configuration**: Allowlisted origins enforced in Nitro server middleware
+4. **Rate Limiting**: `nuxt-api-shield` protection on selected internal API routes + backend 429 handling
 5. **Content Security**: Admin routes require `ADMINISTRATOR` account type
 6. **Environment Secrets**: All sensitive keys in runtime config (never client-exposed)
 
@@ -358,7 +384,9 @@ Create `.config/local.env`:
 ```env
 NUXT_PUBLIC_API_BASE_URL=http://localhost:8080
 NUXT_PUBLIC_CLOUD_BASE_URL=http://localhost:9000
+NUXT_PUBLIC_MAPS_API_KEY=<local-or-dev-key>
 NUXT_TURNSTILE_SECRET_KEY=1x00000000000000000000AA
+NUXT_PIXABAY_API_KEY=<local-or-dev-key>
 ```
 
 ### Hot Module Replacement
@@ -396,7 +424,17 @@ bunx vue-tsc --noEmit
 - **Purpose**: Search 50+ icon sets for activity icons
 - **API**: Iconify CDN
 
-### Backend Services (Mantle)
+#### Pixabay Media Search
+
+- **Endpoints**: `/api/activity/pixabayImages`, `/api/activity/pixabayVideos`
+- **Purpose**: Fetch royalty-free media candidates for activity/event visuals
+
+#### Maps & Places
+
+- **Endpoints**: `/api/event/geocode`, `/api/event/autocomplete`
+- **Purpose**: Geocoding/reverse geocoding and place autocomplete for event locations
+
+### Backend Services
 
 All backend requests go through composables:
 
@@ -404,12 +442,13 @@ All backend requests go through composables:
 - **Users** → `/v2/users/*`
 - **Prompts** → `/v2/prompts/*`
 - **Articles** → `/v2/articles/*`
+- **Events** → `/v2/events/*`
 
 **Authentication Flow**:
 
 1. User logs in, receives JWT token
-2. Token stored in `useState('session-token')`
-3. All requests inject token via `useCurrentSessionToken()`
+2. Token is stored/synced through `session_token` cookie + auth store
+3. All requests inject token via `useCurrentSessionToken()` / auth store state
 4. Backend validates token and returns user-specific data
 
 ## 🎨 UI/UX Patterns
@@ -440,33 +479,33 @@ All backend requests go through composables:
 
 ## 🗂️ State Management
 
-### Composable-Based State
+### Pinia + Composable State
 
-No Vuex/Pinia required. State managed via:
+State is managed through Pinia stores plus composable facades:
 
-- **`useState()`**: SSR-safe reactive state
-- **Composables**: Encapsulate state + logic
+- **Pinia stores**: Centralized auth, users, avatars, content, and notifications
+- **Composables**: Domain-specific APIs that orchestrate store actions
 - **Lifecycle Hooks**: `onMounted()`, `watch()`, etc.
 
 **Example**: User authentication state
 
 ```typescript
-export const useAuth = () => {
-	const user = useState<User | null>('user', () => undefined);
-	const photo = useState<Blob | null>('avatar', () => undefined);
+export const useAuthStore = defineStore('auth', () => {
+	const currentUser = ref<User | null | undefined>(undefined);
+	const sessionToken = ref<string | null>(null);
 
-	const fetchUser = async () => {
+	const fetchCurrentUser = async () => {
 		/* ... */
 	};
 
-	return { user, photo, fetchUser };
-};
+	return { currentUser, sessionToken, fetchCurrentUser };
+});
 ```
 
 ### Persistence
 
-- **Session Tokens**: Stored in `useState()` (memory-based, lost on refresh)
-- **Future**: LocalStorage/Cookie integration for persistent auth
+- **Session Tokens**: Persisted in secure cookies and synchronized via `/api/auth/session`
+- **Store State**: Rehydrated on app mount by auth plugin/composables
 
 ## 📊 Performance Optimizations
 
@@ -474,7 +513,9 @@ export const useAuth = () => {
 2. **Code Splitting**: Automatic per-route chunks
 3. **Tree Shaking**: Unused Iconify icons excluded
 4. **Caching Strategy**:
-   - API responses: 10min - 4hr TTL
+   - Page rendering: ISR/SWR from 10min to 4hr depending on route
+   - Internal API cache: `/api/activity/**` cached for 1 hour
+   - Client request layer: deduped in-flight requests + bounded in-memory cache
    - Static assets: Indefinite (CDN cache)
 5. **Bundle Size**: Bun's faster resolution, Tailwind's JIT compilation
 
