@@ -7,10 +7,11 @@
 			:link="noLink ? undefined : `/articles/${article.id}`"
 			:footer="footer"
 			:color="article.color"
-			:avatar="authorAvatar"
-			:avatar-chip="authorAvatarChipColor ? true : false"
-			:avatar-chip-color="authorAvatarChipColor"
-			:secondary-avatar="article.ocean?.favicon"
+			:avatar="{
+				src: authorAvatar,
+				chip: authorAvatarChipColor ? { color: authorAvatarChipColor as any } : undefined
+			}"
+			:secondary-avatar="{ src: article.ocean?.favicon, size: 'xs' }"
 			:badges="
 				article.tags.map((tag) => ({
 					text: tag,
@@ -20,7 +21,6 @@
 					size: 'md'
 				}))
 			"
-			secondary-avatar-size="xs"
 		/>
 	</div>
 </template>

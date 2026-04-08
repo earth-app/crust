@@ -101,7 +101,7 @@
 			<h1 class="text-xl font-semibold">Cited Article</h1>
 			<InfoCard
 				:title="article.ocean.title"
-				:avatar="article.ocean.favicon"
+				:avatar="{ src: article.ocean.favicon }"
 				:description="article.ocean.author"
 				:external="true"
 				:link="article.ocean.url"

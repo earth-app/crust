@@ -7,16 +7,21 @@
 			:content="responseText"
 			:footer="time"
 			:footer-tooltip="tooltip"
-			:avatar="authorAvatar"
-			avatar-size="md"
-			:avatar-chip="user?.account.account_type ? true : false"
-			:avatar-chip-color="
-				user?.account.account_type === 'ORGANIZER'
-					? 'warning'
-					: user?.is_admin
-						? 'error'
+			:avatar="{
+				src: authorAvatar,
+				size: 'md',
+				chip:
+					user?.account.account_type || user?.is_admin
+						? {
+								color:
+									user?.account.account_type === 'ORGANIZER'
+										? 'warning'
+										: user?.is_admin
+											? 'error'
+											: undefined
+							}
 						: undefined
-			"
+			}"
 			:buttons="
 				hasButtons
 					? [

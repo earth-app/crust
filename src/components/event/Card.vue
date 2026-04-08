@@ -4,9 +4,10 @@
 		:title="reactiveEvent.name"
 		:content="full ? reactiveEvent.description : trimString(reactiveEvent.description, 350)"
 		:link="noLink ? undefined : `/events/${reactiveEvent.id}`"
-		:avatar="authorAvatar"
-		:avatar-chip="authorAvatarChipColor ? true : false"
-		:avatar-chip-color="authorAvatarChipColor"
+		:avatar="{
+			src: authorAvatar,
+			chip: authorAvatarChipColor ? { color: authorAvatarChipColor as any } : undefined
+		}"
 		:badges="badges"
 		:image="full ? undefined : thumbnail || undefined"
 		:color="0xffca20"

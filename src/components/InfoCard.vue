@@ -32,24 +32,24 @@
 							class="mr-1"
 						/>
 						<UChip
-							v-if="avatarChip"
+							v-if="avatar?.chip"
 							inset
-							:color="avatarChipColor || 'primary'"
-							:size="avatarChipSize || 'md'"
+							:color="avatar.chip.color || 'primary'"
+							:size="avatar.chip.size || 'md'"
 							class="mr-2"
 						>
 							<LazyUAvatar
-								v-if="avatar"
-								:src="avatar"
-								:size="avatarSize || 'md'"
+								v-if="avatar?.src"
+								:src="avatar.src"
+								:size="avatar.size || 'md'"
 								class="mr-2"
 								hydrate-on-visible
 							/>
 						</UChip>
 						<LazyUAvatar
-							v-else-if="avatar"
-							:src="avatar"
-							:size="avatarSize || 'md'"
+							v-else-if="avatar?.src"
+							:src="avatar.src"
+							:size="avatar.size || 'md'"
 							class="mr-2"
 							hydrate-on-visible
 						/>
@@ -74,24 +74,24 @@
 							{{ title }}
 						</h4>
 						<UChip
-							v-if="secondaryAvatarChip"
+							v-if="secondaryAvatar?.chip"
 							inset
-							:color="secondaryAvatarChipColor || 'primary'"
-							:size="secondaryAvatarChipSize || 'sm'"
+							:color="secondaryAvatar.chip.color || 'primary'"
+							:size="secondaryAvatar.chip.size || 'sm'"
 							class="ml-2 self-start md:block hidden"
 						>
 							<LazyUAvatar
-								v-if="secondaryAvatar"
-								:src="secondaryAvatar"
-								:size="secondaryAvatarSize || 'sm'"
+								v-if="secondaryAvatar?.src"
+								:src="secondaryAvatar.src"
+								:size="secondaryAvatar.size || 'sm'"
 								class="ml-2 self-start md:block hidden"
 								hydrate-on-visible
 							/>
 						</UChip>
 						<LazyUAvatar
-							v-else-if="secondaryAvatar"
-							:src="secondaryAvatar"
-							:size="secondaryAvatarSize || 'sm'"
+							v-else-if="secondaryAvatar?.src"
+							:src="secondaryAvatar.src"
+							:size="secondaryAvatar.size || 'sm'"
 							class="ml-2 self-start md:block hidden"
 							hydrate-on-visible
 						/>
@@ -103,7 +103,7 @@
 						{{ description }}
 					</p>
 					<USeparator
-						v-if="content || image || youtubeId || video"
+						v-if="content || image || youtubeId || video || object"
 						class="border-gray-500 light:border-black my-2 w-11/12"
 					/>
 					<LazyNuxtImg
@@ -121,7 +121,7 @@
 						<iframe
 							v-if="youtubeId"
 							:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1&origin=${origin}`"
-							class="w-full h-48 object-cover rounded-lg mb-2"
+							class="w-full min-h-64 object-cover rounded-lg mb-2"
 							allow="
 								accelerometer;
 								autoplay;
@@ -138,7 +138,7 @@
 					<LazyClientOnly hydrate-on-visible>
 						<video
 							v-if="video"
-							class="w-full h-48 object-cover rounded-lg mb-2"
+							class="w-full min-h-64 object-cover rounded-lg mb-2"
 							controls
 							loading="lazy"
 							preload="metadata"
@@ -154,6 +154,45 @@
 								type="video/webm"
 							/>
 						</video>
+					</LazyClientOnly>
+					<LazyClientOnly
+						v-if="object?.url"
+						hydrate-on-visible
+					>
+						<video
+							v-if="object?.type?.startsWith('video/')"
+							:src="object.url"
+							controls
+							preload="metadata"
+							class="w-full min-h-64 object-cover rounded-lg mb-2"
+						></video>
+
+						<audio
+							v-else-if="object?.type?.startsWith('audio/')"
+							:src="object.url"
+							controls
+							preload="metadata"
+							class="w-full object-cover rounded-lg mb-2"
+						></audio>
+
+						<object
+							v-else
+							:data="object.url"
+							:type="object.type || undefined"
+							class="w-full min-h-64 object-cover rounded-lg mb-2"
+						>
+							<p class="text-center text-gray-500">
+								Unable to display content. <br />
+								<a
+									:href="object.url"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="text-blue-500 hover:underline"
+								>
+									View here.
+								</a>
+							</p>
+						</object>
 					</LazyClientOnly>
 					<span
 						v-if="content"
@@ -277,15 +316,20 @@
 </template>
 
 <script setup lang="ts">
+type Variant = 'outline' | 'subtle' | 'solid' | 'soft';
+type Color = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
+type Size = 'md' | 'xs' | 'sm' | 'lg' | 'xl';
+type AvatarSize = Size | '2xl' | '3xl' | '2xs' | '3xs';
+
 const props = defineProps<{
 	external?: boolean;
-	variant?: 'outline' | 'subtle' | 'solid' | 'soft';
+	variant?: Variant;
 	badges?: {
 		text: string;
-		color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
-		size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
+		color?: Color;
+		size?: Size;
 		icon?: string;
-		variant?: 'solid' | 'subtle' | 'outline' | 'soft';
+		variant?: Variant;
 		link?: string;
 	}[];
 	title: string;
@@ -294,26 +338,29 @@ const props = defineProps<{
 	link?: string;
 	icon?: string;
 	iconSize?: string;
-	avatar?: string;
-	avatarSize?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
-	avatarChip?: boolean;
-	avatarChipColor?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
-	avatarChipSize?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
-	secondaryAvatar?: string;
-	secondaryAvatarSize?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
-	secondaryAvatarChip?: boolean;
-	secondaryAvatarChipColor?:
-		| 'primary'
-		| 'secondary'
-		| 'success'
-		| 'info'
-		| 'warning'
-		| 'error'
-		| 'neutral';
-	secondaryAvatarChipSize?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
+	avatar?: {
+		src?: string;
+		size?: AvatarSize;
+		chip?: {
+			color?: Color;
+			size?: Size;
+		};
+	};
+	secondaryAvatar?: {
+		src?: string;
+		size?: AvatarSize;
+		chip?: {
+			color?: Color;
+			size?: Size;
+		};
+	};
 	image?: string;
 	youtubeId?: string;
 	video?: string;
+	object?: {
+		url?: string;
+		type?: string;
+	};
 	footer?: string;
 	footerTooltip?: string;
 	secondaryFooter?: string;
@@ -325,8 +372,8 @@ const props = defineProps<{
 	buttons?: {
 		text: string;
 		icon?: string;
-		color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
-		size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
+		color?: Color;
+		size?: Size;
 		onClick?: () => void;
 	}[];
 	avatarGroup?: {
@@ -337,23 +384,23 @@ const props = defineProps<{
 			icon?: string;
 			chip?: {
 				inset?: boolean;
-				color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
-				size?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
+				color?: Color;
+				size?: Size;
 			};
 		}[];
-		size?: 'md' | '3xs' | '2xs' | 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl';
+		size?: AvatarSize;
 		max?: number;
 	};
 	banner?: {
-		color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
+		color?: Color;
 		text: string;
 		icon?: string;
 		link?: string;
 		actions?: {
 			text: string;
 			icon?: string;
-			color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
-			size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
+			color?: Color;
+			size?: Size;
 			onClick?: () => void;
 		}[];
 	};

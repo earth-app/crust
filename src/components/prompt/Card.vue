@@ -3,11 +3,13 @@
 		<InfoCard
 			:title="promptText"
 			:description="ownerHandle"
-			:avatar="authorAvatar"
-			avatar-size="xl"
-			:avatar-chip="authorAvatarChipColor ? true : false"
-			:avatar-chip-color="authorAvatarChipColor"
-			avatar-chip-size="xl"
+			:avatar="{
+				src: authorAvatar,
+				size: 'xl',
+				chip: authorAvatarChipColor
+					? { color: authorAvatarChipColor as any, size: 'xl' }
+					: undefined
+			}"
 			:link="noLink ? undefined : `/prompts/${prompt.id}`"
 			:footer="`${footer} • ${prompt.responses_count ? withSuffix(prompt.responses_count) + ' Responses' : 'No Responses'}`"
 			:secondary-footer="secondaryFooter"
