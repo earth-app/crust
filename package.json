@@ -46,6 +46,8 @@
     "@pinia/nuxt": "^0.11.3",
     "@tailwindcss/vite": "^4.2.2",
     "@types/luxon": "^3.7.1",
+    "dompurify": "^3.3.3",
+    "isomorphic-dompurify": "^3.7.1",
     "luxon": "^3.7.2",
     "nuxt": "^4.4.2",
     "nuxt-api-shield": "^0.10.2",
@@ -75,8 +77,8 @@
     "@iconify-json/icon-park-outline": "^1.2.4",
     "@iconify-json/lucide": "^1.2.101",
     "@iconify-json/map": "^1.2.2",
-    "@iconify-json/material-symbols": "^1.2.64",
-    "@iconify-json/material-symbols-light": "^1.2.64",
+    "@iconify-json/material-symbols": "^1.2.65",
+    "@iconify-json/material-symbols-light": "^1.2.65",
     "@iconify-json/mdi": "^1.2.3",
     "@iconify-json/nimbus": "^1.2.1",
     "@iconify-json/ph": "^1.2.2",
@@ -89,7 +91,7 @@
     "prettier-plugin-tailwindcss": "^0.7.2",
     "vite-plugin-dts": "^4.5.4",
     "vue-tsc": "^3.2.6",
-    "wrangler": "^4.80.0"
+    "wrangler": "^4.81.0"
   },
   "lint-staged": {
     "*.{js,css,ts,json,yml,vue}": "prettier --write"
