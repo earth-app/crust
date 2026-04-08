@@ -42,10 +42,10 @@
 			/>
 
 			<!-- Card Data Entries -->
-			<InfoCard
+			<LazyInfoCard
 				v-for="(card, index) in cards"
 				class="z-20"
-				:key="`card-${index}`"
+				:key="card.key || `card-${index}`"
 				:icon="card.icon"
 				:external="true"
 				:title="card.title"
@@ -53,11 +53,25 @@
 				:content="card.content"
 				:link="card.link"
 				:image="card.image"
+				:object="{ url: card.object, type: card.objectType }"
 				:youtube-id="card.youtubeId"
 				:video="card.video"
 				:footer="card.footer"
+				:secondary-footer="card.secondaryFooter"
+				hydrate-on-visible
 			/>
 		</div>
+		<div
+			v-if="isLoadingMore"
+			class="flex justify-center py-4"
+		>
+			<Loading />
+		</div>
+		<div
+			v-if="hasMore"
+			ref="loadMoreRef"
+			class="h-1 w-full"
+		></div>
 	</div>
 </template>
 
@@ -70,17 +84,76 @@ const props = defineProps<{
 
 const { user } = useAuth();
 const { islands, loadIslandsForActivity } = useActivityIslands();
-const { cards, loadCardsForActivity } = useActivityCards();
+const { cards, loadCardsForActivity, loadMore, hasMore, isLoadingMore } = useActivityCards();
 
 const editing = ref(false);
+const loadMoreRef = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
+
+const activityReloadKey = computed(() => {
+	const id = props.activity?.id || '';
+	const name = props.activity?.name || '';
+	const aliases = props.activity?.aliases?.join(',') || '';
+	return `${id}:${name}:${aliases}`;
+});
+
+const maybeLoadMoreIfSentinelVisible = async () => {
+	if (!loadMoreRef.value || !hasMore.value || isLoadingMore.value) return;
+	if (!import.meta.client) return;
+
+	const rect = loadMoreRef.value.getBoundingClientRect();
+	if (rect.top <= window.innerHeight + 200) {
+		await loadMore();
+	}
+};
 
 // Reload when the activity changes (name or aliases)
 watch(
-	() => [props.activity?.name, props.activity?.aliases?.join(',') || ''],
+	activityReloadKey,
 	() => {
 		loadCardsForActivity(props.activity);
 		loadIslandsForActivity(props.activity);
 	},
 	{ immediate: true }
 );
+
+onMounted(() => {
+	observer = new IntersectionObserver(
+		(entries) => {
+			if (entries[0]?.isIntersecting && hasMore.value && !isLoadingMore.value) {
+				loadMore();
+			}
+		},
+		{ rootMargin: '200px' }
+	);
+
+	if (loadMoreRef.value) {
+		observer.observe(loadMoreRef.value);
+	}
+});
+
+watch(loadMoreRef, (newEl, oldEl) => {
+	if (!observer) return;
+	if (oldEl) {
+		observer.unobserve(oldEl);
+	}
+	if (newEl) {
+		observer.observe(newEl);
+	}
+});
+
+watch(
+	() => cards.value.length,
+	async () => {
+		await nextTick();
+		await maybeLoadMoreIfSentinelVisible();
+	}
+);
+
+onUnmounted(() => {
+	if (observer) {
+		observer.disconnect();
+		observer = null;
+	}
+});
 </script>

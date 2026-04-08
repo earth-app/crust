@@ -1,7 +1,10 @@
+import DOMPurify from 'isomorphic-dompurify';
+import { DateTime } from 'luxon';
 import { useActivityStore } from 'stores/activity';
 import { useAuthStore } from 'stores/auth';
 import {
 	type Activity,
+	type InternetArchiveItem,
 	type PixabayImage,
 	type PixabayVideo,
 	type WikipediaSummary,
@@ -284,26 +287,35 @@ export function useActivityInfo() {
 
 	const fetchPixabayImages = async (
 		queries: string[],
+		page: number = 1,
 		onImageLoaded?: (query: string, images: PixabayImage[]) => void
 	) => {
 		const results: Record<string, PixabayImage[]> = {};
+		let hasMore = false;
 		await Promise.all(
 			queries.map(async (query) => {
 				if (results[query]) return;
 
 				try {
-					const res = await makeServerRequest<PixabayImage[]>(
-						`pixabay-images-${query}`,
-						`/api/activity/pixabayImages?query=${encodeURIComponent(query)}`,
+					const res = await makeServerRequest<{
+						hits: PixabayImage[];
+						total: number;
+						totalHits: number;
+						page: number;
+						hasMore: boolean;
+					}>(
+						`pixabay-images-${query}-${page}`,
+						`/api/activity/pixabayImages?query=${encodeURIComponent(query)}&page=${page}`,
 						authStore.sessionToken
 					);
 
 					if (res.success && res.data) {
-						results[query] = res.data;
+						results[query] = res.data.hits;
+						hasMore = hasMore || res.data.hasMore;
 
 						// call callback immediately when images load (for incremental display)
 						if (onImageLoaded) {
-							onImageLoaded(query, res.data);
+							onImageLoaded(query, res.data.hits);
 						}
 					} else {
 						results[query] = [];
@@ -314,30 +326,39 @@ export function useActivityInfo() {
 			})
 		);
 
-		return results;
+		return { results, hasMore };
 	};
 
 	const fetchPixabayVideos = async (
 		queries: string[],
+		page: number = 1,
 		onVideoLoaded?: (query: string, videos: PixabayVideo[]) => void
 	) => {
 		const results: Record<string, PixabayVideo[]> = {};
+		let hasMore = false;
 		await Promise.all(
 			queries.map(async (query) => {
 				if (results[query]) return; // Already fetched
 				try {
-					const res = await makeServerRequest<PixabayVideo[]>(
-						`pixabay-videos-${query}`,
-						`/api/activity/pixabayVideos?query=${encodeURIComponent(query)}`,
+					const res = await makeServerRequest<{
+						hits: PixabayVideo[];
+						total: number;
+						totalHits: number;
+						page: number;
+						hasMore: boolean;
+					}>(
+						`pixabay-videos-${query}-${page}`,
+						`/api/activity/pixabayVideos?query=${encodeURIComponent(query)}&page=${page}`,
 						authStore.sessionToken
 					);
 
 					if (res.success && res.data) {
-						results[query] = res.data;
+						results[query] = res.data.hits;
+						hasMore = hasMore || res.data.hasMore;
 
 						// call callback immediately when videos load (for incremental display)
 						if (onVideoLoaded) {
-							onVideoLoaded(query, res.data);
+							onVideoLoaded(query, res.data.hits);
 						}
 					} else {
 						results[query] = [];
@@ -348,7 +369,7 @@ export function useActivityInfo() {
 			})
 		);
 
-		return results;
+		return { results, hasMore };
 	};
 
 	const fetchIconSearches = async (queries: string[]) => {
@@ -378,13 +399,42 @@ export function useActivityInfo() {
 		return results;
 	};
 
+	const fetchInternetArchiveItems = async (query: string, page: number = 1) => {
+		try {
+			const res = await makeServerRequest<{
+				items: InternetArchiveItem[];
+				page: number;
+				hasMore: boolean;
+				total: number;
+			}>(
+				`internet-archive-search-${query}-${page}`,
+				`/api/activity/internetArchive?query=${encodeURIComponent(query)}&page=${page}`,
+				authStore.sessionToken
+			);
+
+			if (res.success && res.data) {
+				return res.data;
+			}
+		} catch (error) {
+			// ignore errors
+		}
+
+		return {
+			items: [],
+			page,
+			hasMore: false,
+			total: 0
+		};
+	};
+
 	return {
 		fetchWikipediaSummary,
 		fetchYouTubeSearch,
 		fetchWikipediaSearches,
 		fetchPixabayImages,
 		fetchPixabayVideos,
-		fetchIconSearches
+		fetchIconSearches,
+		fetchInternetArchiveItems
 	};
 }
 
@@ -392,6 +442,8 @@ export function useActivityInfo() {
 
 export function useActivityIslands() {
 	const islands = ref<{ name: string; icon: string; x: number; y: number }[]>([]);
+	const info = useActivityInfo();
+
 	const loadIslandsForActivity = async (activity: Activity) => {
 		if (activity.fields['island_icons']) {
 			const icons = activity.fields['island_icons'].split(',');
@@ -411,8 +463,7 @@ export function useActivityIslands() {
 			);
 		}
 
-		const { fetchIconSearches } = useActivityInfo();
-		fetchIconSearches([activity.name, ...(activity.aliases || [])]).then((icons) => {
+		info.fetchIconSearches([activity.name, ...(activity.aliases || [])]).then((icons) => {
 			let i = 0;
 			for (const icon of Object.values(icons).flat()) {
 				islands.value.push({
@@ -430,131 +481,384 @@ export function useActivityIslands() {
 }
 
 export function useActivityCards() {
-	const cards = ref<
-		{
-			title: string;
-			icon: string;
-			description?: string;
-			content?: string;
-			link?: string;
-			image?: string;
-			video?: string;
-			youtubeId?: string;
-			footer?: string;
-		}[]
-	>([]);
+	type CardEntry = {
+		key?: string;
+		title: string;
+		icon: string;
+		description?: string;
+		content?: string;
+		link?: string;
+		image?: string;
+		object?: string;
+		objectType?: string;
+		video?: string;
+		youtubeId?: string;
+		footer?: string;
+		secondaryFooter?: string;
+	};
+
+	type SourceKey = 'pixabayImages' | 'pixabayVideos' | 'archive';
+
+	const cards = ref<CardEntry[]>([]);
 	const loadRequestId = ref(0);
+	const isLoadingMore = ref(false);
+	const info = useActivityInfo();
+	const currentActivity = ref<Activity | null>(null);
+	const seen = ref(new Set<string>());
+	const sourceTerms = ref<string[]>([]);
+	const sourceQueue = ref<SourceKey[]>([]);
+	const lastActivityLoadKey = ref<string | null>(null);
+	const i18n = useI18n();
+
+	const sourcePage = reactive<Record<SourceKey, number>>({
+		pixabayImages: 1,
+		pixabayVideos: 1,
+		archive: 1
+	});
+
+	const sourceHasMore = reactive<Record<SourceKey, boolean>>({
+		pixabayImages: true,
+		pixabayVideos: true,
+		archive: true
+	});
+
+	const hasMore = computed(() => {
+		return sourceHasMore.pixabayImages || sourceHasMore.pixabayVideos || sourceHasMore.archive;
+	});
+
+	const safePush = (items: CardEntry | CardEntry[], reqId: number, randomize: boolean = true) => {
+		if (loadRequestId.value !== reqId) return;
+		const arr = Array.isArray(items) ? items : [items];
+		for (const item of arr) {
+			const key =
+				item.key ||
+				(item.youtubeId
+					? `yt:${item.youtubeId}`
+					: item.link
+						? `link:${item.link}`
+						: item.video
+							? `video:${item.video}`
+							: item.object
+								? `object:${item.object}`
+								: `t:${item.title}`);
+			if (seen.value.has(key)) continue;
+			seen.value.add(key);
+
+			const normalizedItem: CardEntry = {
+				...item,
+				key
+			};
+
+			if (randomize) {
+				const lower = Math.min(4, cards.value.length);
+				const upper = cards.value.length;
+				const randomPlace = lower + Math.floor(Math.random() * (upper - lower + 1));
+				cards.value.splice(randomPlace, 0, normalizedItem);
+			} else {
+				cards.value.push(normalizedItem);
+			}
+		}
+	};
+
+	const pickSource = (availableSources: SourceKey[]): SourceKey => {
+		// Keep equal distribution by exhausting a shuffled queue before repeating.
+		sourceQueue.value = sourceQueue.value.filter((source) => availableSources.includes(source));
+
+		if (sourceQueue.value.length === 0) {
+			sourceQueue.value = [...availableSources];
+			for (let i = sourceQueue.value.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[sourceQueue.value[i], sourceQueue.value[j]] = [
+					sourceQueue.value[j]!,
+					sourceQueue.value[i]!
+				];
+			}
+		}
+
+		const next = sourceQueue.value.shift();
+		return next || availableSources[0]!;
+	};
+
+	const extensionFromUrl = (url: string, fallback: string) => {
+		const ext = url.split('.').pop()?.split('?')[0]?.toLowerCase();
+		return ext || fallback;
+	};
+
+	const mapArchiveItems = (items: InternetArchiveItem[]): CardEntry[] => {
+		const mapped: CardEntry[] = [];
+		for (const item of items) {
+			let icon: string;
+			let targetType: string | undefined;
+			let targetFile: string | undefined;
+			let targetVideo: string | undefined;
+
+			switch (item.type) {
+				case 'audio': {
+					icon = 'mdi:music';
+					const audioFile =
+						item.files.find((f) => f.format === 'mp3') ||
+						item.files.find((f) => f.format === 'ogg') ||
+						item.files.find((f) => f.format === 'wav') ||
+						item.files.find((f) => f.format === 'm4a') ||
+						item.files.find((f) => f.format === 'audio');
+					if (audioFile?.url) {
+						targetFile = audioFile.url;
+						targetType = `audio/${extensionFromUrl(audioFile.url, 'mpeg')}`;
+					}
+					break;
+				}
+				case 'image': {
+					icon = 'mdi:image-outline';
+					const imageFile =
+						item.files.find((f) => f.format === 'jpg') ||
+						item.files.find((f) => f.format === 'png') ||
+						item.files.find((f) => f.format === 'gif') ||
+						item.files.find((f) => f.format === 'webp') ||
+						item.files.find((f) => f.format === 'tiff') ||
+						item.files.find((f) => f.format === 'bmp') ||
+						item.files.find((f) => f.format === 'image');
+					if (imageFile?.url) {
+						targetFile = imageFile.url;
+						targetType = `image/${extensionFromUrl(imageFile.url, 'jpeg')}`;
+					}
+					break;
+				}
+				case 'texts': {
+					icon = 'mdi:book-open-page-variant';
+					const textFile =
+						item.files.find((f) => f.format === 'pdf') ||
+						item.files.find((f) => f.format === 'epub') ||
+						item.files.find((f) => f.format === 'txt');
+					if (textFile?.url) {
+						targetFile = textFile.url;
+						targetType = `application/${extensionFromUrl(textFile.url, 'pdf')}`;
+					}
+					break;
+				}
+				case 'movies': {
+					icon = 'mdi:movie-open-outline';
+					const videoFile =
+						item.files.find((f) => f.format === 'mp4') ||
+						item.files.find((f) => f.format === 'webm') ||
+						item.files.find((f) => f.format === 'video');
+					if (videoFile?.url) {
+						targetVideo = videoFile.url;
+						targetType = `video/${extensionFromUrl(videoFile.url, 'mp4')}`;
+					}
+					break;
+				}
+				default:
+					continue;
+			}
+
+			const description0 = DOMPurify.sanitize(item.description, {
+				ALLOWED_TAGS: [],
+				ALLOWED_ATTR: []
+			})
+				.replace('&amp;', '&')
+				.replace('&nbsp;', ' ');
+
+			let date0 = '';
+			if (item.date.includes('T') && item.date.endsWith('Z')) {
+				date0 = DateTime.fromISO(item.date, { zone: 'utc' }).toLocaleString(DateTime.DATE_HUGE, {
+					locale: i18n.locale.value
+				});
+			} else if (item.date.toLowerCase() === 'unknown' || item.date.trim() === '') {
+				date0 = 'Unknown Date';
+			} else {
+				// fallback to whatever was provided if not in ISO format
+				date0 = item.date;
+			}
+
+			mapped.push({
+				title: item.title,
+				icon,
+				description: `Item on Internet Archive by ${item.creator}`,
+				content: description0.slice(0, 400) + (description0.length > 400 ? '...' : ''),
+				object: targetFile,
+				objectType: targetType,
+				video: targetVideo,
+				link: `https://archive.org/details/${item.identifier}`,
+				footer: item.identifier,
+				secondaryFooter: date0
+			} satisfies CardEntry);
+		}
+
+		return mapped;
+	};
+
+	const loadMore = async () => {
+		const activity = currentActivity.value;
+		if (!activity || isLoadingMore.value || !hasMore.value) return;
+
+		const reqId = loadRequestId.value;
+		isLoadingMore.value = true;
+
+		try {
+			const terms =
+				sourceTerms.value.length > 0
+					? sourceTerms.value
+					: [activity.name, ...(activity.aliases || [])];
+
+			const availableSources: SourceKey[] = [];
+			if (sourceHasMore.pixabayImages) availableSources.push('pixabayImages');
+			if (sourceHasMore.pixabayVideos) availableSources.push('pixabayVideos');
+			if (sourceHasMore.archive) availableSources.push('archive');
+
+			if (availableSources.length === 0) return;
+
+			const chosenSource = pickSource(availableSources);
+
+			if (chosenSource === 'pixabayImages') {
+				const imageRes = await info.fetchPixabayImages(
+					terms,
+					sourcePage.pixabayImages,
+					(_, images) => {
+						safePush(
+							images.map((image) => ({
+								title: capitalizeFully(activity.name),
+								icon: 'mdi:image',
+								description: `Photo by ${image.user} on Pixabay`,
+								link: image.pageURL,
+								image: image.webformatURL
+							})),
+							reqId,
+							false
+						);
+					}
+				);
+
+				if (loadRequestId.value !== reqId) return;
+				sourceHasMore.pixabayImages = imageRes.hasMore;
+				sourcePage.pixabayImages += 1;
+			}
+
+			if (chosenSource === 'pixabayVideos') {
+				const videoRes = await info.fetchPixabayVideos(
+					terms,
+					sourcePage.pixabayVideos,
+					(_, videos) => {
+						const mappedVideos: CardEntry[] = [];
+						for (const video of videos) {
+							const mediumUrl = video.videos?.medium?.url;
+							if (!mediumUrl) continue;
+							mappedVideos.push({
+								title: capitalizeFully(activity.name),
+								icon: 'mdi:video',
+								description: `Video by ${video.user} on Pixabay`,
+								video: mediumUrl
+							});
+						}
+
+						safePush(mappedVideos, reqId, false);
+					}
+				);
+
+				if (loadRequestId.value !== reqId) return;
+				sourceHasMore.pixabayVideos = videoRes.hasMore;
+				sourcePage.pixabayVideos += 1;
+			}
+
+			if (chosenSource === 'archive') {
+				const archiveQuery = terms.join(',');
+				const archiveRes = await info.fetchInternetArchiveItems(archiveQuery, sourcePage.archive);
+				if (loadRequestId.value !== reqId) return;
+
+				safePush(mapArchiveItems(archiveRes.items), reqId, false);
+				sourceHasMore.archive = archiveRes.hasMore;
+				sourcePage.archive += 1;
+			}
+		} finally {
+			if (loadRequestId.value === reqId) {
+				isLoadingMore.value = false;
+			}
+		}
+	};
 
 	const loadCardsForActivity = async (activity: Activity) => {
 		if (!activity) return;
 
-		// Create a new request token; used to ignore late async responses
+		const activityLoadKey = `${activity.id}:${activity.name}:${(activity.aliases || []).join(',')}`;
+		if (lastActivityLoadKey.value === activityLoadKey && cards.value.length > 0) {
+			return;
+		}
+		lastActivityLoadKey.value = activityLoadKey;
+
 		const reqId = ++loadRequestId.value;
+		currentActivity.value = activity;
 		cards.value = [];
+		seen.value = new Set<string>();
+		sourceQueue.value = [];
+		sourceTerms.value = [activity.name, ...(activity.aliases || [])]
+			.map((term) => term.trim())
+			.filter((term, index, arr) => term.length > 0 && arr.indexOf(term) === index);
 
-		// Track unique items across sources
-		const seen = new Set<string>();
-
-		const safePush = (items: (typeof cards.value)[number] | (typeof cards.value)[number][]) => {
-			if (loadRequestId.value !== reqId) return; // stale load, ignore
-			const arr = Array.isArray(items) ? items : [items];
-			for (const item of arr) {
-				const key = item.youtubeId
-					? `yt:${item.youtubeId}`
-					: item.link
-						? `link:${item.link}`
-						: `t:${item.title}`;
-				if (seen.has(key)) continue;
-				seen.add(key);
-
-				const lower = Math.min(4, cards.value.length);
-				const upper = cards.value.length;
-				const randomPlace = lower + Math.floor(Math.random() * (upper - lower + 1));
-				cards.value.splice(randomPlace, 0, item);
-			}
-		};
-
-		const { fetchYouTubeSearch, fetchWikipediaSearches, fetchPixabayImages, fetchPixabayVideos } =
-			useActivityInfo();
+		sourcePage.pixabayImages = 1;
+		sourcePage.pixabayVideos = 1;
+		sourcePage.archive = 1;
+		sourceHasMore.pixabayImages = true;
+		sourceHasMore.pixabayVideos = true;
+		sourceHasMore.archive = true;
+		isLoadingMore.value = false;
 
 		const ytQueries = [`what is ${activity.name}`, `how to ${activity.name}`];
-		const ytPromises = ytQueries.map((q) =>
-			fetchYouTubeSearch(q)
-				.then((res) => {
-					if (res.success && res.data) {
-						safePush(
-							res.data.map((video) => ({
-								title: video.title,
-								icon: 'cib:youtube',
-								description: video.uploaded_at,
-								link: `https://www.youtube.com/watch?v=${video.id}`,
-								youtubeId: video.id
-							}))
-						);
-					}
-				})
-				.catch(() => {
-					// ignore individual source failures
-				})
+		await Promise.allSettled(
+			ytQueries.map(async (q) => {
+				const res = await info.fetchYouTubeSearch(q);
+				if (res.success && res.data) {
+					safePush(
+						res.data.map((video) => ({
+							title: video.title,
+							icon: 'cib:youtube',
+							description: video.uploaded_at,
+							link: `https://www.youtube.com/watch?v=${video.id}`,
+							youtubeId: video.id
+						})),
+						reqId,
+						true
+					);
+				}
+			})
 		);
-		await Promise.allSettled(ytPromises);
 
-		// Wikipedia searches (name + aliases)
 		try {
 			const terms = [activity.name, ...(activity.aliases || [])];
-			await fetchWikipediaSearches(terms, (_, entry) => {
-				const key = `wp:${entry.pageid}`;
-				if (seen.has(key)) return;
-				seen.add(key);
-				safePush({
-					title: entry.title,
-					icon: 'cib:wikipedia',
-					description: entry.description,
-					content: entry.extract,
-					link: `https://en.wikipedia.org/wiki/${entry.titles.canonical}`,
-					image: entry.originalimage?.source,
-					footer: entry.summarySnippet
-				});
-			});
-		} catch (e) {
-			// ignore
-		}
-
-		// Pixabay image searches (name + aliases)
-		try {
-			const terms = [activity.name, ...(activity.aliases || [])];
-			await fetchPixabayImages(terms, (_, images) => {
+			await info.fetchWikipediaSearches(terms, (_, entry) => {
 				safePush(
-					images.map((image) => ({
-						title: capitalizeFully(activity.name),
-						icon: 'mdi:image',
-						description: `Photo by ${image.user} on Pixabay`,
-						link: image.pageURL,
-						image: image.webformatURL
-					}))
+					{
+						title: entry.title,
+						icon: 'mdi:wikipedia',
+						description: entry.description,
+						content: entry.extract,
+						link: `https://en.wikipedia.org/wiki/${entry.titles.canonical}`,
+						image: entry.originalimage?.source,
+						footer: entry.summarySnippet
+					},
+					reqId,
+					true
 				);
 			});
 		} catch (e) {
 			// ignore
 		}
 
-		// Pixabay video searches (name + aliases)
+		if (loadRequestId.value !== reqId) return;
+
 		try {
-			const terms = [activity.name, ...(activity.aliases || [])];
-			await fetchPixabayVideos(terms, (_, videos) => {
-				safePush(
-					videos.map((video) => ({
-						title: capitalizeFully(activity.name),
-						icon: 'mdi:video',
-						description: `Video by ${video.user} on Pixabay`,
-						video: video.videos.medium.url
-					}))
-				);
-			});
+			const archiveQuery = sourceTerms.value.join(',');
+			const archiveRes = await info.fetchInternetArchiveItems(archiveQuery, sourcePage.archive);
+			if (loadRequestId.value !== reqId) return;
+
+			safePush(mapArchiveItems(archiveRes.items), reqId, true);
+			sourceHasMore.archive = archiveRes.hasMore;
+			sourcePage.archive += 1;
 		} catch (e) {
 			// ignore
 		}
+
+		if (loadRequestId.value !== reqId) return;
+		await loadMore();
 	};
 
-	return { cards, loadRequestId, loadCardsForActivity };
+	return { cards, loadRequestId, loadCardsForActivity, loadMore, hasMore, isLoadingMore };
 }

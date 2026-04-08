@@ -1,4 +1,5 @@
 import { H3Event } from 'h3';
+import { InternetArchiveSearch } from '~/shared/types/activity';
 
 export async function ensureAdministrator(event: H3Event) {
 	const config = useRuntimeConfig();
@@ -293,4 +294,175 @@ export function parseUserAgent(ua: string): {
 	}
 
 	return { make: 'unknown', model: 'unknown', os: 'unknown' };
+}
+
+type IAFormat =
+	| 'pdf'
+	| 'txt'
+	| 'epub'
+	| 'png'
+	| 'jpg'
+	| 'gif'
+	| 'webp'
+	| 'tiff'
+	| 'bmp'
+	| 'mp3'
+	| 'ogg'
+	| 'flac'
+	| 'm4a'
+	| 'wav'
+	| 'aac'
+	| 'mp4'
+	| 'avi'
+	| 'm4v'
+	| 'mkv'
+	| 'mov'
+	| 'flv'
+	| 'webm'
+	| 'audio'
+	| 'image'
+	| 'video'
+	| 'unknown';
+
+export function detectFileFormat(filename: string, format: string): IAFormat {
+	const ext = filename.toLowerCase().split('.').pop() ?? '';
+	const fmt = format.toLowerCase();
+	const combined = `${filename.toLowerCase()}-${fmt}`;
+
+	// Check extension first (most reliable) - return specific formats when possible
+	// Audio specific formats
+	if (['mp3', 'ogg', 'flac', 'm4a', 'wav', 'aac'].includes(ext)) return ext as IAFormat;
+	if (['wma'].includes(ext)) return 'audio';
+
+	// Image specific formats
+	if (['png', 'gif', 'webp', 'tiff', 'bmp'].includes(ext)) return ext as IAFormat;
+	if (['jpg', 'jpeg'].includes(ext)) return 'jpg';
+
+	// Video specific formats
+	if (['mp4', 'avi', 'm4v', 'mkv', 'mov', 'flv', 'webm'].includes(ext)) return ext as IAFormat;
+	if (['mpeg', 'wmv'].includes(ext)) return 'video';
+
+	// Document/text specific formats
+	if (['pdf', 'epub'].includes(ext)) return ext as IAFormat;
+	if (['txt', 'html', 'xml', 'doc', 'docx'].includes(ext)) return 'txt';
+
+	// Fallback to format field detection - prefer specific formats
+	if (combined.includes('mp3')) return 'mp3';
+	if (combined.includes('ogg') || combined.includes('vorbis')) return 'ogg';
+	if (combined.includes('flac')) return 'flac';
+	if (combined.includes('m4a')) return 'm4a';
+	if (combined.includes('wav')) return 'wav';
+	if (combined.includes('aac')) return 'aac';
+	if (combined.includes('wma')) return 'audio';
+	if (combined.includes('audio')) return 'audio';
+
+	if (combined.includes('png')) return 'png';
+	if (combined.includes('jpg') || combined.includes('jpeg')) return 'jpg';
+	if (combined.includes('gif')) return 'gif';
+	if (combined.includes('webp')) return 'webp';
+	if (combined.includes('tiff')) return 'tiff';
+	if (combined.includes('bmp')) return 'bmp';
+	if (combined.includes('image')) return 'image';
+
+	if (combined.includes('mp4')) return 'mp4';
+	if (combined.includes('avi')) return 'avi';
+	if (combined.includes('m4v')) return 'm4v';
+	if (combined.includes('mkv')) return 'mkv';
+	if (combined.includes('mov')) return 'mov';
+	if (combined.includes('flv')) return 'flv';
+	if (combined.includes('webm')) return 'webm';
+	if (combined.includes('video') || combined.includes('mpeg') || combined.includes('wmv'))
+		return 'video';
+
+	if (combined.includes('pdf')) return 'pdf';
+	if (combined.includes('epub')) return 'epub';
+	if (combined.includes('txt') || combined.includes('html') || combined.includes('xml'))
+		return 'txt';
+
+	return 'unknown';
+}
+
+export function isFilePubliclyAccessible(filePrivate: boolean | string | undefined): boolean {
+	return filePrivate != 'true' && filePrivate != true;
+}
+
+export async function fetchWithRetry<T>(
+	url: string,
+	options: Parameters<typeof $fetch>[1] = {},
+	config: {
+		maxRetries?: number;
+		baseWait?: number; // milliseconds
+		maxWait?: number;
+	} = {}
+): Promise<T> {
+	const { maxRetries = 3, baseWait = 1000, maxWait = 32000 } = config;
+
+	for (let attempt = 0; attempt <= maxRetries; attempt++) {
+		try {
+			const result = await $fetch<T>(url, options);
+			return result as T;
+		} catch (error: any) {
+			// check if error is rate-limit related
+			const isRateLimited = error.status === 429 || error.status === 503;
+
+			if (!isRateLimited || attempt === maxRetries) {
+				throw error;
+			}
+
+			let waitMs: number;
+			if (error.response?.headers?.['retry-after']) {
+				const retryAfter = error.response.headers['retry-after'];
+				// could be seconds or HTTP date
+				const seconds = parseInt(retryAfter, 10);
+				waitMs = isNaN(seconds) ? 30000 : seconds * 1000;
+			} else {
+				// wait_time = random(0, min(base_wait * 2^attempt, max_wait))
+				const maxBackoff = Math.min(baseWait * Math.pow(2, attempt), maxWait);
+				waitMs = Math.random() * maxBackoff;
+			}
+
+			console.warn(
+				`Rate limited (${error.status}). Retry ${attempt + 1}/${maxRetries} after ${waitMs}ms`
+			);
+
+			await new Promise((resolve) => setTimeout(resolve, waitMs));
+		}
+	}
+
+	throw new Error(`Failed after ${maxRetries} retries`);
+}
+
+export function constructIASearch(
+	queries: string,
+	languages: string[] = ['en', 'eng', 'English'],
+	page: number = 1,
+	mediatypes: InternetArchiveSearch['response']['docs'][number]['mediatype'][] = [
+		'audio',
+		'image',
+		'texts',
+		'movies'
+	],
+	fields: string[] = ['identifier', 'creator', 'date', 'title', 'description', 'mediatype'],
+	reduceProprietarySearch: boolean = true // reduces searching for access-restricted-items which are not publicly accessible
+) {
+	const queries0 = `(${queries
+		.split(',')
+		.map((q) => `(${q.trim()})`)
+		.join(' OR ')})`;
+	const languages0 = `(${languages.map((l) => `language:(${l})`).join(' OR ')})`;
+	const mediatypes0 = `(${mediatypes.map((m) => `mediatype:(${m})`).join(' OR ')})`;
+
+	let q = `(${queries0} OR title:${queries0} OR description:${queries0}) AND ${languages0} AND ${mediatypes0}`;
+
+	if (reduceProprietarySearch) {
+		q += ' AND NOT collection:(inlibrary OR printdisabled OR lendinglibrary)';
+	}
+
+	const params = new URLSearchParams({
+		q,
+		fl: fields.join(','),
+		page: page.toString()
+	});
+
+	return `https://archive.org/advancedsearch.php?${params.toString()}&rows=20&output=json`;
 }
