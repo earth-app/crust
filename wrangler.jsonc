@@ -4,7 +4,7 @@
 	"name": "earthapp-crust",
 	"observability": {
 		"enabled": true,
-		"head_sampling_rate": 1
+		"head_sampling_rate": 0.2
 	},
 	"main": "index.mjs",
 	"assets": {
