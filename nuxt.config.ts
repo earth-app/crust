@@ -11,10 +11,7 @@ export default defineNuxtConfig({
 		stores: fileURLToPath(new URL('./src/stores', import.meta.url))
 	},
 	runtimeConfig: {
-		adminApiKey: process.env.NUXT_ADMIN_API_KEY || '',
-		pixabayApiKey: process.env.NUXT_PIXABAY_API_KEY || '',
 		baseUrl: process.env.NUXT_BASE_URL || 'https://app.earth-app.com',
-		mapsApiKey: process.env.NUXT_MAPS_API_KEY || '',
 		public: {
 			baseUrl: process.env.NUXT_PUBLIC_BASE_URL || 'https://app.earth-app.com',
 			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'https://api.earth-app.com',
@@ -25,12 +22,18 @@ export default defineNuxtConfig({
 			githubClientId: process.env.NUXT_PUBLIC_GITHUB_CLIENT_ID || '',
 			discordClientId: process.env.NUXT_PUBLIC_DISCORD_CLIENT_ID || '',
 			facebookClientId: process.env.NUXT_PUBLIC_FACEBOOK_CLIENT_ID || '',
-			// public keys
-			mapsApiKey: process.env.NUXT_PUBLIC_MAPS_API_KEY || ''
+			// public keys & ids
+			mapsApiKey: process.env.NUXT_PUBLIC_MAPS_API_KEY || '',
+			unsplashApplicationId: process.env.NUXT_PUBLIC_UNSPLASH_APPLICATION_ID || ''
 		},
 		turnstile: {
 			secretKey: process.env.NUXT_TURNSTILE_SECRET_KEY || ''
 		},
+		// api keys and secrets
+		adminApiKey: process.env.NUXT_ADMIN_API_KEY || '',
+		pixabayApiKey: process.env.NUXT_PIXABAY_API_KEY || '',
+		mapsApiKey: process.env.NUXT_MAPS_API_KEY || '',
+		unsplashAccessKey: process.env.NUXT_UNSPLASH_ACCESS_KEY || '',
 		// oauth client secrets
 		googleClientSecret: process.env.NUXT_GOOGLE_CLIENT_SECRET || '',
 		microsoftClientSecret: process.env.NUXT_MICROSOFT_CLIENT_SECRET || '',
@@ -135,6 +138,10 @@ export default defineNuxtConfig({
 		'/api/article/recommend': { cache: false }, // User-specific
 		'/api/article/similar': { cache: false }, // Article-specific
 		'/api/admin/**': { cache: false },
+		/// Auth-required, rate-limited endpoints
+		'/api/activity/unsplash': { cache: false },
+		'/api/activity/pixabayImages': { cache: false },
+		'/api/activity/pixabayVideos': { cache: false },
 		// Cached API routes
 		'/api/activity/**': { cache: { maxAge: 3600 } } // 1 hour cache
 	},

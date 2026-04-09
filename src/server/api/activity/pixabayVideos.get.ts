@@ -1,6 +1,9 @@
 import { PixabayVideo } from 'types/activity';
+import { ensureLoggedIn } from '~/server/utils';
 
 export default defineEventHandler(async (event) => {
+	await ensureLoggedIn(event);
+
 	const { query, page } = getQuery(event);
 
 	if (!query)
