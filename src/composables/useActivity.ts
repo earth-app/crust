@@ -7,6 +7,7 @@ import {
 	type InternetArchiveItem,
 	type PixabayImage,
 	type PixabayVideo,
+	type UnsplashImage,
 	type WikipediaSummary,
 	type YouTubeVideo
 } from 'types/activity';
@@ -427,6 +428,27 @@ export function useActivityInfo() {
 		};
 	};
 
+	const fetchUnsplashImages = async (query: string, excluded: string[] = []) => {
+		try {
+			const res = await makeServerRequest<UnsplashImage[]>(
+				`unsplash-search-${query}`,
+				`/api/activity/unsplash?query=${encodeURIComponent(query)}`,
+				authStore.sessionToken,
+				{
+					method: 'POST',
+					body: JSON.stringify({ excluded })
+				}
+			);
+
+			if (res.success && res.data) {
+				return res.data;
+			}
+		} catch (error) {
+			// ignore errors
+		}
+		return [];
+	};
+
 	return {
 		fetchWikipediaSummary,
 		fetchYouTubeSearch,
@@ -434,7 +456,8 @@ export function useActivityInfo() {
 		fetchPixabayImages,
 		fetchPixabayVideos,
 		fetchIconSearches,
-		fetchInternetArchiveItems
+		fetchInternetArchiveItems,
+		fetchUnsplashImages
 	};
 }
 
@@ -495,9 +518,10 @@ export function useActivityCards() {
 		youtubeId?: string;
 		footer?: string;
 		secondaryFooter?: string;
+		color?: number;
 	};
 
-	type SourceKey = 'pixabayImages' | 'pixabayVideos' | 'archive';
+	type SourceKey = 'pixabayImages' | 'pixabayVideos' | 'archive' | 'unsplash';
 
 	const cards = ref<CardEntry[]>([]);
 	const loadRequestId = ref(0);
@@ -513,51 +537,70 @@ export function useActivityCards() {
 	const sourcePage = reactive<Record<SourceKey, number>>({
 		pixabayImages: 1,
 		pixabayVideos: 1,
-		archive: 1
+		archive: 1,
+		unsplash: 1
 	});
 
 	const sourceHasMore = reactive<Record<SourceKey, boolean>>({
 		pixabayImages: true,
 		pixabayVideos: true,
-		archive: true
+		archive: true,
+		unsplash: true
 	});
 
 	const hasMore = computed(() => {
-		return sourceHasMore.pixabayImages || sourceHasMore.pixabayVideos || sourceHasMore.archive;
+		return (
+			sourceHasMore.pixabayImages ||
+			sourceHasMore.pixabayVideos ||
+			sourceHasMore.archive ||
+			sourceHasMore.unsplash
+		);
 	});
 
 	const safePush = (items: CardEntry | CardEntry[], reqId: number, randomize: boolean = true) => {
 		if (loadRequestId.value !== reqId) return;
 		const arr = Array.isArray(items) ? items : [items];
+		const normalizedItems: CardEntry[] = [];
+
 		for (const item of arr) {
 			const key =
 				item.key ||
 				(item.youtubeId
 					? `yt:${item.youtubeId}`
-					: item.link
-						? `link:${item.link}`
-						: item.video
-							? `video:${item.video}`
-							: item.object
-								? `object:${item.object}`
-								: `t:${item.title}`);
+					: item.footer
+						? `footer:${item.footer}`
+						: item.link
+							? `link:${item.link}`
+							: item.video
+								? `video:${item.video}`
+								: item.object
+									? `object:${item.object}`
+									: `t:${item.title}`);
 			if (seen.value.has(key)) continue;
 			seen.value.add(key);
-
-			const normalizedItem: CardEntry = {
+			normalizedItems.push({
 				...item,
 				key
-			};
-
-			if (randomize) {
-				const lower = Math.min(4, cards.value.length);
-				const upper = cards.value.length;
-				const randomPlace = lower + Math.floor(Math.random() * (upper - lower + 1));
-				cards.value.splice(randomPlace, 0, normalizedItem);
-			} else {
-				cards.value.push(normalizedItem);
-			}
+			});
 		}
+
+		if (normalizedItems.length === 0) return;
+
+		if (!randomize) {
+			// Batch append to avoid N reactive updates while infinite scrolling.
+			cards.value = [...cards.value, ...normalizedItems];
+			return;
+		}
+
+		const nextCards = [...cards.value];
+		for (const normalizedItem of normalizedItems) {
+			const lower = Math.min(4, nextCards.length);
+			const upper = nextCards.length;
+			const randomPlace = lower + Math.floor(Math.random() * (upper - lower + 1));
+			nextCards.splice(randomPlace, 0, normalizedItem);
+		}
+
+		cards.value = nextCards;
 	};
 
 	const pickSource = (availableSources: SourceKey[]): SourceKey => {
@@ -674,17 +717,35 @@ export function useActivityCards() {
 				title: item.title,
 				icon,
 				description: `Item on Internet Archive by ${item.creator}`,
-				content: description0.slice(0, 400) + (description0.length > 400 ? '...' : ''),
+				content: trimString(description0, 400),
 				object: targetFile,
 				objectType: targetType,
 				video: targetVideo,
 				link: `https://archive.org/details/${item.identifier}`,
 				footer: item.identifier,
-				secondaryFooter: date0
+				secondaryFooter: date0,
+				color: 0x111111
 			} satisfies CardEntry);
 		}
 
 		return mapped;
+	};
+
+	const mapUnsplashImages = (items: UnsplashImage[]): CardEntry[] => {
+		return items.map((item) => {
+			const color0 = parseInt(item.color.replace('#', ''), 16);
+
+			return {
+				title: trimString(toTitleCase(item.description || item.alt_description || 'Untitled'), 60),
+				icon: 'cib:unsplash',
+				description: `Photo by ${item.user.name} on Unsplash`,
+				content: item.description && item.alt_description ? item.alt_description : undefined,
+				link: item.links.html,
+				image: item.urls.regular,
+				secondaryFooter: item.id,
+				color: isNaN(color0) ? undefined : color0
+			};
+		});
 	};
 
 	const loadMore = async () => {
@@ -704,6 +765,7 @@ export function useActivityCards() {
 			if (sourceHasMore.pixabayImages) availableSources.push('pixabayImages');
 			if (sourceHasMore.pixabayVideos) availableSources.push('pixabayVideos');
 			if (sourceHasMore.archive) availableSources.push('archive');
+			if (sourceHasMore.unsplash) availableSources.push('unsplash');
 
 			if (availableSources.length === 0) return;
 
@@ -768,6 +830,20 @@ export function useActivityCards() {
 				sourceHasMore.archive = archiveRes.hasMore;
 				sourcePage.archive += 1;
 			}
+
+			if (chosenSource === 'unsplash') {
+				const unsplashQuery = terms.join(',');
+				const existingUnsplashIds = cards.value
+					.filter((c) => c.icon === 'cib:unsplash' && c.secondaryFooter)
+					.map((c) => c.secondaryFooter)
+					.filter(Boolean) as string[];
+				const unsplashRes = await info.fetchUnsplashImages(unsplashQuery, existingUnsplashIds);
+				if (loadRequestId.value !== reqId) return;
+
+				safePush(mapUnsplashImages(unsplashRes || []), reqId, false);
+				sourceHasMore.unsplash = unsplashRes !== undefined && unsplashRes.length > 0;
+				sourcePage.unsplash += 1;
+			}
 		} finally {
 			if (loadRequestId.value === reqId) {
 				isLoadingMore.value = false;
@@ -796,9 +872,11 @@ export function useActivityCards() {
 		sourcePage.pixabayImages = 1;
 		sourcePage.pixabayVideos = 1;
 		sourcePage.archive = 1;
+		sourcePage.unsplash = 1;
 		sourceHasMore.pixabayImages = true;
 		sourceHasMore.pixabayVideos = true;
 		sourceHasMore.archive = true;
+		sourceHasMore.unsplash = true;
 		isLoadingMore.value = false;
 
 		const ytQueries = [`what is ${activity.name}`, `how to ${activity.name}`];
@@ -812,7 +890,8 @@ export function useActivityCards() {
 							icon: 'cib:youtube',
 							description: video.uploaded_at,
 							link: `https://www.youtube.com/watch?v=${video.id}`,
-							youtubeId: video.id
+							youtubeId: video.id,
+							color: 0xee0000
 						})),
 						reqId,
 						true
@@ -852,6 +931,20 @@ export function useActivityCards() {
 			safePush(mapArchiveItems(archiveRes.items), reqId, true);
 			sourceHasMore.archive = archiveRes.hasMore;
 			sourcePage.archive += 1;
+		} catch (e) {
+			// ignore
+		}
+
+		if (loadRequestId.value !== reqId) return;
+
+		try {
+			const unsplashQuery = sourceTerms.value.join(',');
+			const unsplashRes = await info.fetchUnsplashImages(unsplashQuery, []);
+			if (loadRequestId.value !== reqId) return;
+
+			safePush(mapUnsplashImages(unsplashRes || []), reqId, true);
+			sourceHasMore.unsplash = unsplashRes !== undefined && unsplashRes.length > 0;
+			sourcePage.unsplash += 1;
 		} catch (e) {
 			// ignore
 		}

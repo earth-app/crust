@@ -137,3 +137,30 @@ export type InternetArchiveItem = {
 			| string;
 	}[];
 };
+
+export type UnsplashImage = {
+	id: string;
+	created_at: string;
+	updated_at: string;
+	width: number;
+	height: number;
+	color: string;
+	description: string;
+	alt_description: string;
+	urls: {
+		raw: string;
+		full: string;
+		regular: string;
+		small: string;
+		thumb: string;
+	};
+	links: {
+		self: string;
+		html: string;
+	};
+	user: {
+		id: string;
+		username: string;
+		name: string;
+	};
+};

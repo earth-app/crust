@@ -44,7 +44,8 @@
 			<!-- Card Data Entries -->
 			<LazyInfoCard
 				v-for="(card, index) in cards"
-				class="z-20"
+				class="z-20 contain-[layout_paint_style]"
+				style="content-visibility: auto; contain-intrinsic-size: 520px"
 				:key="card.key || `card-${index}`"
 				:icon="card.icon"
 				:external="true"
@@ -58,20 +59,23 @@
 				:video="card.video"
 				:footer="card.footer"
 				:secondary-footer="card.secondaryFooter"
+				:color="card.color || 0xffffff"
 				hydrate-on-visible
 			/>
 		</div>
-		<div
-			v-if="isLoadingMore"
-			class="flex justify-center py-4"
-		>
-			<Loading />
-		</div>
-		<div
-			v-if="hasMore"
-			ref="loadMoreRef"
-			class="h-1 w-full"
-		></div>
+		<LazyClientOnly>
+			<div
+				v-if="isLoadingMore"
+				class="flex justify-center py-4"
+			>
+				<LazyLoading />
+			</div>
+			<div
+				v-if="hasMore"
+				ref="loadMoreRef"
+				class="h-1 w-full"
+			></div>
+		</LazyClientOnly>
 	</div>
 </template>
 
@@ -89,6 +93,8 @@ const { cards, loadCardsForActivity, loadMore, hasMore, isLoadingMore } = useAct
 const editing = ref(false);
 const loadMoreRef = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
+let loadMoreRaf: number | null = null;
+let sentinelCheckRaf: number | null = null;
 
 const activityReloadKey = computed(() => {
 	const id = props.activity?.id || '';
@@ -97,13 +103,35 @@ const activityReloadKey = computed(() => {
 	return `${id}:${name}:${aliases}`;
 });
 
+const queueLoadMore = () => {
+	if (!import.meta.client) return;
+	if (!hasMore.value || isLoadingMore.value) return;
+	if (loadMoreRaf !== null) return;
+
+	loadMoreRaf = window.requestAnimationFrame(async () => {
+		loadMoreRaf = null;
+		if (!hasMore.value || isLoadingMore.value) return;
+		await loadMore();
+	});
+};
+
+const scheduleSentinelCheck = () => {
+	if (!import.meta.client) return;
+	if (sentinelCheckRaf !== null) return;
+
+	sentinelCheckRaf = window.requestAnimationFrame(() => {
+		sentinelCheckRaf = null;
+		void maybeLoadMoreIfSentinelVisible();
+	});
+};
+
 const maybeLoadMoreIfSentinelVisible = async () => {
 	if (!loadMoreRef.value || !hasMore.value || isLoadingMore.value) return;
 	if (!import.meta.client) return;
 
 	const rect = loadMoreRef.value.getBoundingClientRect();
 	if (rect.top <= window.innerHeight + 200) {
-		await loadMore();
+		queueLoadMore();
 	}
 };
 
@@ -120,16 +148,18 @@ watch(
 onMounted(() => {
 	observer = new IntersectionObserver(
 		(entries) => {
-			if (entries[0]?.isIntersecting && hasMore.value && !isLoadingMore.value) {
-				loadMore();
+			if (entries[0]?.isIntersecting) {
+				queueLoadMore();
 			}
 		},
-		{ rootMargin: '200px' }
+		{ rootMargin: '300px 0px 300px 0px', threshold: 0.01 }
 	);
 
 	if (loadMoreRef.value) {
 		observer.observe(loadMoreRef.value);
 	}
+
+	scheduleSentinelCheck();
 });
 
 watch(loadMoreRef, (newEl, oldEl) => {
@@ -144,13 +174,27 @@ watch(loadMoreRef, (newEl, oldEl) => {
 
 watch(
 	() => cards.value.length,
-	async () => {
-		await nextTick();
-		await maybeLoadMoreIfSentinelVisible();
-	}
+	() => {
+		scheduleSentinelCheck();
+	},
+	{ flush: 'post' }
 );
 
+watch([hasMore, isLoadingMore], () => {
+	scheduleSentinelCheck();
+});
+
 onUnmounted(() => {
+	if (import.meta.client && loadMoreRaf !== null) {
+		window.cancelAnimationFrame(loadMoreRaf);
+		loadMoreRaf = null;
+	}
+
+	if (import.meta.client && sentinelCheckRaf !== null) {
+		window.cancelAnimationFrame(sentinelCheckRaf);
+		sentinelCheckRaf = null;
+	}
+
 	if (observer) {
 		observer.disconnect();
 		observer = null;
