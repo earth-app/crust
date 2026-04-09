@@ -1,4 +1,3 @@
-import DOMPurify from 'isomorphic-dompurify';
 import { DateTime } from 'luxon';
 import { useActivityStore } from 'stores/activity';
 import { useAuthStore } from 'stores/auth';
@@ -19,6 +18,15 @@ import {
 	makeServerRequest,
 	paginatedAPIRequest
 } from 'utils';
+
+function sanitizeArchiveDescription(value: string): string {
+	return value
+		.replace(/<[^>]*>/g, ' ')
+		.replace(/&nbsp;/g, ' ')
+		.replace(/&amp;/g, '&')
+		.replace(/\s+/g, ' ')
+		.trim();
+}
 
 // mantle - /v2/activities
 // cloud - /v1/activity
@@ -694,12 +702,7 @@ export function useActivityCards() {
 					continue;
 			}
 
-			const description0 = DOMPurify.sanitize(item.description, {
-				ALLOWED_TAGS: [],
-				ALLOWED_ATTR: []
-			})
-				.replace('&amp;', '&')
-				.replace('&nbsp;', ' ');
+			const description0 = sanitizeArchiveDescription(item.description);
 
 			let date0 = '';
 			if (item.date.includes('T') && item.date.endsWith('Z')) {

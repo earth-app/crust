@@ -46,8 +46,6 @@
     "@pinia/nuxt": "^0.11.3",
     "@tailwindcss/vite": "^4.2.2",
     "@types/luxon": "^3.7.1",
-    "dompurify": "^3.3.3",
-    "isomorphic-dompurify": "^3.7.1",
     "luxon": "^3.7.2",
     "nuxt": "^4.4.2",
     "nuxt-api-shield": "^0.10.2",
