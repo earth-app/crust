@@ -82,17 +82,19 @@ export function useAuth() {
 	});
 
 	const preloadedUrls = new Set<string>();
-	watch(
-		avatarUrl,
-		(newUrl) => {
-			if (!newUrl || !isRemoteUrl(newUrl)) return;
-			if (preloadedUrls.has(newUrl)) return; // Already requested
+	if (import.meta.client) {
+		watch(
+			avatarUrl,
+			(newUrl) => {
+				if (!newUrl || !isRemoteUrl(newUrl)) return;
+				if (preloadedUrls.has(newUrl)) return; // Already requested
 
-			preloadedUrls.add(newUrl);
-			avatarStore.preloadAvatar(newUrl);
-		},
-		{ immediate: true }
-	);
+				preloadedUrls.add(newUrl);
+				avatarStore.preloadAvatar(newUrl);
+			},
+			{ immediate: true }
+		);
+	}
 
 	const fetchUser = async (force: boolean = false) => {
 		return await authStore.fetchCurrentUser(force);

@@ -32,12 +32,13 @@
 							:size="iconSize || 'calc(2vw + 2vh)'"
 							class="mr-2 min-w-8 min-h-8"
 						/>
-						<UChip
+						<LazyUChip
 							v-if="avatar?.chip"
 							inset
 							:color="avatar.chip.color || 'primary'"
 							:size="avatar.chip.size || 'md'"
 							class="mr-2"
+							hydrate-on-visible
 						>
 							<LazyUAvatar
 								v-if="avatar?.src"
@@ -46,7 +47,7 @@
 								class="mr-2 min-w-8 min-h-8"
 								hydrate-on-visible
 							/>
-						</UChip>
+						</LazyUChip>
 						<LazyUAvatar
 							v-else-if="avatar?.src"
 							:src="avatar.src"
@@ -74,12 +75,13 @@
 						>
 							{{ title }}
 						</h4>
-						<UChip
+						<LazyUChip
 							v-if="secondaryAvatar?.chip"
 							inset
 							:color="secondaryAvatar.chip.color || 'primary'"
 							:size="secondaryAvatar.chip.size || 'sm'"
 							class="ml-2 self-start md:block hidden"
+							hydrate-on-visible
 						>
 							<LazyUAvatar
 								v-if="secondaryAvatar?.src"
@@ -88,7 +90,7 @@
 								class="ml-2 self-start md:block hidden"
 								hydrate-on-visible
 							/>
-						</UChip>
+						</LazyUChip>
 						<LazyUAvatar
 							v-else-if="secondaryAvatar?.src"
 							:src="secondaryAvatar.src"

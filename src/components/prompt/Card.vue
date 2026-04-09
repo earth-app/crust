@@ -45,12 +45,16 @@
 	>
 		<template #body>
 			<div class="flex flex-col space-y-4">
-				<UInput v-model="promptText" />
-				<UButton
+				<LazyUInput
+					v-model="promptText"
+					hydrate-on-visible
+				/>
+				<LazyUButton
 					@click="savePrompt"
 					:loading="editLoading"
 					:disabled="editLoading || promptText.trim().length === 0"
-					>Save</UButton
+					hydrate-on-visible
+					>Save</LazyUButton
 				>
 			</div>
 		</template>
