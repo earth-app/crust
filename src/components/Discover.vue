@@ -77,7 +77,9 @@ const filteredGroups = computed(() => {
 });
 
 // watch search changes, but don't use immediate to avoid double-call with onMounted
-watch(search, (newSearch: string) => populate(newSearch));
+if (import.meta.client) {
+	watch(search, (newSearch: string) => populate(newSearch));
+}
 onMounted(() => populate(''));
 
 function getAvatar32Url(url: string | undefined) {

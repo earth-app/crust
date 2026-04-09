@@ -69,30 +69,32 @@ const queueLoadMoreEmit = () => {
 	});
 };
 
-watch(open, (isOpen) => {
-	if (isOpen && loadMoreRef.value) {
-		nextTick(() => {
-			observer = new IntersectionObserver(
-				(entries) => {
-					if (entries[0]?.isIntersecting) {
-						queueLoadMoreEmit();
-					}
-				},
-				{ rootMargin: '200px 0px 200px 0px', threshold: 0.01 }
-			);
-			if (loadMoreRef.value) {
-				observer.observe(loadMoreRef.value);
+if (import.meta.client) {
+	watch(open, (isOpen) => {
+		if (isOpen && loadMoreRef.value) {
+			nextTick(() => {
+				observer = new IntersectionObserver(
+					(entries) => {
+						if (entries[0]?.isIntersecting) {
+							queueLoadMoreEmit();
+						}
+					},
+					{ rootMargin: '200px 0px 200px 0px', threshold: 0.01 }
+				);
+				if (loadMoreRef.value) {
+					observer.observe(loadMoreRef.value);
+				}
+			});
+		} else if (!isOpen && observer) {
+			observer.disconnect();
+			observer = null;
+			if (emitLoadMoreRaf !== null) {
+				window.cancelAnimationFrame(emitLoadMoreRaf);
+				emitLoadMoreRaf = null;
 			}
-		});
-	} else if (!isOpen && observer) {
-		observer.disconnect();
-		observer = null;
-		if (import.meta.client && emitLoadMoreRaf !== null) {
-			window.cancelAnimationFrame(emitLoadMoreRaf);
-			emitLoadMoreRaf = null;
 		}
-	}
-});
+	});
+}
 
 onUnmounted(() => {
 	if (import.meta.client && emitLoadMoreRaf !== null) {

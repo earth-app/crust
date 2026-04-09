@@ -56,16 +56,17 @@ const emit = defineEmits<{
 }>();
 
 const editing = ref(false);
-const localValue = ref(props.modelValue);
+const localValue = ref<string>(String(props.modelValue));
 const loading = ref(false);
-const inputRef = ref<HTMLInputElement>();
 
-watch(
-	() => props.modelValue,
-	(val) => {
-		if (!editing.value) localValue.value = val;
-	}
-);
+if (import.meta.client) {
+	watch(
+		() => props.modelValue,
+		(val) => {
+			if (!editing.value) localValue.value = String(val);
+		}
+	);
+}
 
 function startEditing() {
 	if (props.disabled) return;
@@ -76,7 +77,7 @@ function startEditing() {
 async function finishEditing() {
 	emit('update:modelValue', localValue.value);
 
-	if (localValue.value === props.modelValue) {
+	if (localValue.value === String(props.modelValue)) {
 		editing.value = false;
 		emit('edit-end');
 		return;
@@ -118,7 +119,7 @@ async function finishEditing() {
 }
 
 function cancelEditing() {
-	localValue.value = props.modelValue;
+	localValue.value = String(props.modelValue);
 	editing.value = false;
 	emit('edit-end');
 }

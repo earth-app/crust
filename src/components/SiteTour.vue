@@ -445,15 +445,17 @@ onUnmounted(() => {
 });
 
 // Watch for tour activation
-watch(isActive, (active) => {
-	if (active) {
-		index.value = 0;
-		if (props.steps.length > 0) {
-			display();
+if (import.meta.client) {
+	watch(isActive, (active) => {
+		if (active) {
+			index.value = 0;
+			if (props.steps.length > 0) {
+				display();
+			}
+		} else {
+			destroyTourHighlight();
+			index.value = 0;
 		}
-	} else {
-		destroyTourHighlight();
-		index.value = 0;
-	}
-});
+	});
+}
 </script>
