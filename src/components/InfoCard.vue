@@ -2,9 +2,10 @@
 	<UCard
 		:variant="variant || 'outline'"
 		:class="[
-			'relative min-w-80! lg:min-w-100 xl:min-w-120 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl transition-all duration-600',
-			isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
-			'will-change-[opacity,transform]'
+			'relative min-w-80! lg:min-w-100 xl:min-w-120 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl transition-[box-shadow,opacity,transform] duration-300',
+			isVisible
+				? 'opacity-100 translate-y-0'
+				: 'opacity-0 translate-y-2 will-change-[opacity,transform]'
 		]"
 	>
 		<LazyUBanner
@@ -29,7 +30,7 @@
 							v-if="icon"
 							:name="icon"
 							:size="iconSize || 'calc(2vw + 2vh)'"
-							class="mr-1"
+							class="mr-2 min-w-8 min-h-8"
 						/>
 						<UChip
 							v-if="avatar?.chip"
@@ -42,7 +43,7 @@
 								v-if="avatar?.src"
 								:src="avatar.src"
 								:size="avatar.size || 'md'"
-								class="mr-2"
+								class="mr-2 min-w-8 min-h-8"
 								hydrate-on-visible
 							/>
 						</UChip>
@@ -50,7 +51,7 @@
 							v-else-if="avatar?.src"
 							:src="avatar.src"
 							:size="avatar.size || 'md'"
-							class="mr-2"
+							class="mr-2 min-w-8 min-h-8"
 							hydrate-on-visible
 						/>
 						<NuxtLink
@@ -114,12 +115,15 @@
 						format="webp"
 						width="800"
 						height="400"
+						loading="lazy"
+						decoding="async"
 						class="w-full h-48 object-cover rounded-lg mb-2"
-						:preload="{ fetchPriority: 'low' }"
 					/>
-					<LazyClientOnly hydrate-on-visible>
+					<LazyClientOnly
+						v-if="youtubeId"
+						hydrate-on-visible
+					>
 						<iframe
-							v-if="youtubeId"
 							:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1&origin=${origin}`"
 							class="w-full min-h-64 object-cover rounded-lg mb-2"
 							allow="
@@ -135,9 +139,11 @@
 							referrerpolicy="strict-origin-when-cross-origin"
 						></iframe>
 					</LazyClientOnly>
-					<LazyClientOnly hydrate-on-visible>
+					<LazyClientOnly
+						v-if="video"
+						hydrate-on-visible
+					>
 						<video
-							v-if="video"
 							class="w-full min-h-64 object-cover rounded-lg mb-2"
 							controls
 							loading="lazy"
@@ -241,7 +247,10 @@
 						</div>
 					</div>
 					<div v-if="avatarGroup">
-						<LazyUAvatarGroup :max="avatarGroup.max">
+						<LazyUAvatarGroup
+							hydrate-on-visible
+							:max="avatarGroup.max"
+						>
 							<NuxtLink
 								:to="avatar.link"
 								v-for="(avatar, index) in avatarGroup.avatars"
@@ -302,7 +311,7 @@
 					:icon="button.icon"
 					@click="() => button.onClick && button.onClick()"
 					class="my-1 hover:opacity-90 hover:cursor-pointer transition-all duration-300 w-full"
-					hydrate-on-visible
+					hydrate-on-interaction="mouseover"
 					>{{ button.text }}</LazyUButton
 				>
 			</div>
