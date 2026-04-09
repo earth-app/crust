@@ -292,6 +292,59 @@ export async function paginatedAPIRequest<T>(
 
 // Non-request related
 
+export function toTitleCase(str: string): string {
+	if (!str) return '';
+
+	const smallWords = new Set([
+		'a',
+		'an',
+		'and',
+		'as',
+		'at',
+		'but',
+		'by',
+		'for',
+		'if',
+		'in',
+		'is',
+		'nor',
+		'of',
+		'on',
+		'or',
+		'the',
+		'to',
+		'with'
+	]);
+
+	const words = str.split(/\s+/);
+
+	return words
+		.map((word, index) => {
+			const leadingMatch = word.match(/^[\s"'`«\[\(]*/);
+			const leading = leadingMatch ? leadingMatch[0] : '';
+
+			const trailingMatch = word.match(/[\s"'`»\]\).,;:!?—–-]*$/);
+			const trailing = trailingMatch ? trailingMatch[0] : '';
+
+			const core = word.slice(leading.length, word.length - trailing.length || word.length);
+
+			// return empty if core is empty
+			if (!core) return word;
+
+			// always capitalize first and last word
+			const isFirstWord = index === 0;
+			const isLastWord = index === words.length - 1;
+			const shouldCapitalize = isFirstWord || isLastWord || !smallWords.has(core.toLowerCase());
+
+			const capitalizedCore = shouldCapitalize
+				? core.charAt(0).toUpperCase() + core.slice(1).toLowerCase()
+				: core.toLowerCase();
+
+			return leading + capitalizedCore + trailing;
+		})
+		.join(' ');
+}
+
 export function capitalizeFully(str: string): string {
 	if (!str) return '';
 
