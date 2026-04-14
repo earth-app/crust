@@ -1,4 +1,5 @@
 <template>
+	<!-- tour start -->
 	<div
 		v-if="isActive && boxStyle.display === 'block'"
 		ref="highlightBox"
@@ -29,7 +30,7 @@
 			pointerEvents: 'auto'
 		}"
 	>
-		<LazyUCard class="shadow-lg min-w-80 w-[40vw] max-w-200">
+		<LazyUCard class="shadow-lg min-w-80 w-[60vw] max-w-200 m-8">
 			<template #header>
 				<div class="flex justify-between items-center">
 					<h3 class="text-lg font-semibold">{{ step.title }}</h3>
@@ -87,6 +88,7 @@
 			</template>
 		</LazyUCard>
 	</div>
+	<!-- tour end -->
 </template>
 
 <script setup lang="ts">
