@@ -3,13 +3,13 @@
 	<main class="min-h-[90vh] w-full">
 		<slot />
 	</main>
-	<Footer />
+	<LazyFooter hydrate-on-visible />
 
 	<ClientOnly>
 		<SiteTour
 			:steps="welcomeTour"
 			name="Welcome Tour"
-			tourId="welcome"
+			tour-id="welcome"
 		/>
 	</ClientOnly>
 </template>

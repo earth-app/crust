@@ -1,11 +1,19 @@
 <template>
 	<div class="flex flex-col w-full items-center justify-center mt-4">
-		<UIcon
-			v-if="activity.fields['icon']"
-			:name="activity.fields['icon']"
-			size="6rem"
-			class="my-2"
-		/>
+		<div class="flex items-start h-24 w-24">
+			<UIcon
+				id="activity-icon"
+				:name="activity.fields['icon'] || 'mdi:earth'"
+				size="6rem"
+				class="my-2"
+			/>
+			<UButton
+				icon="mdi:progress-question"
+				color="secondary"
+				variant="subtle"
+				@click="startTour('activities')"
+			/>
+		</div>
 		<div class="flex flex-col sm:flex-row items-center justify-center">
 			<h1 class="text-4xl sm:text-5xl font-bold">{{ activity.name }}</h1>
 			<UButton
@@ -22,7 +30,12 @@
 				v-model:open="editing"
 			/>
 		</div>
-		<h3 class="text-md sm:text-lg md:text-xl min-w-75 w-3/5 mt-8">{{ activity.description }}</h3>
+		<h3
+			id="activity-description"
+			class="text-md sm:text-lg md:text-xl min-w-75 w-3/5 mt-8"
+		>
+			{{ activity.description }}
+		</h3>
 		<!-- Icon Islands -->
 		<UIcon
 			v-for="island in islands"
@@ -32,6 +45,7 @@
 			:style="{ transform: `translate(${island.x}vw, ${island.y}vh)` }"
 		/>
 		<div
+			id="activity-cards"
 			class="grid grid-cols-1 xl:grid-cols-2 justify-items-center items-start w-2/3 min-w-100 xl:min-w-260 mt-6 sm:px-4 gap-y-8"
 		>
 			<!-- Skeleton Loading Cards -->
@@ -44,9 +58,10 @@
 			<!-- Card Data Entries -->
 			<LazyInfoCard
 				v-for="(card, index) in cards"
+				:key="card.key || `card-${index}`"
+				:id="`card-${index}`"
 				class="z-20 contain-[layout_paint_style]"
 				style="content-visibility: auto; contain-intrinsic-size: 520px"
-				:key="card.key || `card-${index}`"
 				:icon="card.icon"
 				:external="true"
 				:title="card.title"
@@ -78,6 +93,14 @@
 				class="h-1 w-full"
 			></div>
 		</LazyClientOnly>
+
+		<ClientOnly>
+			<SiteTour
+				:steps="activityTour"
+				name="Activity Tour"
+				tour-id="activities"
+			/>
+		</ClientOnly>
 	</div>
 </template>
 
@@ -202,4 +225,31 @@ onUnmounted(() => {
 		observer = null;
 	}
 });
+
+// activity tour
+
+const { startTour } = useSiteTour();
+
+const activityTour: SiteTourStep[] = [
+	{
+		id: 'activity-icon',
+		title: 'Welcome to Activities!',
+		description:
+			'Activities allow you to explore hobbies, sports, or interests you may have never heard before.',
+		footer: 'Click next to learn more about this activity.'
+	},
+	{
+		id: 'activity-description',
+		title: props.activity.name,
+		description: `${props.activity.name} is described here. You can learn more about it by exploring the cards below, which may include guides, resources, and more!`,
+		footer: 'Scroll down to explore the cards!'
+	},
+	{
+		id: 'card-1',
+		title: 'Activity Cards',
+		description:
+			'These little snippets of information are filled with resources, guides, and more to help you explore this activity. Click on any card that interests you to learn more!',
+		footer: 'Enjoy exploring the activity!'
+	}
+];
 </script>

@@ -1,15 +1,23 @@
 <template>
 	<div class="flex flex-col items-center w-full mt-6">
 		<div class="flex flex-col items-center mb-8">
-			<LazyUAvatar
-				:src="avatar"
-				class="w-32 h-32 rounded-full shadow-lg shadow-black/50 mb-4 hover:scale-110 transition-transform duration-300 hover:cursor-pointer"
-				id="avatar"
-				title="Click to Preview Profile"
-				@click="navigateTo(`/profile/@${user.username}`)"
-				width="128"
-				height="128"
-			/>
+			<div class="flex w-32 h-32 items-start mb-4">
+				<LazyUAvatar
+					:src="avatar"
+					class="w-32 h-32 rounded-full shadow-lg shadow-black/50 hover:scale-110 transition-transform duration-300 hover:cursor-pointer"
+					id="avatar"
+					title="Click to Preview Profile"
+					@click="navigateTo(`/profile/@${user.username}`)"
+					width="128"
+					height="128"
+				/>
+				<UButton
+					icon="mdi:progress-question"
+					color="secondary"
+					variant="subtle"
+					@click="startTour('user-profile')"
+				/>
+			</div>
 			<UButton
 				icon="material-symbols:refresh"
 				:loading="avatarLoading"
@@ -21,7 +29,10 @@
 		</div>
 
 		<h1 class="text-6xl sm:text-7xl md:text-8xl font-bold mb-2">Profile</h1>
-		<div class="flex flex-row items-center space-x-1.5 mb-4">
+		<div
+			id="name"
+			class="flex flex-row items-center space-x-1.5 mb-4"
+		>
 			<EditableValue
 				v-model="first_name"
 				class="text-3xl w-32"
@@ -44,7 +55,12 @@
 			:onFinish="updateUser"
 		/>
 
-		<h3 class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8">Bio</h3>
+		<h3
+			id="bio"
+			class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8"
+		>
+			Bio
+		</h3>
 		<EditableValue
 			v-model="bio"
 			class="text-lg mt-2 w-3/4"
@@ -194,7 +210,12 @@
 		</Teleport>
 		<div class="px-4 mt-2 border-t-4 border-black dark:border-white w-full max-w-4xl">
 			<div class="mt-4 w-full flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-x-4">
-				<h2 class="text-xl font-medium">Account Visibility</h2>
+				<h2
+					id="visibility"
+					class="text-xl font-medium"
+				>
+					Account Visibility
+				</h2>
 				<div class="w-full flex flex-col sm:flex-row gap-2">
 					<ClientOnly>
 						<UDropdownMenu
@@ -253,6 +274,7 @@
 			<div
 				v-for="(prop, i) in props.filter((p) => p.disabled !== true)"
 				:key="prop.id"
+				id="privacy"
 				class="mt-4 w-full flex flex-col lg:grid lg:grid-cols-3 gap-2 lg:gap-x-4"
 			>
 				<h2 class="text-md sm:text-lg md:text-xl flex">
@@ -344,7 +366,10 @@
 				</div>
 			</div>
 			<div class="w-full flex flex-col items-center">
-				<div class="flex flex-col w-full max-w-3xl items-center my-4">
+				<div
+					id="oauth"
+					class="flex flex-col w-full max-w-3xl items-center my-4"
+				>
 					<h2 class="text-xl font-medium flex-1 mb-1">OAuth Providers</h2>
 					<div class="flex">
 						<LazyUserOAuthButton
@@ -360,6 +385,7 @@
 					<USeparator class="my-4" />
 					<div class="flex items-center justify-center gap-4 w-full">
 						<USwitch
+							id="email-subscriptions"
 							v-model="subscribed"
 							:loading="subscribedLoading"
 							color="info"
@@ -374,6 +400,7 @@
 							@changed="handlePasswordChange"
 						>
 							<LazyUButton
+								id="password-change"
 								color="warning"
 								variant="outline"
 								trailing-icon="mdi:shield-lock"
@@ -386,6 +413,7 @@
 						</UserPasswordChangeModal>
 						<UserDeleteAccountModal @deleted="handleAccountDeletion">
 							<LazyUButton
+								id="account-deletion"
 								color="error"
 								variant="outline"
 								trailing-icon="mdi:account-cancel"
@@ -403,6 +431,14 @@
 			ref="emailVerificationModal"
 			@verified="handleEmailVerified"
 		/>
+
+		<ClientOnly>
+			<SiteTour
+				:steps="userProfileTour"
+				name="User Profile Tour"
+				tour-id="user-profile"
+			/>
+		</ClientOnly>
 	</div>
 </template>
 
@@ -1122,4 +1158,94 @@ async function handleAccountDeletion() {
 		duration: 5000
 	});
 }
+
+// profile tour
+
+const { startTour } = useSiteTour();
+
+const userProfileTour: SiteTourStep[] = [
+	{
+		id: 'avatar',
+		title: 'Welcome to your profile!',
+		description:
+			'This is where you can view and edit your profile information, manage your account settings, and customize your avatar with cool cosmetics.',
+		footer: 'Feel free to explore and make your profile your own!'
+	},
+	{
+		id: 'name',
+		title: 'Personal Information',
+		description:
+			'Here you can update your name, username, and bio. Keep your information up to date so your friends can recognize you and learn more about you!',
+		footer: 'Make sure to save your changes after updating your information!'
+	},
+	{
+		id: 'bio',
+		title: 'Biography',
+		description:
+			'Share a little bit about yourself in your bio! Whether you want to talk about your love for nature, your favorite Earth App features, or your environmental goals, this is the place to let others know who you are and what you care about.',
+		footer: 'A great bio can help you connect with like-minded Earthlings and make new friends!'
+	},
+	{
+		id: 'activities',
+		title: 'Activities',
+		description:
+			'Select your favorite activities to let others know what you enjoy doing. This helps us personalize your experience and connect you with like-minded Earthlings!',
+		footer: 'Choose as many activities as you like to showcase your interests!'
+	},
+	{
+		id: 'cosmetics',
+		title: 'Cosmetics',
+		description:
+			'Customize your profile with cool cosmetics! Earn points through journies, badges, and quests to unlock new cosmetics and show off your unique style.',
+		footer: 'Keep engaging to earn more points and unlock awesome rewards!'
+	},
+	{
+		id: 'visibility',
+		title: 'Account Visibility',
+		description:
+			"Control who can see your profile and activities with our visibility settings. You can choose to keep your profile private, visible only to registered users, or public for everyone to see. It's up to you to decide how much of your Earth App journey you want to share with the world!",
+		footer:
+			'Remember, you can change your visibility settings anytime to find the right balance between privacy and sharing!'
+	},
+	{
+		id: 'privacy',
+		title: 'Field Privacy',
+		description:
+			'Manage the privacy of specific fields in your profile. You can choose to make certain information like your email, physical address, or country of origin visible to friends, or yourself, or a select few. This gives you granular control over your personal information and how you connect with others on Earth App',
+		footer:
+			'The "Circle" setting is your trusted group of friends on Earth App. Administrators can see all fields regardless of privacy settings, so remember to only provide information you think is necessary and appropriate for your profile.'
+	},
+	{
+		id: 'oauth',
+		title: 'OAuth Providers',
+		description:
+			'Link your Earth App account with popular platforms like Google, Microsoft, and GitHub for easy and secure login. By connecting your accounts, you can quickly sign in to Earth App without having to remember another password. Plus, it adds an extra layer of security to your account!',
+		footer:
+			'You can link or unlink these providers at any time in your profile settings. Choose the ones that work best for you and enjoy seamless access to Earth App!'
+	},
+	{
+		id: 'email-subscriptions',
+		title: 'Email Notifications',
+		description:
+			"Stay in the loop with email notifications! You can choose to receive updates about your activities, new features, and important announcements from Earth App. It's a great way to stay connected and never miss out on what's happening in the Earth App community.",
+		footer:
+			'You can toggle email notifications on or off at any time in your profile settings. Choose what works best for you and stay informed about all things Earth App!'
+	},
+	{
+		id: 'password-change',
+		title: 'Change Password',
+		description:
+			"For your account security, we recommend changing your password regularly. You can update your password here to keep your account safe. Make sure to choose a strong and unique password that you don't use for other accounts. If you have linked OAuth providers, you can also use those to log in without a password.",
+		footer:
+			'If you ever suspect any unauthorized access to your account, changing your password immediately is a good security measure. Stay safe and secure on your Earth journey!'
+	},
+	{
+		id: 'account-deletion',
+		title: 'Account Deletion',
+		description:
+			'We hope you never have to use this feature, but if you decide to delete your account, you can do so here. Please note that account deletion is permanent and cannot be undone. If you have any concerns or need assistance, feel free to reach out to our support team before taking this step.',
+		footer:
+			"If you choose to delete your account, we recommend downloading any important data or memories you want to keep before proceeding. We're sad to see you go, but we wish you all the best on your Earth journey!"
+	}
+];
 </script>
