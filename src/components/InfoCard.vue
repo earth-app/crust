@@ -99,8 +99,16 @@
 							hydrate-on-visible
 						/>
 					</div>
+					<NuxtLink
+						v-if="descriptionLink && description"
+						:to="descriptionLink"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="text-sm md:text-md lg:text-base text-gray-600 light:text-gray-900 hover:underline"
+						>{{ description }}</NuxtLink
+					>
 					<p
-						v-if="description"
+						v-else-if="description"
 						class="text-sm md:text-md lg:text-base text-gray-600 light:text-gray-900 hover:cursor-text"
 					>
 						{{ description }}
@@ -109,8 +117,28 @@
 						v-if="content || image || youtubeId || video || object"
 						class="border-gray-500 light:border-black my-2 w-11/12"
 					/>
+					<NuxtLink
+						v-if="imageLink && image"
+						:to="imageLink"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="text-xs text-gray-500 hover:underline mb-1"
+					>
+						<LazyNuxtImg
+							v-if="image"
+							:src="image"
+							:alt="title"
+							:title="`Retrieved from ${link}`"
+							format="webp"
+							width="800"
+							height="400"
+							loading="lazy"
+							decoding="async"
+							class="w-full h-48 object-cover rounded-lg mb-2"
+						/>
+					</NuxtLink>
 					<LazyNuxtImg
-						v-if="image"
+						v-else-if="image"
 						:src="image"
 						:alt="title"
 						:title="`Retrieved from ${link}`"
@@ -345,6 +373,7 @@ const props = defineProps<{
 	}[];
 	title: string;
 	description?: string;
+	descriptionLink?: string;
 	content?: string;
 	link?: string;
 	icon?: string;
@@ -366,6 +395,7 @@ const props = defineProps<{
 		};
 	};
 	image?: string;
+	imageLink?: string;
 	youtubeId?: string;
 	video?: string;
 	object?: {

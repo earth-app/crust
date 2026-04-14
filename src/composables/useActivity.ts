@@ -517,9 +517,11 @@ export function useActivityCards() {
 		title: string;
 		icon: string;
 		description?: string;
+		descriptionLink?: string;
 		content?: string;
 		link?: string;
 		image?: string;
+		imageLink?: string;
 		object?: string;
 		objectType?: string;
 		video?: string;
@@ -742,9 +744,11 @@ export function useActivityCards() {
 				title: trimString(toTitleCase(item.description || item.alt_description || 'Untitled'), 60),
 				icon: 'cib:unsplash',
 				description: `Photo by ${item.user.name} on Unsplash`,
+				descriptionLink: item.user.links.html,
 				content: item.description && item.alt_description ? item.alt_description : undefined,
 				link: item.links.html,
 				image: item.urls.regular,
+				imageLink: item.links.download,
 				secondaryFooter: item.id,
 				color: isNaN(color0) ? undefined : color0
 			};

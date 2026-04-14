@@ -148,19 +148,18 @@ export type UnsplashImage = {
 	description: string;
 	alt_description: string;
 	urls: {
-		raw: string;
-		full: string;
 		regular: string;
-		small: string;
-		thumb: string;
 	};
 	links: {
-		self: string;
 		html: string;
+		download: string;
 	};
 	user: {
 		id: string;
 		username: string;
 		name: string;
+		links: {
+			html: string;
+		};
 	};
 };
