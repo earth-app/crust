@@ -339,6 +339,7 @@
 					:color="button.color || 'primary'"
 					:size="button.size || 'md'"
 					:icon="button.icon"
+					:variant="button.variant || 'solid'"
 					@click="() => button.onClick && button.onClick()"
 					class="my-1 hover:opacity-90 hover:cursor-pointer transition-all duration-300 w-full"
 					hydrate-on-interaction="mouseover"
@@ -413,6 +414,7 @@ const props = defineProps<{
 	buttons?: {
 		text: string;
 		icon?: string;
+		variant?: Variant;
 		color?: Color;
 		size?: Size;
 		onClick?: () => void;
