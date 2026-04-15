@@ -63,6 +63,7 @@ onMounted(() => {
 	fetchThumbnail();
 	// attendees are fetched lazily only when the drawer opens
 });
+const { startTour } = useSiteTour();
 
 const reactiveEvent = computed(() => eventState.value || props.event);
 
@@ -191,6 +192,7 @@ const buttons = computed(() => {
 		text: string;
 		icon?: string;
 		color?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral';
+		variant?: 'solid' | 'subtle' | 'outline' | 'soft';
 		size?: 'md' | 'xs' | 'sm' | 'lg' | 'xl';
 		onClick?: () => void;
 		disabled?: boolean;
@@ -322,6 +324,19 @@ const buttons = computed(() => {
 					deleteEvent();
 					navigateTo('/events');
 				}
+			}
+		});
+	}
+
+	if (props.full) {
+		array.push({
+			text: 'Take a Tour',
+			icon: 'mdi:progress-question',
+			color: 'secondary',
+			variant: 'subtle',
+			size: 'md',
+			onClick: () => {
+				startTour('event-profile');
 			}
 		});
 	}

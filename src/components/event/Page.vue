@@ -19,6 +19,7 @@
 					>Generate Thumbnail</UButton
 				>
 				<LazyUserCard
+					id="event-host-card"
 					:user="event.host"
 					class="my-2"
 					hydrate-on-idle
@@ -66,6 +67,7 @@
 			</div>
 
 			<LazyEventCard
+				id="event-profile-card"
 				:event="event"
 				no-link
 				full
@@ -74,7 +76,10 @@
 			/>
 		</div>
 		<USeparator class="my-8" />
-		<div class="flex flex-1 items-stretch justify-center my-4 gap-8 h-32">
+		<div
+			id="event-submissions"
+			class="flex flex-1 items-stretch justify-center my-4 gap-8 h-32"
+		>
 			<!-- only display up until 3 days after event has ended (expires in KV) -->
 			<EventSubmissionPreview
 				v-if="(event.end_date || 0) + 1000 * 60 * 60 * 24 * 3 > Date.now()"
@@ -107,6 +112,13 @@
 			</div>
 		</template>
 	</UModal>
+	<ClientOnly>
+		<SiteTour
+			:steps="eventTour"
+			name="Event Tour"
+			tour-id="event-profile"
+		/>
+	</ClientOnly>
 </template>
 
 <script setup lang="ts">
@@ -183,4 +195,30 @@ function openInfo() {
 	if (!props.event.fields?.info) return;
 	infoOpen.value = true;
 }
+
+// event tour
+
+const eventTour: SiteTourStep[] = [
+	{
+		id: 'event-profile-card',
+		title: 'Welcome to Events!',
+		description:
+			'This card provides an overview of the event, including its name, date, location, and a brief description. You can click on the event name to view more details about the event, such as the schedule, speakers, and more!',
+		footer: 'Click next to learn more about events.'
+	},
+	{
+		id: 'event-host-card',
+		title: 'Event Host',
+		description:
+			"This card displays information about the host of the event. You can click on the host's name to view their profile and learn more about them!",
+		footer: 'Click next to learn about event thumbnails.'
+	},
+	{
+		id: 'event-submissions',
+		title: 'Event Submissions',
+		description:
+			'Attendees can submit photos for impact points and to be featured in the event gallery. If the event is still accepting submissions, you can upload your own photos to share your experience with others!',
+		footer: 'Enjoy exploring the event!'
+	}
+];
 </script>
