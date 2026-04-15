@@ -1,5 +1,5 @@
 export type SiteTourStep = {
-	id: string;
+	id?: string;
 	title: string;
 	description: string;
 	footer?: string;

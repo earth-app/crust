@@ -128,6 +128,7 @@ const tooltipStyle = ref({
 let currentElementId: string | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let mutationObserver: MutationObserver | null = null;
+let hasScrolledToFallbackTooltip = false;
 
 const isActive = computed(() => isActiveTour(props.tourId));
 const isLoggedIn = computed(() => !!useCurrentSessionToken());
@@ -272,21 +273,8 @@ function updateBoxPosition() {
 		if (!element) {
 			// Element not found - hide highlight box and center the tooltip
 			console.warn(`Element with id "${currentElementId}" not found for tour highlight.`);
-			boxStyle.value.display = 'none';
-
-			// Batch all layout reads
-			const viewportHeight = window.innerHeight;
-			const scrollY = window.scrollY;
-			const tooltipTop = scrollY + viewportHeight / 2 - 100;
-
-			// Then batch all writes
-			tooltipStyle.value = {
-				top: `${tooltipTop}px`,
-				left: '50%',
-				right: 'auto',
-				maxWidth: 'none',
-				transform: 'translateX(-50%)'
-			};
+			positionFallbackTooltip();
+			scrollToFallbackTooltip();
 			updateTicking = false;
 			return;
 		}
@@ -336,7 +324,43 @@ function updateBoxPosition() {
 
 		// Calculate tooltip position (already computed values)
 		updateTooltipPosition(top, left, width, height, viewportWidth);
+		hasScrolledToFallbackTooltip = false;
 		updateTicking = false;
+	});
+}
+
+function positionFallbackTooltip() {
+	boxStyle.value.display = 'none';
+
+	const viewportHeight = window.innerHeight;
+	const scrollY = window.scrollY;
+	const tooltipTop = scrollY + viewportHeight / 2 - 100;
+
+	tooltipStyle.value = {
+		top: `${tooltipTop}px`,
+		left: '50%',
+		right: 'auto',
+		maxWidth: 'none',
+		transform: 'translateX(-50%)'
+	};
+}
+
+function scrollToFallbackTooltip() {
+	if (hasScrolledToFallbackTooltip) return;
+	hasScrolledToFallbackTooltip = true;
+
+	nextTick(() => {
+		if (!tooltipCard.value) return;
+
+		const rect = tooltipCard.value.getBoundingClientRect();
+		const padding = 16;
+
+		if (rect.top >= padding && rect.bottom <= window.innerHeight - padding) {
+			return;
+		}
+
+		const targetTop = Math.max(0, window.scrollY + rect.top - padding);
+		window.scrollTo({ top: targetTop, behavior: 'smooth' });
 	});
 }
 
@@ -383,8 +407,16 @@ function updateTooltipPosition(
 	};
 }
 
-function createTourHighlight(id: string) {
-	currentElementId = id;
+function createTourHighlight(id?: string) {
+	currentElementId = id ?? null;
+	hasScrolledToFallbackTooltip = false;
+
+	if (!id) {
+		positionFallbackTooltip();
+		scrollToFallbackTooltip();
+		return;
+	}
+
 	const element = document.getElementById(id);
 
 	if (element) {
