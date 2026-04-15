@@ -29,24 +29,24 @@
 		</div>
 		<span
 			v-else
-			class="text-center italic opacity-80 my-8"
+			class="text-center text-wrap italic opacity-80 px-2"
 			>Be the first to submit a photo!</span
 		>
 
 		<h3 class="absolute left-4 bottom-2 text-center font-bold text-lg bg-black/50 px-2 rounded-lg">
 			{{ submissions.length }} submissions
 		</h3>
+		<UModal
+			v-if="submissions && submissions.length > 0"
+			title="Submissions"
+			v-model:open="open"
+			class="min-w-200 max-w-screen"
+		>
+			<template #body>
+				<EventSubmissionGallery :submissions="submissions" />
+			</template>
+		</UModal>
 	</div>
-	<UModal
-		v-if="submissions && submissions.length > 0"
-		title="Submissions"
-		v-model:open="open"
-		class="min-w-200 max-w-screen"
-	>
-		<template #body>
-			<EventSubmissionGallery :submissions="submissions" />
-		</template>
-	</UModal>
 </template>
 
 <script setup lang="ts">
