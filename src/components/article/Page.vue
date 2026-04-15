@@ -3,6 +3,7 @@
 		<div class="mt-8 mb-4">
 			<div class="flex justify-center mb-4">
 				<UAvatar
+					id="author-avatar"
 					:src="authorAvatar"
 					alt="Author's avatar"
 					:title="`@${article.author.username}`"
@@ -18,9 +19,13 @@
 					</NuxtLink>
 				</h2>
 			</UTooltip>
-			<div class="flex my-2">
+			<div
+				id="article-tags"
+				class="flex my-2"
+			>
 				<UBadge
 					v-for="(tag, index) in article.tags"
+					:id="`article-tag-${index}`"
 					:key="`article-tag-${index}`"
 					class="mr-2 mb-2"
 					:ui="{ label: 'text-sm' }"
@@ -57,7 +62,8 @@
 			</ArticleEditor>
 
 			<UButton
-				v-if="quiz && quiz.length > 0 && !score"
+				v-if="user && quiz && quiz.length > 0 && !score"
+				id="quiz-button"
 				color="success"
 				icon="mdi:school"
 				variant="subtle"
@@ -67,6 +73,7 @@
 
 			<UButton
 				v-else-if="score"
+				id="quiz-button"
 				color="neutral"
 				icon="mdi:check-all"
 				variant="subtle"
@@ -76,6 +83,7 @@
 
 			<UButton
 				v-if="!quiz && user?.is_admin"
+				id="quiz-button"
 				color="primary"
 				icon="mdi:plus"
 				variant="subtle"
@@ -83,6 +91,13 @@
 				:loading="quizLoading"
 				>Create Quiz</UButton
 			>
+
+			<UButton
+				color="secondary"
+				icon="mdi:progress-question"
+				variant="subtle"
+				@click="startTour('article-profile')"
+			/>
 		</div>
 		<div class="mt-2 prose min-w-67 max-w-5/7 items-center">
 			<p
@@ -93,7 +108,12 @@
 				{{ paragraph }}
 			</p>
 		</div>
-		<h3 class="text-xs sm:text-sm text-gray-400">{{ time }}</h3>
+		<h3
+			id="article-time"
+			class="text-xs sm:text-sm text-gray-400"
+		>
+			{{ time }}
+		</h3>
 		<div
 			v-if="article.ocean"
 			class="flex flex-col items-center my-8"
@@ -146,6 +166,14 @@
 			</div>
 		</template>
 	</UModal>
+
+	<ClientOnly>
+		<SiteTour
+			:steps="articleTour"
+			name="Article Tour"
+			tour-id="article-profile"
+		/>
+	</ClientOnly>
 </template>
 
 <script setup lang="ts">
@@ -335,4 +363,40 @@ async function createQuiz() {
 
 	quizLoading.value = false;
 }
+
+// article tour
+
+const { startTour } = useSiteTour();
+
+const articleTour: SiteTourStep[] = [
+	{
+		id: 'author-avatar',
+		title: 'Welcome to Articles!',
+		description:
+			'Articles are little bits of information where anyone can share their knowledge on unique topics. They can be about anything - from how to compost at home, to the history of a local park, to a deep dive into the science of tides.',
+		footer:
+			'@cloud writes articles based on scientific papers. Click next to learn more about this article.'
+	},
+	{
+		id: 'article-tags',
+		title: props.article.title,
+		description: `This article is written by @${props.article.author.username}. ${props.article.description}. Click next to learn more about the article content!`,
+		footer: 'Scroll down to read the article and explore!'
+	},
+	{
+		id: 'quiz-button',
+		anonymous: false,
+		title: 'Test Your Knowledge!',
+		description:
+			'Many articles have quizzes to test your knowledge on the topic. Click this button to take the quiz and see how much you learned!',
+		footer:
+			'If you have already taken the quiz, you can click the button to view your score and see which questions you got right or wrong.'
+	},
+	{
+		id: 'article-time',
+		title: 'Learning More!',
+		description: `This article was published on ${time.value}. If the article cites any scientific papers, you can find them linked at the bottom along with a summary of their content.`,
+		footer: 'Enjoy exploring the article!'
+	}
+];
 </script>
