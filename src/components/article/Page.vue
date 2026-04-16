@@ -380,7 +380,7 @@ const articleTour: SiteTourStep[] = [
 	{
 		id: 'article-tags',
 		title: props.article.title,
-		description: `This article is written by @${props.article.author.username}. ${props.article.description}. Click next to learn more about the article content!`,
+		description: `This article is written by @${props.article.author.username}. It reads, "${props.article.description}". Click next to learn more about the article content!`,
 		footer: 'Scroll down to read the article and explore!'
 	},
 	{
