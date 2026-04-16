@@ -3,6 +3,7 @@
 		<div class="flex justify-center my-2">
 			<UButton
 				v-if="isCurrentQuest"
+				id="quest-button"
 				color="error"
 				variant="soft"
 				:loading="loading"
@@ -14,9 +15,10 @@
 
 			<UTooltip
 				v-else-if="hasOtherActiveQuest && !completed"
-				text="You already have an active quest. Starting this one will replace it."
+				:text="`You already have an active quest (${quest?.quest.title}). Starting this one will replace it.`"
 			>
 				<UButton
+					id="quest-button"
 					color="warning"
 					variant="soft"
 					:loading="loading"
@@ -29,6 +31,7 @@
 
 			<UButton
 				v-else-if="!isCurrentQuest && !completed"
+				id="quest-button"
 				color="primary"
 				:loading="loading"
 				:disabled="loading || questLoading"
@@ -36,6 +39,23 @@
 				@click="handleStart(false)"
 				>Start Quest</UButton
 			>
+
+			<UButton
+				v-else
+				id="quest-button"
+				color="neutral"
+				disabled
+				class="self-center"
+				>Quest Completed</UButton
+			>
+
+			<UButton
+				color="secondary"
+				icon="mdi:progress-question"
+				variant="subtle"
+				class="ml-2"
+				@click="startTour(`quest-timeline-${props.quest.id}`)"
+			/>
 		</div>
 		<div
 			v-for="(item, index) in items"
@@ -43,6 +63,7 @@
 			class="flex flex-col items-center w-full min-h-36"
 		>
 			<div
+				:id="`tile-${index}`"
 				class="flex gap-2 items-start my-2"
 				:class="
 					isCurrentQuest && currentIndex === index
@@ -58,6 +79,7 @@
 					<div class="flex flex-col items-center gap-1">
 						<LazyUBadge
 							:key="altIndex"
+							:id="`tile-${index}:${altIndex}`"
 							:icon="altStep.icon"
 							:color="
 								isCurrentQuest
@@ -129,6 +151,7 @@
 				>
 					<div class="flex flex-col items-center gap-1">
 						<LazyUBadge
+							:id="`tile-${index}:0`"
 							:icon="item.icon"
 							:color="
 								isCurrentQuest
@@ -205,6 +228,7 @@
 		</div>
 		<div class="flex flex-col items-center my-4 min-h-36 gap-1">
 			<LazyUBadge
+				id="tile-end"
 				icon="mdi:medal-outline"
 				color="warning"
 				variant="solid"
@@ -214,6 +238,14 @@
 			/>
 			<span class="text-xs opacity-70">+{{ props.quest.reward }}</span>
 		</div>
+
+		<ClientOnly>
+			<SiteTour
+				:steps="timelineTour"
+				:name="`Quest Timeline Tour (${props.quest.title})`"
+				:tour-id="`quest-timeline-${props.quest.id}`"
+			/>
+		</ClientOnly>
 	</div>
 </template>
 
@@ -422,4 +454,40 @@ function getIcon(type: string) {
 			return 'mdi:account';
 	}
 }
+
+// quest timeline tour
+
+const { startTour } = useSiteTour();
+
+const timelineTour: SiteTourStep[] = [
+	{
+		id: 'quest-button',
+		title: 'Quest Actions',
+		description:
+			'Welcome to the quest timeline! Here you can start or end quests and track your progress through each step.',
+		footer:
+			'Click "Next" to learn how to interact with the quest steps and view details about each one.'
+	},
+	{
+		id: 'tile-0',
+		title: 'Quest Steps',
+		description:
+			'Each icon represents a step in the quest. You can click on them to view more details, and they will show your progress as you complete them.',
+		footer: 'Hover over steps with multiple options to see all possible actions!'
+	},
+	{
+		id: 'tile-1:0',
+		title: 'Step Details',
+		description:
+			'When you click on a step, you can see more details about what you need to do to complete it, any rewards you will earn, and when it will unlock if it is locked behind a delay.',
+		footer: 'Complete steps to earn points and progress through the quest.'
+	},
+	{
+		id: 'tile-end',
+		title: 'Quest Completion',
+		description:
+			'Once you complete all the steps, you will earn the quest reward and can show off your achievement on your profile!',
+		footer: 'Great job on making it to the end of the quest timeline tour!'
+	}
+];
 </script>

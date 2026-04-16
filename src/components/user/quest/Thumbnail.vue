@@ -21,6 +21,12 @@
 					>
 
 					<span class="text-sm underline opacity-80">{{ comma(fullReward) }} points</span>
+
+					<UIcon
+						v-if="quest.premium"
+						name="mdi:diamond-stone"
+						class="size-5 text-secondary"
+					/>
 				</div>
 
 				<UBadge
