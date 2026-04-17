@@ -4,6 +4,8 @@ export default defineEventHandler(async (event) => {
 	const user = await ensureLoggedIn(event);
 	const config = useRuntimeConfig();
 
+	const rank = user.account.account_type.toLowerCase();
+
 	const ua = event.node.req.headers['user-agent'];
 	if (!ua) {
 		throw createError({
@@ -68,7 +70,8 @@ export default defineEventHandler(async (event) => {
 			},
 			body: {
 				device,
-				response
+				response,
+				rank
 			},
 			onResponseError: (ctx) => {
 				throw createError({
