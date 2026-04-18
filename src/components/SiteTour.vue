@@ -35,7 +35,7 @@
 				pointerEvents: 'auto'
 			}"
 		>
-			<LazyUCard class="shadow-lg min-w-80 w-[60vw] max-w-200 m-8">
+			<LazyUCard class="shadow-lg min-w-20 w-[50vw] max-w-150 m-8">
 				<template #header>
 					<div class="flex justify-between items-center">
 						<h3 class="text-lg font-semibold">{{ step.title }}</h3>
@@ -136,15 +136,26 @@ const tooltipStyle = ref({
 });
 
 let currentElementId: string | null = null;
+
+// observers for tracking position of the highlighted element and changes in the DOM
 let resizeObserver: ResizeObserver | null = null;
 let mutationObserver: MutationObserver | null = null;
 let observedElement: HTMLElement | null = null;
+
+// track active layer container (e.g. dialog or popover) to ensure the highlight is visible above it and to avoid
+// closing modals or popovers when interacting with the tooltip
 let activeLayerContainer: HTMLElement | null = null;
 let hasScrolledToFallbackTooltip = false;
 let missingElementWarningId: string | null = null;
 
 const isActive = computed(() => isActiveTour(props.tourId));
 const isLoggedIn = computed(() => !!useCurrentSessionToken());
+
+defineExpose({
+	isActive,
+	currentStep: step,
+	highlightBox
+});
 
 // Filter steps based on user login status
 const visibleSteps = computed(() => {
@@ -375,6 +386,7 @@ function ensureObserversForTarget(element: HTMLElement) {
 		updateBoxPosition();
 	});
 	resizeObserver.observe(element);
+
 	observedElement = element;
 }
 

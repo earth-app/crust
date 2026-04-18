@@ -36,7 +36,7 @@ onMounted(async () => {
 	}
 });
 
-const welcomeTour: SiteTourStep[] = [
+const welcomeTour = computed<SiteTourStep[]>(() => [
 	{
 		id: 'title',
 		title: 'Welcome to the Earth App',
@@ -193,5 +193,5 @@ const welcomeTour: SiteTourStep[] = [
 			'The more content you create, the more you contribute to the community. Keep sharing your ideas, thoughts, stories!',
 		anonymous: false
 	}
-];
+]);
 </script>
