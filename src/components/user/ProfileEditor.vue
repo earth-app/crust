@@ -110,6 +110,29 @@
 						</div>
 					</template>
 				</UPopover>
+
+				<UPopover
+					v-if="cosmeticDiscount"
+					mode="hover"
+				>
+					<UButton
+						color="warning"
+						variant="subtle"
+						size="sm"
+					>
+						{{ cosmeticDiscount }} Off
+					</UButton>
+
+					<template #content>
+						<div class="flex flex-col p-4">
+							<span class="text-sm">You have a discount on profile cosmetics!</span>
+							<span class="text-xs opacity-80"
+								>This discount is applied to all cosmetics in the points shop and is based on your
+								account rank.</span
+							>
+						</div>
+					</template>
+				</UPopover>
 			</div>
 			<UButton
 				icon="mdi:rotate-left"
@@ -175,7 +198,18 @@
 							:rarity="selectedCosmeticForPurchase.rarity"
 							:price="selectedCosmeticForPurchase.price"
 						/>
-						<p class="text-sm text-gray-400">{{ selectedCosmeticForPurchase.price }} points</p>
+
+						<div class="flex gap-1 items-center">
+							<p
+								v-if="selectedCosmeticForPurchase.price !== selectedCosmeticForPurchase.full_price"
+								class="text-sm text-gray-400 line-through"
+							>
+								{{ selectedCosmeticForPurchase.full_price }}
+							</p>
+							<p class="text-sm text-gray-300 light:text-gray-500">
+								{{ selectedCosmeticForPurchase.price }} points
+							</p>
+						</div>
 						<div class="flex gap-2">
 							<UButton
 								v-if="selectedCosmeticForPurchase.state === 'locked'"
@@ -395,34 +429,36 @@
 							class="py-1 px-2 border rounded-md border-blue-500"
 							:ui="{ label: 'font-semibold text-blue-400', base: 'hover:cursor-pointer' }"
 						/>
+						<LazyUButton
+							id="password-change"
+							color="warning"
+							variant="outline"
+							trailing-icon="mdi:shield-lock"
+							class="font-semibold hover:cursor-pointer"
+							@click="passwordChangeModal?.open()"
+							hydrate-on-visible
+						>
+							Change Password
+						</LazyUButton>
+						<LazyUButton
+							id="account-deletion"
+							color="error"
+							variant="outline"
+							trailing-icon="mdi:account-cancel"
+							class="font-semibold hover:cursor-pointer"
+							@click="deleteAccountModal?.open()"
+							hydrate-on-visible
+						>
+							Delete Account
+						</LazyUButton>
 						<UserPasswordChangeModal
 							ref="passwordChangeModal"
 							@changed="handlePasswordChange"
-						>
-							<LazyUButton
-								id="password-change"
-								color="warning"
-								variant="outline"
-								trailing-icon="mdi:shield-lock"
-								class="font-semibold hover:cursor-pointer"
-								@click="passwordChangeModal?.open()"
-								hydrate-on-visible
-							>
-								Change Password
-							</LazyUButton>
-						</UserPasswordChangeModal>
-						<UserDeleteAccountModal @deleted="handleAccountDeletion">
-							<LazyUButton
-								id="account-deletion"
-								color="error"
-								variant="outline"
-								trailing-icon="mdi:account-cancel"
-								class="font-semibold hover:cursor-pointer"
-								hydrate-on-visible
-							>
-								Delete Account
-							</LazyUButton>
-						</UserDeleteAccountModal>
+						/>
+						<UserDeleteAccountModal
+							ref="deleteAccountModal"
+							@deleted="handleAccountDeletion"
+						/>
 					</div>
 				</div>
 			</div>
@@ -449,6 +485,11 @@ import { capitalizeFully } from 'utils';
 import type { InputTypeHTMLAttribute } from 'vue';
 import { type EmailVerificationModalRef } from './email/VerificationModal.vue';
 import { type PasswordChangeModalRef } from './PasswordChangeModal.vue';
+
+type DeleteAccountModalRef = {
+	open: () => void;
+	close: () => void;
+};
 
 const componentProps = defineProps<{
 	user: User;
@@ -756,6 +797,23 @@ const cosmetics = computed((): CosmeticWithState[] =>
 		};
 	})
 );
+const cosmeticDiscount = computed(() => {
+	const discount = cosmetics.value.map((c) => c.discount || 0);
+	if (discount.length === 0) return null;
+	if (discount.every((d) => d === 0)) {
+		return null;
+	}
+
+	const firstDiscount = discount[0] || 0;
+
+	// if all the same, return that, otherwise return smallest plus a "+" to indicate varied discounts
+	if (discount.every((d) => d === firstDiscount)) {
+		return firstDiscount > 0 ? `${firstDiscount * 100}%` : null;
+	} else {
+		const minDiscount = Math.min(...discount);
+		return minDiscount > 0 ? `${minDiscount * 100}%+` : null;
+	}
+});
 
 const showCosmeticModal = ref(false);
 const selectedCosmeticForPurchase = ref<CosmeticWithState | null>(null);
@@ -1094,6 +1152,7 @@ function handleEmailVerified() {
 
 // Password Change
 const passwordChangeModal = ref<PasswordChangeModalRef | null>(null);
+const deleteAccountModal = ref<DeleteAccountModalRef | null>(null);
 
 function handlePasswordChange() {
 	toast.add({

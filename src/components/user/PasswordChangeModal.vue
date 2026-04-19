@@ -3,8 +3,6 @@
 		v-model="open"
 		title="Change Password"
 	>
-		<slot />
-
 		<template #body>
 			<div class="flex w-full h-full items-center justify-center mb-4 p-4">
 				<LazyUserPasswordChange
