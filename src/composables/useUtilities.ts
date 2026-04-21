@@ -1,6 +1,6 @@
 import { useAuthStore } from 'stores/auth';
 
-export function useTimeOnPage(field: string) {
+export function useTimeOnPage(field: string, metadata: Record<string, any> = {}) {
 	const authStore = useAuthStore();
 	const timeOnPage = ref(0);
 	const isTimerRunning = ref(false);
@@ -13,7 +13,7 @@ export function useTimeOnPage(field: string) {
 		try {
 			const res = await makeServerRequest<void>(null, '/api/user/timer', authStore.sessionToken, {
 				method: 'POST',
-				body: { action: 'start', field }
+				body: { action: 'start', field, metadata }
 			});
 
 			if (!res.success) {
@@ -38,7 +38,7 @@ export function useTimeOnPage(field: string) {
 				authStore.sessionToken,
 				{
 					method: 'POST',
-					body: { action: 'stop', field }
+					body: { action: 'stop', field, metadata }
 				}
 			);
 

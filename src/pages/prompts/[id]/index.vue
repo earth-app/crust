@@ -17,11 +17,50 @@
 <script setup lang="ts">
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
+const toast = useToast();
+const { user, fetchCurrentJourney, tapCurrentJourney } = useAuth();
 const { prompt, fetch } = usePrompt(route.params.id as string);
+const { startTimer, stopTimer } = useTimeOnPage('prompts_read_time', {
+	prompt: prompt.value,
+	user: user.value
+});
 
-// Force fetch on mount to ensure fresh data on page refresh
 onMounted(() => {
-	fetch();
+	if (import.meta.client) {
+		startTimer();
+	}
+});
+
+onUnmounted(() => {
+	if (import.meta.client) {
+		stopTimer();
+	}
+});
+
+onMounted(async () => {
+	// Force fetch on mount to ensure fresh data on page refresh
+	await fetch();
+
+	if (!prompt.value) return;
+	if (!user.value) return;
+
+	const count = await fetchCurrentJourney('prompt', user.value.id);
+	if (!count.success || !count.data) return; // silently ignore errors
+	if ('message' in count.data) return;
+
+	const res = await tapCurrentJourney('prompt');
+	if (!res.success || !res.data) return; // silently ignore errors
+	if ('message' in res.data) return;
+
+	if (count.data.count === res.data.count) return; // no change
+
+	toast.add({
+		title: 'Journey Updated',
+		description: `You have now read ${res.data.count} prompts on your journey streak. Keep going!`,
+		icon: 'game-icons:horizon-road',
+		color: 'success',
+		duration: 5000
+	});
 });
 
 watch(

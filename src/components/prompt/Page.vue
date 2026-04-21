@@ -89,7 +89,7 @@
 <script setup lang="ts">
 import { makeClientAPIRequest } from 'utils';
 
-const { user, avatar128, tapCurrentJourney } = useAuth();
+const { user, avatar128 } = useAuth();
 const { handle } = useDisplayName(user);
 
 const toast = useToast();
@@ -128,26 +128,6 @@ async function postResponse() {
 
 		responses.value.unshift(res.data);
 		newResponse.value = '';
-
-		// Tap Prompts Journey
-		const journeyRes = await tapCurrentJourney('prompt');
-		if (journeyRes.success && journeyRes.data) {
-			toast.add({
-				title: 'Journey Updated',
-				description: `Your prompts streak is now at ${journeyRes.data.count} prompts on your journey!`,
-				icon: 'solar:flame-bold',
-				color: 'success',
-				duration: 5000
-			});
-		} else {
-			toast.add({
-				title: 'Journey Update Failed',
-				description: journeyRes.message || 'An unknown error occurred.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error',
-				duration: 5000
-			});
-		}
 	}
 
 	posting.value = false;

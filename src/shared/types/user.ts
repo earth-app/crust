@@ -114,7 +114,9 @@ export type ImpactPointsChange = {
 
 export type AvatarCosmetic = {
 	key: string;
-	price: number;
+	price: number; // price after discount
+	full_price: number; // original price before discount
+	discount?: number; // percentage discount (e.g. 0.2 for 20% off)
 	rarity: Rarity;
 };
 
@@ -127,6 +129,7 @@ export type Quest = {
 	mobile_only?: boolean;
 	steps: (QuestStep | QuestStep[])[]; // single step (required) or alternative steps (user can complete any one of them)
 	reward: number;
+	premium?: boolean;
 	permissions: ('camera' | 'location' | 'record')[]; // e.g. ['camera', 'location']
 };
 

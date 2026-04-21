@@ -49,7 +49,10 @@ const route = useRoute();
 const { user, fetchCurrentJourney, tapCurrentJourney } = useAuth();
 const { setTitleSuffix } = useTitleSuffix();
 const { article, fetch } = useArticle(route.params.id as string);
-const { startTimer, stopTimer } = useTimeOnPage('articles_read_time');
+const { startTimer, stopTimer } = useTimeOnPage('articles_read_time', {
+	article: article.value,
+	user: user.value
+});
 
 const relatedLoaded = ref(false);
 const relatedArticles = ref<Article[]>([]);

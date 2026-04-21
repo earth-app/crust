@@ -4,7 +4,11 @@ export default defineEventHandler(async (event) => {
 	const user = await ensureLoggedIn(event);
 	const config = useRuntimeConfig();
 
-	const { action, field } = await readBody<{ action: 'start' | 'stop'; field: string }>(event);
+	const { action, field, metadata } = await readBody<{
+		action: 'start' | 'stop';
+		field: string;
+		metadata: Record<string, any>;
+	}>(event);
 
 	try {
 		const res = await $fetch(`${config.public.cloudBaseUrl}/v1/users/timer`, {
@@ -13,7 +17,7 @@ export default defineEventHandler(async (event) => {
 				Authorization: `Bearer ${config.adminApiKey}`,
 				Accept: 'application/json'
 			},
-			body: { action, userId: user.id, field }
+			body: { action, userId: user.id, field, metadata }
 		});
 
 		return res;
