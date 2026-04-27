@@ -40,6 +40,11 @@
 					</p>
 				</div>
 			</UChip>
+
+			<UserCard
+				v-if="userSource"
+				:user="userSource"
+			/>
 		</div>
 	</div>
 	<Loading v-else-if="user && notification === undefined" />
@@ -107,6 +112,17 @@ const message = computed(() => {
 	if (!notification.value) return;
 
 	return notification.value.message.replace(/\n/g, '<br />').replace(/\t/g, '');
+});
+
+const userSource = computed(() => {
+	if (!notification.value) return;
+	if (!notification.value.source || !notification.value.source.startsWith('@')) return;
+
+	const { user, fetchUser, fetchAvatar } = useUser(notification.value.source.substring(1));
+	fetchUser();
+	fetchAvatar();
+
+	return user.value;
 });
 
 async function markAsRead() {
