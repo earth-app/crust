@@ -4,7 +4,7 @@
 			variant="subtle"
 			class="gap-4 p-4 hover:cursor-pointer hover:scale-105 transition-all duration-300"
 			:class="current ? 'ring-4 ring-primary' : completed ? 'ring-2 ring-warning-300' : ''"
-			@click="timelineOpen = true"
+			@click="canOpenPremium ? (timelineOpen = true) : (premiumOpen = true)"
 		>
 			<div class="flex flex-col items-center justify-center">
 				<div class="flex justify-between w-full px-2">
@@ -146,6 +146,33 @@
 				</div>
 			</template>
 		</UModal>
+		<UModal
+			v-if="quest.premium"
+			v-model:open="premiumOpen"
+			class="min-w-full min-h-full"
+			:modal="true"
+			fullscreen
+			dismissible
+		>
+			<template #title>
+				<div class="flex">
+					<UIcon
+						name="mdi:diamond-stone"
+						class="size-6"
+					/>
+					<span class="ml-2">Upgrade to Access Premium Quests</span>
+				</div>
+			</template>
+			<template #body>
+				<div class="flex flex-col w-full items-center gap-4">
+					<UserCard
+						v-if="user"
+						:user="user"
+					/>
+					<Ranks highlighted="PRO" />
+				</div>
+			</template>
+		</UModal>
 	</template>
 </template>
 
@@ -158,6 +185,8 @@ const props = defineProps<{
 	current?: boolean;
 	completedAt?: number;
 }>();
+
+const { user } = useAuth();
 
 const fullReward = computed(() => {
 	let base = props.quest.reward || 0;
@@ -214,4 +243,11 @@ const openStep = ref<
 	  })
 	| null
 >(null);
+
+const premiumOpen = ref(false);
+const canOpenPremium = computed(() => {
+	if (!props.quest) return false;
+	if (!props.quest.premium) return true;
+	return user.value?.account.account_type !== 'FREE';
+});
 </script>

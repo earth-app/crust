@@ -51,6 +51,7 @@
 					:label="activity.name"
 					:icon="activity.fields['icon'] || 'mdi:earth'"
 					:variant="badgeVariants[i] || 'subtle'"
+					:color="i > 2 ? 'info' : 'primary'"
 					@mouseenter="badgeVariants[i] = 'solid'"
 					@mouseleave="badgeVariants[i] = 'subtle'"
 					class="hover:cursor-pointer transition-all duration-500"
