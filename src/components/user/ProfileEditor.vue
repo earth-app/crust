@@ -91,7 +91,7 @@
 			class="flex flex-col items-center px-4 mt-2 border-t-4 border-black dark:border-white w-full max-w-4xl"
 		>
 			<div class="flex items-center gap-2 my-2">
-				<h4 class="font-semibold">{{ points }} points</h4>
+				<h4 class="font-semibold">{{ comma(points) }} points</h4>
 				<UPopover mode="hover">
 					<UButton
 						icon="mdi:progress-question"
