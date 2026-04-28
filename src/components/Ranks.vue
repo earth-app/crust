@@ -1,15 +1,25 @@
 <template>
-	<UPricingPlans>
+	<div class="grid grid-cols-2 gap-6">
 		<UPricingPlan
 			v-for="(plan, index) in plans"
+			class="min-w-50 max-w-125"
+			id="plan-{{ plan.title }}"
 			:key="index"
+			:class="{
+				'border-2 border-primary': highlighted === plan.title?.toUpperCase(),
+				'border-gray-300 light:border-gray-600': highlighted !== plan.title?.toUpperCase()
+			}"
 			v-bind="plan"
 		/>
-	</UPricingPlans>
+	</div>
 </template>
 
 <script setup lang="ts">
 import type { PricingPlanProps } from '@nuxt/ui';
+
+const props = defineProps<{
+	highlighted?: 'FREE' | 'PRO' | 'WRITER' | 'ORGANIZER';
+}>();
 
 const { user } = useAuth();
 const currentPlan = computed(() => {
@@ -17,14 +27,42 @@ const currentPlan = computed(() => {
 	return user.value.account.account_type;
 });
 
+onMounted(() => {
+	// scroll to highlighted plan if it exists
+	if (props.highlighted) {
+		const el = document.getElementById(`plan-${props.highlighted}`);
+		if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+	}
+});
+
 function getButtonLabel(planType: string) {
 	if (!user.value) return 'Sign Up';
-	const order = ['FREE', 'PRO', 'WRITER', 'ORGANIZER'];
+	const order = ['FREE', 'PRO', 'WRITER', 'ORGANIZER', 'ADMINISTRATOR'];
 	const currentIndex = order.indexOf(currentPlan.value);
 	const planIndex = order.indexOf(planType);
 	if (currentIndex === planIndex) return 'Current Plan';
 
 	return planIndex < currentIndex ? 'Downgrade' : 'Upgrade';
+}
+
+function getButtonColor(planType: string) {
+	if (!user.value) return 'primary';
+	const order = ['FREE', 'PRO', 'WRITER', 'ORGANIZER', 'ADMINISTRATOR'];
+	const currentIndex = order.indexOf(currentPlan.value);
+	const planIndex = order.indexOf(planType);
+	if (currentIndex === planIndex) return 'secondary';
+
+	return planIndex < currentIndex ? 'error' : 'primary';
+}
+
+function isDisabled(planType: string) {
+	if (!user.value) return false;
+	if (currentPlan.value === 'ADMINISTRATOR') return true; // admins cannot downgrade
+	if (currentPlan.value === planType) return true; // current plan cannot be selected
+
+	// FIXME purcahsing plans is not yet implemented and currently handled over patreon
+
+	return true;
 }
 
 // pricing plan lists
@@ -67,7 +105,9 @@ const free: PricingPlanProps = {
 		}
 	],
 	button: {
-		label: getButtonLabel('FREE')
+		label: getButtonLabel('FREE'),
+		disabled: isDisabled('FREE'),
+		color: getButtonColor('FREE')
 	}
 };
 
@@ -75,6 +115,10 @@ const pro: PricingPlanProps = {
 	title: 'Pro',
 	description: 'For the dedicated adventurer looking to level up their experience',
 	price: '$5.99/mo',
+	badge: {
+		label: 'Great Start',
+		color: 'secondary'
+	},
 	features: [
 		{
 			title: 'Everything in Free',
@@ -110,7 +154,9 @@ const pro: PricingPlanProps = {
 		}
 	],
 	button: {
-		label: getButtonLabel('PRO')
+		label: getButtonLabel('PRO'),
+		disabled: isDisabled('PRO'),
+		color: getButtonColor('PRO')
 	}
 };
 
@@ -118,7 +164,11 @@ const writer: PricingPlanProps = {
 	title: 'Writer',
 	description: 'For the power user looking to create and share their own vision of adventure',
 	price: '$8.99/mo',
-	badge: 'Most Popular',
+	badge: {
+		label: 'Most Popular',
+		icon: 'mdi:arrow-up-bold',
+		color: 'primary'
+	},
 	features: [
 		{
 			title: 'Everything in Pro',
@@ -142,7 +192,9 @@ const writer: PricingPlanProps = {
 		}
 	],
 	button: {
-		label: getButtonLabel('WRITER')
+		label: getButtonLabel('WRITER'),
+		disabled: isDisabled('WRITER'),
+		color: getButtonColor('WRITER')
 	}
 };
 
@@ -151,6 +203,11 @@ const organizer: PricingPlanProps = {
 	description:
 		'For the visionary looking for control and customization to help others explore and connect',
 	price: '$14.99/mo',
+	badge: {
+		label: 'Best Value',
+		icon: 'mdi:star',
+		color: 'warning'
+	},
 	features: [
 		{
 			title: 'Everything in Writer',
@@ -174,7 +231,9 @@ const organizer: PricingPlanProps = {
 		}
 	],
 	button: {
-		label: getButtonLabel('ORGANIZER')
+		label: getButtonLabel('ORGANIZER'),
+		disabled: isDisabled('ORGANIZER'),
+		color: getButtonColor('ORGANIZER')
 	}
 };
 const plans = [free, pro, writer, organizer];
