@@ -39,6 +39,22 @@
 					>Take the Tour</UButton
 				>
 				<UButton
+					v-if="!user"
+					icon="mdi:login-variant"
+					color="error"
+					variant="soft"
+					@click="$router.push('/login')"
+					>Login</UButton
+				>
+				<UButton
+					v-if="!user"
+					icon="mdi:account-plus"
+					color="info"
+					variant="soft"
+					@click="$router.push('/signup')"
+					>Sign Up</UButton
+				>
+				<UButton
 					v-if="user && user.is_admin"
 					icon="mdi:cog-outline"
 					color="error"
