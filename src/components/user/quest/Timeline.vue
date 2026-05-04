@@ -121,7 +121,7 @@
 								class="min-h-8 min-w-8 size-8 text-primary"
 							/>
 							<div class="flex flex-col ml-2">
-								<p class="text-sm opacity-90">{{ altStep.description }}</p>
+								<p class="text-sm opacity-90">{{ trimString(altStep.description, 150) }}</p>
 								<p
 									v-if="altStep.reward"
 									class="text-xs opacity-70"
@@ -130,10 +130,9 @@
 								</p>
 								<p
 									v-if="altStep.delay"
-									class="text-xs opacity-70"
+									class="text-xs opacity-70 mt-1"
 								>
-									Can be completed after {{ formatTime(altStep.delay) }} after completing previous
-									step
+									Can be completed {{ formatTime(altStep.delay) }} after completing previous step
 								</p>
 								<p
 									v-if="altStep.completed"
@@ -193,7 +192,7 @@
 								class="min-h-8 min-w-8 size-8 text-primary"
 							/>
 							<div class="flex flex-col ml-2">
-								<p class="text-sm opacity-90">{{ item.description }}</p>
+								<p class="text-sm opacity-90">{{ trimString(item.description, 150) }}</p>
 								<p
 									v-if="item.reward"
 									class="text-xs opacity-70"
@@ -304,11 +303,16 @@ function isCurrentStep(index: number) {
 }
 
 function formatTime(seconds: number) {
-	const mins = Math.floor(seconds / 60);
+	const hours = Math.floor(seconds / 3600);
+	const mins = Math.floor((seconds % 3600) / 60);
 	const secs = seconds % 60;
 
-	if (secs === 0) return `${mins}m`;
-	return `${mins}m ${secs}s`;
+	if (hours > 0 && mins === 0 && secs === 0) return `${hours}h`;
+	if (hours > 0) return `${hours}h ${mins}m`;
+	if (mins > 0 && secs === 0) return `${mins}m`;
+	if (mins > 0) return `${mins}m ${secs}s`;
+
+	return `${secs}s`;
 }
 
 const i18n = useI18n();
@@ -443,7 +447,7 @@ function getIcon(type: string) {
 		case 'take_photo_validation':
 			return 'mdi:camera-switch';
 		case 'draw_picture':
-			return 'mdi:pen';
+			return 'mdi:brush';
 		case 'attend_event':
 			return 'mdi:calendar-star';
 		case 'transcribe_audio':
@@ -454,6 +458,8 @@ function getIcon(type: string) {
 			return 'mdi:shape';
 		case 'order_items':
 			return 'mdi:format-list-bulleted';
+		case 'describe_text':
+			return 'mdi:pencil';
 		default:
 			return 'mdi:account';
 	}
