@@ -4,7 +4,7 @@
 			variant="subtle"
 			class="gap-4 p-4 hover:cursor-pointer hover:scale-105 transition-all duration-300"
 			:class="current ? 'ring-4 ring-primary' : completed ? 'ring-2 ring-warning-300' : ''"
-			@click="canOpenPremium ? (timelineOpen = true) : (premiumOpen = true)"
+			@click="open = true"
 		>
 			<div class="flex flex-col items-center justify-center">
 				<div class="flex justify-between w-full px-2">
@@ -54,131 +54,16 @@
 				</div>
 			</div>
 		</UCard>
-		<UModal
-			v-model:open="timelineOpen"
-			class="min-w-full min-h-full"
-			:dismissible="!stepOpen"
-			:modal="true"
-			fullscreen
-		>
-			<template #header>
-				<div class="flex items-center w-full space-x-2">
-					<UIcon
-						:name="quest.icon"
-						class="size-12 text-primary"
-					/>
-					<div class="flex flex-col">
-						<h1 class="font-semibold text-lg">{{ quest.title }}</h1>
-						<span class="font-medium opacity-90 text-base">{{ quest.description }}</span>
-						<span
-							v-if="completedAt"
-							class="text-sm opacity-80"
-							>Completed on {{ completedAtNormal }}</span
-						>
-					</div>
-
-					<UButton
-						variant="outline"
-						class="ml-auto mr-4"
-						color="error"
-						icon="mdi:exit-to-app"
-						@click="timelineOpen = false"
-					/>
-				</div>
-			</template>
-			<template #body>
-				<div
-					class="h-full w-full overscroll-contain"
-					:class="stepOpen ? 'overflow-hidden' : 'overflow-y-auto'"
-				>
-					<LazyUserQuestTimeline
-						:quest="quest"
-						:progress="progress"
-						@select-step="
-							openStep = $event;
-							stepOpen = true;
-						"
-					/>
-				</div>
-			</template>
-		</UModal>
-		<UModal
-			v-model:open="stepOpen"
-			:modal="true"
-			@close="openStep = null"
-			scrollable
-			class="md:min-w-160 lg:min-w-200"
-		>
-			<template #header="{ close }">
-				<div class="flex items-center justify-between w-full px-1">
-					<div class="flex items-center gap-2">
-						<UIcon
-							v-if="openStep?.icon"
-							:name="openStep.icon"
-							class="size-5 text-primary"
-						/>
-						<span class="text-sm ml-2 font-medium truncate max-w-160">{{
-							openStep?.description ?? ''
-						}}</span>
-					</div>
-					<button
-						class="w-8 h-8 rounded-full border border-neutral-700 bg-neutral-900/60 flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-500 transition-all active:scale-95 shrink-0"
-						aria-label="Close"
-						@click="close"
-					>
-						<UIcon
-							name="i-lucide-x"
-							class="size-4"
-						/>
-					</button>
-				</div>
-			</template>
-			<template #body>
-				<div class="overflow-y-auto overscroll-contain">
-					<LazyUserQuestStepSubmission
-						v-if="openStep"
-						:quest="quest"
-						:progress="progress"
-						:step="openStep"
-						@submitted="stepOpen = false"
-					/>
-					<Loading v-else-if="stepOpen" />
-				</div>
-			</template>
-		</UModal>
-		<UModal
-			v-if="quest.premium"
-			v-model:open="premiumOpen"
-			class="min-w-full min-h-full"
-			:modal="true"
-			fullscreen
-			dismissible
-		>
-			<template #title>
-				<div class="flex">
-					<UIcon
-						name="mdi:diamond-stone"
-						class="size-6"
-					/>
-					<span class="ml-2">Upgrade to Access Premium Quests</span>
-				</div>
-			</template>
-			<template #body>
-				<div class="flex flex-col w-full items-center gap-4">
-					<UserCard
-						v-if="user"
-						:user="user"
-					/>
-					<Ranks highlighted="PRO" />
-				</div>
-			</template>
-		</UModal>
+		<LazyUserQuestModal
+			v-model:open="open"
+			:quest="quest"
+			:progress="progress"
+			:completed-at="completedAt"
+		/>
 	</template>
 </template>
 
 <script setup lang="ts">
-import { DateTime } from 'luxon';
-
 const props = defineProps<{
 	quest: Quest;
 	progress?: (QuestProgressEntry | QuestProgressEntry[])[];
@@ -186,7 +71,7 @@ const props = defineProps<{
 	completedAt?: number;
 }>();
 
-const { user } = useAuth();
+const open = ref(false);
 
 const fullReward = computed(() => {
 	let base = props.quest.reward || 0;
@@ -206,15 +91,6 @@ const completed = computed(() => {
 });
 
 const i18n = useI18n();
-const completedAt = computed(() => {
-	if (!props.completedAt) return null;
-	return DateTime.fromMillis(props.completedAt).toRelative({ locale: i18n.locale.value });
-});
-
-const completedAtNormal = computed(() => {
-	if (!props.completedAt) return null;
-	return DateTime.fromMillis(props.completedAt).toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS);
-});
 
 const rarityColor = computed(() => {
 	if (!props.quest) return 'neutral';
@@ -228,26 +104,5 @@ const rarityColor = computed(() => {
 		case 'green':
 			return 'primary';
 	}
-});
-
-const timelineOpen = ref(false);
-const stepOpen = ref(false);
-const openStep = ref<
-	| (QuestStep & {
-			icon: string;
-			completed: boolean;
-			index: number;
-			altIndex?: number;
-			isCurrentQuest: boolean;
-			isCurrentStep: boolean;
-	  })
-	| null
->(null);
-
-const premiumOpen = ref(false);
-const canOpenPremium = computed(() => {
-	if (!props.quest) return false;
-	if (!props.quest.premium) return true;
-	return user.value?.account.account_type !== 'FREE';
 });
 </script>

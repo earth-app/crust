@@ -1,0 +1,199 @@
+<template>
+	<template v-if="quest">
+		<UModal
+			v-model:open="questOpen"
+			class="min-w-full min-h-full"
+			:dismissible="!stepOpen"
+			:modal="true"
+			fullscreen
+		>
+			<template #header>
+				<div class="flex items-center w-full space-x-2">
+					<UIcon
+						:name="quest.icon"
+						class="size-12 text-primary"
+					/>
+					<div class="flex flex-col">
+						<h1 class="font-semibold text-lg">{{ quest.title }}</h1>
+						<span class="font-medium opacity-90 text-base">{{ quest.description }}</span>
+						<span
+							v-if="completedAtNormal"
+							class="text-sm opacity-80"
+							>Completed on {{ completedAtNormal }}</span
+						>
+					</div>
+
+					<UButton
+						variant="outline"
+						class="ml-auto mr-4"
+						color="error"
+						icon="mdi:exit-to-app"
+						@click="questOpen = false"
+					/>
+				</div>
+			</template>
+			<template #body>
+				<div
+					class="h-full w-full overscroll-contain"
+					:class="stepOpen ? 'overflow-hidden' : 'overflow-y-auto'"
+				>
+					<LazyUserQuestTimeline
+						:quest="quest"
+						:progress="progress"
+						@select-step="
+							openStep = $event;
+							stepOpen = true;
+						"
+					/>
+				</div>
+			</template>
+		</UModal>
+
+		<UModal
+			v-model:open="stepOpen"
+			:modal="true"
+			@close="openStep = null"
+			scrollable
+			class="md:min-w-160 lg:min-w-200"
+		>
+			<template #header="{ close }">
+				<div class="flex items-center justify-between w-full px-1">
+					<div class="flex items-center gap-2">
+						<UIcon
+							v-if="openStep?.icon"
+							:name="openStep.icon"
+							class="size-5 text-primary"
+						/>
+						<span class="text-sm ml-2 font-medium truncate max-w-160">{{
+							openStep?.description ?? ''
+						}}</span>
+					</div>
+					<button
+						class="w-8 h-8 rounded-full border border-neutral-700 bg-neutral-900/60 flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-500 transition-all active:scale-95 shrink-0"
+						aria-label="Close"
+						@click="close"
+					>
+						<UIcon
+							name="i-lucide-x"
+							class="size-4"
+						/>
+					</button>
+				</div>
+			</template>
+			<template #body>
+				<div class="overflow-y-auto overscroll-contain">
+					<LazyUserQuestStepSubmission
+						v-if="openStep"
+						:quest="quest"
+						:progress="progress"
+						:step="openStep"
+						@submitted="stepOpen = false"
+					/>
+					<Loading v-else-if="stepOpen" />
+				</div>
+			</template>
+		</UModal>
+
+		<UModal
+			v-if="quest.premium"
+			v-model:open="premiumOpen"
+			class="min-w-full min-h-full"
+			:modal="true"
+			fullscreen
+			dismissible
+		>
+			<template #title>
+				<div class="flex">
+					<UIcon
+						name="mdi:diamond-stone"
+						class="size-6"
+					/>
+					<span class="ml-2">Upgrade to Access Premium Quests</span>
+				</div>
+			</template>
+			<template #body>
+				<div class="flex flex-col w-full items-center gap-4">
+					<UserCard
+						v-if="user"
+						:user="user"
+					/>
+					<Ranks highlighted="PRO" />
+				</div>
+			</template>
+		</UModal>
+	</template>
+</template>
+
+<script setup lang="ts">
+import { DateTime } from 'luxon';
+
+const props = defineProps<{
+	open: boolean;
+	quest: Quest;
+	progress?: (QuestProgressEntry | QuestProgressEntry[])[];
+	completedAt?: number;
+}>();
+
+const emit = defineEmits<{
+	'update:open': [value: boolean];
+}>();
+
+const { user } = useAuth();
+
+const questOpen = computed({
+	get: () => props.open,
+	set: (value) => emit('update:open', value)
+});
+
+const completedAtNormal = computed(() => {
+	if (!props.completedAt) return null;
+	return DateTime.fromMillis(props.completedAt).toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS);
+});
+
+const stepOpen = ref(false);
+const openStep = ref<
+	| (QuestStep & {
+			icon: string;
+			completed: boolean;
+			index: number;
+			altIndex?: number;
+			isCurrentQuest: boolean;
+			isCurrentStep: boolean;
+			data?: string;
+	  })
+	| null
+>(null);
+
+const premiumOpen = ref(false);
+const canOpenPremium = computed(() => {
+	if (!props.quest.premium) return true;
+	return user.value?.account.account_type !== 'FREE';
+});
+
+watch(
+	() => props.open,
+	(isOpen) => {
+		if (!isOpen) {
+			stepOpen.value = false;
+			openStep.value = null;
+			return;
+		}
+
+		if (props.quest.premium && !canOpenPremium.value) {
+			premiumOpen.value = true;
+			emit('update:open', false);
+		}
+	},
+	{ immediate: true }
+);
+
+watch(stepOpen, (isOpen) => {
+	if (!isOpen) openStep.value = null;
+});
+
+watch(premiumOpen, (isOpen) => {
+	if (!isOpen && props.open && props.quest.premium && !canOpenPremium.value) {
+		emit('update:open', false);
+	}
+});
+</script>
