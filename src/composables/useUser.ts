@@ -474,8 +474,8 @@ export function useUser(identifier: string) {
 	const fetchPoints = async () => await userStore.fetchPoints(identifier);
 
 	const quest = computed(() => userStore.quest.get(identifier));
-	const fetchQuest = async (force: boolean = false) =>
-		await userStore.fetchQuest(identifier, force);
+	const fetchUserQuest = async (force: boolean = false) =>
+		await userStore.fetchUserQuest(identifier, force);
 	const fetchQuestStep = async (index: number) => await userStore.fetchQuestStep(identifier, index);
 	const startQuest = async (questId: string, override: boolean = false) =>
 		await userStore.startQuest(identifier, questId, override);
@@ -491,6 +491,7 @@ export function useUser(identifier: string) {
 		lng: number | null
 	) => await userStore.updateQuest(identifier, stepResponse, lat, lng);
 	const endQuest = async () => await userStore.endQuest(identifier);
+	const fetchQuest = async (questId: string) => await userStore.fetchQuest(questId);
 	const questHistory = computed(
 		() => userStore.questHistory.get(identifier) || new Map<string, QuestHistoryEntry>()
 	);
@@ -526,12 +527,13 @@ export function useUser(identifier: string) {
 		pointsHistory,
 		fetchPoints,
 		quest,
-		fetchQuest,
+		fetchUserQuest,
 		fetchQuestStep,
 		startQuest,
 		updateQuest,
 		endQuest,
 		questHistory,
+		fetchQuest,
 		fetchQuestHistory,
 		setAccountType
 	};

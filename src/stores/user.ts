@@ -210,7 +210,7 @@ export const useUserStore = defineStore('user', () => {
 		return [0, []];
 	};
 
-	const fetchQuest = async (
+	const fetchUserQuest = async (
 		identifier: string,
 		force: boolean = false
 	): Promise<UserQuestProgress | null> => {
@@ -303,7 +303,7 @@ export const useUserStore = defineStore('user', () => {
 		}
 
 		if (res.data.validated) {
-			await fetchQuest(identifier, true);
+			await fetchUserQuest(identifier, true);
 		}
 
 		return res.data;
@@ -360,6 +360,22 @@ export const useUserStore = defineStore('user', () => {
 
 		questsList.value = [];
 		return [];
+	};
+
+	const fetchQuest = async (questId: string): Promise<Quest | null> => {
+		const authStore = useAuthStore();
+		const res = await makeAPIRequest<Quest>(
+			`quest-${questId}`,
+			`/v2/users/quests?id=${questId}`,
+			authStore.sessionToken
+		);
+
+		const quest = res.success && res.data && !('message' in res.data) ? res.data : null;
+		if (quest && questsList.value) {
+			questsList.value.push(quest);
+		}
+
+		return quest;
 	};
 
 	const setAccountType = async (identifier: string, type: User['account']['account_type']) => {
@@ -443,13 +459,14 @@ export const useUserStore = defineStore('user', () => {
 		fetchBadges,
 		fetchEventSubmissions,
 		fetchPoints,
-		fetchQuest,
+		fetchUserQuest,
 		fetchQuestStep,
 		startQuest,
 		updateQuest,
 		endQuest,
 		fetchQuestHistory,
 		fetchQuestsList,
+		fetchQuest,
 		setAccountType,
 		clear
 	};

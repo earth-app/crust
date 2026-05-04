@@ -272,7 +272,7 @@ const emit = defineEmits<{
 }>();
 
 const { user } = useAuth();
-const { quest, questHistory, fetchQuest, startQuest, endQuest } = useUser(user.value?.id || '');
+const { quest, questHistory, fetchUserQuest, startQuest, endQuest } = useUser(user.value?.id || '');
 const toast = useToast();
 
 const loading = ref(false);
@@ -280,7 +280,7 @@ const now = ref(Date.now());
 let _nowTimer: ReturnType<typeof setInterval>;
 
 onMounted(() => {
-	fetchQuest();
+	fetchUserQuest();
 	_nowTimer = setInterval(() => {
 		now.value = Date.now();
 	}, 10_000);
@@ -325,7 +325,7 @@ async function handleStart(override: boolean = false) {
 	loading.value = true;
 	try {
 		const res = await startQuest(props.quest.id, override);
-		await fetchQuest(true);
+		await fetchUserQuest(true);
 		toast.add({
 			title: 'Quest started!',
 			description: res.message,
@@ -350,7 +350,7 @@ async function handleEnd() {
 	loading.value = true;
 	try {
 		const res = await endQuest();
-		await fetchQuest(true);
+		await fetchUserQuest(true);
 		toast.add({ title: 'Quest ended', description: res.message, color: 'neutral', duration: 3000 });
 	} catch (e: any) {
 		toast.add({
@@ -438,6 +438,10 @@ function getIcon(type: string) {
 			return 'mdi:camera-image';
 		case 'take_photo_objects':
 			return 'mdi:camera-gopro';
+		case 'take_photo_list':
+			return 'mdi:camera-burst';
+		case 'take_photo_validation':
+			return 'mdi:camera-switch';
 		case 'draw_picture':
 			return 'mdi:pen';
 		case 'attend_event':

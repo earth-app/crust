@@ -73,14 +73,14 @@
 <script setup lang="ts">
 const { user } = useAuth();
 const { quests, fetchQuests } = useQuests();
-const { quest, fetchQuest, questHistory, fetchQuestHistory } = useUser(user.value?.id || '');
+const { quest, fetchUserQuest, questHistory, fetchQuestHistory } = useUser(user.value?.id || '');
 
 watch(
 	() => user.value,
 	(newUser) => {
 		if (newUser) {
 			fetchQuests();
-			fetchQuest();
+			fetchUserQuest();
 			fetchQuestHistory();
 		} else if (newUser === null) {
 			navigateTo('/login');
