@@ -165,6 +165,13 @@
 				</div>
 			</template>
 
+			<template v-else-if="category === 'describe_text'">
+				<UserQuestStepText
+					:disabled="!step.isCurrentQuest || !step.isCurrentStep"
+					@capture="emit('submitted')"
+				/>
+			</template>
+
 			<template v-else-if="category === 'match_terms'">
 				<UserQuestStepMatcher
 					:step="step"
@@ -238,6 +245,8 @@ const category = computed(() => {
 		case 'take_photo_classification':
 		case 'take_photo_caption':
 		case 'take_photo_objects':
+		case 'take_photo_list':
+		case 'take_photo_validation':
 			return 'photo';
 		case 'draw_picture':
 			return 'draw_picture';
@@ -247,6 +256,8 @@ const category = computed(() => {
 			return 'match_terms';
 		case 'order_items':
 			return 'order_items';
+		case 'describe_text':
+			return 'describe_text';
 		default:
 			return props.step.type;
 	}

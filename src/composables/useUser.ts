@@ -491,7 +491,6 @@ export function useUser(identifier: string) {
 		lng: number | null
 	) => await userStore.updateQuest(identifier, stepResponse, lat, lng);
 	const endQuest = async () => await userStore.endQuest(identifier);
-	const fetchQuest = async (questId: string) => await userStore.fetchQuest(questId);
 	const questHistory = computed(
 		() => userStore.questHistory.get(identifier) || new Map<string, QuestHistoryEntry>()
 	);
@@ -533,7 +532,6 @@ export function useUser(identifier: string) {
 		updateQuest,
 		endQuest,
 		questHistory,
-		fetchQuest,
 		fetchQuestHistory,
 		setAccountType
 	};
@@ -542,10 +540,12 @@ export function useUser(identifier: string) {
 export function useQuests() {
 	const userStore = useUserStore();
 	const quests = computed(() => userStore.questsList);
+	const fetchQuest = async (questId: string) => await userStore.fetchQuest(questId);
 	const fetchQuests = async () => await userStore.fetchQuestsList();
 
 	return {
 		quests,
+		fetchQuest,
 		fetchQuests
 	};
 }
