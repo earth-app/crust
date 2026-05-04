@@ -29,6 +29,50 @@
 				:activity="activity"
 				v-model:open="editing"
 			/>
+
+			<div class="ml-2 mt-2">
+				<UButton
+					v-if="questState === 'not_started'"
+					color="success"
+					@click="questOpen = true"
+				>
+					<UIcon name="mdi:sword-cross" />
+					View Quest
+				</UButton>
+
+				<UButton
+					v-else-if="questState === 'in_progress'"
+					color="warning"
+					@click="questOpen = true"
+				>
+					<UIcon name="mdi:shield-sword" />
+					Continue Quest
+				</UButton>
+
+				<UButton
+					v-else-if="questState === 'completed'"
+					color="primary"
+					variant="outline"
+					@click="questOpen = true"
+				>
+					<UIcon name="mdi:shield-crown-outline" />
+					View Completed Quest
+				</UButton>
+
+				<LazyUserQuestModal
+					v-if="quest"
+					v-model:open="questOpen"
+					:quest="quest"
+					:progress="
+						questState === 'completed'
+							? completedQuestProgress?.progress
+							: inProgressQuestProgress?.progress
+					"
+					:completed-at="
+						questState === 'completed' ? completedQuestProgress?.completedAt : undefined
+					"
+				/>
+			</div>
 		</div>
 		<h3
 			id="activity-description"
@@ -252,4 +296,74 @@ const activityTour: SiteTourStep[] = [
 		footer: 'Enjoy exploring the activity!'
 	}
 ];
+
+// activity quest
+
+const { fetchQuest } = useQuests();
+const quest = ref<Quest | null>(null);
+const questOpen = ref(false);
+const questState = ref<'not_started' | 'completed' | 'in_progress' | null>(null);
+const inProgressQuestProgress = ref<UserQuestProgress | null>(null);
+const completedQuestProgress = ref<QuestHistoryEntry | null>(null);
+
+async function loadQuest() {
+	const questId = `activity_quest_${props.activity.id}`;
+	if (!quest.value) {
+		quest.value = await fetchQuest(questId);
+		if (!quest.value) {
+			// no quest for this activity
+			questState.value = null;
+			console.warn(`No quest found for activity "${props.activity.id}"`);
+			return;
+		}
+	}
+
+	if (!user.value) return;
+
+	// load user's progress on this quest
+	const {
+		quest: currentQuest,
+		fetchUserQuest,
+		questHistory,
+		fetchQuestHistory
+	} = useUser(user.value?.id);
+	const currentProgress = currentQuest.value || (await fetchUserQuest());
+
+	if (quest.value.id === currentProgress?.questId) {
+		if (currentProgress.completed) {
+			questState.value = 'completed';
+			completedQuestProgress.value = questHistory.value?.get(questId) || null;
+		} else {
+			questState.value = 'in_progress';
+			inProgressQuestProgress.value = currentProgress;
+		}
+	} else {
+		const history = questHistory.value || (await fetchQuestHistory());
+		const completedEntry = history.get(questId);
+		questState.value = completedEntry ? 'completed' : 'not_started';
+
+		if (completedEntry) {
+			completedQuestProgress.value = completedEntry;
+		}
+	}
+}
+
+watch(
+	() => user.value,
+	(newUser) => {
+		if (newUser) {
+			loadQuest();
+		} else {
+			quest.value = null;
+			questState.value = null;
+			inProgressQuestProgress.value = null;
+			completedQuestProgress.value = null;
+		}
+	},
+	{ immediate: true }
+);
+
+onMounted(() => {
+	loadQuest();
+});
 </script>
