@@ -1,10 +1,10 @@
 <template>
 	<div
-		class="relative flex flex-col items-center w-full min-h-80 rounded-2xl overflow-hidden bg-neutral-950 border-4 border-neutral-900/50"
+		class="relative flex flex-col items-center w-full! min-h-80! rounded-2xl! overflow-hidden! bg-neutral-950 border-4! border-neutral-900/50!"
 	>
 		<div
 			v-if="stage === 'permission'"
-			class="absolute inset-0 flex flex-col items-center justify-center gap-5 p-8 text-center"
+			class="absolute inset-0 flex flex-col items-center justify-center gap-5! p-8! text-center!"
 		>
 			<div
 				class="w-20 h-20 rounded-full border-2 border-primary flex items-center justify-center animate-mic-pulse"
@@ -14,14 +14,14 @@
 					class="text-3xl text-primary"
 				/>
 			</div>
-			<p class="text-[0.8rem] font-semibold tracking-[0.12em] uppercase text-neutral-100">
+			<p class="text-[0.8rem]! font-semibold! tracking-[0.12em] uppercase text-neutral-100!">
 				Microphone Access Required
 			</p>
-			<p class="text-[0.72rem] text-neutral-500 leading-[1.65]">
+			<p class="text-[0.72rem]! text-neutral-500! leading-[1.65]!">
 				Direct microphone only.<br />No file uploads permitted.
 			</p>
 			<button
-				class="mt-2 px-6 py-2.5 rounded-xl bg-neutral-800 text-white text-sm font-medium tracking-wide"
+				class="mt-2! px-6! py-2.5! rounded-xl! bg-neutral-800! text-white text-sm! font-medium! tracking-wide!"
 				@click="requestPermission"
 			>
 				Enable Microphone
@@ -30,16 +30,16 @@
 
 		<div
 			v-else-if="stage === 'error'"
-			class="absolute inset-0 flex flex-col items-center justify-center gap-5 p-8 text-center"
+			class="absolute inset-0 flex flex-col items-center justify-center gap-5! p-8! text-center!"
 		>
 			<UIcon
 				name="i-lucide-mic-off"
 				class="size-14 text-red-400"
 			/>
-			<p class="text-sm font-medium text-red-400">Microphone Unavailable</p>
-			<p class="text-xs text-neutral-500 leading-relaxed">{{ errorMsg }}</p>
+			<p class="text-sm! font-medium! text-red-400!">Microphone Unavailable</p>
+			<p class="text-xs! text-neutral-500! leading-relaxed!">{{ errorMsg }}</p>
 			<button
-				class="mt-2 px-6 py-2 rounded-xl border border-neutral-700 text-white text-sm"
+				class="mt-2! px-6! py-2! rounded-xl! border border-neutral-700 text-white text-sm!"
 				@click="requestPermission"
 			>
 				Try Again
@@ -64,25 +64,25 @@
 
 			<span
 				v-if="stage === 'recording'"
-				class="text-3xl font-mono text-white tabular-nums"
+				class="text-3xl! font-mono! text-white! tabular-nums!"
 				>{{ formatTime(elapsed) }}</span
 			>
 			<span
 				v-else
-				class="text-sm text-neutral-500"
+				class="text-sm! text-neutral-500!"
 				>Tap to start recording</span
 			>
 
 			<button
 				v-if="stage === 'recording'"
-				class="size-16 rounded-full border-4 border-red-500 flex items-center justify-center active:scale-90 transition-transform"
+				class="size-16! rounded-full! border-4! border-red-500! flex items-center justify-center! active:scale-90 transition-transform!"
 				@click="stopRecording"
 			>
 				<span class="w-5 h-5 bg-red-500 rounded-sm" />
 			</button>
 			<button
 				v-else
-				class="size-16 rounded-full border-4 flex items-center justify-center transition-all"
+				class="size-16! rounded-full! border-4! flex items-center justify-center! transition-all!"
 				:class="
 					props.disabled
 						? 'border-primary/30 opacity-40 cursor-not-allowed'
@@ -97,27 +97,27 @@
 
 		<div
 			v-else-if="stage === 'preview'"
-			class="absolute inset-0 flex flex-col items-center justify-center gap-5 p-8"
+			class="absolute inset-0 flex flex-col items-center justify-center gap-5! p-8!"
 		>
 			<UIcon
 				name="i-lucide-audio-waveform"
 				class="size-12 text-primary"
 			/>
-			<span class="text-sm text-neutral-300">{{ formatTime(elapsed) }} recorded</span>
+			<span class="text-sm! text-neutral-300!">{{ formatTime(elapsed) }} recorded</span>
 			<audio
 				:src="previewUrl"
 				controls
-				class="w-full rounded-lg"
+				class="w-full! rounded-lg!"
 			/>
-			<div class="flex gap-4 mt-1">
+			<div class="flex gap-4! mt-1!">
 				<button
-					class="px-5 py-2 rounded-xl border border-red-500/50 text-red-400 text-sm active:scale-95 transition-transform"
+					class="px-5! py-2! rounded-xl! border border-red-500/50 text-red-400 text-sm! active:scale-95 transition-transform!"
 					@click="retake"
 				>
 					Retake
 				</button>
 				<button
-					class="px-5 py-2 rounded-xl font-semibold text-sm transition-all"
+					class="px-5! py-2! rounded-xl! font-semibold! text-sm! transition-all!"
 					:class="
 						props.disabled
 							? 'bg-success/30 text-neutral-600 cursor-not-allowed'

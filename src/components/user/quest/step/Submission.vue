@@ -1,17 +1,17 @@
 <template>
 	<div
 		v-if="step"
-		class="flex flex-col items-center p-4 min-h-160 w-full"
+		class="flex flex-col items-center p-4! min-h-160 w-full"
 	>
-		<div class="flex flex-col items-center mt-4 text-center gap-1">
+		<div class="flex flex-col items-center mt-4! text-center gap-1!">
 			<UIcon
 				:name="step.icon"
 				class="size-16"
 			/>
-			<h2 class="text-lg font-semibold opacity-90">{{ step.description }}</h2>
+			<h2 class="text-lg! font-semibold! opacity-90!">{{ step.description }}</h2>
 			<h3
 				v-if="step.reward"
-				class="text-sm text-neutral-500"
+				class="text-sm! text-neutral-500"
 			>
 				+{{ step.reward }} Bonus Points
 			</h3>
@@ -19,29 +19,29 @@
 
 		<h2
 			v-if="!step.isCurrentQuest && !step.completed"
-			class="text-sm text-neutral-500 mb-2"
+			class="text-sm! text-neutral-500 mb-2!"
 		>
 			Start this quest to unlock the step interface.
 		</h2>
 		<h2
 			v-else-if="!step.isCurrentStep && !step.completed"
-			class="text-sm text-neutral-500 mb-2"
+			class="text-sm! text-neutral-500 mb-2!"
 		>
 			Complete previous steps to unlock this step.
 		</h2>
 
-		<div class="flex flex-col items-center justify-center mt-6 w-full gap-4">
+		<div class="flex flex-col items-center justify-center mt-6! w-full gap-4!">
 			<div
 				v-if="step.completed"
-				class="flex flex-col items-center py-8 w-full"
+				class="flex flex-col items-center py-8! w-full"
 			>
-				<div class="flex flex-col items-center my-2">
+				<div class="flex flex-col items-center my-2!">
 					<UIcon
 						name="i-lucide-circle-check"
 						class="size-14 text-success"
 					/>
-					<span class="text-base font-medium">Already completed</span>
-					<span class="text-sm opacity-90">{{ completedAt }}</span>
+					<span class="text-base! font-medium">Already completed</span>
+					<span class="text-sm! opacity-90">{{ completedAt }}</span>
 				</div>
 
 				<div
@@ -52,18 +52,21 @@
 						v-if="progress.data && (category === 'photo' || category === 'draw_picture')"
 						:src="progress.data"
 						alt="Submitted image"
-						class="mt-3 max-w-full max-h-72 rounded-lg object-contain border border-neutral-200 dark:border-neutral-700"
+						class="mt-3 max-w-full max-h-72! rounded-lg! object-contain border border-neutral-200 dark:border-neutral-700"
 					/>
 					<audio
 						v-else-if="progress.data && category === 'audio'"
 						:src="progress.data"
 						controls
-						class="mt-3 w-full max-w-sm"
+						class="mt-3 w-full max-w-sm!"
 					/>
-					<ArticleCard
-						v-else-if="step.type === 'article_quiz' && stepArticle"
-						:article="stepArticle"
-					/>
+					<div
+						v-else-if="category === 'article_quiz' && step.type === 'article_quiz' && stepArticle"
+						class="flex flex-col items-center gap-3 py-4 px-6 border border-neutral-200 dark:border-neutral-700 rounded-lg"
+					>
+						<h3 class="text-md! font-semibold">{{ stepArticle.title }}</h3>
+						<p class="text-sm! opacity-90">{{ trimString(stepArticle.description, 200) }}</p>
+					</div>
 				</div>
 
 				<Score
@@ -87,7 +90,7 @@
 
 				<div
 					v-else-if="submitting"
-					class="flex flex-col items-center gap-3 py-8"
+					class="flex flex-col items-center gap-3 py-8!"
 				>
 					<UIcon
 						name="i-lucide-upload"
@@ -98,13 +101,13 @@
 
 				<div
 					v-else-if="succeeded"
-					class="flex flex-col items-center gap-3 py-8"
+					class="flex flex-col items-center gap-3 py-8!"
 				>
 					<UIcon
 						name="i-lucide-circle-check"
-						class="size-14 text-success"
+						class="size-14 text-success!"
 					/>
-					<span class="text-base font-medium">Step complete!</span>
+					<span class="text-base! font-medium!">Step complete!</span>
 				</div>
 			</template>
 
@@ -123,7 +126,7 @@
 						name="i-lucide-upload"
 						class="size-10 animate-bounce text-primary"
 					/>
-					<span class="text-sm opacity-70">Validating drawing…</span>
+					<span class="text-sm! opacity-70">Validating drawing…</span>
 				</div>
 				<div
 					v-else-if="succeeded"
@@ -133,7 +136,7 @@
 						name="i-lucide-circle-check"
 						class="size-14 text-success"
 					/>
-					<span class="text-base font-medium">Step complete!</span>
+					<span class="text-base! font-medium">Step complete!</span>
 				</div>
 			</template>
 
@@ -145,13 +148,13 @@
 				/>
 				<div
 					v-else-if="submitting"
-					class="flex flex-col items-center gap-3 py-8"
+					class="flex flex-col items-center gap-3 py-8!"
 				>
 					<UIcon
 						name="i-lucide-upload"
-						class="size-10 animate-bounce text-primary"
+						class="size-10 animate-bounce text-primary!"
 					/>
-					<span class="text-sm opacity-70">Validating recording…</span>
+					<span class="text-sm! opacity-70">Validating recording…</span>
 				</div>
 				<div
 					v-else-if="succeeded"
@@ -161,7 +164,7 @@
 						name="i-lucide-circle-check"
 						class="size-14 text-success"
 					/>
-					<span class="text-base font-medium">Step complete!</span>
+					<span class="text-base! font-medium!">Step complete!</span>
 				</div>
 			</template>
 
@@ -194,7 +197,7 @@
 						name="i-lucide-info"
 						class="size-10"
 					/>
-					<span class="text-sm">This step is completed through its dedicated interface.</span>
+					<span class="text-sm!">This step is completed through its dedicated interface.</span>
 				</div>
 			</template>
 

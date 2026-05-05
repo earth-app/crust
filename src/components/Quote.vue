@@ -7,10 +7,10 @@
 		/>
 		<p class="font-medium text-lg bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
 			"{{ text }}" -
-			<NuxtLink
-				:to="`/profile/@${username || 'cloud'}`"
+			<a
+				:href="`/profile/@${username || 'cloud'}`"
 				class="text-blue-600 font-semibold"
-				>@${username || 'cloud'}</NuxtLink
+				>@{{ username || 'cloud' }}</a
 			>
 		</p>
 		<p

@@ -1,8 +1,8 @@
 <template>
-	<div class="flex flex-col w-full select-none gap-4">
+	<div class="flex flex-col w-full! select-none! gap-4!">
 		<div
 			v-if="phase === 'countdown'"
-			class="flex items-center justify-center min-h-80"
+			class="flex items-center justify-center min-h-80!"
 		>
 			<svg
 				v-if="props.disabled"
@@ -37,11 +37,11 @@
 		</div>
 
 		<template v-else-if="phase === 'playing'">
-			<div class="flex items-center gap-2">
-				<span class="text-xs font-mono tabular-nums w-6">{{ timeLeft }}s</span>
-				<div class="flex-1 h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+			<div class="flex items-center gap-2!">
+				<span class="text-xs! font-mono! tabular-nums! w-6!">{{ timeLeft }}s</span>
+				<div class="flex-1! h-1.5! bg-neutral-800! rounded-full! overflow-hidden!">
 					<div
-						class="h-full bg-primary rounded-full transition-all duration-1000"
+						class="h-full! bg-primary! rounded-full! transition-all duration-1000"
 						:style="{ width: `${(timeLeft / 60) * 100}%` }"
 					/>
 				</div>
@@ -49,45 +49,45 @@
 
 			<p
 				v-if="step.description"
-				class="text-sm text-neutral-300 text-center"
+				class="text-sm! text-neutral-300! text-center!"
 			>
 				{{ step.description }}
 			</p>
 
-			<div class="flex flex-col gap-1.5">
-				<p class="text-xs text-neutral-500 uppercase tracking-wider">Order</p>
+			<div class="flex flex-col gap-1.5!">
+				<p class="text-xs! text-neutral-500! uppercase tracking-wider!">Order</p>
 				<div
 					v-for="(slot, i) in slots"
 					:key="i"
-					class="flex items-center gap-2 min-h-12 rounded-xl border-2 px-3 py-2 transition-all duration-150"
+					class="flex items-center gap-2! min-h-12! rounded-xl! border-2! px-3! py-2! transition-all duration-150"
 					:class="slotClass(slot, i)"
 					@click="placeOrRemove(i)"
 					@dragover.prevent="dragOverSlot = i"
 					@dragleave="dragOverSlot = null"
 					@drop.prevent="onDropSlot(i)"
 				>
-					<span class="text-xs text-neutral-500 w-4 shrink-0 tabular-nums">{{ i + 1 }}</span>
+					<span class="text-xs! text-neutral-500! w-4! shrink-0 tabular-nums!">{{ i + 1 }}</span>
 					<span
 						v-if="slot"
-						class="text-sm font-medium text-white"
+						class="text-sm! font-medium! text-white!"
 						>{{ slot }}</span
 					>
 					<span
 						v-else
-						class="text-xs italic"
+						class="text-xs! italic!"
 						:class="selectedTile || dragOverSlot === i ? 'text-primary/70' : 'text-neutral-600'"
 						>{{ selectedTile || dragOverSlot === i ? 'Drop here' : 'Empty' }}</span
 					>
 				</div>
 			</div>
 
-			<div class="flex flex-col gap-1.5">
-				<p class="text-xs text-neutral-500 uppercase tracking-wider">Items</p>
-				<div class="flex flex-wrap gap-2">
+			<div class="flex flex-col gap-1.5!">
+				<p class="text-xs! text-neutral-500! uppercase tracking-wider!">Items</p>
+				<div class="flex flex-wrap gap-2!">
 					<button
 						v-for="tile in bank"
 						:key="tile"
-						class="px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-150 cursor-grab active:cursor-grabbing"
+						class="px-3! py-2! rounded-xl! border-2! text-sm! font-medium! transition-all duration-150 cursor-grab active:cursor-grabbing!"
 						:class="
 							selectedTile === tile
 								? 'border-primary bg-primary/20 text-white scale-105'
@@ -102,7 +102,7 @@
 					</button>
 					<span
 						v-if="bank.length === 0"
-						class="text-xs text-neutral-600 italic py-2"
+						class="text-xs! text-neutral-600! italic! py-2!"
 						>All placed</span
 					>
 				</div>
@@ -111,28 +111,28 @@
 
 		<div
 			v-else-if="phase === 'win'"
-			class="flex flex-col items-center gap-4 py-12"
+			class="flex flex-col items-center gap-4! py-12!"
 		>
 			<UIcon
 				name="i-lucide-list-ordered"
 				class="size-16 text-success"
 			/>
-			<h3 class="text-xl font-bold">Correct Order!</h3>
-			<p class="text-sm text-neutral-400">Completed in {{ 60 - timeLeft }}s</p>
+			<h3 class="text-xl! font-bold!">Correct Order!</h3>
+			<p class="text-sm! text-neutral-400!">Completed in {{ 60 - timeLeft }}s</p>
 		</div>
 
 		<div
 			v-else-if="phase === 'lose'"
-			class="flex flex-col items-center gap-4 py-12"
+			class="flex flex-col items-center gap-4! py-12!"
 		>
 			<UIcon
 				name="i-lucide-timer-off"
 				class="size-14 text-red-400"
 			/>
-			<h3 class="text-xl font-bold text-red-400">Time's up!</h3>
-			<p class="text-sm text-neutral-400">Better luck next time.</p>
+			<h3 class="text-xl! font-bold! text-red-400!">Time's up!</h3>
+			<p class="text-sm! text-neutral-400!">Better luck next time.</p>
 			<button
-				class="mt-2 px-6 py-2 rounded-xl border border-neutral-700 bg-neutral-900 text-white text-sm font-medium active:scale-95 transition-transform"
+				class="mt-2! px-6! py-2! rounded-xl! border border-neutral-700 bg-neutral-900 text-white text-sm! font-medium! active:scale-95 transition-transform"
 				@click="init"
 			>
 				Try Again

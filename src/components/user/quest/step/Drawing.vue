@@ -1,12 +1,12 @@
 <template>
-	<div class="flex flex-col w-full select-none touch-none">
+	<div class="flex flex-col w-full! select-none! touch-none!">
 		<div
-			class="relative w-full bg-white rounded-xl overflow-hidden"
+			class="relative w-full! bg-white! rounded-xl! overflow-hidden!"
 			style="aspect-ratio: 1/1"
 		>
 			<canvas
 				ref="canvasEl"
-				class="absolute inset-0 w-full h-full touch-none"
+				class="absolute inset-0 w-full! h-full! touch-none!"
 				@pointerdown.prevent="onDown"
 				@pointermove.prevent="onMove"
 				@pointerup="onUp"
@@ -14,7 +14,7 @@
 				@pointercancel="onUp"
 			/>
 			<template v-if="props.disabled">
-				<div class="absolute inset-0 bg-red-500/8 pointer-events-none" />
+				<div class="absolute inset-0 bg-red-500/8! pointer-events-none!" />
 				<svg
 					class="absolute inset-0 w-full h-full pointer-events-none"
 					viewBox="0 0 100 100"
@@ -43,12 +43,12 @@
 			</template>
 		</div>
 
-		<div class="mt-3 px-1 flex flex-col gap-2">
+		<div class="mt-3! px-1! flex flex-col gap-2!">
 			<div class="flex gap-1.5 flex-wrap items-center">
 				<button
 					v-for="c in RAINBOW"
 					:key="c"
-					class="w-7 h-7 rounded-full border-[3px] shrink-0 transition-transform duration-100"
+					class="w-7! h-7! rounded-full! border-[3px]! shrink-0 transition-transform duration-100"
 					:style="{
 						background: c,
 						borderColor:
@@ -61,33 +61,33 @@
 					@click="selectColor(c)"
 				/>
 				<label
-					class="relative w-7 h-7 rounded-full overflow-hidden cursor-pointer shrink-0 border-[3px]"
+					class="relative w-7! h-7! rounded-full! overflow-hidden! cursor-pointer shrink-0 border-[3px]!"
 					:style="{ borderColor: isCustom && tool !== 'eraser' ? '#d4d4d4' : '#404040' }"
 				>
 					<span
-						class="absolute inset-0 rounded-full"
+						class="absolute inset-0 rounded-full!"
 						:style="{ background: customColor }"
 					/>
 					<input
 						type="color"
 						v-model="customColor"
-						class="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+						class="absolute inset-0 opacity-0! w-full! h-full! cursor-pointer!"
 						@change="selectColor(customColor)"
 					/>
 				</label>
 			</div>
 
 			<!-- Sizes + opacity -->
-			<div class="flex items-center gap-1.5">
+			<div class="flex items-center gap-1.5!">
 				<button
 					v-for="s in SIZES"
 					:key="s"
-					class="w-8 h-8 flex items-center justify-center rounded-lg border shrink-0 transition-colors"
+					class="w-8! h-8! flex items-center justify-center rounded-lg! border! shrink-0 transition-colors"
 					:class="penSize === s ? 'border-white/70 bg-white/15' : 'border-neutral-700'"
 					@click="penSize = s"
 				>
 					<span
-						class="rounded-full bg-white block"
+						class="rounded-full! bg-white! block!"
 						:style="{ width: `${Math.round(s / 2)}px`, height: `${Math.round(s / 2)}px` }"
 					/>
 				</button>
@@ -97,10 +97,10 @@
 					min="0.1"
 					max="1"
 					step="0.05"
-					class="flex-1 h-1 accent-white ml-1"
+					class="flex-1! h-1! accent-white! ml-1!"
 					aria-label="Opacity"
 				/>
-				<span class="text-xs text-neutral-400 w-7 text-right tabular-nums"
+				<span class="text-xs! text-neutral-400! w-7! text-right! tabular-nums!"
 					>{{ Math.round(opacity * 100) }}%</span
 				>
 			</div>
@@ -109,7 +109,7 @@
 				<button
 					v-for="s in SHAPES"
 					:key="s.id"
-					class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs border transition-colors"
+					class="flex items-center gap-1! px-2! py-1.5! rounded-lg! text-xs! border! transition-colors"
 					:class="
 						tool === s.id
 							? 'border-white/60 bg-white/15 text-white'
@@ -129,7 +129,7 @@
 				<button
 					v-for="t in TOOLS"
 					:key="t.id"
-					class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs border transition-colors"
+					class="flex items-center gap-1! px-2! py-1.5! rounded-lg! text-xs! border! transition-colors"
 					:class="
 						tool === t.id
 							? 'border-white/60 bg-white/15 text-white'
@@ -143,9 +143,9 @@
 					/>
 					{{ t.label }}
 				</button>
-				<div class="flex-1" />
+				<div class="flex-1!" />
 				<button
-					class="p-1.5 rounded-lg border border-neutral-700 transition-colors"
+					class="p-1.5! rounded-lg! border border-neutral-700 transition-colors"
 					:class="canUndo ? 'text-neutral-300' : 'text-neutral-600 cursor-not-allowed'"
 					:disabled="!canUndo"
 					@click="undo"
@@ -156,7 +156,7 @@
 					/>
 				</button>
 				<button
-					class="p-1.5 rounded-lg border border-red-900/60 text-red-400"
+					class="p-1.5! rounded-lg! border border-red-900/60 text-red-400!"
 					@click="clearCanvas"
 				>
 					<UIcon
@@ -165,7 +165,7 @@
 					/>
 				</button>
 				<button
-					class="px-3 py-1.5 rounded-lg font-semibold text-xs transition-colors"
+					class="px-3! py-1.5! rounded-lg! font-semibold! text-xs! transition-colors"
 					:class="
 						props.disabled
 							? 'bg-success/30 text-neutral-600 cursor-not-allowed'

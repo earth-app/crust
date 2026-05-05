@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="relative min-h-96 min-w-1/4 aspect-3/4 overflow-hidden bg-neutral-950 border-8 border-neutral-900/40 rounded-2xl p-8"
+		class="relative min-h-96 min-w-1/4 aspect-3/4 overflow-hidden bg-neutral-950 border-8 border-neutral-900/40 rounded-2xl! p-8!"
 	>
 		<canvas
 			ref="canvasEl"
@@ -19,14 +19,14 @@
 					class="text-3xl text-lime-400"
 				/>
 			</div>
-			<p class="text-[0.8rem] font-semibold tracking-[0.12em] uppercase text-neutral-100">
+			<p class="text-[0.8rem]! font-semibold! tracking-[0.12em] uppercase text-neutral-100!">
 				Camera Access Required
 			</p>
 			<p class="text-[0.72rem] text-neutral-500 leading-[1.65]">
 				This component uses your camera directly.<br />No file uploads are permitted.
 			</p>
 			<button
-				class="mt-2 px-6 py-2.5 rounded-xl bg-neutral-800 text-white text-sm font-medium tracking-wide"
+				class="mt-2! px-6! py-2.5! rounded-xl! bg-neutral-800! text-white text-sm! font-medium! tracking-wide"
 				@click="startCamera"
 			>
 				Enable Camera
@@ -43,12 +43,12 @@
 					class="text-3xl text-red-400"
 				/>
 			</div>
-			<p class="text-[0.8rem] font-medium tracking-[0.12em] uppercase text-red-400">
+			<p class="text-[0.8rem]! font-medium! tracking-[0.12em] uppercase text-red-400!">
 				Camera Unavailable
 			</p>
-			<p class="text-[0.72rem] text-neutral-500 leading-[1.65]">{{ errorMsg }}</p>
+			<p class="text-[0.72rem]! text-neutral-500! leading-[1.65]!">{{ errorMsg }}</p>
 			<button
-				class="mt-2 px-6 py-2 rounded-xl border border-neutral-700 text-white text-sm"
+				class="mt-2! px-6! py-2! rounded-xl! border border-neutral-700 text-white text-sm!"
 				@click="startCamera"
 			>
 				Try Again
@@ -61,7 +61,7 @@
 		>
 			<video
 				ref="videoEl"
-				class="w-full h-full object-cover block"
+				class="w-full! h-full! object-cover! block!"
 				:class="{ '-scale-x-100': facingMode === 'user' }"
 				autoplay
 				playsinline
@@ -97,7 +97,7 @@
 				<div class="w-12 h-12" />
 
 				<button
-					class="shutter relative size-19 rounded-full border-4 border-white bg-transparent transition-transform duration-100"
+					class="shutter relative size-19! rounded-full! border-4! border-white! bg-transparent! transition-transform duration-100"
 					:class="
 						props.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-90'
 					"
@@ -109,7 +109,7 @@
 				</button>
 
 				<button
-					class="w-12 h-12 rounded-full border border-white/20 bg-black/30 backdrop-blur-sm flex items-center justify-center text-white transition-all duration-300"
+					class="w-12! h-12! rounded-full! border border-white/20 bg-black/30 backdrop-blur-sm flex items-center justify-center text-white transition-all duration-300"
 					:class="
 						props.disabled
 							? 'opacity-40 cursor-not-allowed'
@@ -134,7 +134,7 @@
 		>
 			<img
 				:src="previewSrc"
-				class="w-full h-full object-cover block"
+				class="w-full! h-full! object-cover! block!"
 				:class="{ '-scale-x-100': facingMode === 'user' }"
 				alt="Captured photo"
 			/>
@@ -160,7 +160,7 @@
 				style="background: linear-gradient(to top, rgba(0, 0, 0, 0.65), transparent)"
 			>
 				<button
-					class="w-12 h-12 rounded-full border border-red-500/50 bg-black/30 backdrop-blur-sm flex items-center justify-center text-red-400 cursor-pointer hover:border-red-400 transition-colors duration-200"
+					class="w-12! h-12! rounded-full! border border-red-500/50 bg-black/30 backdrop-blur-sm flex items-center justify-center text-red-400 cursor-pointer hover:border-red-400 transition-colors duration-200"
 					aria-label="Retake"
 					@click="rejectPhoto"
 				>
@@ -171,7 +171,7 @@
 				</button>
 
 				<button
-					class="size-19 rounded-full flex items-center justify-center transition-all duration-100 border-none"
+					class="size-19! rounded-full! flex items-center justify-center transition-all duration-100 border-none!"
 					:class="
 						props.disabled
 							? 'bg-lime-400/40 cursor-not-allowed'

@@ -1,8 +1,8 @@
 <template>
-	<div class="flex flex-col w-full select-none gap-3">
+	<div class="flex flex-col w-full! select-none! gap-3!">
 		<div
 			v-if="phase === 'countdown'"
-			class="flex items-center justify-center min-h-80"
+			class="flex items-center justify-center min-h-80!"
 		>
 			<svg
 				v-if="props.disabled"
@@ -37,20 +37,20 @@
 		</div>
 
 		<template v-else-if="phase === 'playing'">
-			<div class="flex items-center gap-2">
-				<span class="text-xs font-mono tabular-nums w-6">{{ timeLeft }}s</span>
-				<div class="flex-1 h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+			<div class="flex items-center gap-2!">
+				<span class="text-xs! font-mono! tabular-nums! w-6!">{{ timeLeft }}s</span>
+				<div class="flex-1! h-1.5! bg-neutral-800! rounded-full! overflow-hidden!">
 					<div
-						class="h-full bg-primary rounded-full transition-all duration-1000"
+						class="h-full! bg-primary! rounded-full! transition-all duration-1000"
 						:style="{ width: `${(timeLeft / 60) * 100}%` }"
 					/>
 				</div>
 			</div>
-			<div class="grid grid-cols-2 gap-2">
+			<div class="grid grid-cols-2 gap-2!">
 				<button
 					v-for="card in cards"
 					:key="card.id"
-					class="p-3 rounded-xl border-2 text-sm font-medium text-center transition-all duration-150 min-h-14 cursor-grab active:cursor-grabbing"
+					class="p-3! rounded-xl! border-2! text-sm! font-medium! text-center! transition-all duration-150 min-h-14! cursor-grab active:cursor-grabbing!"
 					:class="cardClass(card)"
 					:disabled="card.matched || props.disabled"
 					draggable="true"
@@ -67,30 +67,30 @@
 
 		<div
 			v-else-if="phase === 'win'"
-			class="flex flex-col items-center gap-4 py-12"
+			class="flex flex-col items-center gap-4! py-12!"
 		>
 			<UIcon
 				name="i-lucide-trophy"
 				class="size-16 text-success"
 			/>
-			<h3 class="text-xl font-bold">All Matched!</h3>
-			<p class="text-sm text-neutral-400">Completed in {{ 60 - timeLeft }}s</p>
+			<h3 class="text-xl! font-bold!">All Matched!</h3>
+			<p class="text-sm! text-neutral-400!">Completed in {{ 60 - timeLeft }}s</p>
 		</div>
 
 		<div
 			v-else-if="phase === 'lose'"
-			class="flex flex-col items-center gap-4 py-12"
+			class="flex flex-col items-center gap-4! py-12!"
 		>
 			<UIcon
 				name="i-lucide-timer-off"
 				class="size-14 text-red-400"
 			/>
-			<h3 class="text-xl font-bold text-red-400">Time's up!</h3>
-			<p class="text-sm text-neutral-400">
+			<h3 class="text-xl! font-bold! text-red-400!">Time's up!</h3>
+			<p class="text-sm! text-neutral-400!">
 				{{ cards.filter((c) => !c.matched).length / 2 }} pair(s) remaining.
 			</p>
 			<button
-				class="mt-2 px-6 py-2 rounded-xl border border-neutral-700 bg-neutral-900 text-white text-sm font-medium active:scale-95 transition-transform"
+				class="mt-2! px-6! py-2! rounded-xl! border border-neutral-700 bg-neutral-900 text-white text-sm! font-medium! active:scale-95 transition-transform"
 				@click="init"
 			>
 				Try Again
