@@ -31,10 +31,12 @@ export const useUserStore = defineStore('user', () => {
 	const questsList = ref<Quest[] | null>(null);
 
 	const get = (identifier: string): User | undefined => {
+		if (!identifier) return undefined;
 		return cache.get(identifier);
 	};
 
 	const has = (identifier: string): boolean => {
+		if (!identifier) return false;
 		return cache.has(identifier);
 	};
 
@@ -93,6 +95,10 @@ export const useUserStore = defineStore('user', () => {
 	};
 
 	const fetchAttendingEvents = async (identifier: string): Promise<Event[]> => {
+		if (!identifier) {
+			attendingEvents.set(identifier, []);
+			return [];
+		}
 		const authStore = useAuthStore();
 		const res = await paginatedAPIRequest<Event>(
 			`/v2/users/${identifier}/events/attending`,
@@ -109,6 +115,10 @@ export const useUserStore = defineStore('user', () => {
 	};
 
 	const fetchHostingEvents = async (identifier: string): Promise<Event[]> => {
+		if (!identifier) {
+			hostingEvents.set(identifier, []);
+			return [];
+		}
 		const authStore = useAuthStore();
 		const res = await paginatedAPIRequest<Event>(
 			`/v2/users/${identifier}/events`,
@@ -125,6 +135,10 @@ export const useUserStore = defineStore('user', () => {
 	};
 
 	const fetchBadges = async (identifier: string): Promise<UserBadge[]> => {
+		if (!identifier) {
+			badges.set(identifier, []);
+			return [];
+		}
 		const authStore = useAuthStore();
 		const res = await makeAPIRequest<UserBadge[]>(
 			`user-${identifier}-badges`,
@@ -142,6 +156,10 @@ export const useUserStore = defineStore('user', () => {
 	};
 
 	const fetchEventSubmissions = async (identifier: string): Promise<EventImageSubmission[]> => {
+		if (!identifier) {
+			eventSubmissions.set(identifier, []);
+			return [];
+		}
 		const authStore = useAuthStore();
 		const res = await paginatedAPIRequest<EventImageSubmission>(
 			`/v2/users/${identifier}/events/images`,
@@ -189,6 +207,11 @@ export const useUserStore = defineStore('user', () => {
 	};
 
 	const fetchPoints = async (identifier: string): Promise<[number, ImpactPointsChange[]]> => {
+		if (!identifier) {
+			points.set(identifier, 0);
+			pointsHistory.set(identifier, []);
+			return [0, []];
+		}
 		const authStore = useAuthStore();
 		const res = await makeAPIRequest<{
 			points: number;
@@ -214,6 +237,10 @@ export const useUserStore = defineStore('user', () => {
 		identifier: string,
 		force: boolean = false
 	): Promise<UserQuestProgress | null> => {
+		if (!identifier) {
+			quest.delete(identifier);
+			return null;
+		}
 		const authStore = useAuthStore();
 		const res = await makeAPIRequest<UserQuestProgress>(
 			force ? null : `user-${identifier}-quest`,
@@ -234,6 +261,7 @@ export const useUserStore = defineStore('user', () => {
 		identifier: string,
 		index: number
 	): Promise<QuestProgressEntry | null> => {
+		if (!identifier) return null;
 		const authStore = useAuthStore();
 		const res = await makeAPIRequest<QuestProgressEntry>(
 			`user-${identifier}-quest-step-${index}`,
@@ -253,6 +281,7 @@ export const useUserStore = defineStore('user', () => {
 		questId: string,
 		override: boolean = false // override existing progress, if any
 	): Promise<{ message: string }> => {
+		if (!identifier) return { message: 'Invalid identifier' };
 		const authStore = useAuthStore();
 		const res = await makeClientAPIRequest<{ message: string }>(
 			`/v2/users/${identifier}/quest?quest_id=${questId}&override=${override}`,
@@ -310,6 +339,7 @@ export const useUserStore = defineStore('user', () => {
 	};
 
 	const endQuest = async (identifier: string): Promise<{ message: string }> => {
+		if (!identifier) return { message: 'Invalid identifier' };
 		const authStore = useAuthStore();
 		const res = await makeClientAPIRequest<{ message: string }>(
 			`/v2/users/${identifier}/quest`,
@@ -324,6 +354,11 @@ export const useUserStore = defineStore('user', () => {
 	};
 
 	const fetchQuestHistory = async (identifier: string): Promise<Map<string, QuestHistoryEntry>> => {
+		if (!identifier) {
+			const map = new Map();
+			questHistory.set(identifier, map);
+			return map;
+		}
 		const authStore = useAuthStore();
 		const res = await makeAPIRequest<{
 			total: number;
@@ -379,6 +414,8 @@ export const useUserStore = defineStore('user', () => {
 	};
 
 	const setAccountType = async (identifier: string, type: User['account']['account_type']) => {
+		if (!identifier)
+			return Promise.resolve({ success: false, message: 'Invalid identifier' } as any);
 		const authStore = useAuthStore();
 		const res = await makeClientAPIRequest<User>(
 			`/v2/users/${identifier}/account_type?type=${type.toLowerCase()}`,
