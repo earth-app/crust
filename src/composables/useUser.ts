@@ -591,7 +591,13 @@ export function useUser(identifier?: string) {
 
 export function useQuests() {
 	const userStore = useUserStore();
-	const quests = computed(() => userStore.questsList);
+	const quests = computed(() => {
+		if (userStore.questsList === null) return null;
+
+		return Array.from(userStore.questsList)
+			.map((questId) => userStore.questsCache.get(questId))
+			.filter((quest): quest is Quest => quest !== undefined);
+	});
 	const fetchQuest = async (questId: string) => await userStore.fetchQuest(questId);
 	const fetchQuests = async () => await userStore.fetchQuestsList();
 

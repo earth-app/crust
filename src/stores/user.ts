@@ -28,7 +28,8 @@ export const useUserStore = defineStore('user', () => {
 	const pointsHistory = reactive(new Map<string, ImpactPointsChange[]>());
 	const quest = reactive(new Map<string, UserQuestProgress>());
 	const questHistory = reactive(new Map<string, Map<string, QuestHistoryEntry>>());
-	const questsList = ref<Quest[] | null>(null);
+	const questsList = ref<Set<string> | null>(null);
+	const questsCache = reactive(new Map<string, Quest>());
 
 	const get = (identifier: string): User | undefined => {
 		if (!identifier) return undefined;
@@ -389,11 +390,16 @@ export const useUserStore = defineStore('user', () => {
 		);
 
 		if (res.success && res.data && !('message' in res.data)) {
-			questsList.value = res.data.quests;
+			const nextQuests = new Set<string>();
+			for (const quest of res.data.quests) {
+				nextQuests.add(quest.id);
+				questsCache.set(quest.id, quest);
+			}
+			questsList.value = nextQuests;
 			return res.data.quests;
 		}
 
-		questsList.value = [];
+		questsList.value = new Set();
 		return [];
 	};
 
@@ -406,8 +412,11 @@ export const useUserStore = defineStore('user', () => {
 		);
 
 		const quest = res.success && res.data && !('message' in res.data) ? res.data : null;
-		if (quest && questsList.value) {
-			questsList.value.push(quest);
+		if (quest) {
+			questsCache.set(quest.id, quest);
+			if (questsList.value) {
+				questsList.value.add(quest.id);
+			}
 		}
 
 		return quest;
@@ -470,6 +479,7 @@ export const useUserStore = defineStore('user', () => {
 			pointsHistory.clear();
 			quest.clear();
 			questHistory.clear();
+			questsCache.clear();
 			questsList.value = null;
 		}
 	};
@@ -486,6 +496,7 @@ export const useUserStore = defineStore('user', () => {
 		quest,
 		questHistory,
 		questsList,
+		questsCache,
 		get,
 		has,
 		getChipColor,
