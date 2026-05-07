@@ -246,7 +246,12 @@ export const useUserStore = defineStore('user', () => {
 		const res = await makeAPIRequest<UserQuestProgress>(
 			force ? null : `user-${identifier}-quest`,
 			`/v2/users/${identifier}/quest`,
-			authStore.sessionToken
+			authStore.sessionToken,
+			{
+				headers: {
+					'Cache-Control': force ? 'no-cache' : undefined
+				}
+			}
 		);
 
 		if (res.success && res.data && !('message' in res.data)) {
@@ -292,7 +297,12 @@ export const useUserStore = defineStore('user', () => {
 			}
 		);
 
-		if (res.success && res.data && !('message' in res.data)) return res.data;
+		if (res.success && res.data && !('message' in res.data)) {
+			// refresh quest progress after starting new quest
+			await fetchUserQuest(identifier, true);
+			return res.data;
+		}
+
 		return { message: res.data?.message || res.message || 'Failed to start quest' };
 	};
 
@@ -333,6 +343,7 @@ export const useUserStore = defineStore('user', () => {
 		}
 
 		if (res.data.validated) {
+			// refresh quest progress after validating step
 			await fetchUserQuest(identifier, true);
 		}
 
@@ -350,7 +361,12 @@ export const useUserStore = defineStore('user', () => {
 			}
 		);
 
-		if (res.success && res.data && !('message' in res.data)) return res.data;
+		if (res.success && res.data && !('message' in res.data)) {
+			// refresh isn't necessary since we expect the quest to be removed
+			quest.delete(identifier);
+			return res.data;
+		}
+
 		return { message: res.data?.message || res.message || 'Failed to end quest' };
 	};
 

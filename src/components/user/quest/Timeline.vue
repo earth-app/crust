@@ -329,7 +329,6 @@ async function handleStart(override: boolean = false) {
 	loading.value = true;
 	try {
 		const res = await startQuest(props.quest.id, override);
-		await fetchUserQuest(true);
 		toast.add({
 			title: 'Quest started!',
 			description: res.message,
@@ -354,8 +353,13 @@ async function handleEnd() {
 	loading.value = true;
 	try {
 		const res = await endQuest();
-		await fetchUserQuest(true);
-		toast.add({ title: 'Quest ended', description: res.message, color: 'neutral', duration: 3000 });
+		toast.add({
+			title: 'Quest ended',
+			icon: 'mdi:flag-checkered',
+			description: res.message,
+			color: 'neutral',
+			duration: 3000
+		});
 	} catch (e: any) {
 		toast.add({
 			title: 'Failed to end quest',
