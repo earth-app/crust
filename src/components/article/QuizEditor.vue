@@ -11,6 +11,8 @@
 				v-model="q.question"
 				placeholder="Question"
 				class="flex-1"
+				:minlength="5"
+				:maxlength="256"
 				:disabled="props.disabled"
 				@input="emit('update-question', { index: i, question: q })"
 			/>
@@ -31,7 +33,7 @@
 					class="flex flex-col"
 				>
 					<div
-						v-for="(option, j) in q.options"
+						v-for="(_, j) in q.options"
 						class="flex w-full"
 						:key="j"
 					>
@@ -39,6 +41,8 @@
 							v-model="q.options[j]"
 							:placeholder="`Option ${j + 1}`"
 							class="flex-1 w-5/6 mb-2"
+							:minlength="1"
+							:maxlength="64"
 							:disabled="props.disabled"
 							@input="onOptionInput(i, j)"
 						/>

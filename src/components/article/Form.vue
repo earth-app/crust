@@ -261,10 +261,107 @@ const getSubmittedQuizQuestions = () => {
 	return quizEditor.value?.getQuestions() || [];
 };
 
+function showQuizValidationError(message: string) {
+	toast.add({
+		title: 'Quiz Error',
+		description: message,
+		duration: 6000,
+		icon: 'mdi:pencil-box-outline',
+		color: 'warning'
+	});
+}
+
+function validateQuizForCreate(questions: any[]) {
+	if (!questions || questions.length === 0) return true; // optional
+
+	const MAX_QUESTIONS = 10;
+	const MAX_OPTIONS = 6;
+	const QUESTION_MIN_LEN = 5;
+	const QUESTION_MAX_LEN = 256;
+	const OPTION_MIN_LEN = 1;
+	const OPTION_MAX_LEN = 64;
+
+	if (questions.length > MAX_QUESTIONS) {
+		showQuizValidationError(`Quizzes may contain at most ${MAX_QUESTIONS} questions.`);
+		return false;
+	}
+
+	for (let i = 0; i < questions.length; i++) {
+		const q = questions[i];
+		if (!q || !q.question || !String(q.question).trim()) {
+			showQuizValidationError(`Question #${i + 1} must have non-empty text.`);
+			return false;
+		}
+
+		const qText = String(q.question || '').trim();
+		if (qText.length < QUESTION_MIN_LEN || qText.length > QUESTION_MAX_LEN) {
+			showQuizValidationError(
+				`Question #${i + 1} must be between ${QUESTION_MIN_LEN} and ${QUESTION_MAX_LEN} characters.`
+			);
+			return false;
+		}
+
+		if (q.type === 'multiple_choice') {
+			const opts = Array.isArray(q.options)
+				? q.options.map((o: any) => String(o || '').trim())
+				: [];
+			const nonEmpty = opts.filter((o: string) => o.length > 0);
+			if (nonEmpty.length < 2) {
+				showQuizValidationError(
+					`Multiple choice question #${i + 1} needs at least 2 non-empty options.`
+				);
+				return false;
+			}
+
+			if (opts.length > MAX_OPTIONS) {
+				showQuizValidationError(
+					`Multiple choice question #${i + 1} may have at most ${MAX_OPTIONS} options.`
+				);
+				return false;
+			}
+
+			// enforce per-option length limits
+			for (let k = 0; k < opts.length; k++) {
+				const len = opts[k].length;
+				if (len > 0 && (len < OPTION_MIN_LEN || len > OPTION_MAX_LEN)) {
+					showQuizValidationError(
+						`Option ${k + 1} for question #${i + 1} must be between ${OPTION_MIN_LEN} and ${OPTION_MAX_LEN} characters.`
+					);
+					return false;
+				}
+			}
+
+			if (!q.correct_answer || !nonEmpty.includes(String(q.correct_answer))) {
+				showQuizValidationError(
+					`Multiple choice question #${i + 1} must have a correct answer selected.`
+				);
+				return false;
+			}
+		} else if (q.type === 'true_false') {
+			if (q.correct_answer !== 'True' && q.correct_answer !== 'False') {
+				showQuizValidationError(
+					`True/False question #${i + 1} must have a correct answer selected.`
+				);
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 async function handleSubmit() {
 	loading.value = true;
 	if (props.mode === 'create') {
 		const articleStore = useArticleStore();
+
+		// validate quiz before creating article
+		const submittedQuiz = getSubmittedQuizQuestions();
+		if (!validateQuizForCreate(submittedQuiz)) {
+			loading.value = false;
+			return;
+		}
+
 		const res = await articleStore.createArticle({
 			title: state.title,
 			description: state.description,
