@@ -57,7 +57,7 @@
 						/>
 						<NuxtLink
 							v-if="link && external"
-							:to="`${link}?utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`"
+							:to="appendUTMParameters(link)"
 							target="_blank"
 							rel="noopener noreferrer"
 							class="text-md sm:text-md md:text-lg font-semibold text-blue-500 light:text-blue-600 hover:underline"
@@ -65,7 +65,7 @@
 						>
 						<NuxtLink
 							v-else-if="link"
-							:to="link"
+							:to="appendUTMParameters(link)"
 							class="text-sm sm:text-md md:text-lg font-semibold text-blue-500 light:text-blue-600 hover:underline"
 							>{{ title }}</NuxtLink
 						>
@@ -101,7 +101,7 @@
 					</div>
 					<NuxtLink
 						v-if="descriptionLink && description"
-						:to="`${descriptionLink}?utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`"
+						:to="appendUTMParameters(descriptionLink)"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="text-sm md:text-md lg:text-base text-gray-600 light:text-gray-900 hover:underline"
@@ -119,7 +119,7 @@
 					/>
 					<NuxtLink
 						v-if="imageLink && image"
-						:to="`${imageLink}?utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`"
+						:to="appendUTMParameters(imageLink)"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="text-xs text-gray-500 hover:underline mb-1"
@@ -482,4 +482,12 @@ const origin = computed(() => {
 	// Fallback to production URL for SSR
 	return encodeURIComponent('https://app.earth-app.com');
 });
+
+function appendUTMParameters(link: string) {
+	if (link.includes('?')) {
+		return `${link}&utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`;
+	} else {
+		return `${link}?utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`;
+	}
+}
 </script>
