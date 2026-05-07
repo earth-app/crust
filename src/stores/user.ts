@@ -26,10 +26,133 @@ export const useUserStore = defineStore('user', () => {
 	const eventSubmissions = reactive(new Map<string, EventImageSubmission[]>());
 	const points = reactive(new Map<string, number>());
 	const pointsHistory = reactive(new Map<string, ImpactPointsChange[]>());
-	const quest = reactive(new Map<string, UserQuestProgress>());
+	const quest = reactive(new Map<string, UserQuestProgress | null>());
 	const questHistory = reactive(new Map<string, Map<string, QuestHistoryEntry>>());
+	const questSyncVersions = reactive(new Map<string, number>());
 	const questsList = ref<Set<string> | null>(null);
 	const questsCache = reactive(new Map<string, Quest>());
+
+	type QuestProgressPayload = {
+		type: string;
+		index: number;
+		altIndex?: number;
+		dataUrl?: string;
+		[x: string]: any;
+	};
+
+	const cloneQuestProgress = (
+		progress: (QuestProgressEntry | QuestProgressEntry[])[] = []
+	): (QuestProgressEntry | QuestProgressEntry[])[] =>
+		progress.map((entry) =>
+			Array.isArray(entry) ? entry.map((altEntry) => ({ ...altEntry })) : { ...entry }
+		);
+
+	const createQuestProgressEntry = (
+		stepResponse: QuestProgressPayload,
+		submittedAt: number
+	): QuestProgressEntry => {
+		const { dataUrl, ...rest } = stepResponse;
+		return {
+			...(rest as Omit<QuestProgressEntry, 'submittedAt'>),
+			submittedAt,
+			...(dataUrl ? { data: dataUrl } : {})
+		};
+	};
+
+	const getQuestStepAtIndex = (questDefinition: Quest, index: number): QuestStep => {
+		const step = questDefinition.steps[index];
+		return (Array.isArray(step) ? step[0] : step) as QuestStep;
+	};
+
+	const getNextIncompleteStepIndex = (
+		questDefinition: Quest,
+		progress: (QuestProgressEntry | QuestProgressEntry[])[]
+	): number => {
+		for (let index = 0; index < questDefinition.steps.length; index++) {
+			const step = questDefinition.steps[index];
+			const slot = progress[index];
+
+			if (Array.isArray(step)) {
+				if (!Array.isArray(slot) || slot.length === 0) return index;
+			} else if (!slot || Array.isArray(slot)) {
+				return index;
+			}
+		}
+
+		return -1;
+	};
+
+	const setLoadedQuestState = (identifier: string, nextQuestState: UserQuestProgress | null) => {
+		quest.set(identifier, nextQuestState);
+	};
+
+	const getQuestSyncVersion = (identifier: string) => questSyncVersions.get(identifier) || 0;
+
+	const bumpQuestSyncVersion = (identifier: string) => {
+		const nextVersion = getQuestSyncVersion(identifier) + 1;
+		questSyncVersions.set(identifier, nextVersion);
+		return nextVersion;
+	};
+
+	const applyLocalQuestProgress = (
+		identifier: string,
+		stepResponse: QuestProgressPayload,
+		completed: boolean
+	) => {
+		const currentQuest = quest.get(identifier);
+		if (!currentQuest) return;
+
+		const nextProgress = cloneQuestProgress(currentQuest.progress);
+		const entry = createQuestProgressEntry(stepResponse, Date.now());
+
+		if (stepResponse.altIndex !== undefined) {
+			const existingSlot = nextProgress[stepResponse.index];
+			const nextEntries = Array.isArray(existingSlot)
+				? [...existingSlot]
+				: existingSlot
+					? [{ ...existingSlot }]
+					: [];
+			const existingIndex = nextEntries.findIndex((p) => p.altIndex === stepResponse.altIndex);
+			if (existingIndex >= 0) {
+				nextEntries[existingIndex] = entry;
+			} else {
+				nextEntries.push(entry);
+			}
+			nextProgress[stepResponse.index] = nextEntries;
+		} else {
+			nextProgress[stepResponse.index] = entry;
+		}
+
+		const nextStepIndex = getNextIncompleteStepIndex(currentQuest.quest, nextProgress);
+		const isCompleted = completed || nextStepIndex === -1;
+
+		if (isCompleted) {
+			const completedAt = entry.submittedAt;
+			const nextHistory = new Map(questHistory.get(identifier) || []);
+			nextHistory.set(currentQuest.questId, {
+				quest: currentQuest.quest,
+				questId: currentQuest.questId,
+				completedAt,
+				progress: nextProgress
+			});
+			questHistory.set(identifier, nextHistory);
+			quest.set(identifier, null);
+			bumpQuestSyncVersion(identifier);
+			return;
+		}
+
+		const currentStepIndex =
+			nextStepIndex === -1 ? currentQuest.quest.steps.length - 1 : nextStepIndex;
+		const nextStep = getQuestStepAtIndex(currentQuest.quest, currentStepIndex);
+		quest.set(identifier, {
+			...currentQuest,
+			currentStep: nextStep,
+			currentStepIndex,
+			completed: false,
+			progress: nextProgress
+		});
+		bumpQuestSyncVersion(identifier);
+	};
 
 	const get = (identifier: string): User | undefined => {
 		if (!identifier) return undefined;
@@ -242,7 +365,13 @@ export const useUserStore = defineStore('user', () => {
 			quest.delete(identifier);
 			return null;
 		}
+
+		if (quest.has(identifier)) {
+			return quest.get(identifier) || null;
+		}
+
 		const authStore = useAuthStore();
+		const requestVersion = getQuestSyncVersion(identifier);
 		const res = await makeAPIRequest<UserQuestProgress>(
 			force ? null : `user-${identifier}-quest`,
 			`/v2/users/${identifier}/quest`,
@@ -250,12 +379,17 @@ export const useUserStore = defineStore('user', () => {
 		);
 
 		if (res.success && res.data && !('message' in res.data)) {
-			quest.set(identifier, res.data);
+			if (getQuestSyncVersion(identifier) === requestVersion) {
+				quest.set(identifier, res.data);
+			}
 			return res.data;
 		}
 
-		quest.delete(identifier);
-		return null;
+		if (getQuestSyncVersion(identifier) === requestVersion) {
+			quest.set(identifier, null);
+		}
+
+		return quest.get(identifier) || null;
 	};
 
 	const fetchQuestStep = async (
@@ -288,11 +422,12 @@ export const useUserStore = defineStore('user', () => {
 			`/v2/users/${identifier}/quest?quest_id=${questId}&override=${override}`,
 			authStore.sessionToken,
 			{
-				method: 'POST'
+				method: 'POST',
+				allowMessageResponse: true
 			}
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (res.success && res.data) {
 			let newQuest: Quest | null = questsCache.get(questId) || null;
 			if (!newQuest) {
 				newQuest = await fetchQuest(questId);
@@ -302,14 +437,16 @@ export const useUserStore = defineStore('user', () => {
 			}
 
 			if (newQuest) {
-				quest.set(identifier, {
+				const firstStep = getQuestStepAtIndex(newQuest, 0);
+				setLoadedQuestState(identifier, {
 					quest: newQuest,
 					questId: questId,
-					currentStep: newQuest.steps[0] as QuestStep, // first will always be a single step
+					currentStep: firstStep,
 					currentStepIndex: 0,
 					completed: false,
 					progress: []
 				});
+				bumpQuestSyncVersion(identifier);
 			}
 			return res.data;
 		}
@@ -354,8 +491,7 @@ export const useUserStore = defineStore('user', () => {
 		}
 
 		if (res.data.validated) {
-			// refresh quest progress after validating step
-			await fetchUserQuest(identifier, true);
+			applyLocalQuestProgress(identifier, stepResponse, res.data.completed);
 		}
 
 		return res.data;
@@ -368,13 +504,14 @@ export const useUserStore = defineStore('user', () => {
 			`/v2/users/${identifier}/quest`,
 			authStore.sessionToken,
 			{
-				method: 'DELETE'
+				method: 'DELETE',
+				allowMessageResponse: true
 			}
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
-			// refresh isn't necessary since we expect the quest to be removed
-			quest.delete(identifier);
+		if (res.success && res.data) {
+			setLoadedQuestState(identifier, null);
+			bumpQuestSyncVersion(identifier);
 			return res.data;
 		}
 
@@ -387,7 +524,13 @@ export const useUserStore = defineStore('user', () => {
 			questHistory.set(identifier, map);
 			return map;
 		}
+
+		if (questHistory.has(identifier)) {
+			return questHistory.get(identifier) || new Map();
+		}
+
 		const authStore = useAuthStore();
+		const requestVersion = getQuestSyncVersion(identifier);
 		const res = await makeAPIRequest<{
 			total: number;
 			history: { [questId: string]: QuestHistoryEntry };
@@ -399,13 +542,21 @@ export const useUserStore = defineStore('user', () => {
 
 		if (res.success && res.data && !('message' in res.data)) {
 			const map = new Map(Object.entries(res.data.history));
+			if (getQuestSyncVersion(identifier) === requestVersion) {
+				questHistory.set(identifier, map);
+				return map;
+			}
+
+			return questHistory.get(identifier) || map;
+		}
+
+		const map = new Map();
+		if (getQuestSyncVersion(identifier) === requestVersion) {
 			questHistory.set(identifier, map);
 			return map;
 		}
 
-		const map = new Map();
-		questHistory.set(identifier, map);
-		return map;
+		return questHistory.get(identifier) || map;
 	};
 
 	const fetchQuestsList = async (): Promise<Quest[]> => {
@@ -487,6 +638,7 @@ export const useUserStore = defineStore('user', () => {
 
 	const clear = (identifier?: string) => {
 		if (identifier) {
+			bumpQuestSyncVersion(identifier);
 			cache.delete(identifier);
 			attendingEvents.delete(identifier);
 			hostingEvents.delete(identifier);
@@ -506,6 +658,9 @@ export const useUserStore = defineStore('user', () => {
 			pointsHistory.clear();
 			quest.clear();
 			questHistory.clear();
+			for (const key of questSyncVersions.keys()) {
+				questSyncVersions.set(key, getQuestSyncVersion(key) + 1);
+			}
 			questsCache.clear();
 			questsList.value = null;
 		}

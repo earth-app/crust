@@ -372,14 +372,19 @@ export function useUsers() {
 	};
 }
 
-export function useUser(identifier?: string) {
+export function useUser(identifier?: MaybeRefOrGetter<string | null | undefined>) {
 	const userStore = useUserStore();
 	const avatarStore = useAvatarStore();
-	const user = computed(() => (!identifier ? undefined : userStore.get(identifier)));
+	const currentIdentifier = () => toValue(identifier);
+	const user = computed(() => {
+		const resolvedIdentifier = currentIdentifier();
+		return !resolvedIdentifier ? undefined : userStore.get(resolvedIdentifier);
+	});
 
 	const fetchUser = async (force: boolean = false) => {
-		if (!identifier) return null;
-		return await userStore.fetchUser(identifier, force);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return null;
+		return await userStore.fetchUser(resolvedIdentifier, force);
 	};
 
 	const avatarUrl = computed(() => user.value?.account?.avatar_url);
@@ -445,73 +450,96 @@ export function useUser(identifier?: string) {
 		return await avatarStore.fetchAvatarBlobs(url);
 	};
 
-	const cosmetics = computed(() =>
-		!identifier
+	const cosmetics = computed(() => {
+		const resolvedIdentifier = currentIdentifier();
+		return !resolvedIdentifier
 			? { current: null, unlocked: [] }
-			: avatarStore.userCosmetics.get(identifier) || { current: null, unlocked: [] }
-	);
+			: avatarStore.userCosmetics.get(resolvedIdentifier) || { current: null, unlocked: [] };
+	});
 	const fetchCosmetics = async () => {
-		if (!identifier) return null;
-		return await avatarStore.fetchCosmeticsForUser(identifier);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return null;
+		return await avatarStore.fetchCosmeticsForUser(resolvedIdentifier);
 	};
 
 	const chipColor = computed(() => userStore.getChipColor(user.value));
 	const maxEventAttendees = computed(() => userStore.getMaxEventAttendees(user.value));
 
-	const attendingEvents = computed(() =>
-		!identifier ? [] : userStore.attendingEvents.get(identifier) || []
-	);
+	const attendingEvents = computed(() => {
+		const resolvedIdentifier = currentIdentifier();
+		return !resolvedIdentifier ? [] : userStore.attendingEvents.get(resolvedIdentifier) || [];
+	});
 	const attendingEventsCount = computed(() => attendingEvents.value.length);
 	const fetchAttendingEvents = async () => {
-		if (!identifier) return [];
-		return await userStore.fetchAttendingEvents(identifier);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return [];
+		return await userStore.fetchAttendingEvents(resolvedIdentifier);
 	};
 
-	const currentEvents = computed(() =>
-		!identifier ? [] : userStore.hostingEvents.get(identifier) || []
-	);
+	const currentEvents = computed(() => {
+		const resolvedIdentifier = currentIdentifier();
+		return !resolvedIdentifier ? [] : userStore.hostingEvents.get(resolvedIdentifier) || [];
+	});
 	const currentEventsCount = computed(() => currentEvents.value.length);
 	const fetchCurrentEvents = async () => {
-		if (!identifier) return [];
-		return await userStore.fetchHostingEvents(identifier);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return [];
+		return await userStore.fetchHostingEvents(resolvedIdentifier);
 	};
 
-	const badges = computed(() => (!identifier ? [] : userStore.badges.get(identifier) || []));
+	const badges = computed(() => {
+		const resolvedIdentifier = currentIdentifier();
+		return !resolvedIdentifier ? [] : userStore.badges.get(resolvedIdentifier) || [];
+	});
 	const grantedBadges = computed(() => badges.value.filter((b) => b.granted));
 	const fetchBadges = async () => {
-		if (!identifier) return [];
-		return await userStore.fetchBadges(identifier);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return [];
+		return await userStore.fetchBadges(resolvedIdentifier);
 	};
 
-	const eventSubmissions = computed(() =>
-		!identifier ? [] : userStore.eventSubmissions.get(identifier) || []
-	);
+	const eventSubmissions = computed(() => {
+		const resolvedIdentifier = currentIdentifier();
+		return !resolvedIdentifier ? [] : userStore.eventSubmissions.get(resolvedIdentifier) || [];
+	});
 	const fetchEventSubmissions = async () => {
-		if (!identifier) return [];
-		return await userStore.fetchEventSubmissions(identifier);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return [];
+		return await userStore.fetchEventSubmissions(resolvedIdentifier);
 	};
 
-	const points = computed(() => (!identifier ? 0 : userStore.points.get(identifier)));
-	const pointsHistory = computed(() =>
-		!identifier ? [] : userStore.pointsHistory.get(identifier)
-	);
+	const points = computed(() => {
+		const resolvedIdentifier = currentIdentifier();
+		return !resolvedIdentifier ? 0 : userStore.points.get(resolvedIdentifier);
+	});
+	const pointsHistory = computed(() => {
+		const resolvedIdentifier = currentIdentifier();
+		return !resolvedIdentifier ? [] : userStore.pointsHistory.get(resolvedIdentifier);
+	});
 	const fetchPoints = async () => {
-		if (!identifier) return [0, []] as [number, ImpactPointsChange[]];
-		return await userStore.fetchPoints(identifier);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return [0, []] as [number, ImpactPointsChange[]];
+		return await userStore.fetchPoints(resolvedIdentifier);
 	};
 
-	const quest = computed(() => (!identifier ? null : userStore.quest.get(identifier)));
+	const quest = computed(() => {
+		const resolvedIdentifier = currentIdentifier();
+		return !resolvedIdentifier ? null : userStore.quest.get(resolvedIdentifier);
+	});
 	const fetchUserQuest = async (force: boolean = false) => {
-		if (!identifier) return null;
-		return await userStore.fetchUserQuest(identifier, force);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return null;
+		return await userStore.fetchUserQuest(resolvedIdentifier, force);
 	};
 	const fetchQuestStep = async (index: number) => {
-		if (!identifier) return null;
-		return await userStore.fetchQuestStep(identifier, index);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return null;
+		return await userStore.fetchQuestStep(resolvedIdentifier, index);
 	};
 	const startQuest = async (questId: string, override: boolean = false) => {
-		if (!identifier) return { message: 'Invalid identifier' };
-		return await userStore.startQuest(identifier, questId, override);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return { message: 'Invalid identifier' };
+		return await userStore.startQuest(resolvedIdentifier, questId, override);
 	};
 	const updateQuest = async (
 		stepResponse: {
@@ -524,32 +552,37 @@ export function useUser(identifier?: string) {
 		lat: number | null,
 		lng: number | null
 	) => {
-		if (!identifier)
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier)
 			return { message: 'Invalid identifier', completed: false, validated: false } as {
 				message: string;
 				completed: boolean;
 				validated: boolean;
 			};
-		return await userStore.updateQuest(identifier, stepResponse, lat, lng);
+		return await userStore.updateQuest(resolvedIdentifier, stepResponse, lat, lng);
 	};
 	const endQuest = async () => {
-		if (!identifier) return { message: 'Invalid identifier' };
-		return await userStore.endQuest(identifier);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return { message: 'Invalid identifier' };
+		return await userStore.endQuest(resolvedIdentifier);
 	};
-	const questHistory = computed(() =>
-		!identifier
+	const questHistory = computed(() => {
+		const resolvedIdentifier = currentIdentifier();
+		return !resolvedIdentifier
 			? new Map<string, QuestHistoryEntry>()
-			: userStore.questHistory.get(identifier) || new Map<string, QuestHistoryEntry>()
-	);
+			: userStore.questHistory.get(resolvedIdentifier) || new Map<string, QuestHistoryEntry>();
+	});
 	const fetchQuestHistory = async () => {
-		if (!identifier) return new Map<string, QuestHistoryEntry>();
-		return await userStore.fetchQuestHistory(identifier);
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return new Map<string, QuestHistoryEntry>();
+		return await userStore.fetchQuestHistory(resolvedIdentifier);
 	};
 
 	const setAccountType = async (type: User['account']['account_type']) => {
-		if (!identifier)
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier)
 			return Promise.resolve({ success: false, message: 'Invalid identifier' } as any);
-		return await userStore.setAccountType(identifier, type);
+		return await userStore.setAccountType(resolvedIdentifier, type);
 	};
 
 	return {

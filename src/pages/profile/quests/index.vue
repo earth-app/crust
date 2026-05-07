@@ -73,7 +73,8 @@
 <script setup lang="ts">
 const { user } = useAuth();
 const { quests, fetchQuests } = useQuests();
-const { quest, fetchUserQuest, questHistory, fetchQuestHistory } = useUser(user.value?.id || '');
+const userId = computed(() => user.value?.id);
+const { quest, fetchUserQuest, questHistory, fetchQuestHistory } = useUser(userId);
 
 watch(
 	() => user.value,

@@ -124,7 +124,8 @@ const props = defineProps<{
 const emit = defineEmits<{ submitted: [] }>();
 
 const { user } = useAuth();
-const { updateQuest } = useUser(user.value?.id || '');
+const userId = computed(() => user.value?.id);
+const { updateQuest } = useUser(userId);
 const { lat, lng } = useGeolocation();
 
 const phase = ref<Phase>('countdown');

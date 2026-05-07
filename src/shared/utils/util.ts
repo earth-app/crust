@@ -23,6 +23,10 @@ export async function makeRequest<T>(
 	options: any = {}
 ): Promise<{ success: boolean; data?: T | { code: number; message: string }; message?: string }> {
 	try {
+		const allowMessageResponse = options.allowMessageResponse === true;
+		const requestOptions = { ...options };
+		delete requestOptions.allowMessageResponse;
+
 		// Check client-side cache first
 		if (key && apiCache.has(key)) {
 			return {
@@ -41,7 +45,8 @@ export async function makeRequest<T>(
 		// create new request promise and add to queue
 		const requestPromise = (async () => {
 			try {
-				const isBinaryRequest = url.includes('profile_photo') || options.responseType === 'blob';
+				const isBinaryRequest =
+					url.includes('profile_photo') || requestOptions.responseType === 'blob';
 				const authHeaders: Record<string, string> = {};
 				if (token) {
 					authHeaders['Authorization'] = `Bearer ${token}`;
@@ -51,9 +56,9 @@ export async function makeRequest<T>(
 					const blob = await $fetch<Blob>(url, {
 						headers: {
 							...authHeaders,
-							...(options.headers ?? {})
+							...(requestOptions.headers ?? {})
 						},
-						...options
+						...requestOptions
 					});
 
 					return {
@@ -66,10 +71,10 @@ export async function makeRequest<T>(
 				const data = await $fetch<T>(url, {
 					headers: {
 						...authHeaders,
-						...(options.headers ?? {})
+						...(requestOptions.headers ?? {})
 					},
 					ignoreResponseError: true,
-					...options
+					...requestOptions
 				}).catch((error) => {
 					// Silently handle 404s - don't log or report
 					const errorStr = error.toString();
@@ -105,7 +110,7 @@ export async function makeRequest<T>(
 					};
 				}
 
-				if (typeof data === 'object' && 'message' in data) {
+				if (typeof data === 'object' && 'message' in data && !allowMessageResponse) {
 					return {
 						success: false,
 						data: data as any,

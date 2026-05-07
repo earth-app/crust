@@ -234,7 +234,8 @@ const emit = defineEmits<{
 }>();
 
 const { user } = useAuth();
-const { updateQuest } = useUser(user.value?.id || '');
+const userId = computed(() => user.value?.id);
+const { updateQuest } = useUser(userId);
 const { lat, lng, fetchLocation } = useGeolocation();
 
 const submitting = ref(false);

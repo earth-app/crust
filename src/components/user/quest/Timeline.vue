@@ -271,15 +271,25 @@ const emit = defineEmits<{
 }>();
 
 const { user } = useAuth();
-const { quest, questHistory, fetchUserQuest, startQuest, endQuest } = useUser(user.value?.id || '');
+const userId = computed(() => user.value?.id);
+const { quest, questHistory, fetchUserQuest, startQuest, endQuest } = useUser(userId);
 const toast = useToast();
 
 const loading = ref(false);
 const now = ref(Date.now());
 let _nowTimer: ReturnType<typeof setInterval>;
 
+watch(
+	userId,
+	(currentUserId) => {
+		if (currentUserId) {
+			fetchUserQuest();
+		}
+	},
+	{ immediate: true }
+);
+
 onMounted(() => {
-	fetchUserQuest();
 	_nowTimer = setInterval(() => {
 		now.value = Date.now();
 	}, 10_000);
@@ -290,6 +300,7 @@ onUnmounted(() => {
 });
 
 const completed = computed(() => {
+	if (quest.value?.questId === props.quest.id) return false;
 	return questHistory.value?.get(props.quest.id)?.completedAt !== undefined;
 });
 

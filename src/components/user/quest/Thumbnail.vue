@@ -2,6 +2,7 @@
 	<template v-if="quest">
 		<UCard
 			variant="subtle"
+			:id="props.id"
 			class="gap-4 p-4 hover:cursor-pointer hover:scale-105 transition-all duration-300"
 			:class="current ? 'ring-4 ring-primary' : completed ? 'ring-2 ring-warning-300' : ''"
 			@click="open = true"
@@ -49,7 +50,7 @@
 					<span
 						v-if="completedAt"
 						class="text-sm opacity-80"
-						>Completed {{ completedAt }}</span
+						>Completed {{ completedAtRelative }}</span
 					>
 				</div>
 			</div>
@@ -64,7 +65,10 @@
 </template>
 
 <script setup lang="ts">
+import { DateTime } from 'luxon';
+
 const props = defineProps<{
+	id?: string;
 	quest: Quest;
 	progress?: (QuestProgressEntry | QuestProgressEntry[])[];
 	current?: boolean;
@@ -91,6 +95,10 @@ const completed = computed(() => {
 });
 
 const i18n = useI18n();
+const completedAtRelative = computed(() => {
+	if (!props.completedAt) return null;
+	return DateTime.fromMillis(props.completedAt).toRelative({ locale: i18n.locale.value });
+});
 
 const rarityColor = computed(() => {
 	if (!props.quest) return 'neutral';
