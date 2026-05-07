@@ -6,8 +6,10 @@
 			class="-mb-1"
 		/>
 		<p class="font-medium text-lg bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
-			"{{ text }}" -
+			"{{ text }}"
+			<span v-if="link"> - </span>
 			<a
+				v-if="link"
 				:href="`/profile/@${username || 'cloud'}`"
 				class="text-blue-600 font-semibold"
 				>@{{ username || 'cloud' }}</a
@@ -30,6 +32,7 @@ defineProps<{
 	timestamp?: number;
 	avatar?: string;
 	username?: string;
+	link?: boolean;
 }>();
 
 const i18n = useI18n();

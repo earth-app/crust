@@ -31,6 +31,7 @@
 					<Quote
 						:text="item.caption"
 						:timestamp="item.timestamp"
+						link
 					/>
 				</div>
 			</template>
