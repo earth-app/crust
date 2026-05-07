@@ -1,6 +1,11 @@
 import { useArticleStore } from 'stores/article';
 import { useAuthStore } from 'stores/auth';
-import { type Article, type ArticleQuizQuestion, type ArticleQuizScoreResult } from 'types/article';
+import {
+	type Article,
+	type ArticleQuizQuestion,
+	type ArticleQuizQuestionSubmission,
+	type ArticleQuizScoreResult
+} from 'types/article';
 import type { SortingOption } from 'types/global';
 import {
 	makeAPIRequest,
@@ -150,7 +155,15 @@ export function useArticle(id: string) {
 		return res;
 	};
 
-	const createQuiz = async () => {
+	const changeQuiz = async (quiz: ArticleQuizQuestionSubmission[]) => {
+		return await articleStore.changeQuiz(id, quiz);
+	};
+
+	const deleteQuiz = async () => {
+		return await articleStore.deleteQuiz(id);
+	};
+
+	const generateQuiz = async () => {
 		if (!article.value) {
 			await fetch(true);
 		}
@@ -188,7 +201,9 @@ export function useArticle(id: string) {
 		update,
 		remove,
 		fetchSimilar,
-		createQuiz
+		changeQuiz,
+		deleteQuiz,
+		generateQuiz
 	};
 }
 

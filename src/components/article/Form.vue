@@ -111,6 +111,56 @@
 				</div>
 			</UFormField>
 
+			<div :class="canCreateQuiz ? 'hover:cursor-disabled' : ''">
+				<h2 class="font-semibold text-lg">
+					Article Quiz Editor
+					<UIcon
+						name="mdi:diamond-stone"
+						class="ml-2 text-secondary"
+					/>
+				</h2>
+
+				<UModal
+					v-if="!canCreateQuiz"
+					class="min-w-full min-h-full"
+					:modal="true"
+					fullscreen
+					dismissible
+				>
+					<p
+						v-if="!canCreateQuiz"
+						class="text-sm text-primary font-bold hover:opacity-70 mb-2 transition-opacity duration-300"
+					>
+						Upgrade your account to create an interactive quiz for your article and engage readers
+						with fun questions!
+					</p>
+
+					<template #title>
+						<div class="flex">
+							<UIcon
+								name="mdi:diamond-stone"
+								class="size-6"
+							/>
+							<span class="ml-2">Upgrade to Access Article Quizzes</span>
+						</div>
+					</template>
+					<template #body>
+						<div class="flex flex-col w-full items-center gap-4">
+							<UserCard
+								v-if="user"
+								:user="user"
+							/>
+							<Ranks highlighted="ORGANIZER" />
+						</div>
+					</template>
+				</UModal>
+
+				<ArticleQuizEditor
+					ref="quizEditor"
+					:disabled="!canCreateQuiz"
+				/>
+			</div>
+
 			<UButton
 				type="submit"
 				:loading="loading"
@@ -126,11 +176,33 @@
 
 <script setup lang="ts">
 import { articleSchema } from 'schemas';
+import ArticleQuizEditor from './QuizEditor.vue';
 
 const props = defineProps<{
 	article?: Article;
 	mode: 'create' | 'edit';
 }>();
+
+const { user } = useAuth();
+const canCreateQuiz = computed(() => {
+	if (!user.value) return false;
+
+	if (
+		(props.mode === 'create' && user.value.account.account_type === 'ORGANIZER') ||
+		user.value.is_admin
+	)
+		return true;
+
+	if (props.mode === 'edit' && props.article) {
+		return (
+			(user.value.account.account_type === 'ORGANIZER' &&
+				props.article.author_id === user.value.id) ||
+			user.value.is_admin
+		);
+	}
+
+	return false;
+});
 
 const toast = useToast();
 const router = useRouter();
@@ -145,6 +217,21 @@ const state = reactive<
 	tags: props.article?.tags || [],
 	color: props.article?.color || 0xffffff,
 	color_hex: props.article?.color_hex || '#ffffff'
+});
+
+onMounted(async () => {
+	if (props.mode === 'edit' && props.article) {
+		const { quiz, fetchQuiz } = useArticle(props.article.id);
+		if (!quiz.value) {
+			// if quiz is not already loaded, fetch it to populate the cache and summary cache
+			await fetchQuiz();
+		}
+
+		if (quiz.value && canCreateQuiz.value) {
+			// populate quiz editor with existing quiz questions
+			quizEditor.value?.setQuestions(quiz.value);
+		}
+	}
 });
 
 // link color_hex and color
@@ -168,6 +255,12 @@ const removeTag = (index: number) => {
 	state.tags.splice(index, 1);
 };
 
+const quizEditor = ref<InstanceType<typeof ArticleQuizEditor>>();
+
+const getSubmittedQuizQuestions = () => {
+	return quizEditor.value?.getQuestions() || [];
+};
+
 async function handleSubmit() {
 	loading.value = true;
 	if (props.mode === 'create') {
@@ -175,7 +268,10 @@ async function handleSubmit() {
 		const res = await articleStore.createArticle({
 			title: state.title,
 			description: state.description,
-			content: state.content
+			content: state.content,
+			tags: state.tags,
+			color: state.color,
+			color_hex: state.color_hex
 		});
 
 		if (res.success && res.data) {
@@ -189,6 +285,22 @@ async function handleSubmit() {
 				});
 				loading.value = false;
 				return;
+			}
+
+			if (canCreateQuiz.value) {
+				const resQuiz = await articleStore.changeQuiz(res.data.id, getSubmittedQuizQuestions());
+				if (!resQuiz.success || (resQuiz.data && 'message' in resQuiz.data)) {
+					toast.add({
+						title: 'Error Creating Quiz',
+						description:
+							resQuiz.data?.message || resQuiz.message || 'Failed to create quiz for article.',
+						duration: 5000,
+						icon: 'mdi:alert-circle',
+						color: 'warning'
+					});
+					loading.value = false;
+					return;
+				}
 			}
 
 			toast.add({
@@ -215,7 +327,10 @@ async function handleSubmit() {
 			id: props.article!.id,
 			title: state.title,
 			description: state.description,
-			content: state.content
+			content: state.content,
+			tags: state.tags,
+			color: state.color,
+			color_hex: state.color_hex
 		});
 
 		if (res.success && res.data) {
@@ -229,6 +344,22 @@ async function handleSubmit() {
 				});
 				loading.value = false;
 				return;
+			}
+
+			if (canCreateQuiz.value) {
+				const resQuiz = await articleStore.changeQuiz(res.data.id, getSubmittedQuizQuestions());
+				if (!resQuiz.success || (resQuiz.data && 'message' in resQuiz.data)) {
+					toast.add({
+						title: 'Error Updating Quiz',
+						description:
+							resQuiz.data?.message || resQuiz.message || 'Failed to create quiz for article.',
+						duration: 5000,
+						icon: 'mdi:alert-circle',
+						color: 'warning'
+					});
+					loading.value = false;
+					return;
+				}
 			}
 
 			toast.add({

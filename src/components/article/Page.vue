@@ -87,9 +87,9 @@
 				color="primary"
 				icon="mdi:plus"
 				variant="subtle"
-				@click="createQuiz"
+				@click="generateQuiz"
 				:loading="quizLoading"
-				>Create Quiz</UButton
+				>Generate Quiz</UButton
 			>
 
 			<UButton
@@ -326,7 +326,7 @@ onMounted(() => {
 });
 
 const quizLoading = ref(false);
-async function createQuiz() {
+async function generateQuiz() {
 	quizLoading.value = true;
 	if (user.value?.account.account_type !== 'ADMINISTRATOR') {
 		toast.add({
@@ -339,12 +339,12 @@ async function createQuiz() {
 		return;
 	}
 
-	const { createQuiz } = useArticle(props.article.id);
-	const res = await createQuiz();
+	const { generateQuiz } = useArticle(props.article.id);
+	const res = await generateQuiz();
 	if (res.success && res.data) {
 		toast.add({
-			title: 'Quiz Created',
-			description: 'The quiz has been successfully created for this article.',
+			title: 'Quiz Generated',
+			description: 'The quiz has been successfully generated for this article.',
 			icon: 'mdi:check',
 			color: 'success',
 			duration: 5000

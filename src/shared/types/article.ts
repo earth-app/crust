@@ -42,13 +42,18 @@ export type ArticleQuizQuestion = {
 	  }
 	| {
 			type: 'true_false';
-			options: ('true' | 'false')[];
-			correct_answer: 'true' | 'false';
+			options: ('True' | 'False')[];
+			correct_answer: 'True' | 'False';
 			correct_answer_index: number;
 			is_true: boolean;
 			is_false: boolean;
 	  }
 );
+
+export type ArticleQuizQuestionSubmission = Omit<
+	ArticleQuizQuestion,
+	'correct_answer_index' | 'is_true' | 'is_false'
+>;
 
 export type ArticleQuizScoreResult = {
 	score: number;

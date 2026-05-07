@@ -1,5 +1,10 @@
 import { defineStore } from 'pinia';
-import type { Article, ArticleQuizQuestion, ArticleQuizScoreResult } from 'types/article';
+import type {
+	Article,
+	ArticleQuizQuestion,
+	ArticleQuizQuestionSubmission,
+	ArticleQuizScoreResult
+} from 'types/article';
 import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from 'utils';
 import { reactive } from 'vue';
 import { useAuthStore } from './auth';
@@ -145,6 +150,90 @@ export const useArticleStore = defineStore('article', () => {
 		}
 	};
 
+	const changeQuiz = async (id: string, quiz: ArticleQuizQuestionSubmission[]) => {
+		try {
+			const authStore = useAuthStore();
+			const normalizedQuiz = quiz.map((question) => {
+				if (question.type === 'true_false') {
+					return {
+						type: 'true_false' as const,
+						question: question.question || '',
+						options: ['True', 'False'] as const,
+						correct_answer: question.correct_answer === 'True' ? 'True' : 'False'
+					};
+				}
+
+				const options = (question.options || []).map((option) => option || '').slice(0, 6);
+				while (options.length < 2) {
+					options.push('');
+				}
+
+				const correctAnswer = options.includes(question.correct_answer)
+					? question.correct_answer
+					: '';
+
+				return {
+					type: 'multiple_choice' as const,
+					question: question.question || '',
+					options,
+					correct_answer: correctAnswer
+				};
+			});
+
+			const res = await makeAPIRequest<{
+				message: string;
+				questions: ArticleQuizQuestion[];
+			}>(`article-${id}-quiz-update`, `/v2/articles/${id}/quiz`, authStore.sessionToken, {
+				method: 'POST',
+				body: { questions: normalizedQuiz }
+			});
+
+			if (res.success && res.data) {
+				if ('code' in res.data) {
+					console.warn(`Failed to update quiz for article ${id}:`, res.data);
+					return { success: false, message: res.data.message };
+				}
+
+				quizCache.set(id, res.data.questions);
+				quizSummaryCache.set(id, {
+					total: res.data.questions.length,
+					multiple_choice_count: res.data.questions.filter((q) => q.type === 'multiple_choice')
+						.length,
+					true_false_count: res.data.questions.filter((q) => q.type === 'true_false').length
+				});
+			} else {
+				console.warn(`Failed to update quiz for article ${id}:`, res.message);
+			}
+
+			return res;
+		} catch (error) {
+			console.warn(`Failed to update quiz for article ${id}:`, error);
+			return { success: false, message: 'Failed to update quiz.' };
+		}
+	};
+
+	const deleteQuiz = async (id: string) => {
+		try {
+			const authStore = useAuthStore();
+			const res = await makeAPIRequest<{ message: string }>(
+				`article-${id}-quiz-delete`,
+				`/v2/articles/${id}/quiz`,
+				authStore.sessionToken,
+				{ method: 'DELETE' }
+			);
+
+			if (res.success) {
+				quizCache.delete(id);
+				quizSummaryCache.delete(id);
+				scoreCache.delete(id);
+			} else {
+				console.warn(`Failed to delete quiz for article ${id}:`, res.message);
+			}
+		} catch (error) {
+			console.warn(`Failed to delete quiz for article ${id}:`, error);
+		}
+	};
+
 	const fetchQuizScore = async (id: string): Promise<ArticleQuizScoreResult | null> => {
 		try {
 			const authStore = useAuthStore();
@@ -254,6 +343,8 @@ export const useArticleStore = defineStore('article', () => {
 		setArticles,
 		fetchQuiz,
 		fetchQuizScore,
+		changeQuiz,
+		deleteQuiz,
 		setQuizScore,
 		createArticle,
 		updateArticle,
