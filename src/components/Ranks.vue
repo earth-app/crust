@@ -226,6 +226,10 @@ const organizer: PricingPlanProps = {
 			icon: 'mdi:hammer'
 		},
 		{
+			title: 'Quiz your users in your articles',
+			icon: 'mdi:clipboard-list'
+		},
+		{
 			title: 'Verified creator status for publishing official activities',
 			icon: 'mdi:shield-check'
 		}
