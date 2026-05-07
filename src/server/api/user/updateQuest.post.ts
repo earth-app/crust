@@ -61,7 +61,7 @@ export default defineEventHandler(async (event) => {
 	}
 
 	const res = await $fetch<{ message: string; completed: boolean; validated: boolean }>(
-		`${config.public.cloudBaseUrl}/v1/users/quests/progress/${user.id}`,
+		`${config.public.cloudBaseUrl}/v1/users/quests/progress/${user.id}/update`,
 		{
 			method: 'PATCH',
 			headers: {
