@@ -293,8 +293,24 @@ export const useUserStore = defineStore('user', () => {
 		);
 
 		if (res.success && res.data && !('message' in res.data)) {
-			// refresh quest progress after starting new quest
-			await fetchUserQuest(identifier, true);
+			let newQuest: Quest | null = questsCache.get(questId) || null;
+			if (!newQuest) {
+				newQuest = await fetchQuest(questId);
+				if (!newQuest) {
+					console.warn(`Started quest ${questId} but failed to fetch quest details`);
+				}
+			}
+
+			if (newQuest) {
+				quest.set(identifier, {
+					quest: newQuest,
+					questId: questId,
+					currentStep: newQuest.steps[0] as QuestStep, // first will always be a single step
+					currentStepIndex: 0,
+					completed: false,
+					progress: []
+				});
+			}
 			return res.data;
 		}
 
