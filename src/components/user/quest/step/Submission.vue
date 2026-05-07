@@ -64,8 +64,7 @@
 						v-else-if="category === 'article_quiz' && step.type === 'article_quiz' && stepArticle"
 						class="flex flex-col items-center gap-3 py-4 px-6 border border-neutral-200 dark:border-neutral-700 rounded-lg"
 					>
-						<h3 class="text-md! font-semibold">{{ stepArticle.title }}</h3>
-						<p class="text-sm! opacity-90">{{ trimString(stepArticle.description, 200) }}</p>
+						<ArticleCard :article="stepArticle" />
 					</div>
 				</div>
 
