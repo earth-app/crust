@@ -101,7 +101,7 @@
 					</div>
 					<NuxtLink
 						v-if="descriptionLink && description"
-						:to="descriptionLink"
+						:to="`${descriptionLink}?utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="text-sm md:text-md lg:text-base text-gray-600 light:text-gray-900 hover:underline"
@@ -119,7 +119,7 @@
 					/>
 					<NuxtLink
 						v-if="imageLink && image"
-						:to="imageLink"
+						:to="`${imageLink}?utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="text-xs text-gray-500 hover:underline mb-1"
