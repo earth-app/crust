@@ -214,6 +214,10 @@ async function submitUpload() {
 		color: 'success'
 	});
 
+	await fetchSubmissionsForUser(user.value!.id).then((subs) => {
+		currentSubmissionsCount.value = subs.length;
+	});
+
 	submitting.value = false;
 }
 
