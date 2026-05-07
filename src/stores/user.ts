@@ -246,12 +246,7 @@ export const useUserStore = defineStore('user', () => {
 		const res = await makeAPIRequest<UserQuestProgress>(
 			force ? null : `user-${identifier}-quest`,
 			`/v2/users/${identifier}/quest`,
-			authStore.sessionToken,
-			{
-				headers: {
-					'Cache-Control': force ? 'no-cache' : undefined
-				}
-			}
+			authStore.sessionToken
 		);
 
 		if (res.success && res.data && !('message' in res.data)) {
