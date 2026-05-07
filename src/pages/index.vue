@@ -39,7 +39,7 @@
 					>Take the Tour</UButton
 				>
 				<UButton
-					v-if="!user"
+					v-if="user === null"
 					icon="mdi:login-variant"
 					color="error"
 					variant="soft"
@@ -47,7 +47,7 @@
 					>Login</UButton
 				>
 				<UButton
-					v-if="!user"
+					v-if="user === null"
 					icon="mdi:account-plus"
 					color="info"
 					variant="soft"
