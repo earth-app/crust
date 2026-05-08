@@ -75,6 +75,7 @@ const { user } = useAuth();
 const { quests, fetchQuests } = useQuests();
 const userId = computed(() => user.value?.id);
 const { quest, fetchUserQuest, questHistory, fetchQuestHistory } = useUser(userId);
+const { setTitleSuffix } = useTitleSuffix();
 
 watch(
 	() => user.value,
@@ -108,4 +109,10 @@ const questTour: SiteTourStep[] = [
 		footer: 'Complete quests to earn rewards and show off your progress on your profile!'
 	}
 ];
+
+setTitleSuffix('Quests');
+useSeoMeta({
+	ogTitle: 'Quests - The Earth App',
+	ogDescription: 'Track your progress and earn rewards with quests on The Earth App!'
+});
 </script>

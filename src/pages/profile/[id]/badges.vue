@@ -68,6 +68,7 @@
 const route = useRoute();
 const { user, fetchUser, badges, fetchBadges } = useUser(route.params.id as string);
 const { handle } = useDisplayName(user);
+const { setTitleSuffix } = useTitleSuffix();
 
 onMounted(() => {
 	fetchUser();
@@ -75,4 +76,17 @@ onMounted(() => {
 });
 
 const completedBadges = computed(() => badges.value.filter((b) => 'granted' in b && b.granted));
+
+watch(
+	() => user.value,
+	(user) => {
+		if (user) {
+			setTitleSuffix(`${handle}'s Badges`);
+		} else if (user === null) {
+			setTitleSuffix('User Not Found');
+		} else {
+			setTitleSuffix('Badges');
+		}
+	}
+);
 </script>
