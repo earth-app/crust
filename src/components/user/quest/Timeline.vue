@@ -273,6 +273,7 @@ const emit = defineEmits<{
 const { user } = useAuth();
 const userId = computed(() => user.value?.id);
 const { quest, questHistory, fetchUserQuest, startQuest, endQuest } = useUser(userId);
+const { getStepIcon } = useQuests();
 const toast = useToast();
 
 const loading = ref(false);
@@ -409,7 +410,7 @@ const items = computed(() => {
 
 				return {
 					...altStep,
-					icon: getIcon(altStep.type),
+					icon: getStepIcon(altStep.type),
 					index,
 					altIndex,
 					completed: !!entry,
@@ -425,7 +426,7 @@ const items = computed(() => {
 
 			return {
 				...step,
-				icon: getIcon(step.type),
+				icon: getStepIcon(step.type),
 				index,
 				completed: !!entry,
 				completedAt: entry?.submittedAt || 0,
@@ -446,39 +447,6 @@ const currentIndex = computed(() => {
 		}
 	});
 });
-
-function getIcon(type: string) {
-	switch (type) {
-		case 'take_photo_location':
-			return 'mdi:camera-marker';
-		case 'take_photo_classification':
-			return 'mdi:camera-enhance';
-		case 'take_photo_caption':
-			return 'mdi:camera-image';
-		case 'take_photo_objects':
-			return 'mdi:camera-gopro';
-		case 'take_photo_list':
-			return 'mdi:camera-burst';
-		case 'take_photo_validation':
-			return 'mdi:camera-switch';
-		case 'draw_picture':
-			return 'mdi:brush';
-		case 'attend_event':
-			return 'mdi:calendar-star';
-		case 'transcribe_audio':
-			return 'mdi:microphone';
-		case 'article_quiz':
-			return 'mdi:book-open-variant';
-		case 'match_terms':
-			return 'mdi:shape';
-		case 'order_items':
-			return 'mdi:format-list-bulleted';
-		case 'describe_text':
-			return 'mdi:pencil';
-		default:
-			return 'mdi:account';
-	}
-}
 
 // quest timeline tour
 

@@ -634,10 +634,50 @@ export function useQuests() {
 	const fetchQuest = async (questId: string) => await userStore.fetchQuest(questId);
 	const fetchQuests = async () => await userStore.fetchQuestsList();
 
+	const getStepIcon = (step: string) => {
+		switch (step) {
+			case 'take_photo_location':
+				return 'mdi:camera-marker';
+			case 'take_photo_classification':
+				return 'mdi:camera-enhance';
+			case 'take_photo_caption':
+				return 'mdi:camera-image';
+			case 'take_photo_objects':
+				return 'mdi:camera-gopro';
+			case 'take_photo_list':
+				return 'mdi:camera-burst';
+			case 'take_photo_validation':
+				return 'mdi:camera-switch';
+			case 'draw_picture':
+				return 'mdi:brush';
+			case 'attend_event':
+				return 'mdi:calendar-star';
+			case 'transcribe_audio':
+				return 'mdi:microphone';
+			case 'article_quiz':
+				return 'mdi:book-open-variant';
+			case 'match_terms':
+				return 'mdi:shape';
+			case 'order_items':
+				return 'mdi:format-list-bulleted';
+			case 'describe_text':
+				return 'mdi:pencil';
+			case 'respond_to_prompt':
+				return 'mdi:comment-text';
+			case 'activity_read_time':
+				return 'mdi:account-clock';
+			case 'article_read_time':
+				return 'mdi:book-clock-outline';
+			default:
+				return 'mdi:account';
+		}
+	};
+
 	return {
 		quests,
 		fetchQuest,
-		fetchQuests
+		fetchQuests,
+		getStepIcon
 	};
 }
 
