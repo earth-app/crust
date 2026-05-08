@@ -71,4 +71,23 @@ onMounted(async () => {
 		duration: 5000
 	});
 });
+
+// activity read time tracking
+
+const { startTimer, stopTimer } = useTimeOnPage('activity_read_time', {
+	activity: currentActivity.value,
+	user: user.value
+});
+
+onMounted(() => {
+	if (import.meta.client) {
+		startTimer();
+	}
+});
+
+onUnmounted(() => {
+	if (import.meta.client) {
+		stopTimer();
+	}
+});
 </script>

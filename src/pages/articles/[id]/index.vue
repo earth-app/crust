@@ -49,10 +49,6 @@ const route = useRoute();
 const { user, fetchCurrentJourney, tapCurrentJourney } = useAuth();
 const { setTitleSuffix } = useTitleSuffix();
 const { article, fetch } = useArticle(route.params.id as string);
-const { startTimer, stopTimer } = useTimeOnPage('articles_read_time', {
-	article: article.value,
-	user: user.value
-});
 
 const relatedLoaded = ref(false);
 const relatedArticles = ref<Article[]>([]);
@@ -154,6 +150,13 @@ async function loadSimilar(article?: Article) {
 		similarInFlight.value = false;
 	}
 }
+
+// articles read time tracking
+
+const { startTimer, stopTimer } = useTimeOnPage('articles_read_time', {
+	article: article.value,
+	user: user.value
+});
 
 onMounted(() => {
 	if (import.meta.client) {

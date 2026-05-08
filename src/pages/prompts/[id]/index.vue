@@ -20,22 +20,6 @@ const route = useRoute();
 const toast = useToast();
 const { user, fetchCurrentJourney, tapCurrentJourney } = useAuth();
 const { prompt, fetch } = usePrompt(route.params.id as string);
-const { startTimer, stopTimer } = useTimeOnPage('prompts_read_time', {
-	prompt: prompt.value,
-	user: user.value
-});
-
-onMounted(() => {
-	if (import.meta.client) {
-		startTimer();
-	}
-});
-
-onUnmounted(() => {
-	if (import.meta.client) {
-		stopTimer();
-	}
-});
 
 onMounted(async () => {
 	// Force fetch on mount to ensure fresh data on page refresh
@@ -73,5 +57,24 @@ watch(
 useSeoMeta({
 	ogTitle: prompt.value ? prompt.value.prompt : 'Prompt',
 	ogDescription: prompt.value ? `${prompt.value.responses_count} Responses` : 'Prompt'
+});
+
+// prompts read time tracking
+
+const { startTimer, stopTimer } = useTimeOnPage('prompts_read_time', {
+	prompt: prompt.value,
+	user: user.value
+});
+
+onMounted(() => {
+	if (import.meta.client) {
+		startTimer();
+	}
+});
+
+onUnmounted(() => {
+	if (import.meta.client) {
+		stopTimer();
+	}
 });
 </script>
