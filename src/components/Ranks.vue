@@ -1,16 +1,29 @@
 <template>
-	<div class="grid grid-cols-2 gap-6">
+	<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 		<UPricingPlan
 			v-for="(plan, index) in plans"
 			class="min-w-50 max-w-125"
-			id="plan-{{ plan.title }}"
+			:id="`plan-${plan.title}`"
 			:key="index"
 			:class="{
 				'border-2 border-primary': highlighted === plan.title?.toUpperCase(),
 				'border-gray-300 light:border-gray-600': highlighted !== plan.title?.toUpperCase()
 			}"
 			v-bind="plan"
-		/>
+		>
+			<template #button>
+				<slot
+					name="button"
+					:button="plan.button"
+					:plan="plan"
+				>
+					<UButton
+						v-bind="plan.button"
+						block
+					/>
+				</slot>
+			</template>
+		</UPricingPlan>
 	</div>
 </template>
 
