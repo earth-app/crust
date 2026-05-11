@@ -208,11 +208,11 @@ export function useActivity(id: string) {
 
 // Activity Information Extensions
 
-export function useActivityInfo() {
+export function useActivityInfo(serverRequest: typeof makeServerRequest = makeServerRequest) {
 	const authStore = useAuthStore();
 
 	const fetchWikipediaSummary = async (title: string) => {
-		return await makeServerRequest<WikipediaSummary>(
+		return await serverRequest<WikipediaSummary>(
 			`wikipedia-summary-${title}`,
 			`/api/activity/wikipedia?title=${encodeURIComponent(title)}`,
 			authStore.sessionToken
@@ -220,7 +220,7 @@ export function useActivityInfo() {
 	};
 
 	const fetchYouTubeSearch = async (query: string) => {
-		return await makeServerRequest<YouTubeVideo[]>(
+		return await serverRequest<YouTubeVideo[]>(
 			`youtube-search-${query}`,
 			`/api/activity/youtubeSearch?query=${encodeURIComponent(query)}`,
 			authStore.sessionToken
@@ -234,7 +234,7 @@ export function useActivityInfo() {
 		const results: Record<string, WikipediaSummary> = {};
 		const responses = await Promise.all(
 			queries.map(async (query) => {
-				return await makeServerRequest<{
+				return await serverRequest<{
 					query: { search: { title: string; snippet: string }[] };
 				}>(
 					`wikipedia-search-${query}`,
@@ -306,7 +306,7 @@ export function useActivityInfo() {
 				if (results[query]) return;
 
 				try {
-					const res = await makeServerRequest<{
+					const res = await serverRequest<{
 						hits: PixabayImage[];
 						total: number;
 						totalHits: number;
@@ -349,7 +349,7 @@ export function useActivityInfo() {
 			queries.map(async (query) => {
 				if (results[query]) return; // Already fetched
 				try {
-					const res = await makeServerRequest<{
+					const res = await serverRequest<{
 						hits: PixabayVideo[];
 						total: number;
 						totalHits: number;
@@ -388,7 +388,7 @@ export function useActivityInfo() {
 				if (results[query]) return; // Already fetched
 
 				try {
-					const res = await makeServerRequest<{ icons: string[]; total: number }>(
+					const res = await serverRequest<{ icons: string[]; total: number }>(
 						`icon-search-${query}`,
 						`/api/activity/iconSearch?search=${encodeURIComponent(query)}`,
 						authStore.sessionToken
@@ -410,7 +410,7 @@ export function useActivityInfo() {
 
 	const fetchInternetArchiveItems = async (query: string, page: number = 1) => {
 		try {
-			const res = await makeServerRequest<{
+			const res = await serverRequest<{
 				items: InternetArchiveItem[];
 				page: number;
 				hasMore: boolean;
@@ -438,7 +438,7 @@ export function useActivityInfo() {
 
 	const fetchUnsplashImages = async (query: string, excluded: string[] = []) => {
 		try {
-			const res = await makeServerRequest<UnsplashImage[]>(
+			const res = await serverRequest<UnsplashImage[]>(
 				`unsplash-search-${query}`,
 				`/api/activity/unsplash?query=${encodeURIComponent(query)}`,
 				authStore.sessionToken,
@@ -471,9 +471,9 @@ export function useActivityInfo() {
 
 // Activity Profile
 
-export function useActivityIslands() {
+export function useActivityIslands(serverRequest: typeof makeServerRequest = makeServerRequest) {
+	const info = useActivityInfo(serverRequest);
 	const islands = ref<{ name: string; icon: string; x: number; y: number }[]>([]);
-	const info = useActivityInfo();
 
 	const loadIslandsForActivity = async (activity: Activity) => {
 		if (activity.fields['island_icons']) {
@@ -511,7 +511,9 @@ export function useActivityIslands() {
 	return { islands, loadIslandsForActivity };
 }
 
-export function useActivityCards() {
+export function useActivityCards(serverRequest: typeof makeServerRequest = makeServerRequest) {
+	const info = useActivityInfo(serverRequest);
+
 	type CardEntry = {
 		key?: string;
 		title: string;
@@ -536,7 +538,6 @@ export function useActivityCards() {
 	const cards = ref<CardEntry[]>([]);
 	const loadRequestId = ref(0);
 	const isLoadingMore = ref(false);
-	const info = useActivityInfo();
 	const currentActivity = ref<Activity | null>(null);
 	const seen = ref(new Set<string>());
 	const sourceTerms = ref<string[]>([]);
