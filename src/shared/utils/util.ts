@@ -350,20 +350,22 @@ export function toTitleCase(str: string): string {
 		.join(' ');
 }
 
-export function capitalizeFully(str: string): string {
+export function capitalizeFully(str?: string): string {
 	if (!str) return '';
 
 	const parts = str.split(' ');
 	return parts.map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join(' ');
 }
 
-export function trimString(str: string, maxLength: number): string {
-	if (!str || str.length <= maxLength) return str;
+export function trimString(str?: string, maxLength?: number): string {
+	if (!maxLength || maxLength <= 0) return str || '';
+	if (!str) return '';
+	if (str.length <= maxLength) return str;
 
 	return str.slice(0, maxLength - 3) + '...';
 }
 
-export function withSuffix(num: number): string {
+export function withSuffix(num?: number): string {
 	if (!num) return '0';
 	if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
 	if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
@@ -371,13 +373,14 @@ export function withSuffix(num: number): string {
 	return num.toString();
 }
 
-export function comma(num: number): string {
+export function comma(num?: number): string {
 	if (!num) return '0';
 	return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-export function parseLooseDate(input: string): DateTime | string {
+export function parseLooseDate(input?: string): DateTime | string {
 	if (!input) return '';
+
 	const formats = [
 		'yyyy', // 2025
 		'LL yyyy', // 06 2024
