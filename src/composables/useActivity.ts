@@ -208,6 +208,7 @@ export function useActivity(id: string) {
 
 // Activity Information Extensions
 
+// allow passing custom serverRequest for mobile implementation
 export function useActivityInfo(serverRequest: typeof makeServerRequest = makeServerRequest) {
 	const authStore = useAuthStore();
 
