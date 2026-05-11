@@ -364,6 +364,7 @@ export function trimString(str: string, maxLength: number): string {
 }
 
 export function withSuffix(num: number): string {
+	if (!num) return '0';
 	if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
 	if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
 	if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
@@ -371,10 +372,12 @@ export function withSuffix(num: number): string {
 }
 
 export function comma(num: number): string {
+	if (!num) return '0';
 	return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 export function parseLooseDate(input: string): DateTime | string {
+	if (!input) return '';
 	const formats = [
 		'yyyy', // 2025
 		'LL yyyy', // 06 2024
@@ -402,6 +405,8 @@ export function getUserDisplayName(
 		| undefined,
 	opts?: { at?: boolean; anonymous?: string }
 ): string {
+	if (!user) return opts?.anonymous ?? 'anonymous';
+
 	const at = opts?.at ?? false;
 	const anonymous = opts?.anonymous ?? 'anonymous';
 
