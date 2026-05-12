@@ -484,6 +484,11 @@ const origin = computed(() => {
 });
 
 function appendUTMParameters(link: string) {
+	// don't append UTM parameters to internal links
+	if (!link.startsWith('http')) {
+		return link;
+	}
+
 	if (link.includes('?')) {
 		return `${link}&utm_source=earth-app&utm_medium=referral&utm_campaign=info-card`;
 	} else {

@@ -133,25 +133,9 @@ const loading = computed(() => {
 // Prevent concurrent calls to loadContent
 const isLoadingContent = ref(false);
 
-async function loadContent() {
-	// Prevent duplicate concurrent loads
-	if (isLoadingContent.value) {
-		return;
-	}
+function loadRecommended() {
+	if (recommendedEvents.value.length > 0) return;
 
-	isLoadingContent.value = true;
-
-	// reset states
-	recommendedLoaded.value = false;
-	recommendedEvents.value = [];
-	randomLoaded.value = false;
-	randomEvents.value = [];
-	recentLoaded.value = false;
-	recentEvents.value = [];
-	upcomingLoaded.value = false;
-	upcomingEvents.value = [];
-
-	// Load content progressively for better perceived performance
 	if (user.value) {
 		const { fetchRecommended } = useEvents();
 		fetchRecommended().then((recommendedRes) => {
@@ -173,7 +157,27 @@ async function loadContent() {
 	} else {
 		recommendedLoaded.value = true;
 	}
+}
 
+async function loadContent() {
+	// Prevent duplicate concurrent loads
+	if (isLoadingContent.value) {
+		return;
+	}
+
+	isLoadingContent.value = true;
+
+	// reset states
+	randomLoaded.value = false;
+	randomEvents.value = [];
+	recentLoaded.value = false;
+	recentEvents.value = [];
+	upcomingLoaded.value = false;
+	upcomingEvents.value = [];
+
+	recommendedLoaded.value = false;
+	recommendedEvents.value = [];
+	loadRecommended();
 	const { fetchRandom, fetchRecent, fetchUpcoming } = useEvents();
 	fetchRandom(10).then((randomRes) => {
 		if (randomRes.success && randomRes.data) {
@@ -269,6 +273,16 @@ async function loadContent() {
 
 	isLoadingContent.value = false;
 }
+
+watch(
+	() => user.value,
+	(newUser, oldUser) => {
+		if (newUser?.id !== oldUser?.id) {
+			loadRecommended();
+		}
+	},
+	{ immediate: false }
+);
 
 onMounted(async () => {
 	await loadContent();

@@ -186,20 +186,8 @@ const loading = computed(() => {
 	return !recommendedLoaded.value || loaded;
 });
 
-async function loadContent() {
-	// reset states
-	recommendedLoaded.value = false;
-	recommendedArticles.value = [];
-	randomLoaded.value = false;
-	randomArticles.value = [];
-	recentLoaded.value = false;
-	recentArticles.value = [];
-	olderLoaded.value = false;
-	olderArticles.value = [];
-	byCloudLoaded.value = false;
-	byCloudArticles.value = [];
-	byTagLoaded.clear();
-	byTagArticles.clear();
+function loadRecommended() {
+	if (recommendedArticles.value.length > 0) return;
 
 	if (user.value) {
 		const { fetchRecommended } = useArticles();
@@ -222,6 +210,24 @@ async function loadContent() {
 	} else {
 		recommendedLoaded.value = true;
 	}
+}
+
+async function loadContent() {
+	// reset states
+	recommendedLoaded.value = false;
+	recommendedArticles.value = [];
+	loadRecommended();
+
+	randomLoaded.value = false;
+	randomArticles.value = [];
+	recentLoaded.value = false;
+	recentArticles.value = [];
+	olderLoaded.value = false;
+	olderArticles.value = [];
+	byCloudLoaded.value = false;
+	byCloudArticles.value = [];
+	byTagLoaded.clear();
+	byTagArticles.clear();
 
 	const { fetchRandom, fetchRecent, fetchOldest } = useArticles();
 	fetchRandom(15).then((randomRes) => {
@@ -387,4 +393,14 @@ async function loadContent() {
 onMounted(async () => {
 	await loadContent();
 });
+
+watch(
+	user,
+	(newUser, oldUser) => {
+		if (newUser?.id !== oldUser?.id) {
+			loadRecommended();
+		}
+	},
+	{ immediate: false }
+);
 </script>
