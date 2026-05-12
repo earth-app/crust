@@ -458,6 +458,26 @@ export function useActivityInfo(serverRequest: typeof makeServerRequest = makeSe
 		return [];
 	};
 
+	const fetchArticles = async (search: string, page: number = 1) => {
+		try {
+			const { fetch } = useArticles(page, 25, search, 'desc');
+			const res = await fetch();
+
+			if (res.success && res.data) {
+				if ('message' in res.data) {
+					return [];
+				}
+
+				return res.data.items;
+			}
+
+			console.warn(`Failed to fetch articles for activity info: ${res.message}`);
+			return [];
+		} catch (error) {
+			// ignore errors
+		}
+	};
+
 	return {
 		fetchWikipediaSummary,
 		fetchYouTubeSearch,
@@ -466,7 +486,8 @@ export function useActivityInfo(serverRequest: typeof makeServerRequest = makeSe
 		fetchPixabayVideos,
 		fetchIconSearches,
 		fetchInternetArchiveItems,
-		fetchUnsplashImages
+		fetchUnsplashImages,
+		fetchArticles
 	};
 }
 
@@ -534,7 +555,7 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 		color?: number;
 	};
 
-	type SourceKey = 'pixabayImages' | 'pixabayVideos' | 'archive' | 'unsplash';
+	type SourceKey = 'pixabayImages' | 'pixabayVideos' | 'archive' | 'unsplash' | 'articles';
 
 	const cards = ref<CardEntry[]>([]);
 	const loadRequestId = ref(0);
@@ -550,14 +571,16 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 		pixabayImages: 1,
 		pixabayVideos: 1,
 		archive: 1,
-		unsplash: 1
+		unsplash: 1,
+		articles: 1
 	});
 
 	const sourceHasMore = reactive<Record<SourceKey, boolean>>({
 		pixabayImages: true,
 		pixabayVideos: true,
 		archive: true,
-		unsplash: true
+		unsplash: true,
+		articles: true
 	});
 
 	const hasMore = computed(() => {
@@ -565,7 +588,8 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 			sourceHasMore.pixabayImages ||
 			sourceHasMore.pixabayVideos ||
 			sourceHasMore.archive ||
-			sourceHasMore.unsplash
+			sourceHasMore.unsplash ||
+			sourceHasMore.articles
 		);
 	});
 
@@ -775,6 +799,7 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 			if (sourceHasMore.pixabayVideos) availableSources.push('pixabayVideos');
 			if (sourceHasMore.archive) availableSources.push('archive');
 			if (sourceHasMore.unsplash) availableSources.push('unsplash');
+			if (sourceHasMore.articles) availableSources.push('articles');
 
 			if (availableSources.length === 0) return;
 
@@ -852,6 +877,35 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 				safePush(mapUnsplashImages(unsplashRes || []), reqId, false);
 				sourceHasMore.unsplash = unsplashRes !== undefined && unsplashRes.length > 0;
 				sourcePage.unsplash += 1;
+			}
+
+			if (chosenSource === 'articles') {
+				const articles = await info.fetchArticles(activity.name, sourcePage.articles);
+				if (!articles || articles.length === 0) {
+					sourceHasMore.articles = false;
+					return;
+				}
+
+				if (loadRequestId.value !== reqId) return;
+
+				safePush(
+					// stub - rendered differently
+					articles.map((article) => ({
+						key: `article:${article.id}`,
+						title: article.title,
+						icon: 'mdi:file-document-outline',
+						description: `Article about ${activity.name} by @${article.author.username}`,
+						content: trimString(article.content, 700),
+						color: article.color,
+						secondaryFooter: `Published on ${DateTime.fromISO(article.created_at).toLocaleString(DateTime.DATETIME_FULL)}`,
+						link: `/articles/${article.id}`
+					})),
+					reqId,
+					false
+				);
+
+				sourceHasMore.articles = articles.length > 0;
+				sourcePage.articles += 1;
 			}
 		} finally {
 			if (loadRequestId.value === reqId) {
