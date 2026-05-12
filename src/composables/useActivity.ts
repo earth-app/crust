@@ -538,6 +538,7 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 
 	type CardEntry = {
 		key?: string;
+		source?: string;
 		title: string;
 		icon: string;
 		description?: string;
@@ -622,18 +623,64 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 
 		if (normalizedItems.length === 0) return;
 
-		if (!randomize) {
-			// Batch append to avoid N reactive updates while infinite scrolling.
-			cards.value = [...cards.value, ...normalizedItems];
-			return;
+		// Shuffle incoming items so any source-specific API batch ordering does not create streaks.
+		for (let i = normalizedItems.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[normalizedItems[i], normalizedItems[j]] = [normalizedItems[j]!, normalizedItems[i]!];
 		}
+
+		const sourceOf = (item: CardEntry) => item.source || item.icon || '';
+
+		const runLengthLeft = (arr: CardEntry[], index: number, source: string) => {
+			let len = 0;
+			for (let i = index - 1; i >= 0; i--) {
+				if (sourceOf(arr[i]!) !== source) break;
+				len += 1;
+			}
+			return len;
+		};
+
+		const runLengthRight = (arr: CardEntry[], index: number, source: string) => {
+			let len = 0;
+			for (let i = index; i < arr.length; i++) {
+				if (sourceOf(arr[i]!) !== source) break;
+				len += 1;
+			}
+			return len;
+		};
 
 		const nextCards = [...cards.value];
 		for (const normalizedItem of normalizedItems) {
-			const lower = Math.min(4, nextCards.length);
+			const source = sourceOf(normalizedItem);
+
+			// During infinite scrolling, bias mixing into the tail window to avoid reordering
+			// older cards while still preventing long source streaks.
+			const lower = randomize
+				? Math.min(4, nextCards.length)
+				: Math.max(Math.min(4, nextCards.length), nextCards.length - 20);
 			const upper = nextCards.length;
-			const randomPlace = lower + Math.floor(Math.random() * (upper - lower + 1));
-			nextCards.splice(randomPlace, 0, normalizedItem);
+
+			let bestScore = Number.POSITIVE_INFINITY;
+			const bestIndices: number[] = [];
+
+			for (let index = lower; index <= upper; index++) {
+				const leftRun = runLengthLeft(nextCards, index, source);
+				const rightRun = runLengthRight(nextCards, index, source);
+
+				// Strongly penalize joining/creating long contiguous runs of same-source cards.
+				const score = leftRun + rightRun + leftRun * rightRun;
+
+				if (score < bestScore) {
+					bestScore = score;
+					bestIndices.length = 0;
+					bestIndices.push(index);
+				} else if (score === bestScore) {
+					bestIndices.push(index);
+				}
+			}
+
+			const chosenIndex = bestIndices[Math.floor(Math.random() * bestIndices.length)] ?? upper;
+			nextCards.splice(chosenIndex, 0, normalizedItem);
 		}
 
 		cards.value = nextCards;
@@ -745,6 +792,7 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 			}
 
 			mapped.push({
+				source: 'archive',
 				title: item.title,
 				icon,
 				description: `Item on Internet Archive by ${item.creator}`,
@@ -767,6 +815,7 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 			const color0 = parseInt(item.color.replace('#', ''), 16);
 
 			return {
+				source: 'unsplash',
 				title: trimString(toTitleCase(item.description || item.alt_description || 'Untitled'), 60),
 				icon: 'cib:unsplash',
 				description: `Photo by ${item.user.name} on Unsplash`,
@@ -812,6 +861,7 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 					(_, images) => {
 						safePush(
 							images.map((image) => ({
+								source: 'pixabayImages',
 								title: capitalizeFully(activity.name),
 								icon: 'mdi:image',
 								description: `Photo by ${image.user} on Pixabay`,
@@ -839,6 +889,7 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 							const mediumUrl = video.videos?.medium?.url;
 							if (!mediumUrl) continue;
 							mappedVideos.push({
+								source: 'pixabayVideos',
 								title: capitalizeFully(activity.name),
 								icon: 'mdi:video',
 								description: `Video by ${video.user} on Pixabay`,
@@ -892,6 +943,7 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 					// stub - rendered differently
 					articles.map((article) => ({
 						key: `article:${article.id}`,
+						source: 'articles',
 						title: article.title,
 						icon: 'mdi:file-document-outline',
 						description: `Article about ${activity.name} by @${article.author.username}`,
@@ -949,6 +1001,7 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 				if (res.success && res.data) {
 					safePush(
 						res.data.map((video) => ({
+							source: 'youtube',
 							title: video.title,
 							icon: 'cib:youtube',
 							description: video.uploaded_at,
@@ -968,6 +1021,7 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 			await info.fetchWikipediaSearches(terms, (_, entry) => {
 				safePush(
 					{
+						source: 'wikipedia',
 						title: entry.title,
 						icon: 'mdi:wikipedia',
 						description: entry.description,
