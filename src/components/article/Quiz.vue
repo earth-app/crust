@@ -47,7 +47,7 @@
 						<URadioGroup
 							v-model="userAnswers[index]"
 							:items="currentOptions"
-							:disabled="quizCompleted"
+							:disabled="!!score"
 							color="info"
 							class="self-start w-full"
 						/>
@@ -87,7 +87,6 @@
 				</Transition>
 
 				<UButton
-					v-if="score || !quizCompleted"
 					icon="mdi:arrow-right"
 					variant="soft"
 					size="md"
@@ -96,7 +95,7 @@
 				/>
 
 				<UButton
-					v-else-if="!score"
+					v-if="!score"
 					trailing-icon="mdi:arrow-right"
 					variant="subtle"
 					size="md"
@@ -154,8 +153,8 @@ const currentOptions = computed(() => {
 
 	if (options.length === 0 && currentQuestion.value.type === 'true_false') {
 		return [
-			{ text: 'True', value: 0 },
-			{ text: 'False', value: 1 }
+			{ label: 'True', value: 0 },
+			{ label: 'False', value: 1 }
 		];
 	}
 
@@ -177,12 +176,10 @@ const handleSubmit = async () => {
 const userAnswers = ref<number[]>([]);
 const quizCompleted = computed(() => {
 	return (
-		quiz.value !== null &&
-		quiz.value !== undefined &&
+		!!quiz.value &&
 		Array.isArray(quiz.value) &&
 		quiz.value.length > 0 &&
-		quizSummary.value !== null &&
-		quizSummary.value !== undefined &&
+		!!quizSummary.value &&
 		userAnswers.value.length === quizSummary.value.total
 	);
 });
