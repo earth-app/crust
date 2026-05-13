@@ -757,7 +757,10 @@ export async function deleteNotification(id: string) {
 	return await notificationStore.deleteNotification(id);
 }
 
-export function useJourneyLeaderboard(type: string) {
+export function useJourneyLeaderboard(
+	type: string,
+	serverRequest: typeof makeServerRequest = makeServerRequest
+) {
 	const leaderboard = useState<UserJourneyLeaderboardEntry[]>(
 		`journey-leaderboard-${type}`,
 		() => []
@@ -765,7 +768,7 @@ export function useJourneyLeaderboard(type: string) {
 	const authStore = useAuthStore();
 
 	const fetchLeaderboardData = async (limit: number = 10) => {
-		return await makeServerRequest<Omit<UserJourneyLeaderboardEntry, 'user'>[]>(
+		return await serverRequest<Omit<UserJourneyLeaderboardEntry, 'user'>[]>(
 			`journey-leaderboard-${type}-limit-${limit}`,
 			`/api/user/journeyLeaderboard?type=${type}&limit=${limit}`,
 			authStore.sessionToken
