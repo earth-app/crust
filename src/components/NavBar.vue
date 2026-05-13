@@ -100,7 +100,7 @@
 						>
 							<UIcon
 								name="mdi:shield-star-outline"
-								class="size-6 lg:size-7 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-6 lg:size-7 text-primary cursor-pointer hover:scale-105 transition-transform duration-300"
 							/>
 						</NuxtLink>
 						<NuxtLink
@@ -111,7 +111,7 @@
 						>
 							<UIcon
 								name="mdi:sword"
-								class="size-6 lg:size-7 text-white cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-6 lg:size-7 text-warning cursor-pointer hover:scale-105 transition-transform duration-300"
 							/>
 						</NuxtLink>
 						<NuxtLink
