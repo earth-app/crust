@@ -34,7 +34,7 @@
     "@nuxt/icon": "^2.2.1",
     "@nuxt/image": "^2.0.0",
     "@nuxt/kit": "^4.4.2",
-    "@nuxt/scripts": "^0.13.4",
+    "@nuxt/scripts": "^1.0.0",
     "@nuxt/ui": "^4.7.0",
     "@nuxthub/core": "^0.10.7",
     "@nuxtjs/color-mode": "^4.0.0",
