@@ -50,7 +50,7 @@ export function useDisplayName(
 	return { name, handle, fullName, hasFullName };
 }
 
-export function useAuth() {
+export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequest) {
 	const authStore = useAuthStore();
 	const avatarStore = useAvatarStore();
 
@@ -170,7 +170,7 @@ export function useAuth() {
 	const fetchCurrentJourney = async (identifier: string, id: string) => {
 		if (!id) return { success: true, data: { count: 0 } };
 
-		return await makeServerRequest<{ count: number; lastWrite?: number }>(
+		return await serverRequest<{ count: number; lastWrite?: number }>(
 			`journey-${identifier}`,
 			`/api/user/journey?type=${identifier}&id=${id}`,
 			authStore.sessionToken
@@ -178,7 +178,7 @@ export function useAuth() {
 	};
 
 	const tapCurrentJourney = async (identifier: string, activity?: string) => {
-		return await makeServerRequest<{ count: number }>(
+		return await serverRequest<{ count: number }>(
 			null,
 			`/api/user/journey?type=${identifier}${activity ? `&activity=${activity}` : ''}`,
 			authStore.sessionToken,
@@ -189,7 +189,7 @@ export function useAuth() {
 	};
 
 	const clearCurrentJourney = async (identifier: string) => {
-		return await makeServerRequest<void>(
+		return await serverRequest<void>(
 			null,
 			`/api/user/journey?type=${identifier}`,
 			authStore.sessionToken,
@@ -200,7 +200,7 @@ export function useAuth() {
 	};
 
 	const fetchCurrentJourneyRank = async (type: string, id: string) => {
-		return await makeServerRequest<{ rank: number }>(
+		return await serverRequest<{ rank: number }>(
 			`journey-rank-${type}`,
 			`/api/user/journeyRank?type=${type}&id=${id}`,
 			authStore.sessionToken
