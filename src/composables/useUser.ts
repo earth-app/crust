@@ -172,26 +172,48 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 
 		return await serverRequest<{ count: number; lastWrite?: number }>(
 			`journey-${identifier}`,
-			`/api/user/journey?type=${identifier}&id=${id}`,
+			`/api/user/journey?type=${encodeURIComponent(identifier)}&id=${encodeURIComponent(id)}`,
 			authStore.sessionToken
 		);
 	};
 
 	const tapCurrentJourney = async (identifier: string, activity?: string) => {
-		return await serverRequest<{ count: number }>(
+		const activityQuery = activity ? `&activity=${encodeURIComponent(activity)}` : '';
+
+		const res = await serverRequest<{ count: number; incremented: boolean }>(
 			null,
-			`/api/user/journey?type=${identifier}${activity ? `&activity=${activity}` : ''}`,
+			`/api/user/journey?type=${encodeURIComponent(identifier)}${activityQuery}`,
 			authStore.sessionToken,
 			{
 				method: 'POST'
 			}
 		);
+
+		if (
+			import.meta.client &&
+			res.success &&
+			res.data &&
+			!('message' in res.data) &&
+			res.data.incremented
+		) {
+			window.dispatchEvent(
+				new CustomEvent('earth-app:journey-updated', {
+					detail: {
+						type: identifier,
+						activity: activity ?? null,
+						count: res.data.count
+					}
+				})
+			);
+		}
+
+		return res;
 	};
 
 	const clearCurrentJourney = async (identifier: string) => {
 		return await serverRequest<void>(
 			null,
-			`/api/user/journey?type=${identifier}`,
+			`/api/user/journey?type=${encodeURIComponent(identifier)}`,
 			authStore.sessionToken,
 			{
 				method: 'DELETE'
@@ -202,7 +224,7 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 	const fetchCurrentJourneyRank = async (type: string, id: string) => {
 		return await serverRequest<{ rank: number }>(
 			`journey-rank-${type}`,
-			`/api/user/journeyRank?type=${type}&id=${id}`,
+			`/api/user/journeyRank?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`,
 			authStore.sessionToken
 		);
 	};
@@ -766,6 +788,7 @@ export function useJourneyLeaderboard(
 		() => []
 	);
 	const authStore = useAuthStore();
+	const currentLimit = ref(10);
 
 	const fetchLeaderboardData = async (limit: number = 10) => {
 		return await serverRequest<Omit<UserJourneyLeaderboardEntry, 'user'>[]>(
@@ -776,6 +799,7 @@ export function useJourneyLeaderboard(
 	};
 
 	const fetchLeaderboard = async (limit: number = 10) => {
+		currentLimit.value = limit;
 		const res = await fetchLeaderboardData(limit);
 		if (res.success && res.data) {
 			const userPromises = res.data.map(async (entry) => {
@@ -799,6 +823,28 @@ export function useJourneyLeaderboard(
 			leaderboard.value = [];
 		}
 	};
+
+	if (import.meta.client) {
+		const refreshLeaderboard = (event: Event) => {
+			const journeyEvent = event as CustomEvent<{
+				type?: string;
+				incremented?: boolean;
+			}>;
+
+			if (!journeyEvent.detail?.incremented) return;
+			if (journeyEvent.detail.type !== type) return;
+
+			void fetchLeaderboard(currentLimit.value);
+		};
+
+		onMounted(() => {
+			window.addEventListener('earth-app:journey-updated', refreshLeaderboard as EventListener);
+		});
+
+		onUnmounted(() => {
+			window.removeEventListener('earth-app:journey-updated', refreshLeaderboard as EventListener);
+		});
+	}
 
 	if (leaderboard.value.length === 0) {
 		fetchLeaderboard();
