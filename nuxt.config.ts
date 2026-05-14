@@ -73,7 +73,14 @@ export default defineNuxtConfig({
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		plugins: [tailwindcss() as any],
 		optimizeDeps: {
-			include: ['@vue/devtools-core', '@vue/devtools-kit', 'luxon', '@earth-app/ocean', 'dompurify']
+			include: [
+				'@vue/devtools-core',
+				'@vue/devtools-kit',
+				'luxon',
+				'@earth-app/ocean',
+				'dompurify',
+				'@internationalized/date'
+			]
 		}
 	},
 	nitro: {
