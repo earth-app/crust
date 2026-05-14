@@ -57,53 +57,80 @@ const { fetchCurrentJourney, fetchCurrentJourneyRank } = useAuth();
 
 const loading = ref(false);
 const state = reactive({
-	activity: { rank: 0, count: 0 },
+	activity: { count: 0 },
 	prompt: { rank: 0, count: 0 },
 	article: { rank: 0, count: 0 },
 	event: { rank: 0, count: 0 }
 });
 const { count: totalActivities } = useActivitiesCount();
 
-onMounted(async () => {
+let journeyLoadToken = 0;
+const loadJourneys = async () => {
+	const loadToken = ++journeyLoadToken;
 	loading.value = true;
+	state.activity.count = 0;
+	state.prompt.count = 0;
+	state.prompt.rank = 0;
+	state.article.count = 0;
+	state.article.rank = 0;
+	state.event.count = 0;
+	state.event.rank = 0;
 
-	// Retrieve journey values
-	const journeyTypes = ['activity', 'event', 'prompt', 'article'] as const;
+	try {
+		// Retrieve journey values
+		const journeyTypes = ['activity', 'event', 'prompt', 'article'] as const;
 
-	await Promise.all(
-		journeyTypes.map(async (type) => {
-			// Fetch count
-			const countRes = await fetchCurrentJourney(type, props.user.id);
-			if (countRes.success && countRes.data) {
-				if ('message' in countRes.data) {
+		await Promise.all(
+			journeyTypes.map(async (type) => {
+				if (loadToken !== journeyLoadToken) return;
+
+				// Fetch count
+				const countRes = await fetchCurrentJourney(type, props.user.id);
+				if (loadToken !== journeyLoadToken) return;
+
+				if (countRes.success && countRes.data) {
+					if ('message' in countRes.data) {
+						toast.add({
+							title: 'Error',
+							description: (countRes.data.message || 'Failed to fetch journey data.') as string,
+							icon: 'mdi:alert-circle-outline',
+							color: 'error'
+						});
+					} else if ('count' in countRes.data) {
+						state[type].count = countRes.data.count;
+					}
+				} else {
 					toast.add({
 						title: 'Error',
-						description: (countRes.data.message || 'Failed to fetch journey data.') as string,
+						description: countRes.message || 'Failed to fetch journey data.',
 						icon: 'mdi:alert-circle-outline',
 						color: 'error'
 					});
-				} else if ('count' in countRes.data) {
-					state[type].count = countRes.data.count;
 				}
-			} else {
-				toast.add({
-					title: 'Error',
-					description: countRes.message || 'Failed to fetch journey data.',
-					icon: 'mdi:alert-circle-outline',
-					color: 'error'
-				});
-			}
 
-			// Fetch rank
-			if (type !== 'activity') {
-				const rankRes = await fetchCurrentJourneyRank(type, props.user.id);
-				if (rankRes.success && rankRes.data && 'rank' in rankRes.data) {
-					state[type].rank = rankRes.data.rank;
+				// Fetch rank
+				if (type !== 'activity') {
+					const rankRes = await fetchCurrentJourneyRank(type, props.user.id);
+					if (loadToken !== journeyLoadToken) return;
+
+					if (rankRes.success && rankRes.data && 'rank' in rankRes.data) {
+						state[type].rank = rankRes.data.rank;
+					}
 				}
-			}
-		})
-	);
+			})
+		);
+	} finally {
+		if (loadToken === journeyLoadToken) {
+			loading.value = false;
+		}
+	}
+};
 
-	loading.value = false;
-});
+watch(
+	() => props.user.id,
+	() => {
+		void loadJourneys();
+	},
+	{ immediate: true }
+);
 </script>

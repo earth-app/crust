@@ -46,7 +46,7 @@
 <script setup lang="ts">
 const toast = useToast();
 const route = useRoute();
-const { user, fetchCurrentJourney, tapCurrentJourney } = useAuth();
+const { user, tapCurrentJourney } = useAuth();
 const { setTitleSuffix } = useTitleSuffix();
 const { article, fetch } = useArticle(route.params.id as string);
 
@@ -54,6 +54,8 @@ const relatedLoaded = ref(false);
 const relatedArticles = ref<Article[]>([]);
 const similarLoadedFor = ref<string | null>(null);
 const similarInFlight = ref(false);
+const journeyTrackedArticleId = ref<string | null>(null);
+const journeyTrackingArticleId = ref<string | null>(null);
 
 // Fetch article data on mount
 onMounted(() => {
@@ -93,32 +95,50 @@ watch(
 	{ immediate: true }
 );
 
+watch(
+	[() => article.value, () => user.value] as const,
+	async ([currentArticle, currentUser]) => {
+		if (!currentArticle || !currentUser || 'error' in (currentArticle as any)) return;
+
+		const articleId = currentArticle.id;
+		if (
+			journeyTrackedArticleId.value === articleId ||
+			journeyTrackingArticleId.value === articleId
+		) {
+			return;
+		}
+
+		journeyTrackingArticleId.value = articleId;
+		try {
+			const res = await tapCurrentJourney('article');
+			if (!res.success || !res.data || 'message' in res.data) return;
+
+			journeyTrackedArticleId.value = articleId;
+			if (!res.data.incremented) return;
+
+			const journeyCount = res.data.count > 0 ? res.data.count : null;
+
+			toast.add({
+				title: 'Journey Updated',
+				description: journeyCount
+					? `You have now read ${journeyCount} articles on your journey streak. Keep going!`
+					: 'Your article journey has been updated. Keep going!',
+				icon: 'game-icons:horizon-road',
+				color: 'success',
+				duration: 5000
+			});
+		} finally {
+			if (journeyTrackingArticleId.value === articleId) {
+				journeyTrackingArticleId.value = null;
+			}
+		}
+	},
+	{ immediate: true }
+);
+
 useSeoMeta({
 	ogTitle: article.value ? article.value.title : 'Article',
 	ogDescription: article.value ? article.value.description : 'Article'
-});
-
-onMounted(async () => {
-	if (!article.value || 'error' in (article.value as any)) return;
-	if (user.value) {
-		const count = await fetchCurrentJourney('article', user.value.id);
-		if (!count.success || !count.data) return; // silently ignore errors
-		if ('message' in count.data) return;
-
-		const res = await tapCurrentJourney('article');
-		if (!res.success || !res.data) return; // silently ignore errors
-		if ('message' in res.data) return;
-
-		if (count.data.count === res.data.count) return; // no change
-
-		toast.add({
-			title: 'Journey Updated',
-			description: `You have now read ${res.data.count} articles on your journey streak. Keep going!`,
-			icon: 'game-icons:horizon-road',
-			color: 'success',
-			duration: 5000
-		});
-	}
 });
 
 async function loadSimilar(article?: Article) {

@@ -46,31 +46,51 @@ useSeoMeta({
 	ogDescription: currentActivity.value?.description || ''
 });
 
-const { user, fetchCurrentJourney, tapCurrentJourney } = useAuth();
+const { user, tapCurrentJourney } = useAuth();
 const { count: totalActivities } = useActivitiesCount();
+const journeyTrackedActivityId = ref<string | null>(null);
+const journeyTrackingActivityId = ref<string | null>(null);
 
-onMounted(async () => {
-	if (!route.params.id) return;
-	if (!user.value) return;
+watch(
+	[() => currentActivity.value, () => user.value] as const,
+	async ([activity, currentUser]) => {
+		if (!activity || !currentUser) return;
 
-	const count = await fetchCurrentJourney('activity', user.value.id);
-	if (!count.success || !count.data) return; // silently ignore errors
-	if ('message' in count.data) return;
+		const activityId = activity.id;
+		if (
+			journeyTrackedActivityId.value === activityId ||
+			journeyTrackingActivityId.value === activityId
+		) {
+			return;
+		}
 
-	const res = await tapCurrentJourney('activity', route.params.id as string);
-	if (!res.success || !res.data) return; // silently ignore errors
-	if ('message' in res.data) return;
+		journeyTrackingActivityId.value = activityId;
+		try {
+			const res = await tapCurrentJourney('activity', activityId);
+			if (!res.success || !res.data || 'message' in res.data) return;
 
-	if (count.data.count === res.data.count) return; // no change
+			journeyTrackedActivityId.value = activityId;
+			if (!res.data.incremented) return;
 
-	toast.add({
-		title: 'Journey Updated',
-		description: `You have now found ${res.data.count}/${totalActivities.value} activities on your journey. Keep going!`,
-		icon: 'game-icons:horizon-road',
-		color: 'success',
-		duration: 5000
-	});
-});
+			const journeyCount = res.data.count > 0 ? res.data.count : null;
+
+			toast.add({
+				title: 'Journey Updated',
+				description: journeyCount
+					? `You have now found ${journeyCount}/${totalActivities.value} activities on your journey. Keep going!`
+					: 'Your activity journey has been updated. Keep going!',
+				icon: 'game-icons:horizon-road',
+				color: 'success',
+				duration: 5000
+			});
+		} finally {
+			if (journeyTrackingActivityId.value === activityId) {
+				journeyTrackingActivityId.value = null;
+			}
+		}
+	},
+	{ immediate: true }
+);
 
 // activity read time tracking
 

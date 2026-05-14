@@ -18,34 +18,53 @@
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
 const toast = useToast();
-const { user, fetchCurrentJourney, tapCurrentJourney } = useAuth();
+const { user, tapCurrentJourney } = useAuth();
 const { prompt, fetch } = usePrompt(route.params.id as string);
+const journeyTrackedPromptId = ref<string | null>(null);
+const journeyTrackingPromptId = ref<string | null>(null);
 
 onMounted(async () => {
 	// Force fetch on mount to ensure fresh data on page refresh
 	await fetch();
-
-	if (!prompt.value) return;
-	if (!user.value) return;
-
-	const count = await fetchCurrentJourney('prompt', user.value.id);
-	if (!count.success || !count.data) return; // silently ignore errors
-	if ('message' in count.data) return;
-
-	const res = await tapCurrentJourney('prompt');
-	if (!res.success || !res.data) return; // silently ignore errors
-	if ('message' in res.data) return;
-
-	if (count.data.count === res.data.count) return; // no change
-
-	toast.add({
-		title: 'Journey Updated',
-		description: `You have now read ${res.data.count} prompts on your journey streak. Keep going!`,
-		icon: 'game-icons:horizon-road',
-		color: 'success',
-		duration: 5000
-	});
 });
+
+watch(
+	[() => prompt.value, () => user.value] as const,
+	async ([currentPrompt, currentUser]) => {
+		if (!currentPrompt || !currentUser) return;
+
+		const promptId = currentPrompt.id;
+		if (journeyTrackedPromptId.value === promptId || journeyTrackingPromptId.value === promptId) {
+			return;
+		}
+
+		journeyTrackingPromptId.value = promptId;
+		try {
+			const res = await tapCurrentJourney('prompt');
+			if (!res.success || !res.data || 'message' in res.data) return;
+
+			journeyTrackedPromptId.value = promptId;
+			if (!res.data.incremented) return;
+
+			const journeyCount = res.data.count > 0 ? res.data.count : null;
+
+			toast.add({
+				title: 'Journey Updated',
+				description: journeyCount
+					? `You have now read ${journeyCount} prompts on your journey streak. Keep going!`
+					: 'Your prompt journey has been updated. Keep going!',
+				icon: 'game-icons:horizon-road',
+				color: 'success',
+				duration: 5000
+			});
+		} finally {
+			if (journeyTrackingPromptId.value === promptId) {
+				journeyTrackingPromptId.value = null;
+			}
+		}
+	},
+	{ immediate: true }
+);
 
 watch(
 	() => prompt.value,
