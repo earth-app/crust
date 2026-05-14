@@ -83,7 +83,7 @@
     "@iconify-json/solar": "^1.2.5",
     "@types/piexifjs": "^1.0.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.4.0",
+    "lint-staged": "^17.0.0",
     "prettier": "^3.8.3",
     "prettier-plugin-organize-imports": "4.3.0",
     "prettier-plugin-tailwindcss": "^0.7.4",
