@@ -61,6 +61,7 @@ export type User = {
 	activities?: Activity[];
 	is_friend: boolean;
 	is_my_friend: boolean;
+	is_mutual: boolean;
 	friends?: string[];
 	added_count?: number;
 	mutual_count: number; // always public

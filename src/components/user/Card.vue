@@ -21,6 +21,15 @@
 				class="ml-4 self-center"
 				size="lg"
 			/>
+			<UBadge
+				v-else-if="user.is_mutual"
+				variant="soft"
+				color="success"
+				icon="mdi:account-multiple-check"
+				label="Mutual"
+				class="ml-4 self-center"
+				size="lg"
+			/>
 
 			<UBadge
 				v-if="user.id === currentUser?.id"
@@ -28,6 +37,16 @@
 				color="primary"
 				icon="mdi:account-check"
 				label="You"
+				class="ml-4 self-center"
+				size="lg"
+			/>
+
+			<UBadge
+				v-if="user.is_admin"
+				variant="soft"
+				color="error"
+				icon="mdi:shield-account"
+				label="Admin"
 				class="ml-4 self-center"
 				size="lg"
 			/>
