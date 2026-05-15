@@ -22,15 +22,11 @@ onMounted(() => {
 			});
 		}
 
-		if (
-			user.value.account.account_type === 'FREE' ||
-			user.value.account.account_type === 'PRO' ||
-			user.value.account.account_type === 'WRITER'
-		) {
+		if (user.value.account.account_type === 'FREE' || user.value.account.account_type === 'PRO') {
 			router.push('/');
 			toast.add({
 				title: 'Upgrade Required',
-				description: 'You need to upgrade to the Organizer plan or above to create articles.',
+				description: 'You need to upgrade to the Writer plan or above to create articles.',
 				icon: 'mdi:star-circle',
 				color: 'warning',
 				duration: 5000
