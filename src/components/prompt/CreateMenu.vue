@@ -22,6 +22,7 @@
 					placeholder="What is the meaning of life?"
 					:rows="2"
 					:maxrows="2"
+					:maxlength="256"
 					:highlight="true"
 				/>
 
@@ -70,7 +71,7 @@
 					loading ||
 					newDisabled ||
 					prompt.trim().length < 10 ||
-					prompt.trim().length > 100
+					prompt.trim().length > 256
 				"
 				:loading="loading"
 				>Create</UButton
