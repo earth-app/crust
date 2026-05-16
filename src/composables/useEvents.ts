@@ -29,11 +29,8 @@ export function useEvents() {
 			`/v2/events?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
 			authStore.sessionToken
 		);
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				throw new Error(res.data.message);
-			}
 
+		if (valid(res)) {
 			// Load events into store
 			eventStore.setEvents(res.data.items);
 
@@ -73,11 +70,7 @@ export function useEvents() {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load individual events into store and cache random result
 			eventStore.setEvents(res.data);
 			eventStore.setRandomCached(count, res.data);
@@ -93,11 +86,7 @@ export function useEvents() {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load individual events into store
 			eventStore.setEvents(res.data.items);
 		}
@@ -120,18 +109,13 @@ export function useEvents() {
 			return { success: false, message: 'User not authenticated' };
 		}
 
-		const pool = await fetchRandom(Math.min(count * 3, 15)).then((res) =>
-			res.success ? res.data : res.message
-		);
+		const randomRes = await fetchRandom(Math.min(count * 3, 15));
 
-		if (!pool || typeof pool === 'string') {
-			throw new Error(`Failed to fetch random events: ${pool}`);
+		if (!valid(randomRes)) {
+			throw new Error(`Failed to fetch random events: ${randomRes.message || 'Unknown error'}`);
 		}
 
-		if ('message' in pool) {
-			throw new Error(`Failed to fetch random events: ${pool.code} ${pool.message}`);
-		}
-
+		const pool = randomRes.data;
 		if (!pool || pool.length === 0) {
 			return { success: true, data: [] };
 		}
@@ -146,11 +130,7 @@ export function useEvents() {
 			}
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load recommended events into store
 			eventStore.setEvents(res.data);
 		}
@@ -165,11 +145,7 @@ export function useEvents() {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load individual events into store
 			eventStore.setEvents(res.data.items);
 		}
@@ -363,18 +339,13 @@ export function useEvent(id: string) {
 		const authStore = useAuthStore();
 		const { fetchRandom } = useEvents();
 
-		const pool = await fetchRandom(Math.min(count * 3, 15)).then((res) =>
-			res.success ? res.data : res.message
-		);
+		const randomRes = await fetchRandom(Math.min(count * 3, 15));
 
-		if (!pool || typeof pool === 'string') {
-			throw new Error(`Failed to fetch random events: ${pool}`);
+		if (!valid(randomRes)) {
+			throw new Error(`Failed to fetch random events: ${randomRes.message || 'Unknown error'}`);
 		}
 
-		if ('message' in pool) {
-			throw new Error(`Failed to fetch random events: ${pool.code} ${pool.message}`);
-		}
-
+		const pool = randomRes.data;
 		if (!pool || pool.length === 0) {
 			return { success: true, data: [] };
 		}
@@ -389,11 +360,7 @@ export function useEvent(id: string) {
 			}
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load similar events into store
 			eventStore.setEvents(res.data);
 		}
@@ -465,11 +432,7 @@ export function useGeocoding() {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			return res;
 		}
 
@@ -484,11 +447,7 @@ export function useGeocoding() {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			return res;
 		}
 
@@ -503,11 +462,7 @@ export function useGeocoding() {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			return res;
 		}
 

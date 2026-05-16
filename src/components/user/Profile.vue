@@ -476,14 +476,10 @@ async function loadFriends() {
 	isLoading.value = true;
 
 	const res = await fetchFriendsPage(friendsPage.value, 30, search.value);
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			friendsHasMore.value = false;
-		} else {
-			allFriends.value.push(...res.data.items);
-			friendsHasMore.value = allFriends.value.length < res.data.total;
-			friendsPage.value++;
-		}
+	if (valid(res)) {
+		allFriends.value.push(...res.data.items);
+		friendsHasMore.value = allFriends.value.length < res.data.total;
+		friendsPage.value++;
 	} else {
 		friendsHasMore.value = false;
 	}
@@ -496,14 +492,10 @@ async function loadPrompts() {
 	isLoading.value = true;
 
 	const res = await fetchPrompts(promptsPage.value, 30, search.value);
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			promptsHasMore.value = false;
-		} else {
-			allPrompts.value.push(...res.data.items);
-			promptsHasMore.value = allPrompts.value.length < res.data.total;
-			promptsPage.value++;
-		}
+	if (valid(res)) {
+		allPrompts.value.push(...res.data.items);
+		promptsHasMore.value = allPrompts.value.length < res.data.total;
+		promptsPage.value++;
 	} else {
 		promptsHasMore.value = false;
 	}
@@ -516,14 +508,10 @@ async function loadArticles() {
 	isLoading.value = true;
 
 	const res = await fetchArticles(articlesPage.value, 30, search.value);
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			articlesHasMore.value = false;
-		} else {
-			allArticles.value.push(...res.data.items);
-			articlesHasMore.value = allArticles.value.length < res.data.total;
-			articlesPage.value++;
-		}
+	if (valid(res)) {
+		allArticles.value.push(...res.data.items);
+		articlesHasMore.value = allArticles.value.length < res.data.total;
+		articlesPage.value++;
 	} else {
 		articlesHasMore.value = false;
 	}

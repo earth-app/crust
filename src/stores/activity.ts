@@ -65,12 +65,7 @@ export const useActivityStore = defineStore('activity', () => {
 					authStore.sessionToken
 				);
 
-				if (res.success && res.data) {
-					if ('message' in res.data) {
-						console.warn(`Failed to fetch activity ${id}:`, res.data.message);
-						return;
-					}
-
+				if (valid(res)) {
 					cache.set(id, res.data);
 				} else {
 					console.warn(`Failed to fetch activity ${id}:`, res.message);
@@ -103,7 +98,7 @@ export const useActivityStore = defineStore('activity', () => {
 				authStore.sessionToken
 			);
 
-			if (res.success && res.data && !('message' in res.data)) {
+			if (valid(res)) {
 				count.value = res.data.total;
 				return res.data.total;
 			}
@@ -124,7 +119,7 @@ export const useActivityStore = defineStore('activity', () => {
 			body: activity
 		});
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			cache.set(res.data.id, res.data);
 		}
 
@@ -142,7 +137,7 @@ export const useActivityStore = defineStore('activity', () => {
 			}
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			cache.set(res.data.id, res.data);
 		}
 

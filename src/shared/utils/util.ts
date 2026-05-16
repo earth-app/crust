@@ -21,7 +21,7 @@ export async function makeRequest<T>(
 	url: string,
 	token: string | null | undefined = null,
 	options: any = {}
-): Promise<{ success: boolean; data?: T | { code: number; message: string }; message?: string }> {
+): Promise<{ success: boolean; data?: T; message?: string }> {
 	try {
 		const allowMessageResponse = options.allowMessageResponse === true;
 		const requestOptions = { ...options };
@@ -150,24 +150,21 @@ export async function makeRequest<T>(
 		if (value.includes('400')) {
 			return {
 				success: false,
-				message: `Bad request: ${data?.message || 'The request was invalid.'}`,
-				data: data || { code: 400, message: 'Bad Request' }
+				message: `Bad request: [400] ${data?.message || 'The request was invalid.'}`
 			};
 		}
 
 		if (value.includes('429')) {
 			return {
 				success: false,
-				message: `Rate limit exceeded. Please try again later.`,
-				data
+				message: `Rate limit exceeded. Please try again later.`
 			};
 		}
 
 		if (value.includes('401') || value.includes('403')) {
 			return {
 				success: false,
-				message: `Not authorized. Please check your credentials.`,
-				data: data || { code: value.includes('401') ? 401 : 403, message: 'Not authorized' }
+				message: `Not authorized. Please check your credentials.`
 			};
 		}
 
@@ -175,8 +172,7 @@ export async function makeRequest<T>(
 
 		return {
 			success: false,
-			message: 'An error occurred while fetching data.',
-			data
+			message: 'An error occurred while fetching data.'
 		};
 	}
 }
@@ -186,7 +182,7 @@ export async function makeAPIRequest<T>(
 	url: string,
 	token: string | null | undefined = null,
 	options: any = {}
-): Promise<{ success: boolean; data?: T | { code: number; message: string }; message?: string }> {
+): Promise<{ success: boolean; data?: T; message?: string }> {
 	const config = useRuntimeConfig();
 	return await makeRequest<T>(key, `${config.public.apiBaseUrl}${url}`, token, options);
 }
@@ -195,7 +191,7 @@ export async function makeClientAPIRequest<T>(
 	url: string,
 	token: string | null | undefined = null,
 	options: any = {}
-): Promise<{ success: boolean; data?: T | { code: number; message: string }; message?: string }> {
+): Promise<{ success: boolean; data?: T; message?: string }> {
 	const config = useRuntimeConfig();
 	return await makeRequest<T>(null, `${config.public.apiBaseUrl}${url}`, token, options);
 }
@@ -274,12 +270,11 @@ export async function paginatedAPIRequest<T>(
 			options
 		);
 
-		if (!res.success || !res.data) {
-			return { success: false, message: res.message || 'Failed to fetch paginated data.' };
-		}
-
-		if (!('items' in res.data)) {
-			return { success: false, ...res.data };
+		if (!valid(res) || !res.data || !Array.isArray(res.data.items)) {
+			return {
+				success: false,
+				message: res.message || 'Failed to fetch paginated data.'
+			};
 		}
 
 		allItems.push(...res.data.items);
@@ -423,4 +418,37 @@ export function getUserDisplayName(
 export function realFullName(fullName?: string): string | undefined {
 	if (!fullName) return undefined;
 	return fullName !== DEFAULT_FULL_NAME ? fullName : undefined;
+}
+
+export function checkPropertyExists(obj: any | null | undefined, prop: string): boolean {
+	if (!obj) return false;
+	if (typeof obj !== 'object') return false;
+
+	return prop in obj;
+}
+
+export function checkMessageInResponse(response: any): response is { message: string } {
+	return checkPropertyExists(response, 'message') && typeof response.message === 'string';
+}
+
+type ValidResponse<T = any> = {
+	success: true;
+	data: NonNullable<T>;
+	message?: never;
+};
+
+export function valid<T>(
+	res?: {
+		success?: boolean;
+		data?: T;
+		message?: string;
+	},
+	checkMessage: boolean = true
+): res is ValidResponse<T> {
+	if (!res) return false;
+	if (res.success) return true;
+	if (checkMessage && checkMessageInResponse(res)) return false;
+	if (res.data !== undefined) return true;
+
+	return false;
 }

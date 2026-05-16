@@ -339,7 +339,7 @@ async function resendEmailVerification(): Promise<boolean> {
 	}
 
 	sendVerificationEmail().then((res) => {
-		if (res.success && res.data) {
+		if (valid(res)) {
 			toast.add({
 				title: 'Verification Email Sent',
 				description: 'A verification email has been sent to your email address.',

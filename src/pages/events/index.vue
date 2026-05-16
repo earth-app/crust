@@ -178,94 +178,56 @@ async function loadContent() {
 	recommendedLoaded.value = false;
 	recommendedEvents.value = [];
 	loadRecommended();
-	const { fetchRandom, fetchRecent, fetchUpcoming } = useEvents();
-	fetchRandom(10).then((randomRes) => {
-		if (randomRes.success && randomRes.data) {
-			if ('message' in randomRes.data) {
-				randomLoaded.value = true;
-				randomEvents.value = [];
-				console.error('Failed to load random events:', randomRes.data.message);
 
-				toast.add({
-					title: 'Error',
-					icon: 'mdi:alert-circle',
-					description: randomRes.data.message || 'Failed to load random events.',
-					color: 'error'
-				});
-			} else {
-				randomEvents.value = randomRes.data;
-				randomLoaded.value = true;
-			}
+	const { fetchRandom, fetchRecent, fetchUpcoming } = useEvents();
+	fetchRandom(10).then((res) => {
+		if (valid(res)) {
+			randomEvents.value = res.data;
+			randomLoaded.value = true;
 		} else {
 			randomLoaded.value = true;
 			randomEvents.value = [];
 
-			console.error('Failed to load random events:', randomRes.message);
+			console.error('Failed to load random events:', res.message);
 
 			toast.add({
 				title: 'Error',
 				icon: 'mdi:alert-circle',
-				description: randomRes.message || 'Failed to load random events.',
+				description: res.message || 'Failed to load random events.',
 				color: 'error'
 			});
 		}
 	});
 
-	fetchRecent(10).then((recentRes) => {
-		if (recentRes.success && recentRes.data) {
-			if ('message' in recentRes.data) {
-				recentLoaded.value = true;
-				recentEvents.value = [];
-				console.error('Failed to load recent events:', recentRes.data.message);
-
-				toast.add({
-					title: 'Error',
-					icon: 'mdi:alert-circle',
-					description: recentRes.data.message || 'Failed to load recent events.',
-					color: 'error'
-				});
-			} else {
-				recentEvents.value = recentRes.data.items;
-				recentLoaded.value = true;
-			}
+	fetchRecent(10).then((res) => {
+		if (valid(res)) {
+			recentEvents.value = res.data.items;
+			recentLoaded.value = true;
 		} else {
-			console.error('Failed to load recent events:', recentRes.message);
+			console.error('Failed to load recent events:', res.message);
 			recentLoaded.value = true;
 
 			toast.add({
 				title: 'Error',
 				icon: 'mdi:alert-circle',
-				description: recentRes.message || 'Failed to load recent events.',
+				description: res.message || 'Failed to load recent events.',
 				color: 'error'
 			});
 		}
 	});
 
-	fetchUpcoming(10).then((upcomingRes) => {
-		if (upcomingRes.success && upcomingRes.data) {
-			if ('message' in upcomingRes.data) {
-				upcomingLoaded.value = true;
-				upcomingEvents.value = [];
-				console.error('Failed to load upcoming events:', upcomingRes.data.message);
-
-				toast.add({
-					title: 'Error',
-					icon: 'mdi:alert-circle',
-					description: upcomingRes.data.message || 'Failed to load upcoming events.',
-					color: 'error'
-				});
-			} else {
-				upcomingEvents.value = upcomingRes.data.items;
-				upcomingLoaded.value = true;
-			}
+	fetchUpcoming(10).then((res) => {
+		if (valid(res)) {
+			upcomingEvents.value = res.data.items;
+			upcomingLoaded.value = true;
 		} else {
-			console.error('Failed to load upcoming events:', upcomingRes.message);
+			console.error('Failed to load upcoming events:', res.message);
 			upcomingLoaded.value = true;
 
 			toast.add({
 				title: 'Error',
 				icon: 'mdi:alert-circle',
-				description: upcomingRes.message || 'Failed to load upcoming events.',
+				description: res.message || 'Failed to load upcoming events.',
 				color: 'error'
 			});
 		}

@@ -189,13 +189,7 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 			}
 		);
 
-		if (
-			import.meta.client &&
-			res.success &&
-			res.data &&
-			!('message' in res.data) &&
-			res.data.incremented
-		) {
+		if (valid(res) && res.data.incremented) {
 			window.dispatchEvent(
 				new CustomEvent('earth-app:journey-updated', {
 					detail: {
@@ -285,11 +279,7 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 			{}
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load recommended activities into state
 			for (const activity of res.data) {
 				useState<Activity | null>(`activity-${activity.id}`, () => activity);
@@ -342,7 +332,7 @@ export function useUsers() {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data && !('message' in res.data) && Array.isArray(res.data.items)) {
+		if (valid(res) && Array.isArray(res.data.items)) {
 			for (const user of res.data.items) {
 				userStore.cache.set(user.id, user);
 				if (user.username) {
@@ -371,7 +361,7 @@ export function useUsers() {
 			sort
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			for (const user of res.data) {
 				userStore.cache.set(user.id, user);
 
@@ -801,7 +791,7 @@ export function useJourneyLeaderboard(
 	const fetchLeaderboard = async (limit: number = 10) => {
 		currentLimit.value = limit;
 		const res = await fetchLeaderboardData(limit);
-		if (res.success && res.data) {
+		if (valid(res)) {
 			const userPromises = res.data.map(async (entry) => {
 				const { user, fetchUser } = useUser(entry.id);
 				await fetchUser();

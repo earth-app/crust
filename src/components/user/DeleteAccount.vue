@@ -96,28 +96,16 @@ async function confirmDelete() {
 	const res = await deleteAccount(password.value);
 	if (res.success) {
 		emit('deleted');
-	} else {
-		if (res.data && 'message' in res.data) {
-			toast.add({
-				title: 'Error',
-				description: res.data.message,
-				color: 'error',
-				icon: 'mdi:account-alert',
-				duration: 5000
-			});
-
-			loading.value = false;
-			return;
-		}
-
-		console.error(res.message || 'Failed to delete account.');
+	} else if (!valid(res)) {
 		toast.add({
 			title: 'Error',
-			description: res.message || 'Failed to delete account.',
+			description: res.message,
 			color: 'error',
 			icon: 'mdi:account-alert',
 			duration: 5000
 		});
+
+		console.error(res.message || 'Failed to delete account.');
 	}
 
 	loading.value = false;

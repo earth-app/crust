@@ -73,24 +73,20 @@ watch(
 	async (newUser) => {
 		if (newUser) {
 			const res = await fetchRecommendedActivities();
-			if (res.success && res.data) {
-				if ('message' in res.data) {
-					// No recommendations available
-					recommendedLoaded.value = true;
-					recommendedActivities.value = [];
-
-					toast.add({
-						title: 'No Recommendations',
-						description: res.data.message,
-						icon: 'mdi:alert-circle',
-						color: 'info',
-						duration: 5000
-					});
-					return;
-				}
-
+			if (valid(res)) {
 				recommendedLoaded.value = true;
 				recommendedActivities.value = res.data;
+			} else {
+				recommendedLoaded.value = true;
+				recommendedActivities.value = [];
+
+				toast.add({
+					title: 'No Recommendations',
+					description: res.message,
+					icon: 'mdi:account-off',
+					color: 'info',
+					duration: 5000
+				});
 			}
 		}
 	},
@@ -108,20 +104,7 @@ async function loadActivities() {
 
 	const { fetch } = useActivities();
 	const res = await fetch(page.value, 100);
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			toast.add({
-				title: 'Error Loading Activities',
-				description: res.data.message,
-				icon: 'mdi:alert-circle',
-				color: 'error',
-				duration: 5000
-			});
-
-			isLoading.value = false;
-			return;
-		}
-
+	if (valid(res)) {
 		// Shuffle only the new items before adding them (Fisher-Yates shuffle)
 		const newItems = res.data.items;
 		for (let i = newItems.length - 1; i > 0; i--) {
@@ -135,6 +118,13 @@ async function loadActivities() {
 		page.value++;
 	} else {
 		hasMore.value = false;
+		toast.add({
+			title: 'Error Loading Activities',
+			description: res.message,
+			icon: 'mdi:alert-circle',
+			color: 'error',
+			duration: 5000
+		});
 	}
 
 	isLoading.value = false;

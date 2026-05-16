@@ -49,7 +49,7 @@ export function usePrompts(
 			`prompts-${newSearch}-${newPage}-${newLimit}-${sort}`,
 			`/v2/prompts?page=${newPage}&limit=${newLimit}&search=${encodeURIComponent(newSearch)}&sort=${sort}`
 		);
-		if (res.success && res.data && !('message' in res.data) && Array.isArray(res.data.items)) {
+		if (valid(res) && Array.isArray(res.data.items)) {
 			prompts.value = res.data.items;
 			total.value = res.data.total;
 			promptStore.setPrompts(res.data.items);
@@ -81,11 +81,7 @@ export function usePrompts(
 
 		const res = await makeClientAPIRequest<Prompt[]>(`/v2/prompts/random?count=${count}`);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load individual prompts into store and cache random result
 			promptStore.setPrompts(res.data);
 			promptStore.setRandomCached(count, res.data);
@@ -170,11 +166,7 @@ export function useUserPrompts(
 			`user-prompts-${identifier}-${newPage}-${newLimit}`,
 			`/v2/users/${identifier}/prompts?page=${newPage}&limit=${newLimit}&sort=${sort}&search=${encodeURIComponent(search)}`
 		);
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			prompts.value = res.data.items;
 			total.value = res.data.total;
 

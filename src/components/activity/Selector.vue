@@ -144,7 +144,7 @@ function initializeActivities() {
 				activitiesLoading.value = true;
 				const { fetchAll } = useActivities();
 				fetchAll(-1, '').then((res) => {
-					if (res.success && res.data) {
+					if (valid(res)) {
 						const activities = res.data
 							.filter((activity) => activityIds.includes(activity.id))
 							.map((activity) => ({

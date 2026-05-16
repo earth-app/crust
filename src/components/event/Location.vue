@@ -261,7 +261,7 @@ async function performSearch(term: string) {
 	try {
 		const res = await autocomplete(term, session);
 
-		if (res.success && 'data' in res && res.data) {
+		if (valid(res)) {
 			const suggestions = res.data;
 
 			results.value = suggestions.map((suggestion: EventAutocompleteSuggestion) => ({
@@ -297,7 +297,7 @@ watch(selection, async (newSelection) => {
 	// Geocode the selected location
 	const res = await geocode(newSelection.full_name);
 
-	if (res.success && 'data' in res && res.data) {
+	if (valid(res)) {
 		// Update coordinates
 		emit('update:modelValue', {
 			latitude: res.data.latitude,
@@ -326,7 +326,7 @@ watch(selection, async (newSelection) => {
 async function reverseGeocode(lat: number, lng: number) {
 	const res = await reverseGeocodeFromComposable(lat, lng);
 
-	if (res.success && 'data' in res && res.data) {
+	if (valid(res)) {
 		// Update fields with address
 		const updatedFields = { ...(props.fields || {}) };
 		updatedFields['address'] = res.data.address;

@@ -230,123 +230,71 @@ async function loadContent() {
 	byTagArticles.clear();
 
 	const { fetchRandom, fetchRecent, fetchOldest } = useArticles();
-	fetchRandom(15).then((randomRes) => {
-		if (randomRes.success && randomRes.data) {
-			if ('message' in randomRes.data) {
-				randomLoaded.value = true;
-				randomArticles.value = [];
-				console.error('Failed to load random articles:', randomRes.data.message);
-
-				toast.add({
-					title: 'Error',
-					icon: 'mdi:alert-circle',
-					description: randomRes.data.message || 'Failed to load random articles.',
-					color: 'error'
-				});
-			} else {
-				randomArticles.value = randomRes.data;
-				randomLoaded.value = true;
-			}
+	fetchRandom(15).then((res) => {
+		if (valid(res)) {
+			randomArticles.value = res.data;
+			randomLoaded.value = true;
 		} else {
 			randomLoaded.value = true;
 			randomArticles.value = [];
 
-			console.error('Failed to load random articles:', randomRes.message);
+			console.error('Failed to load random articles:', res.message);
 
 			toast.add({
 				title: 'Error',
 				icon: 'mdi:alert-circle',
-				description: randomRes.message || 'Failed to load random articles.',
+				description: res.message || 'Failed to load random articles.',
 				color: 'error'
 			});
 		}
 	});
 
-	fetchRecent(15).then((recentRes) => {
-		if (recentRes.success && recentRes.data) {
-			if ('message' in recentRes.data) {
-				recentLoaded.value = true;
-				recentArticles.value = [];
-				console.error('Failed to load recent articles:', recentRes.data.message);
-
-				toast.add({
-					title: 'Error',
-					icon: 'mdi:alert-circle',
-					description: recentRes.data.message || 'Failed to load recent articles.',
-					color: 'error'
-				});
-			} else {
-				recentArticles.value = recentRes.data.items;
-				recentLoaded.value = true;
-			}
+	fetchRecent(15).then((res) => {
+		if (valid(res)) {
+			recentArticles.value = res.data.items;
+			recentLoaded.value = true;
 		} else {
-			console.error('Failed to load recent articles:', recentRes.message);
+			console.error('Failed to load recent articles:', res.message);
 			recentLoaded.value = true;
 
 			toast.add({
 				title: 'Error',
 				icon: 'mdi:alert-circle',
-				description: recentRes.message || 'Failed to load recent articles.',
+				description: res.message || 'Failed to load recent articles.',
 				color: 'error'
 			});
 		}
 	});
 
-	fetchOldest(15).then((oldestRes) => {
-		if (oldestRes.success && oldestRes.data) {
-			if ('message' in oldestRes.data) {
-				olderLoaded.value = true;
-				olderArticles.value = [];
-				console.error('Failed to load older articles:', oldestRes.data.message);
-
-				toast.add({
-					title: 'Error',
-					icon: 'mdi:alert-circle',
-					description: oldestRes.data.message || 'Failed to load older articles.',
-					color: 'error'
-				});
-			} else {
-				olderArticles.value = oldestRes.data.items;
-				olderLoaded.value = true;
-			}
+	fetchOldest(15).then((res) => {
+		if (valid(res)) {
+			olderArticles.value = res.data.items;
+			olderLoaded.value = true;
 		} else {
-			console.error('Failed to load older articles:', oldestRes.message);
+			console.error('Failed to load older articles:', res.message);
 			olderLoaded.value = true;
 
 			toast.add({
 				title: 'Error',
 				icon: 'mdi:alert-circle',
-				description: oldestRes.message || 'Failed to load older articles.',
+				description: res.message || 'Failed to load older articles.',
 				color: 'error'
 			});
 		}
 	});
 
-	fetchRandom(15, '1').then((byCloudRes) => {
-		if (byCloudRes.success && byCloudRes.data) {
-			if ('message' in byCloudRes.data) {
-				byCloudLoaded.value = true;
-				byCloudArticles.value = [];
-				console.error('Failed to load By Cloud articles:', byCloudRes.data.message);
-
-				toast.add({
-					title: 'Error',
-					icon: 'mdi:alert-circle',
-					description: byCloudRes.data.message || 'Failed to load By Cloud articles.',
-					color: 'error'
-				});
-			} else {
-				byCloudArticles.value = byCloudRes.data;
-				byCloudLoaded.value = true;
-			}
+	fetchRandom(15, '1').then((res) => {
+		if (valid(res)) {
+			byCloudArticles.value = res.data;
+			byCloudLoaded.value = true;
 		} else {
-			console.error('Failed to load By Cloud articles:', byCloudRes.message);
+			console.error('Failed to load By Cloud articles:', res.message);
 			byCloudLoaded.value = true;
 
 			toast.add({
 				title: 'Error',
 				icon: 'mdi:alert-circle',
-				description: byCloudRes.message || 'Failed to load By Cloud articles.',
+				description: res.message || 'Failed to load By Cloud articles.',
 				color: 'error'
 			});
 		}
@@ -357,32 +305,19 @@ async function loadContent() {
 	);
 	for (const type of randomTypes) {
 		const tag = type.name.toLowerCase();
-		fetchRandom(15, undefined, tag).then((byTagRes) => {
-			if (byTagRes.success && byTagRes.data) {
-				if ('message' in byTagRes.data) {
-					byTagLoaded.set(tag, true);
-					byTagArticles.set(tag, []);
-					console.error(`Failed to load articles for tag ${tag}:`, byTagRes.data.message);
-
-					toast.add({
-						title: 'Error',
-						icon: 'mdi:alert-circle',
-						description: byTagRes.data.message || `Failed to load articles for tag ${tag}.`,
-						color: 'error'
-					});
-				} else {
-					byTagArticles.set(tag, byTagRes.data);
-					byTagLoaded.set(tag, true);
-				}
+		fetchRandom(15, undefined, tag).then((res) => {
+			if (valid(res)) {
+				byTagArticles.set(tag, res.data);
+				byTagLoaded.set(tag, true);
 			} else {
-				console.error(`Failed to load articles for tag ${tag}:`, byTagRes.message);
+				console.error(`Failed to load articles for tag ${tag}:`, res.message);
 				byTagLoaded.set(tag, true);
 				byTagArticles.set(tag, []);
 
 				toast.add({
 					title: 'Error',
 					icon: 'mdi:alert-circle',
-					description: byTagRes.message || `Failed to load articles for tag ${tag}.`,
+					description: res.message || `Failed to load articles for tag ${tag}.`,
 					color: 'error'
 				});
 			}

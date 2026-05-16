@@ -146,20 +146,7 @@ async function addCurrentFriend() {
 
 	friendsLoading.value = true;
 	const res = await addFriend(props.user.id);
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			toast.add({
-				title: 'Error',
-				description: res.data.message,
-				icon: 'mdi:badge-account-alert',
-				color: 'error',
-				duration: 5000
-			});
-
-			friendsLoading.value = false;
-			return;
-		}
-
+	if (valid(res)) {
 		props.user.is_friend = true;
 		props.user.added_count = (props.user.added_count || 0) + 1;
 
@@ -172,6 +159,15 @@ async function addCurrentFriend() {
 			color: 'success',
 			duration: 3000
 		});
+	} else {
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to add friend.',
+			icon: 'mdi:badge-account-alert',
+			color: 'error',
+			duration: 5000
+		});
+		console.error(res.message || 'Failed to add friend.');
 	}
 
 	friendsLoading.value = false;
@@ -193,19 +189,7 @@ async function removeCurrentFriend() {
 
 	friendsLoading.value = true;
 	const res = await removeFriend(props.user.id);
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			toast.add({
-				title: 'Error',
-				description: res.data.message,
-				icon: 'mdi:badge-account-alert',
-				color: 'error',
-				duration: 5000
-			});
-			friendsLoading.value = false;
-			return;
-		}
-
+	if (valid(res)) {
 		props.user.is_friend = false;
 		props.user.added_count = Math.max((props.user.added_count || 1) - 1, 0);
 
@@ -226,6 +210,15 @@ async function removeCurrentFriend() {
 			color: 'secondary',
 			duration: 3000
 		});
+	} else {
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to remove friend.',
+			icon: 'mdi:badge-account-alert',
+			color: 'error',
+			duration: 5000
+		});
+		console.error(res.message || 'Failed to remove friend.');
 	}
 
 	friendsLoading.value = false;
@@ -258,19 +251,7 @@ async function addCurrentToCircle() {
 
 	circleLoading.value = true;
 	const res = await addToCircle(props.user.id);
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			toast.add({
-				title: 'Error',
-				description: res.data.message,
-				icon: 'mdi:badge-account-alert',
-				color: 'error',
-				duration: 5000
-			});
-			circleLoading.value = false;
-			return;
-		}
-
+	if (valid(res)) {
 		props.user.is_in_my_circle = true;
 		props.user.circle_count = (props.user.circle_count || 0) + 1;
 
@@ -281,6 +262,15 @@ async function addCurrentToCircle() {
 			color: 'success',
 			duration: 3000
 		});
+	} else {
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to add to circle.',
+			icon: 'mdi:badge-account-alert',
+			color: 'error',
+			duration: 5000
+		});
+		console.error(res.message || 'Failed to add to circle.');
 	}
 
 	circleLoading.value = false;
@@ -302,19 +292,7 @@ async function removeCurrentFromCircle() {
 
 	circleLoading.value = true;
 	const res = await removeFromCircle(props.user.id);
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			toast.add({
-				title: 'Error',
-				description: res.data.message,
-				icon: 'mdi:badge-account-alert',
-				color: 'error',
-				duration: 5000
-			});
-			circleLoading.value = false;
-			return;
-		}
-
+	if (valid(res)) {
 		props.user.is_in_my_circle = false;
 		props.user.circle_count = Math.max((props.user.circle_count || 1) - 1, 0);
 
@@ -325,6 +303,15 @@ async function removeCurrentFromCircle() {
 			color: 'secondary',
 			duration: 3000
 		});
+	} else {
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to remove from circle.',
+			icon: 'mdi:badge-account-alert',
+			color: 'error',
+			duration: 5000
+		});
+		console.error(res.message || 'Failed to remove from circle.');
 	}
 
 	circleLoading.value = false;

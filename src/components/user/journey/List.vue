@@ -88,17 +88,8 @@ const loadJourneys = async () => {
 				const countRes = await fetchCurrentJourney(type, props.user.id);
 				if (loadToken !== journeyLoadToken) return;
 
-				if (countRes.success && countRes.data) {
-					if ('message' in countRes.data) {
-						toast.add({
-							title: 'Error',
-							description: (countRes.data.message || 'Failed to fetch journey data.') as string,
-							icon: 'mdi:alert-circle-outline',
-							color: 'error'
-						});
-					} else if ('count' in countRes.data) {
-						state[type].count = countRes.data.count;
-					}
+				if (valid(countRes)) {
+					state[type].count = countRes.data.count;
 				} else {
 					toast.add({
 						title: 'Error',

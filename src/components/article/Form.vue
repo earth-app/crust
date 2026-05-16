@@ -371,22 +371,10 @@ async function handleSubmit() {
 			color_hex: state.color_hex
 		});
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				toast.add({
-					title: 'Error',
-					description: res.data.message,
-					duration: 5000,
-					icon: 'mdi:information',
-					color: 'info'
-				});
-				loading.value = false;
-				return;
-			}
-
+		if (valid(res)) {
 			if (canCreateQuiz.value) {
 				const resQuiz = await articleStore.changeQuiz(res.data.id, getSubmittedQuizQuestions());
-				if (!resQuiz.success || (resQuiz.data && 'message' in resQuiz.data)) {
+				if (!valid(resQuiz)) {
 					toast.add({
 						title: 'Error Creating Quiz',
 						description:
@@ -430,22 +418,10 @@ async function handleSubmit() {
 			color_hex: state.color_hex
 		});
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				toast.add({
-					title: 'Error',
-					description: res.data.message,
-					duration: 5000,
-					icon: 'mdi:information',
-					color: 'info'
-				});
-				loading.value = false;
-				return;
-			}
-
+		if (valid(res)) {
 			if (canCreateQuiz.value) {
 				const resQuiz = await articleStore.changeQuiz(res.data.id, getSubmittedQuizQuestions());
-				if (!resQuiz.success || (resQuiz.data && 'message' in resQuiz.data)) {
+				if (!valid(resQuiz)) {
 					toast.add({
 						title: 'Error Updating Quiz',
 						description:

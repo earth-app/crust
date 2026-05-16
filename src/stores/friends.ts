@@ -49,7 +49,7 @@ export const useFriendsStore = defineStore('friends', () => {
 					search
 				);
 
-				if (res.success && res.data && !('message' in res.data)) {
+				if (valid(res)) {
 					friendsCache.set(id, res.data);
 
 					// Preload friends into user cache
@@ -103,7 +103,7 @@ export const useFriendsStore = defineStore('friends', () => {
 			{ method: 'PUT' }
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			const friendUser = res.data.friend;
 			const currentFriends = friendsCache.get(id) || [];
 			friendsCache.set(id, [...currentFriends, friendUser]);
@@ -128,7 +128,7 @@ export const useFriendsStore = defineStore('friends', () => {
 			{ method: 'DELETE' }
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			const friendUser = res.data.friend;
 			const currentFriends = friendsCache.get(id) || [];
 			friendsCache.set(
@@ -168,7 +168,7 @@ export const useFriendsStore = defineStore('friends', () => {
 					limit
 				);
 
-				if (res.success && res.data && !('message' in res.data)) {
+				if (valid(res)) {
 					circleCache.set(id, res.data);
 
 					// Preload circle users into user cache
@@ -217,7 +217,7 @@ export const useFriendsStore = defineStore('friends', () => {
 			{ method: 'PUT' }
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			const friendUser = res.data.friend;
 			const currentCircle = circleCache.get(id) || [];
 			circleCache.set(id, [...currentCircle, friendUser]);
@@ -242,7 +242,7 @@ export const useFriendsStore = defineStore('friends', () => {
 			{ method: 'DELETE' }
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			const friendUser = res.data.friend;
 			const currentCircle = circleCache.get(id) || [];
 			circleCache.set(

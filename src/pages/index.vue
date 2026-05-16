@@ -228,77 +228,76 @@ onMounted(async () => {
 
 	// Fetch prompts
 	fetchRandomPrompts(5).then((resPrompt) => {
-		if (resPrompt.success && resPrompt.data) {
-			if ('message' in resPrompt.data) {
-				randomPrompts.value = [];
-				toast.add({
-					title: 'Error Fetching Prompts',
-					description: resPrompt.data.message || 'An unknown error occurred.',
-					icon: 'mdi:alert-circle-outline',
-					color: 'error',
-					duration: 5000
-				});
-			} else {
-				randomPrompts.value = resPrompt.data;
-			}
+		if (valid(resPrompt)) {
+			randomPrompts.value = resPrompt.data;
+		} else {
+			toast.add({
+				title: 'Error Fetching Prompts',
+				description: resPrompt.message || 'An unknown error occurred.',
+				icon: 'mdi:alert-circle-outline',
+				color: 'error',
+				duration: 5000
+			});
+			console.error('Failed to load random prompts:', resPrompt.message);
+			randomPrompts.value = [];
 		}
+
 		loadingPrompts.value = false;
 	});
 
 	// Fetch activities
-	fetchRandomActivities(10).then((resActivities) => {
-		if (resActivities.success && resActivities.data) {
-			if ('message' in resActivities.data) {
-				randomActivities.value = [];
-				toast.add({
-					title: 'Error Fetching Activities',
-					description: resActivities.data.message || 'An unknown error occurred.',
-					icon: 'mdi:alert-circle-outline',
-					color: 'error',
-					duration: 5000
-				});
-			} else {
-				randomActivities.value = resActivities.data;
-			}
+	fetchRandomActivities(10).then((res) => {
+		if (valid(res)) {
+			randomActivities.value = res.data;
+		} else {
+			toast.add({
+				title: 'Error Fetching Activities',
+				description: res.message || 'An unknown error occurred.',
+				icon: 'mdi:alert-circle-outline',
+				color: 'error',
+				duration: 5000
+			});
+			console.error('Failed to load random activities:', res.message);
+			randomActivities.value = [];
 		}
+
 		loadingActivities.value = false;
 	});
 
 	// Fetch articles
-	fetchRandomArticles(8).then((resArticles) => {
-		if (resArticles.success && resArticles.data) {
-			if ('message' in resArticles.data) {
-				randomArticles.value = [];
-				toast.add({
-					title: 'Error Fetching Articles',
-					description: resArticles.data.message || 'An unknown error occurred.',
-					icon: 'mdi:alert-circle-outline',
-					color: 'error',
-					duration: 5000
-				});
-			} else {
-				randomArticles.value = resArticles.data;
-			}
+	fetchRandomArticles(8).then((res) => {
+		if (valid(res)) {
+			randomArticles.value = res.data;
+		} else {
+			toast.add({
+				title: 'Error Fetching Articles',
+				description: res.message || 'An unknown error occurred.',
+				icon: 'mdi:alert-circle-outline',
+				color: 'error',
+				duration: 5000
+			});
+			console.error('Failed to load random articles:', res.message);
+			randomArticles.value = [];
 		}
 		loadingArticles.value = false;
 	});
 
 	// Fetch events
-	fetchRandomEvents(10).then((resEvents) => {
-		if (resEvents.success && resEvents.data) {
-			if ('message' in resEvents.data) {
-				randomEvents.value = [];
-				toast.add({
-					title: 'Error Fetching Events',
-					description: resEvents.data.message || 'An unknown error occurred.',
-					icon: 'mdi:alert-circle-outline',
-					color: 'error',
-					duration: 5000
-				});
-			} else {
-				randomEvents.value = resEvents.data;
-			}
+	fetchRandomEvents(10).then((res) => {
+		if (valid(res)) {
+			randomEvents.value = res.data;
+		} else {
+			toast.add({
+				title: 'Error Fetching Events',
+				description: res.message || 'An unknown error occurred.',
+				icon: 'mdi:alert-circle-outline',
+				color: 'error',
+				duration: 5000
+			});
+			console.error('Failed to load random events:', res.message);
+			randomEvents.value = [];
 		}
+
 		loadingEvents.value = false;
 	});
 });

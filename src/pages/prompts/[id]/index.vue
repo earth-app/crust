@@ -41,7 +41,7 @@ watch(
 		journeyTrackingPromptId.value = promptId;
 		try {
 			const res = await tapCurrentJourney('prompt');
-			if (!res.success || !res.data || 'message' in res.data) return;
+			if (!valid(res)) return;
 
 			journeyTrackedPromptId.value = promptId;
 			if (!res.data.incremented) return;

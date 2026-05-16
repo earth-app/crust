@@ -112,20 +112,7 @@ async function postResponse() {
 
 	const promptStore = usePromptStore();
 	const res = await promptStore.createResponse(props.prompt.id, { content: newResponse.value });
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			toast.add({
-				title: 'Error Posting Response',
-				description: res.data.message || 'An unknown error occurred.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error',
-				duration: 5000
-			});
-
-			posting.value = false;
-			return;
-		}
-
+	if (valid(res)) {
 		responses.value.unshift(res.data);
 		newResponse.value = '';
 	}
@@ -145,7 +132,7 @@ async function loadResponses() {
 		`/v2/prompts/${props.prompt.id}/responses?page=${page.value}&limit=25`
 	);
 
-	if (res.success && res.data && !('message' in res.data)) {
+	if (valid(res)) {
 		const newItems = res.data.items;
 		if (newItems.length > 0) {
 			responses.value.push(...newItems);

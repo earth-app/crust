@@ -93,11 +93,7 @@ export const useArticleStore = defineStore('article', () => {
 					authStore.sessionToken
 				);
 
-				if (res.success && res.data) {
-					if ('message' in res.data || 'error' in (res.data as any) || !('id' in res.data)) {
-						console.warn(`Failed to fetch article ${id}:`, res.data);
-						return;
-					}
+				if (valid(res)) {
 					evictOldestIfNeeded();
 					cache.set(id, res.data);
 				} else {
@@ -130,15 +126,12 @@ export const useArticleStore = defineStore('article', () => {
 				summary: { total: number; multiple_choice_count: number; true_false_count: number };
 			}>(`article-${id}-quiz`, `/v2/articles/${id}/quiz`, authStore.sessionToken);
 
-			if (res.success && res.data) {
-				if ('message' in res.data) {
-					quizCache.set(id, []);
-					return null;
-				}
-
+			if (valid(res)) {
 				quizCache.set(id, res.data.questions);
 				quizSummaryCache.set(id, res.data.summary);
 				return res.data.questions;
+			} else {
+				console.warn(`Failed to fetch quiz for article ${id}:`, res.message);
 			}
 
 			quizCache.set(id, []);
@@ -188,12 +181,7 @@ export const useArticleStore = defineStore('article', () => {
 				body: { questions: normalizedQuiz }
 			});
 
-			if (res.success && res.data) {
-				if ('code' in res.data) {
-					console.warn(`Failed to update quiz for article ${id}:`, res.data);
-					return { success: false, message: res.data.message };
-				}
-
+			if (valid(res)) {
 				quizCache.set(id, res.data.questions);
 				quizSummaryCache.set(id, {
 					total: res.data.questions.length,
@@ -243,11 +231,7 @@ export const useArticleStore = defineStore('article', () => {
 				authStore.sessionToken
 			);
 
-			if (res.success && res.data) {
-				if ('message' in res.data) {
-					return null;
-				}
-
+			if (valid(res)) {
 				scoreCache.set(id, res.data);
 				return res.data;
 			}
@@ -272,7 +256,7 @@ export const useArticleStore = defineStore('article', () => {
 			body: article
 		});
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			cache.set(res.data.id, res.data);
 		}
 
@@ -290,7 +274,7 @@ export const useArticleStore = defineStore('article', () => {
 			}
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			cache.set(res.data.id, res.data);
 		}
 

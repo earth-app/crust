@@ -192,12 +192,7 @@ export const useUserStore = defineStore('user', () => {
 					authStore.sessionToken
 				);
 
-				if (res.success && res.data) {
-					if ('message' in res.data) {
-						console.warn(`Failed to fetch user ${identifier}:`, res.data.message);
-						return;
-					}
-
+				if (valid(res)) {
 					cache.set(identifier, res.data);
 
 					const avatarStore = useAvatarStore();
@@ -229,7 +224,7 @@ export const useUserStore = defineStore('user', () => {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			attendingEvents.set(identifier, res.data);
 			return res.data;
 		}
@@ -249,7 +244,7 @@ export const useUserStore = defineStore('user', () => {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			hostingEvents.set(identifier, res.data);
 			return res.data;
 		}
@@ -270,7 +265,7 @@ export const useUserStore = defineStore('user', () => {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			badges.set(identifier, res.data);
 			return res.data;
 		}
@@ -290,7 +285,7 @@ export const useUserStore = defineStore('user', () => {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			eventSubmissions.set(identifier, res.data);
 			return res.data;
 		}
@@ -346,7 +341,7 @@ export const useUserStore = defineStore('user', () => {
 			}[];
 		}>(`user-${identifier}-points`, `/v2/users/${identifier}/points`, authStore.sessionToken);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			points.set(identifier, res.data.points);
 			pointsHistory.set(identifier, res.data.history);
 			return [res.data.points, res.data.history];
@@ -378,7 +373,7 @@ export const useUserStore = defineStore('user', () => {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			if (getQuestSyncVersion(identifier) === requestVersion) {
 				quest.set(identifier, res.data);
 			}
@@ -404,7 +399,7 @@ export const useUserStore = defineStore('user', () => {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			return res.data;
 		}
 
@@ -427,7 +422,7 @@ export const useUserStore = defineStore('user', () => {
 			}
 		);
 
-		if (res.success && res.data) {
+		if (valid(res)) {
 			let newQuest: Quest | null = questsCache.get(questId) || null;
 			if (!newQuest) {
 				newQuest = await fetchQuest(questId);
@@ -509,7 +504,7 @@ export const useUserStore = defineStore('user', () => {
 			}
 		);
 
-		if (res.success && res.data) {
+		if (valid(res)) {
 			setLoadedQuestState(identifier, null);
 			bumpQuestSyncVersion(identifier);
 			return res.data;
@@ -540,7 +535,7 @@ export const useUserStore = defineStore('user', () => {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			const map = new Map(Object.entries(res.data.history));
 			if (getQuestSyncVersion(identifier) === requestVersion) {
 				questHistory.set(identifier, map);
@@ -567,7 +562,7 @@ export const useUserStore = defineStore('user', () => {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			const nextQuests = new Set<string>();
 			for (const quest of res.data.quests) {
 				nextQuests.add(quest.id);
@@ -589,7 +584,7 @@ export const useUserStore = defineStore('user', () => {
 			authStore.sessionToken
 		);
 
-		const quest = res.success && res.data && !('message' in res.data) ? res.data : null;
+		const quest = valid(res) ? res.data : null;
 		if (quest) {
 			questsCache.set(quest.id, quest);
 			if (questsList.value) {
@@ -612,7 +607,7 @@ export const useUserStore = defineStore('user', () => {
 			}
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			cache.set(res.data.id, res.data);
 
 			if (res.data.username) {

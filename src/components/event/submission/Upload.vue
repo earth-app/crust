@@ -178,24 +178,11 @@ async function submitUpload() {
 	submitting.value = true;
 	for (const file of value.value) {
 		const res = await submitImage(file);
-		if (res.success && res.data) {
-			if ('code' in res.data) {
-				console.error('Submission error:', res.data.message, 'Code:', res.data.code);
-				toast.add({
-					title: 'Submission Error',
-					description: res.data.message,
-					icon: 'mdi:alert-circle-outline',
-					color: 'error'
-				});
-				return;
-			}
-
+		if (valid(res, false)) {
 			// successful upload
 			currentSubmissionsCount.value += 1;
 			emit('submission', file);
 		} else {
-			if (res.message === 'Image submitted successfully') continue;
-
 			console.error('Submission error:', res.message);
 			toast.add({
 				title: 'Submission Failed',

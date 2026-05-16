@@ -131,16 +131,13 @@ export const useAvatarStore = defineStore('avatar', () => {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				console.warn('Failed to fetch avatar cosmetics:', res.data.message);
-				return;
-			}
-
+		if (valid(res)) {
 			allCosmetics.splice(0, allCosmetics.length, ...res.data.cosmetics);
 		} else {
 			console.warn('Failed to fetch avatar cosmetics:', res.message);
 		}
+
+		return res;
 	};
 
 	const fetchCosmeticsForUser = async (userId: string) => {
@@ -153,12 +150,7 @@ export const useAvatarStore = defineStore('avatar', () => {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				console.warn(`Failed to fetch cosmetics for user ${userId}:`, res.data.message);
-				return;
-			}
-
+		if (valid(res)) {
 			userCosmetics.set(userId, {
 				current: res.data.current,
 				unlocked: res.data.unlocked
@@ -166,6 +158,8 @@ export const useAvatarStore = defineStore('avatar', () => {
 		} else {
 			console.warn(`Failed to fetch cosmetics for user ${userId}:`, res.message);
 		}
+
+		return res;
 	};
 
 	const setCosmeticForUser = async (userId: string, cosmeticKey: AvatarCosmetic['key'] | null) => {
@@ -226,12 +220,7 @@ export const useAvatarStore = defineStore('avatar', () => {
 					{ responseType: 'blob' }
 				);
 
-				if (res.success && res.data) {
-					if ('message' in res.data) {
-						console.warn(`Failed to fetch preview for cosmetic ${cosmeticKey}:`, res.data.message);
-						return undefined;
-					}
-
+				if (valid(res)) {
 					const objectUrl = URL.createObjectURL(res.data);
 					cache.set(`preview-${cosmeticKey}`, {
 						avatar: objectUrl,
@@ -243,7 +232,7 @@ export const useAvatarStore = defineStore('avatar', () => {
 				}
 
 				console.warn(`Failed to fetch preview for cosmetic ${cosmeticKey}:`, res.message);
-				return undefined;
+				return undefined; // undefined (not null) for type reasons
 			} finally {
 				previewCache.delete(cosmeticKey);
 			}

@@ -102,7 +102,7 @@ function populate(searchTerm: string) {
 	// populate users
 	usersLoading.value = true;
 	fetchAllUsers(empty ? 5 : 150, searchTerm, sort).then(async (res) => {
-		if (res.success && res.data) {
+		if (valid(res)) {
 			const items = res.data;
 
 			await Promise.all(
@@ -144,7 +144,7 @@ function populate(searchTerm: string) {
 	activitiesLoading.value = true;
 	const { fetchAll: fetchAllActivities } = useActivities();
 	fetchAllActivities(empty ? 5 : 150, searchTerm, sort).then((res) => {
-		if (res.success && res.data) {
+		if (valid(res)) {
 			const items = res.data;
 			activities.value = items.map((activity: any) => ({
 				id: `activity-${activity.id}`,
@@ -170,7 +170,7 @@ function populate(searchTerm: string) {
 	promptsLoading.value = true;
 	const { fetchAll: fetchAllPrompts } = usePrompts();
 	fetchAllPrompts(empty ? 5 : 25, searchTerm, sort).then((res) => {
-		if (res.success && res.data) {
+		if (valid(res)) {
 			const items = res.data;
 			prompts.value = items.map((prompt: any) => {
 				const owner = prompt.owner;
@@ -209,7 +209,7 @@ function populate(searchTerm: string) {
 	articlesLoading.value = true;
 	const { fetchAll: fetchAllArticles } = useArticles();
 	fetchAllArticles(empty ? 5 : 25, searchTerm, sort).then((res) => {
-		if (res.success && res.data) {
+		if (valid(res)) {
 			const items = res.data;
 			articles.value = items.map((article: any) => {
 				const owner = article.author;
@@ -307,7 +307,7 @@ function randomize() {
 		// Random Prompt
 		const { fetchRandom: fetchRandomPrompts } = usePrompts();
 		fetchRandomPrompts(1).then((res) => {
-			if (res.success && res.data && !('message' in res.data)) {
+			if (valid(res)) {
 				const prompt = res.data[0];
 				if (prompt) {
 					router.push(`/prompts/${prompt.id}`);
@@ -318,7 +318,7 @@ function randomize() {
 		// Random Article
 		const { fetchRandom: fetchRandomArticles } = useArticles();
 		fetchRandomArticles(1).then((res) => {
-			if (res.success && res.data && !('message' in res.data)) {
+			if (valid(res)) {
 				const article = res.data[0];
 				if (article) {
 					router.push(`/articles/${article.id}`);
@@ -329,7 +329,7 @@ function randomize() {
 		// Random Activity
 		const { fetchRandom: fetchRandomActivities } = useActivities();
 		fetchRandomActivities(1).then((res) => {
-			if (res.success && res.data && !('message' in res.data)) {
+			if (valid(res)) {
 				const activity = res.data[0];
 				if (activity) {
 					router.push(`/activities/${activity.id}`);

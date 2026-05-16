@@ -718,7 +718,7 @@ async function regenerateProfilePhoto() {
 	avatarLoading.value = true;
 
 	const res = await regenerateAvatar();
-	if (res.success && res.data && res.data instanceof Blob) {
+	if (valid(res) && res.data instanceof Blob) {
 		if (avatarOverride.value && avatarOverride.value.startsWith('blob:')) {
 			URL.revokeObjectURL(avatarOverride.value);
 		}
@@ -995,7 +995,7 @@ function updateActivities(activityIds: string[]) {
 	if (activityIds.length === 0) return;
 
 	setUserActivities(activityIds).then((res) => {
-		if (res.success && res.data && 'activities' in res.data) {
+		if (valid(res)) {
 			user.value.activities = res.data.activities;
 			toast.add({
 				title: 'Activities Updated',
@@ -1102,7 +1102,7 @@ async function handleSendVerificationEmail(): Promise<boolean> {
 	}
 
 	sendVerificationEmail().then((res) => {
-		if (res.success && res.data) {
+		if (valid(res, false)) {
 			toast.add({
 				title: 'Verification Email Sent',
 				description:

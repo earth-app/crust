@@ -85,24 +85,12 @@ async function fetchPrompts() {
 	const res = await fetchRandom(25);
 	promptsLoading.value = false;
 
-	if (res.success && res.data) {
-		if ('message' in res.data) {
-			prompts.value = [];
-
-			toast.add({
-				title: 'Error',
-				description: res.data.message || 'No prompts available.',
-				icon: 'mdi:alert-circle',
-				color: 'error',
-				duration: 5000
-			});
-			return;
-		}
-
+	if (valid(res)) {
 		prompts.value = res.data;
 	} else {
 		toast.add({
 			title: 'Error',
+			icon: 'mdi:comment-off-outline',
 			description: res.message || 'Failed to load prompts.',
 			color: 'error',
 			duration: 5000

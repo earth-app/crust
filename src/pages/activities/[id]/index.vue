@@ -47,7 +47,7 @@ useSeoMeta({
 });
 
 const { user, tapCurrentJourney } = useAuth();
-const { count: totalActivities } = useActivitiesCount();
+const { count: totalActivities, refresh } = useActivitiesCount();
 const journeyTrackedActivityId = ref<string | null>(null);
 const journeyTrackingActivityId = ref<string | null>(null);
 
@@ -67,7 +67,7 @@ watch(
 		journeyTrackingActivityId.value = activityId;
 		try {
 			const res = await tapCurrentJourney('activity', activityId);
-			if (!res.success || !res.data || 'message' in res.data) return;
+			if (!valid(res)) return;
 
 			journeyTrackedActivityId.value = activityId;
 			if (!res.data.incremented) return;
@@ -103,6 +103,8 @@ onMounted(() => {
 	if (import.meta.client) {
 		startTimer();
 	}
+
+	refresh();
 });
 
 onUnmounted(() => {

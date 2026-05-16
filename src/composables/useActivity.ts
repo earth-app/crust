@@ -73,11 +73,7 @@ export function useActivities(
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load individual activities into store
 			if (Array.isArray(res.data.items)) {
 				activityStore.setActivities(res.data.items);
@@ -85,6 +81,7 @@ export function useActivities(
 				total.value = res.data.total;
 			}
 		}
+
 		return res;
 	};
 
@@ -126,11 +123,7 @@ export function useActivities(
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load individual activities into store and cache random result
 			activityStore.setActivities(res.data);
 			activityStore.setRandomCached(count, res.data);
@@ -262,7 +255,7 @@ export function useActivityInfo(serverRequest: typeof makeServerRequest = makeSe
 
 				try {
 					const res = await fetchWikipediaSummary(r.title);
-					if (res.success && res.data) {
+					if (valid(res)) {
 						if (res.data.type === 'disambiguation') return;
 
 						res.data.summarySnippet =
@@ -319,7 +312,7 @@ export function useActivityInfo(serverRequest: typeof makeServerRequest = makeSe
 						authStore.sessionToken
 					);
 
-					if (res.success && res.data) {
+					if (valid(res)) {
 						results[query] = res.data.hits;
 						hasMore = hasMore || res.data.hasMore;
 
@@ -362,7 +355,7 @@ export function useActivityInfo(serverRequest: typeof makeServerRequest = makeSe
 						authStore.sessionToken
 					);
 
-					if (res.success && res.data) {
+					if (valid(res)) {
 						results[query] = res.data.hits;
 						hasMore = hasMore || res.data.hasMore;
 
@@ -395,7 +388,7 @@ export function useActivityInfo(serverRequest: typeof makeServerRequest = makeSe
 						authStore.sessionToken
 					);
 
-					if (res.success && res.data) {
+					if (valid(res)) {
 						results[query] = res.data.icons;
 					} else {
 						results[query] = [];
@@ -422,7 +415,7 @@ export function useActivityInfo(serverRequest: typeof makeServerRequest = makeSe
 				authStore.sessionToken
 			);
 
-			if (res.success && res.data) {
+			if (valid(res)) {
 				return res.data;
 			}
 		} catch (error) {
@@ -449,7 +442,7 @@ export function useActivityInfo(serverRequest: typeof makeServerRequest = makeSe
 				}
 			);
 
-			if (res.success && res.data) {
+			if (valid(res)) {
 				return res.data;
 			}
 		} catch (error) {
@@ -463,11 +456,7 @@ export function useActivityInfo(serverRequest: typeof makeServerRequest = makeSe
 			const { fetch } = useArticles(page, 25, search, 'desc');
 			const res = await fetch();
 
-			if (res.success && res.data) {
-				if ('message' in res.data) {
-					return [];
-				}
-
+			if (valid(res)) {
 				return res.data.items;
 			}
 
@@ -998,7 +987,7 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 		await Promise.allSettled(
 			ytQueries.map(async (q) => {
 				const res = await info.fetchYouTubeSearch(q);
-				if (res.success && res.data) {
+				if (valid(res)) {
 					safePush(
 						res.data.map((video) => ({
 							source: 'youtube',

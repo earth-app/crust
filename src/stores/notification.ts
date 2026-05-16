@@ -43,7 +43,7 @@ export const useNotificationStore = defineStore('notification', () => {
 					items: UserNotification[];
 				}>('notifications-current', '/v2/users/current/notifications', authStore.sessionToken);
 
-				if (res.success && res.data && 'items' in res.data) {
+				if (valid(res)) {
 					notifications.value = res.data.items;
 
 					for (const n of res.data.items) {
@@ -78,7 +78,7 @@ export const useNotificationStore = defineStore('notification', () => {
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data && 'id' in res.data) {
+		if (valid(res)) {
 			cache.set(id, res.data);
 			return res.data;
 		}

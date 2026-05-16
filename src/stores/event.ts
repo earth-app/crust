@@ -103,12 +103,7 @@ export const useEventStore = defineStore('event', () => {
 					authStore.sessionToken
 				);
 
-				if (res.success && res.data) {
-					if ('message' in res.data) {
-						console.warn(`Failed to fetch event ${id}:`, res.data.message);
-						return;
-					}
-
+				if (valid(res)) {
 					evictOldestIfNeeded();
 					cache.set(id, res.data);
 				} else {
@@ -148,7 +143,7 @@ export const useEventStore = defineStore('event', () => {
 				authStore.sessionToken
 			);
 
-			if (res.success && res.data && !('message' in res.data)) {
+			if (valid(res)) {
 				attendeesCache.set(id, res.data);
 				return res.data;
 			}
@@ -171,7 +166,7 @@ export const useEventStore = defineStore('event', () => {
 				authStore.sessionToken
 			);
 
-			if (res.success && res.data) {
+			if (valid(res)) {
 				const url = URL.createObjectURL(res.data);
 				thumbnailCache.set(id, url);
 				return url;
@@ -193,7 +188,7 @@ export const useEventStore = defineStore('event', () => {
 				authStore.sessionToken
 			);
 
-			if (res.success && res.data && !('message' in res.data)) {
+			if (valid(res)) {
 				thumbnailMetadataCache.set(id, res.data);
 				return res.data;
 			}
@@ -213,7 +208,7 @@ export const useEventStore = defineStore('event', () => {
 				authStore.sessionToken
 			);
 
-			if (res.success && res.data && !('message' in res.data)) {
+			if (valid(res)) {
 				submissionsCache.set(id, res.data);
 				return res.data;
 			}
@@ -233,11 +228,7 @@ export const useEventStore = defineStore('event', () => {
 			useCurrentSessionToken()
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				console.error(`Failed to fetch submissions for user ${user}:`, res.data.message);
-			}
-
+		if (valid(res)) {
 			submissionsCache.set(`${id}-${user}`, res.data);
 			return res.data;
 		}
@@ -283,7 +274,7 @@ export const useEventStore = defineStore('event', () => {
 			body: event
 		});
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			cache.set(res.data.id, res.data);
 		}
 
@@ -301,7 +292,7 @@ export const useEventStore = defineStore('event', () => {
 			}
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			cache.set(res.data.id, res.data);
 		}
 
@@ -453,6 +444,15 @@ export const useEventStore = defineStore('event', () => {
 			user_id: string;
 			event_id: string;
 			photo_url: string;
+			image: string;
+			score: {
+				score: number;
+				breakdown: { id: string; similarity: number; normalized: number; weighted: number }[];
+			};
+			created_at: string;
+			caption: string;
+			scored_at: string;
+			timestamp: number;
 		}>(`/v2/events/${id}/images`, authStore.sessionToken, {
 			method: 'POST',
 			body: {
@@ -460,7 +460,7 @@ export const useEventStore = defineStore('event', () => {
 			}
 		});
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			const submissions = submissionsCache.get(id) || [];
 			submissionsCache.set(id, [res.data, ...submissions]);
 		}

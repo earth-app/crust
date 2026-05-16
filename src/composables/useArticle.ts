@@ -74,11 +74,7 @@ export function useArticle(id: string) {
 				}
 			);
 
-			if (res.success && res.data) {
-				if ('message' in res.data) {
-					return res;
-				}
-
+			if (valid(res)) {
 				articleStore.setQuizScore(id, res.data);
 			}
 
@@ -117,18 +113,12 @@ export function useArticle(id: string) {
 
 		const { fetchRandom } = useArticles();
 
-		const pool = await fetchRandom(Math.min(count * 3, 15)).then((res) =>
-			res.success ? res.data : res.message
-		);
-
-		if (!pool || typeof pool === 'string') {
-			throw new Error(`Failed to fetch random articles: ${pool}`);
+		const randomRes = await fetchRandom(Math.min(count * 3, 15));
+		if (!valid(randomRes)) {
+			throw new Error(`Failed to fetch random articles: ${randomRes.message || 'Unknown error'}`);
 		}
 
-		if ('message' in pool) {
-			throw new Error(`Failed to fetch random articles: ${pool.code} ${pool.message}`);
-		}
-
+		const pool = randomRes.data;
 		if (!pool || pool.length === 0) {
 			return { success: true, data: [] };
 		}
@@ -143,11 +133,7 @@ export function useArticle(id: string) {
 			}
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load similar articles into store
 			articleStore.setArticles(res.data);
 		}
@@ -227,7 +213,7 @@ export function useArticles(
 			`articles-${newSearch}-${newPage}-${newLimit}-${sort}`,
 			`/v2/articles?page=${newPage}&limit=${newLimit}&search=${encodeURIComponent(newSearch)}&sort=${sort}`
 		);
-		if (res.success && res.data && !('message' in res.data) && Array.isArray(res.data.items)) {
+		if (valid(res) && Array.isArray(res.data.items)) {
 			articles.value = res.data.items;
 			total.value = res.data.total;
 			articleStore.setArticles(res.data.items);
@@ -263,11 +249,7 @@ export function useArticles(
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load individual articles into store and cache random result
 			articleStore.setArticles(res.data);
 			articleStore.setRandomCached(count, res.data);
@@ -283,11 +265,7 @@ export function useArticles(
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load individual articles into store
 			articleStore.setArticles(res.data.items);
 		}
@@ -302,11 +280,7 @@ export function useArticles(
 			authStore.sessionToken
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load individual articles into store
 			articleStore.setArticles(res.data.items);
 		}
@@ -329,18 +303,13 @@ export function useArticles(
 			return { success: false, message: 'User not authenticated' };
 		}
 
-		const pool = await fetchRandom(Math.min(count * 3, 15)).then((res) =>
-			res.success ? res.data : res.message
-		);
+		const randomRes = await fetchRandom(Math.min(count * 3, 15));
 
-		if (!pool || typeof pool === 'string') {
-			throw new Error(`Failed to fetch random articles: ${pool}`);
+		if (!valid(randomRes)) {
+			throw new Error(`Failed to fetch random articles: ${randomRes.message || 'Unknown error'}`);
 		}
 
-		if ('message' in pool) {
-			throw new Error(`Failed to fetch random articles: ${pool.code} ${pool.message}`);
-		}
-
+		const pool = randomRes.data;
 		if (!pool || pool.length === 0) {
 			return { success: true, data: [] };
 		}
@@ -355,11 +324,7 @@ export function useArticles(
 			}
 		);
 
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
-
+		if (valid(res)) {
 			// load recommended articles into store
 			articleStore.setArticles(res.data);
 		}
@@ -408,17 +373,15 @@ export function useUserArticles(
 			`articles-${identifier}-${newPage}-${newLimit}`,
 			`/v2/users/${identifier}/articles?page=${newPage}&limit=${newLimit}&sort=${sort}&search=${encodeURIComponent(search)}`
 		);
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				return res;
-			}
 
+		if (valid(res)) {
 			articles.value = res.data.items;
 			total.value = res.data.total;
 
 			// load individual articles into store
 			articleStore.setArticles(res.data.items);
 		}
+
 		return res;
 	};
 

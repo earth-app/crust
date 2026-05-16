@@ -19,14 +19,7 @@ export function useMotd() {
 			link?: string;
 			type: 'info' | 'success' | 'error' | 'warning';
 		}>('motd-data', '/v2/motd', authStore.sessionToken);
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				// Silently handle when MOTD isn't set
-				motd.value = { motd: '', icon: '', type: 'info' };
-				ttl.value = 0;
-				return;
-			}
-
+		if (valid(res)) {
 			motd.value = {
 				motd: res.data.motd,
 				icon: res.data.icon,

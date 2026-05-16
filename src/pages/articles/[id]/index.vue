@@ -111,7 +111,7 @@ watch(
 		journeyTrackingArticleId.value = articleId;
 		try {
 			const res = await tapCurrentJourney('article');
-			if (!res.success || !res.data || 'message' in res.data) return;
+			if (!valid(res)) return;
 
 			journeyTrackedArticleId.value = articleId;
 			if (!res.data.incremented) return;
@@ -153,7 +153,7 @@ async function loadSimilar(article?: Article) {
 	try {
 		const { fetchSimilar } = useArticle(article.id);
 		const res = await fetchSimilar();
-		if (res.success && res.data) {
+		if (valid(res)) {
 			relatedArticles.value = res.data;
 			similarLoadedFor.value = article.id;
 		} else {

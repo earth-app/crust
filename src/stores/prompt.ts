@@ -77,12 +77,7 @@ export const usePromptStore = defineStore('prompt', () => {
 			try {
 				const res = await makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`);
 
-				if (res.success && res.data) {
-					if ('message' in res.data) {
-						console.warn(`Failed to fetch prompt ${id}:`, res.data.message);
-						return;
-					}
-
+				if (valid(res)) {
 					evictOldestIfNeeded();
 					cache.set(id, res.data);
 				} else {
@@ -125,7 +120,7 @@ export const usePromptStore = defineStore('prompt', () => {
 				`/v2/prompts/${id}/responses?page=${page}&limit=${limit}`
 			);
 
-			if (res.success && res.data && !('message' in res.data)) {
+			if (valid(res)) {
 				responsesCache.set(cacheKey, res.data.items);
 				return res.data.items;
 			}
@@ -165,7 +160,7 @@ export const usePromptStore = defineStore('prompt', () => {
 			body: prompt
 		});
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			cache.set(res.data.id, res.data);
 		}
 
@@ -183,7 +178,7 @@ export const usePromptStore = defineStore('prompt', () => {
 			}
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			cache.set(res.data.id, res.data);
 		}
 
@@ -220,7 +215,7 @@ export const usePromptStore = defineStore('prompt', () => {
 			}
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			const cacheKey = `${promptId}-1`;
 			const existingResponses = responsesCache.get(cacheKey) || [];
 			responsesCache.set(cacheKey, [res.data, ...existingResponses]);
@@ -240,7 +235,7 @@ export const usePromptStore = defineStore('prompt', () => {
 			}
 		);
 
-		if (res.success && res.data && !('message' in res.data)) {
+		if (valid(res)) {
 			for (const [key, responses] of responsesCache.entries()) {
 				if (key.startsWith(`${promptId}-`)) {
 					const index = responses.findIndex((r) => r.id === response.id);

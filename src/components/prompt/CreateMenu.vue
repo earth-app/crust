@@ -178,18 +178,7 @@ async function newPrompt() {
 			description: text,
 			visibility: visibility.value
 		});
-		if (res.success && res.data) {
-			if ('message' in res.data) {
-				toast.add({
-					title: 'Error',
-					description: res.data.message || 'Failed to create prompt.',
-					icon: 'mdi:alert-circle',
-					color: 'error',
-					duration: 5000
-				});
-				return;
-			}
-
+		if (valid(res)) {
 			loading.value = false;
 			toast.add({
 				title: 'Success',

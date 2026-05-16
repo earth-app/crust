@@ -341,7 +341,7 @@ async function generateQuiz() {
 
 	const { generateQuiz } = useArticle(props.article.id);
 	const res = await generateQuiz();
-	if (res.success && res.data) {
+	if (valid(res)) {
 		toast.add({
 			title: 'Quiz Generated',
 			description: 'The quiz has been successfully generated for this article.',
