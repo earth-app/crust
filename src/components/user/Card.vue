@@ -41,16 +41,6 @@
 				size="lg"
 			/>
 
-			<UBadge
-				v-if="user.is_admin"
-				variant="soft"
-				color="error"
-				icon="mdi:shield-account"
-				label="Admin"
-				class="ml-4 self-center"
-				size="lg"
-			/>
-
 			<UserTypeBadge
 				:user="user"
 				class="ml-4 self-center"
