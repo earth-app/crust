@@ -78,7 +78,6 @@ export default defineNuxtConfig({
 				'@vue/devtools-kit',
 				'luxon',
 				'@earth-app/ocean',
-				'dompurify',
 				'@internationalized/date'
 			]
 		}
