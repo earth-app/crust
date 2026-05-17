@@ -157,10 +157,13 @@ export const useEventStore = defineStore('event', () => {
 		}
 	};
 
-	const fetchThumbnail = async (id: string): Promise<string | null> => {
+	const fetchThumbnail = async (
+		id: string,
+		serverRequest: typeof makeServerRequest = makeServerRequest
+	): Promise<string | null> => {
 		try {
 			const authStore = useAuthStore();
-			const res = await makeServerRequest<Blob>(
+			const res = await serverRequest<Blob>(
 				`event-thumbnail-${id}`,
 				`/api/event/thumbnail?id=${encodeURIComponent(id)}`,
 				authStore.sessionToken
@@ -179,10 +182,13 @@ export const useEventStore = defineStore('event', () => {
 		}
 	};
 
-	const fetchThumbnailMetadata = async (id: string) => {
+	const fetchThumbnailMetadata = async (
+		id: string,
+		serverRequest: typeof makeServerRequest = makeServerRequest
+	) => {
 		try {
 			const authStore = useAuthStore();
-			const res = await makeServerRequest<{ author: string; size: number }>(
+			const res = await serverRequest<{ author: string; size: number }>(
 				`event-thumbnail-metadata-${id}`,
 				`/api/event/thumbnail?id=${encodeURIComponent(id)}&metadata=true`,
 				authStore.sessionToken
@@ -392,12 +398,16 @@ export const useEventStore = defineStore('event', () => {
 		return res;
 	};
 
-	const uploadThumbnail = async (id: string, file: File) => {
+	const uploadThumbnail = async (
+		id: string,
+		file: File,
+		serverRequest: typeof makeServerRequest = makeServerRequest
+	) => {
 		const authStore = useAuthStore();
 		const formData = new FormData();
 		formData.append('file', file);
 
-		const res = await makeServerRequest(
+		const res = await serverRequest(
 			`event-thumbnail-upload-${id}`,
 			`/api/event/thumbnail?id=${encodeURIComponent(id)}`,
 			authStore.sessionToken,
@@ -410,9 +420,13 @@ export const useEventStore = defineStore('event', () => {
 		return res;
 	};
 
-	const generateThumbnail = async (id: string, prompt: string) => {
+	const generateThumbnail = async (
+		id: string,
+		prompt: string,
+		serverRequest: typeof makeServerRequest = makeServerRequest
+	) => {
 		const authStore = useAuthStore();
-		const res = await makeServerRequest<Blob>(
+		const res = await serverRequest<Blob>(
 			`event-thumbnail-generate-${id}`,
 			`/api/event/thumbnail?id=${id}&name=${encodeURIComponent(prompt)}&generate=true`,
 			authStore.sessionToken,

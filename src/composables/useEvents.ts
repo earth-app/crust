@@ -232,7 +232,7 @@ export function useEvent(id: string, serverRequest: typeof makeServerRequest = m
 			return { success: true, data: cached };
 		}
 
-		const url = await eventStore.fetchThumbnail(id);
+		const url = await eventStore.fetchThumbnail(id, serverRequest);
 		thumbnail.value = url;
 		return { success: url !== null };
 	};
@@ -241,7 +241,7 @@ export function useEvent(id: string, serverRequest: typeof makeServerRequest = m
 	const thumbnailSize = useState<number | null>(`event-thumbnail-size-${id}`, () => null);
 
 	const fetchThumbnailMetadata = async () => {
-		const data = await eventStore.fetchThumbnailMetadata(id);
+		const data = await eventStore.fetchThumbnailMetadata(id, serverRequest);
 
 		thumbnailAuthor.value = data?.author || null;
 		thumbnailSize.value = data?.size || null;
@@ -250,7 +250,7 @@ export function useEvent(id: string, serverRequest: typeof makeServerRequest = m
 	};
 
 	const uploadThumbnail = async (file: File) => {
-		const res = await eventStore.uploadThumbnail(id, file);
+		const res = await eventStore.uploadThumbnail(id, file, serverRequest);
 
 		if (res.success) {
 			await fetchThumbnail();
@@ -265,7 +265,7 @@ export function useEvent(id: string, serverRequest: typeof makeServerRequest = m
 			await fetch();
 		}
 
-		const res = await eventStore.generateThumbnail(id, event.value?.name ?? '');
+		const res = await eventStore.generateThumbnail(id, event.value?.name ?? '', serverRequest);
 
 		if (res.success) {
 			await fetchThumbnail();
