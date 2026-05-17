@@ -14,7 +14,10 @@ import {
 	paginatedAPIRequest
 } from 'utils';
 
-export function useArticle(id: string) {
+export function useArticle(
+	id: string,
+	serverRequest: typeof makeServerRequest = makeServerRequest
+) {
 	const articleStore = useArticleStore();
 	const authStore = useAuthStore();
 
@@ -32,7 +35,8 @@ export function useArticle(id: string) {
 		await articleStore.fetchQuiz(id);
 	};
 
-	const score = computed(() => articleStore.getScore(id));
+	const scoreCache = reactive(new Map<string, ArticleQuizScoreResult>());
+	const score = computed(() => scoreCache.get(id));
 
 	const submitQuiz = async (answers: number[]) => {
 		if (!article.value) {
@@ -64,7 +68,7 @@ export function useArticle(id: string) {
 		const articleTypes = article.value.tags.map((t) => t.toUpperCase().replace(/\s+/g, '_'));
 
 		try {
-			const res = await makeServerRequest<ArticleQuizScoreResult>(
+			const res = await serverRequest<ArticleQuizScoreResult>(
 				`article-${id}-quiz-submit`,
 				`/api/article/quiz`,
 				authStore.sessionToken,
@@ -75,7 +79,7 @@ export function useArticle(id: string) {
 			);
 
 			if (valid(res)) {
-				articleStore.setQuizScore(id, res.data);
+				scoreCache.set(id, res.data);
 			}
 
 			return res;
@@ -87,7 +91,25 @@ export function useArticle(id: string) {
 
 	const fetchQuizScore = async () => {
 		if (score.value !== undefined) return;
-		await articleStore.fetchQuizScore(id);
+
+		try {
+			const authStore = useAuthStore();
+			const res = await serverRequest<ArticleQuizScoreResult>(
+				`article-${id}-quiz-score`,
+				`/api/article/quiz?articleId=${id}`,
+				authStore.sessionToken
+			);
+
+			if (valid(res)) {
+				scoreCache.set(id, res.data);
+				return res.data;
+			}
+
+			return null;
+		} catch (error) {
+			console.warn(`Failed to fetch quiz score for article ${id}:`, error);
+			return null;
+		}
 	};
 
 	if (import.meta.client && score.value === undefined) {
@@ -123,7 +145,7 @@ export function useArticle(id: string) {
 			return { success: true, data: [] };
 		}
 
-		const res = await makeServerRequest<Article[]>(
+		const res = await serverRequest<Article[]>(
 			`article-${article.value.id}-similar_articles`,
 			`/api/article/similar`,
 			authStore.sessionToken,
@@ -158,7 +180,7 @@ export function useArticle(id: string) {
 			return { success: false, message: 'Article not found' };
 		}
 
-		const res = await makeServerRequest<ArticleQuizQuestion[]>(
+		const res = await serverRequest<ArticleQuizQuestion[]>(
 			`article-${id}-create-quiz`,
 			`/api/admin/createArticleQuiz`,
 			authStore.sessionToken,
@@ -197,7 +219,8 @@ export function useArticles(
 	page: number = 1,
 	limit: number = 25,
 	search: string = '',
-	sort: SortingOption = 'desc'
+	sort: SortingOption = 'desc',
+	serverRequest: typeof makeServerRequest = makeServerRequest
 ) {
 	const articleStore = useArticleStore();
 	const authStore = useAuthStore();
@@ -314,7 +337,7 @@ export function useArticles(
 			return { success: true, data: [] };
 		}
 
-		const res = await makeServerRequest<Article[]>(
+		const res = await serverRequest<Article[]>(
 			`user-${user.value.id}-article_recommendations`,
 			`/api/article/recommend`,
 			authStore.sessionToken,

@@ -9,7 +9,7 @@ import {
 import type { User } from 'types/user';
 import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from 'utils';
 
-export function useEvents() {
+export function useEvents(serverRequest: typeof makeServerRequest = makeServerRequest) {
 	const authStore = useAuthStore();
 	const eventStore = useEventStore();
 
@@ -120,7 +120,7 @@ export function useEvents() {
 			return { success: true, data: [] };
 		}
 
-		const res = await makeServerRequest<Event[]>(
+		const res = await serverRequest<Event[]>(
 			`user-${user.value.id}-event_recommendations`,
 			`/api/event/recommend`,
 			authStore.sessionToken,
@@ -164,7 +164,7 @@ export function useEvents() {
 	};
 }
 
-export function useEvent(id: string) {
+export function useEvent(id: string, serverRequest: typeof makeServerRequest = makeServerRequest) {
 	const eventStore = useEventStore();
 	const authStore = useAuthStore();
 
@@ -276,7 +276,7 @@ export function useEvent(id: string) {
 	};
 
 	const deleteThumbnail = async () => {
-		const res = await makeServerRequest(
+		const res = await serverRequest(
 			`event-thumbnail-delete-${id}`,
 			`/api/event/thumbnail?id=${encodeURIComponent(id)}`,
 			authStore.sessionToken,
@@ -337,7 +337,7 @@ export function useEvent(id: string) {
 
 		const eventStore = useEventStore();
 		const authStore = useAuthStore();
-		const { fetchRandom } = useEvents();
+		const { fetchRandom } = useEvents(serverRequest);
 
 		const randomRes = await fetchRandom(Math.min(count * 3, 15));
 
@@ -350,7 +350,7 @@ export function useEvent(id: string) {
 			return { success: true, data: [] };
 		}
 
-		const res = await makeServerRequest<Event[]>(
+		const res = await serverRequest<Event[]>(
 			`event-${event.value.id}-similar_events`,
 			`/api/event/similar`,
 			authStore.sessionToken,
@@ -396,7 +396,7 @@ export function useEvent(id: string) {
 	};
 }
 
-export function useGeocoding() {
+export function useGeocoding(serverRequest: typeof makeServerRequest = makeServerRequest) {
 	const latitude = useState<number | null>('user-latitude', () => null);
 	const longitude = useState<number | null>('user-longitude', () => null);
 
@@ -420,7 +420,7 @@ export function useGeocoding() {
 
 	const autocomplete = async (input: string, sessionToken: string) => {
 		const authStore = useAuthStore();
-		const res = await makeServerRequest<EventAutocompleteSuggestion[]>(
+		const res = await serverRequest<EventAutocompleteSuggestion[]>(
 			`event-autocomplete-${input}-${latitude.value ?? 'null'}-${longitude.value ?? 'null'}`,
 			`/api/event/autocomplete?input=${encodeURIComponent(
 				input
@@ -441,7 +441,7 @@ export function useGeocoding() {
 
 	const geocode = async (address: string) => {
 		const authStore = useAuthStore();
-		const res = await makeServerRequest<{ latitude: number; longitude: number }>(
+		const res = await serverRequest<{ latitude: number; longitude: number }>(
 			`event-geocode-${address}`,
 			`/api/event/geocode?address=${encodeURIComponent(address)}`,
 			authStore.sessionToken
@@ -456,7 +456,7 @@ export function useGeocoding() {
 
 	const reverseGeocode = async (lat: number, lng: number) => {
 		const authStore = useAuthStore();
-		const res = await makeServerRequest<{ address: string }>(
+		const res = await serverRequest<{ address: string }>(
 			`event-reverse-geocode-${lat}-${lng}`,
 			`/api/event/geocode?lat=${lat}&lng=${lng}`,
 			authStore.sessionToken

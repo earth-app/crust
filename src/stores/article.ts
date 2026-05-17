@@ -1,11 +1,6 @@
 import { defineStore } from 'pinia';
-import type {
-	Article,
-	ArticleQuizQuestion,
-	ArticleQuizQuestionSubmission,
-	ArticleQuizScoreResult
-} from 'types/article';
-import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from 'utils';
+import type { Article, ArticleQuizQuestion, ArticleQuizQuestionSubmission } from 'types/article';
+import { makeAPIRequest, makeClientAPIRequest } from 'utils';
 import { reactive } from 'vue';
 import { useAuthStore } from './auth';
 
@@ -20,7 +15,6 @@ export const useArticleStore = defineStore('article', () => {
 	const quizSummaryCache = reactive(
 		new Map<string, { total: number; multiple_choice_count: number; true_false_count: number }>()
 	);
-	const scoreCache = reactive(new Map<string, ArticleQuizScoreResult>());
 	const randomCache = reactive(new Map<string, { items: Article[]; timestamp: number }>());
 
 	// LRU cache eviction
@@ -31,7 +25,6 @@ export const useArticleStore = defineStore('article', () => {
 				cache.delete(firstKey);
 				quizCache.delete(firstKey);
 				quizSummaryCache.delete(firstKey);
-				scoreCache.delete(firstKey);
 			}
 		}
 	};
@@ -64,10 +57,6 @@ export const useArticleStore = defineStore('article', () => {
 		id: string
 	): { total: number; multiple_choice_count: number; true_false_count: number } | undefined => {
 		return quizSummaryCache.get(id);
-	};
-
-	const getScore = (id: string): ArticleQuizScoreResult | undefined => {
-		return scoreCache.get(id);
 	};
 
 	const fetchArticle = async (id: string, force: boolean = false): Promise<Article | null> => {
@@ -213,38 +202,12 @@ export const useArticleStore = defineStore('article', () => {
 			if (res.success) {
 				quizCache.delete(id);
 				quizSummaryCache.delete(id);
-				scoreCache.delete(id);
 			} else {
 				console.warn(`Failed to delete quiz for article ${id}:`, res.message);
 			}
 		} catch (error) {
 			console.warn(`Failed to delete quiz for article ${id}:`, error);
 		}
-	};
-
-	const fetchQuizScore = async (id: string): Promise<ArticleQuizScoreResult | null> => {
-		try {
-			const authStore = useAuthStore();
-			const res = await makeServerRequest<ArticleQuizScoreResult>(
-				`article-${id}-quiz-score`,
-				`/api/article/quiz?articleId=${id}`,
-				authStore.sessionToken
-			);
-
-			if (valid(res)) {
-				scoreCache.set(id, res.data);
-				return res.data;
-			}
-
-			return null;
-		} catch (error) {
-			console.warn(`Failed to fetch quiz score for article ${id}:`, error);
-			return null;
-		}
-	};
-
-	const setQuizScore = (id: string, score: ArticleQuizScoreResult) => {
-		scoreCache.set(id, score);
 	};
 
 	const createArticle = async (
@@ -291,7 +254,6 @@ export const useArticleStore = defineStore('article', () => {
 			cache.delete(id);
 			quizCache.delete(id);
 			quizSummaryCache.delete(id);
-			scoreCache.delete(id);
 		}
 
 		return res;
@@ -302,12 +264,10 @@ export const useArticleStore = defineStore('article', () => {
 			cache.delete(id);
 			quizCache.delete(id);
 			quizSummaryCache.delete(id);
-			scoreCache.delete(id);
 		} else {
 			cache.clear();
 			quizCache.clear();
 			quizSummaryCache.clear();
-			scoreCache.clear();
 		}
 	};
 
@@ -315,21 +275,17 @@ export const useArticleStore = defineStore('article', () => {
 		cache,
 		quizCache,
 		quizSummaryCache,
-		scoreCache,
 		get,
 		has,
 		getRandomCached,
 		setRandomCached,
 		getQuiz,
 		getQuizSummary,
-		getScore,
 		fetchArticle,
 		setArticles,
 		fetchQuiz,
-		fetchQuizScore,
 		changeQuiz,
 		deleteQuiz,
-		setQuizScore,
 		createArticle,
 		updateArticle,
 		deleteArticle,
