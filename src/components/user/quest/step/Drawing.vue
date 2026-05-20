@@ -126,9 +126,6 @@
 					/>
 					{{ s.label }}
 				</button>
-
-				<div class="flex-1" />
-
 				<button
 					v-for="t in TOOLS"
 					:key="t.id"
