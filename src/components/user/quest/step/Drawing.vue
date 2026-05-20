@@ -125,7 +125,7 @@
 				</button>
 			</div>
 
-			<div class="flex items-center gap-1.5">
+			<div class="flex flex-wrap items-center gap-1.5">
 				<button
 					v-for="t in TOOLS"
 					:key="t.id"
