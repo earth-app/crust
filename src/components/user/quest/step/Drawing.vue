@@ -78,7 +78,7 @@
 			</div>
 
 			<!-- Sizes + opacity -->
-			<div class="flex items-center gap-1.5!">
+			<div class="flex flex-wrap items-center gap-1.5!">
 				<button
 					v-for="s in SIZES"
 					:key="s"
@@ -125,7 +125,7 @@
 				</button>
 			</div>
 
-			<div class="flex flex-wrap items-center gap-1.5">
+			<div class="flex flex-col flex-wrap items-center gap-1.5">
 				<button
 					v-for="t in TOOLS"
 					:key="t.id"
@@ -143,39 +143,40 @@
 					/>
 					{{ t.label }}
 				</button>
-				<div class="flex-1!" />
-				<button
-					class="p-1.5! rounded-lg! border border-neutral-700 transition-colors"
-					:class="canUndo ? 'text-neutral-300' : 'text-neutral-600 cursor-not-allowed'"
-					:disabled="!canUndo"
-					@click="undo"
-				>
-					<UIcon
-						name="i-lucide-undo-2"
-						class="size-4"
-					/>
-				</button>
-				<button
-					class="p-1.5! rounded-lg! border border-red-900/60 text-red-400!"
-					@click="clearCanvas"
-				>
-					<UIcon
-						name="i-lucide-trash-2"
-						class="size-4"
-					/>
-				</button>
-				<button
-					class="px-3! py-1.5! rounded-lg! font-semibold! text-xs! transition-colors"
-					:class="
-						props.disabled
-							? 'bg-success/30 text-neutral-600 cursor-not-allowed'
-							: 'bg-success text-neutral-900 cursor-pointer'
-					"
-					:disabled="props.disabled"
-					@click="confirm"
-				>
-					Confirm
-				</button>
+				<div class="flex flex-wrap gap-1.5">
+					<button
+						class="p-1.5! rounded-lg! border border-neutral-700 transition-colors"
+						:class="canUndo ? 'text-neutral-300' : 'text-neutral-600 cursor-not-allowed'"
+						:disabled="!canUndo"
+						@click="undo"
+					>
+						<UIcon
+							name="i-lucide-undo-2"
+							class="size-4"
+						/>
+					</button>
+					<button
+						class="p-1.5! rounded-lg! border border-red-900/60 text-red-400!"
+						@click="clearCanvas"
+					>
+						<UIcon
+							name="i-lucide-trash-2"
+							class="size-4"
+						/>
+					</button>
+					<button
+						class="px-3! py-1.5! rounded-lg! font-semibold! text-xs! transition-colors"
+						:class="
+							props.disabled
+								? 'bg-success/30 text-neutral-600 cursor-not-allowed'
+								: 'bg-success text-neutral-900 cursor-pointer'
+						"
+						:disabled="props.disabled"
+						@click="confirm"
+					>
+						Confirm
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
