@@ -118,14 +118,16 @@ const props = defineProps<{
 		altIndex?: number;
 		isCurrentQuest: boolean;
 	};
+	submit?: boolean;
 	disabled?: boolean;
+	serverRequest?: typeof makeServerRequest;
 }>();
 
 const emit = defineEmits<{ submitted: [] }>();
 
-const { user } = useAuth();
+const { user } = useAuth(props.serverRequest || makeServerRequest);
 const userId = computed(() => user.value?.id);
-const { updateQuest } = useUser(userId);
+const { updateQuest } = useUser(userId, props.serverRequest || makeServerRequest);
 const { lat, lng } = useGeolocation();
 
 const phase = ref<Phase>('countdown');
@@ -278,7 +280,8 @@ function selectCard(card: Card) {
 }
 
 async function sendUpdate() {
-	if (props.disabled) {
+	// use '=== false' because of undefined
+	if (props.disabled || props.submit === false) {
 		emit('submitted');
 		return;
 	}

@@ -153,13 +153,15 @@ const props = defineProps<{
 		isCurrentQuest: boolean;
 	};
 	disabled?: boolean;
+	submit?: boolean;
+	serverRequest?: typeof makeServerRequest;
 }>();
 
 const emit = defineEmits<{ submitted: [] }>();
 
-const { user } = useAuth();
+const { user } = useAuth(props.serverRequest || makeServerRequest);
 const userId = computed(() => user.value?.id);
-const { updateQuest } = useUser(userId);
+const { updateQuest } = useUser(userId, props.serverRequest || makeServerRequest);
 const { lat, lng } = useGeolocation();
 
 const phase = ref<Phase>('countdown');
@@ -288,7 +290,8 @@ function validate() {
 }
 
 async function sendUpdate() {
-	if (props.disabled) {
+	// use '=== false' because of undefined
+	if (props.disabled || props.submit === false) {
 		emit('submitted');
 		return;
 	}

@@ -384,7 +384,10 @@ export function useUsers() {
 	};
 }
 
-export function useUser(identifier?: MaybeRefOrGetter<string | null | undefined>) {
+export function useUser(
+	identifier?: MaybeRefOrGetter<string | null | undefined>,
+	serverRequest?: typeof makeServerRequest
+) {
 	const userStore = useUserStore();
 	const avatarStore = useAvatarStore();
 	const currentIdentifier = () => toValue(identifier);
@@ -571,7 +574,7 @@ export function useUser(identifier?: MaybeRefOrGetter<string | null | undefined>
 				completed: boolean;
 				validated: boolean;
 			};
-		return await userStore.updateQuest(resolvedIdentifier, stepResponse, lat, lng);
+		return await userStore.updateQuest(resolvedIdentifier, stepResponse, lat, lng, serverRequest);
 	};
 	const endQuest = async () => {
 		const resolvedIdentifier = currentIdentifier();

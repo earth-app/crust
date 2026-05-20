@@ -459,11 +459,12 @@ export const useUserStore = defineStore('user', () => {
 			[x: string]: any;
 		},
 		lat: number | null,
-		lng: number | null
+		lng: number | null,
+		serverRequest: typeof makeServerRequest = makeServerRequest
 	): Promise<{ message: string; completed: boolean; validated: boolean }> => {
 		const authStore = useAuthStore();
 
-		const res = await makeServerRequest<{
+		const res = await serverRequest<{
 			message: string;
 			completed: boolean;
 			validated: boolean;

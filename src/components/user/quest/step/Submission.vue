@@ -227,15 +227,16 @@ const props = defineProps<{
 		isCurrentQuest: boolean;
 		isCurrentStep: boolean;
 	};
+	serverRequest?: typeof makeServerRequest;
 }>();
 
 const emit = defineEmits<{
 	submitted: [];
 }>();
 
-const { user } = useAuth();
+const { user } = useAuth(props.serverRequest || makeServerRequest);
 const userId = computed(() => user.value?.id);
-const { updateQuest } = useUser(userId);
+const { updateQuest } = useUser(userId, props.serverRequest || makeServerRequest);
 const { lat, lng, fetchLocation } = useGeolocation();
 
 const submitting = ref(false);
