@@ -123,9 +123,9 @@
 					/>
 					{{ s.label }}
 				</button>
-			</div>
 
-			<div class="flex flex-col flex-wrap items-center gap-1.5">
+				<div class="flex-1" />
+
 				<button
 					v-for="t in TOOLS"
 					:key="t.id"
@@ -143,6 +143,9 @@
 					/>
 					{{ t.label }}
 				</button>
+			</div>
+
+			<div class="flex flex-col flex-wrap items-center gap-1.5">
 				<div class="flex flex-wrap gap-1.5">
 					<button
 						class="p-1.5! rounded-lg! border border-neutral-700 transition-colors"
