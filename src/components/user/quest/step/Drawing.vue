@@ -91,18 +91,21 @@
 						:style="{ width: `${Math.round(s / 2)}px`, height: `${Math.round(s / 2)}px` }"
 					/>
 				</button>
-				<input
-					type="range"
-					v-model.number="opacity"
-					min="0.1"
-					max="1"
-					step="0.05"
-					class="flex-1! h-1! accent-white! ml-1!"
-					aria-label="Opacity"
-				/>
-				<span class="text-xs! text-neutral-400! w-7! text-right! tabular-nums!"
-					>{{ Math.round(opacity * 100) }}%</span
-				>
+
+				<div class="flex gap-2">
+					<input
+						type="range"
+						v-model.number="opacity"
+						min="0.1"
+						max="1"
+						step="0.05"
+						class="flex-1! h-1! accent-white! ml-1!"
+						aria-label="Opacity"
+					/>
+					<span class="text-xs! text-neutral-400! min-w-10! text-right! tabular-nums!"
+						>{{ Math.round(opacity * 100) }}%</span
+					>
+				</div>
 			</div>
 
 			<div class="flex gap-1.5 flex-wrap items-center">
@@ -148,8 +151,8 @@
 			<div class="flex flex-col flex-wrap items-center gap-1.5">
 				<div class="flex flex-wrap gap-1.5">
 					<button
-						class="p-1.5! rounded-lg! border border-neutral-700 transition-colors"
-						:class="canUndo ? 'text-neutral-300' : 'text-neutral-600 cursor-not-allowed'"
+						class="p-1.5! rounded-lg! text-white light:text-black border border-neutral-700 transition-colors bg-neutral-800 light:bg-white"
+						:class="canUndo ? '' : 'opacity-50 cursor-not-allowed'"
 						:disabled="!canUndo"
 						@click="undo"
 					>
