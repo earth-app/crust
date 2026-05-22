@@ -55,19 +55,40 @@ jobs:
       - name: Boot earth-app/mantle2
         run: |
           cd mantle2
-          # Run the project startup script in background — it's idempotent and
-          # the script handles ddev setup, drush install, and module enable.
-          bash startup.sh > /tmp/mantle2.log 2>&1 &
-          echo $! > /tmp/mantle2.pid
-          # Wait until the API responds
+          bash startup.sh 2>&1 | tee /tmp/mantle2.log
+
+          SITE_DIR="/tmp/drupal-mantle2"
+          if [ -d "$SITE_DIR" ]; then
+            cd "$SITE_DIR"
+            ddev describe 2>&1 | tee -a /tmp/mantle2.log || true
+
+            # if drupal still thinks it's uninstalled finish the install
+            if ! curl -sS http://127.0.0.1:8787/v2/hello 2>/dev/null | grep -q '"message"'; then
+              echo ">>> Drupal not fully installed; running site:install + mantle2 enable" | tee -a /tmp/mantle2.log
+              ddev drush -y site:install minimal \
+                --account-name=admin \
+                --account-pass=admin \
+                --site-name="Drupal mantle2 Test" 2>&1 | tee -a /tmp/mantle2.log || true
+              ddev drush -y en field datetime options json_field key smtp node user comment redis openid_connect mantle2 2>&1 | tee -a /tmp/mantle2.log || true
+              ddev drush cr 2>&1 | tee -a /tmp/mantle2.log || true
+            fi
+          fi
+
+          # wait for mantle2 to be ready
           for i in $(seq 1 60); do
-            if curl -sf http://127.0.0.1:8787/v2/hello; then
-              echo "mantle2 is up"
+            body=$(curl -sS -L http://127.0.0.1:8787/v2/hello 2>/dev/null || true)
+            if echo "$body" | grep -q '"message"'; then
+              echo "mantle2 is up — body: $body"
               break
             fi
+            echo "[$i/60] mantle2 not ready yet; latest body: $(echo "$body" | head -c 120)"
             sleep 5
           done
-          curl -sf http://127.0.0.1:8787/v2/hello || (cat /tmp/mantle2.log && exit 1)
+          curl -sS -L http://127.0.0.1:8787/v2/hello | grep -q '"message"' || {
+            echo "::error::mantle2 never returned a JSON greeting"
+            tail -n 200 /tmp/mantle2.log
+            exit 1
+          }
       - name: Boot earth-app/cloud
         run: |
           cd cloud
