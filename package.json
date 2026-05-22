@@ -37,7 +37,7 @@
     "typecheck": "bunx vue-tsc --noEmit && bunx tsc --noEmit -p tests/tsconfig.json"
   },
   "dependencies": {
-    "@earth-app/ocean": "1.0.1",
+    "@earth-app/ocean": "1.0.3",
     "@internationalized/date": "^3.12.1",
     "@nuxt/hints": "^1.1.2",
     "@nuxt/icon": "^2.2.2",
@@ -103,7 +103,7 @@
     "playwright-core": "^1.60.0",
     "prettier": "^3.8.3",
     "prettier-plugin-organize-imports": "4.3.0",
-    "prettier-plugin-tailwindcss": "^0.7.4",
+    "prettier-plugin-tailwindcss": "^0.8.0",
     "v8-to-istanbul": "^9.3.0",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.1.7",
