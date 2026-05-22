@@ -110,7 +110,7 @@
     "wrangler": "^4.93.1"
   },
   "lint-staged": {
-    "*.{js,css,ts,json,yml,vue}": "prettier --write"
+    "*.{js,css,ts,json,yml,vue,md}": "prettier --write"
   },
   "trustedDependencies": [
     "@parcel/watcher",
