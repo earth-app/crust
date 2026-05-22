@@ -22,3 +22,16 @@ logs
 .idea
 
 .env.local
+.claude
+
+# Playwright
+playwright-report/
+test-results/
+
+# Coverage
+coverage/
+.coverage/
+.nyc_output/
+
+# Test-only env config (no secrets, but local-only)
+.config/test.env.local

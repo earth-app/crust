@@ -5,9 +5,29 @@ import { DEFAULT_FULL_NAME } from '../types/user';
 
 const requestQueue = new Map<string, Promise<any>>();
 
-// LRU cache for API responses to prevent memory leaks
+// LRU cache for API responses to prevent memory leaks. Disabled in test mode
+// so that mock overrides (which can change response shape between tests) are
+// always honored; otherwise the long-lived dev server's module-level cache
+// would return stale data after a warmup or earlier test.
 const MAX_CACHE_SIZE = 100;
 const apiCache = new Map<string, any>();
+const isApiCacheDisabled = (): boolean => {
+	if (typeof process === 'undefined') return false;
+	const env = process.env || {};
+	return (
+		env.NODE_ENV === 'test' || env.NUXT_DISABLE_API_CACHE === '1' || env.DISABLE_API_CACHE === '1'
+	);
+};
+
+/**
+ * TEST-ONLY: empty the in-process API cache so the dev server doesn't bleed
+ * default mock data from a warmup or earlier test into the current test.
+ * Used by `src/server/api/__test__/reset.post.ts`; do not call from app code.
+ */
+export function apiCache_TEST_ONLY_CLEAR(): void {
+	apiCache.clear();
+	requestQueue.clear();
+}
 
 const evictOldestCacheEntry = () => {
 	if (apiCache.size >= MAX_CACHE_SIZE) {
@@ -28,7 +48,7 @@ export async function makeRequest<T>(
 		delete requestOptions.allowMessageResponse;
 
 		// Check client-side cache first
-		if (key && apiCache.has(key)) {
+		if (!isApiCacheDisabled() && key && apiCache.has(key)) {
 			return {
 				success: true,
 				data: apiCache.get(key)
@@ -119,7 +139,7 @@ export async function makeRequest<T>(
 				}
 
 				// Update LRU cache with fetched data
-				if (key) {
+				if (!isApiCacheDisabled() && key) {
 					evictOldestCacheEntry();
 					apiCache.set(key, data as T);
 				}

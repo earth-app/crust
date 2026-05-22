@@ -1,0 +1,134 @@
+name: End-To-End Testing
+
+on:
+  repository_dispatch:
+    types: [mantle2-update, cloud-update]
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Crust
+        uses: actions/checkout@v6
+        with:
+          path: crust
+      - name: Checkout mantle2
+        uses: actions/checkout@v6
+        with:
+          repository: earth-app/mantle2
+          path: mantle2
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout cloud
+        uses: actions/checkout@v6
+        with:
+          repository: earth-app/cloud
+          path: cloud
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 'latest'
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: json, curl, mbstring, dom, intl, gd, pdo_mysql
+          coverage: none
+          tools: composer:v2
+      - name: Install ddev
+        run: |
+          curl -fsSL https://apt.fury.io/drud/gpg.key | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/ddev.gpg
+          echo "deb [signed-by=/etc/apt/trusted.gpg.d/ddev.gpg] https://apt.fury.io/drud/ * *" | sudo tee /etc/apt/sources.list.d/ddev.list
+          sudo apt-get update
+          sudo apt-get install -y ddev
+      - name: Boot earth-app/mantle2
+        run: |
+          cd mantle2
+          # Run the project startup script in background — it's idempotent and
+          # the script handles ddev setup, drush install, and module enable.
+          bash startup.sh > /tmp/mantle2.log 2>&1 &
+          echo $! > /tmp/mantle2.pid
+          # Wait until the API responds
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8787/v2/hello; then
+              echo "mantle2 is up"
+              break
+            fi
+            sleep 5
+          done
+          curl -sf http://127.0.0.1:8787/v2/hello || (cat /tmp/mantle2.log && exit 1)
+      - name: Boot earth-app/cloud
+        run: |
+          cd cloud
+          bun install --frozen-lockfile
+          bun run dev > /tmp/cloud.log 2>&1 &
+          echo $! > /tmp/cloud.pid
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:9898/; then
+              echo "cloud is up"
+              break
+            fi
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:9898/ || (cat /tmp/cloud.log && exit 1)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ADMIN_API_KEY: test-admin-key
+          MANTLE_URL: http://127.0.0.1:8787
+      - name: Install Crust dependencies
+        run: |
+          cd crust
+          bun add -g husky
+          bun install --frozen-lockfile
+          bun run postinstall
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Playwright Browsers
+        run: |
+          cd crust
+          bunx playwright install --with-deps chromium
+      - name: Run E2E tests with coverage
+        run: |
+          cd crust
+          COVERAGE=1 MOCK_DISABLED=1 bunx playwright test --project=chromium
+        env:
+          CI: true
+      - name: Upload Playwright artifacts on failure
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-e2e
+          path: |
+            crust/playwright-report/
+            /tmp/mantle2.log
+            /tmp/cloud.log
+          retention-days: 14
+      - name: Upload to Codecov
+        if: ${{ always() && hashFiles('crust/coverage/lcov.info') != '' }}
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: earth-app/crust
+          fail_ci_if_error: false
+          flags: e2e-integration
+          files: |
+            crust/coverage/lcov.info
+            crust/coverage/coverage-final.json
+      - name: Tear-down Servers
+        if: always()
+        run: |
+          if [ -f /tmp/mantle2.pid ]; then kill $(cat /tmp/mantle2.pid) || true; fi
+          if [ -f /tmp/cloud.pid ]; then kill $(cat /tmp/cloud.pid) || true; fi
+          if command -v ddev >/dev/null; then
+            (cd /tmp/drupal-mantle2 && ddev stop) || true
+          fi

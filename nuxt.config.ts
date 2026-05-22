@@ -181,7 +181,8 @@ export default defineNuxtConfig({
 					size: '48px'
 				}
 			}
-		]
+		],
+		'@nuxt/test-utils/module'
 	],
 	i18n: {
 		locales: [{ code: 'en', language: 'en-US' }],

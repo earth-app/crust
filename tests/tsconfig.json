@@ -1,0 +1,28 @@
+{
+	"extends": "../.nuxt/tsconfig.json",
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"strict": true,
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"allowImportingTsExtensions": false,
+		"noEmit": true,
+		"types": ["node", "@playwright/test", "@nuxt/test-utils"],
+		"paths": {
+			"~~/*": ["./*"],
+			"@@/*": ["./*"],
+			"~/*": ["./src/*"],
+			"@/*": ["./src/*"],
+			"types/*": ["./src/shared/types/*"],
+			"utils": ["./src/shared/utils/util"],
+			"schemas": ["./src/shared/utils/schemas"],
+			"stores/*": ["./src/stores/*"],
+			"#test-utils/*": ["./tests/utils/*"]
+		}
+	},
+	"include": ["./**/*.ts", "./**/*.spec.ts", "../src/shared/types/**/*.ts"],
+	"exclude": ["../node_modules", "../.output", "../.nuxt", "../dist"]
+}
