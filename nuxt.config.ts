@@ -81,10 +81,13 @@ export default defineNuxtConfig({
 				'@earth-app/ocean',
 				'@internationalized/date'
 			]
+		},
+		ssr: {
+			noExternal: ['@earth-app/ocean']
 		}
 	},
 	nitro: {
-		preset: 'cloudflare_module',
+		preset: process.env.NUXT_TEST_BUILD === '1' ? 'node-server' : 'cloudflare_module',
 		cloudflare: {
 			deployConfig: true,
 			nodeCompat: true,
@@ -117,18 +120,18 @@ export default defineNuxtConfig({
 		'/profile/**': { ssr: false },
 		'/admin': { ssr: false },
 
-		// Content listing pages (ISR)
-		'/': { isr: 3600 }, // Homepage regenerates every hour
-		'/activities': { isr: 14400 }, // Regenerate every 4 hours
-		'/articles': { isr: 3600 }, // Regenerate every hour
-		'/prompts': { isr: 900 }, // Regenerate every 15 minutes
-		'/events': { isr: 600 }, // Regenerate every 10 minutes (events change frequently)
+		// Content listing pages (ISR); disabled in test builds
+		'/': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 3600 },
+		'/activities': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 14400 },
+		'/articles': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 3600 },
+		'/prompts': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 900 },
+		'/events': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 600 },
 
-		// Individual content pages (SWR)
-		'/activities/**': { swr: 14400 }, // Cache 4 hours
-		'/articles/**': { swr: 3600 }, // Cache 1 hour
-		'/prompts/**': { swr: 1800 }, // Cache 30 minutes
-		'/events/**': { swr: 1800 }, // Cache 30 minutes
+		// Individual content pages (SWR); disabled in tests builds
+		'/activities/**': process.env.NUXT_TEST_BUILD === '1' ? {} : { swr: 14400 },
+		'/articles/**': process.env.NUXT_TEST_BUILD === '1' ? {} : { swr: 3600 },
+		'/prompts/**': process.env.NUXT_TEST_BUILD === '1' ? {} : { swr: 1800 },
+		'/events/**': process.env.NUXT_TEST_BUILD === '1' ? {} : { swr: 1800 },
 
 		// API routes
 		'/api/**': { cors: false },

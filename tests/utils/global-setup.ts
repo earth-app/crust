@@ -36,10 +36,8 @@ export default async function globalSetup() {
 		await startMockServers();
 	}
 
-	// Warm up the Nuxt dev server — first request is slow because Vite compiles
-	// on demand. We warm a representative set of routes so the per-test
-	// navigation budget stays sane.
 	const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
+	const prodMode = process.env.PLAYWRIGHT_PROD === '1';
 	const deadline = Date.now() + 180_000;
 	let up = false;
 	while (Date.now() < deadline && !up) {
@@ -47,7 +45,7 @@ export default async function globalSetup() {
 			const r = await fetch(baseURL, { signal: AbortSignal.timeout(15_000) });
 			if (r.status < 500) {
 				up = true;
-				console.log(`[setup] dev server reachable (status=${r.status})`);
+				console.log(`[setup] ${prodMode ? 'prod' : 'dev'} server reachable (status=${r.status})`);
 				break;
 			}
 		} catch {
@@ -56,7 +54,12 @@ export default async function globalSetup() {
 		await new Promise((r) => setTimeout(r, 1500));
 	}
 	if (!up) {
-		console.warn('[setup] dev server warmup timed out — tests may have slow first hits');
+		console.warn('[setup] server warmup timed out — tests may have slow first hits');
+		return;
+	}
+
+	if (prodMode) {
+		// No per-route Vite compile in the prod bundle. Done.
 		return;
 	}
 

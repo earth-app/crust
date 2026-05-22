@@ -25,10 +25,12 @@ test.describe('Privacy Policy page', () => {
 		await expect(page.getByText(/We do not sell, trade, or rent/i)).toBeVisible();
 	});
 
-	test('initial render is fast (< 5s)', async ({ page, gotoHydrated }) => {
+	test('initial render is within budget', async ({ page, gotoHydrated }) => {
+		// 5s against the pre-built bundle; 15s against dev mode.
+		const budgetMs = process.env.PLAYWRIGHT_PROD === '1' ? 5_000 : 15_000;
 		const start = Date.now();
 		await gotoHydrated('/privacy-policy');
 		await expect(page.getByRole('heading', { name: 'Privacy Policy', exact: true })).toBeVisible();
-		expect(Date.now() - start).toBeLessThan(5000);
+		expect(Date.now() - start).toBeLessThan(budgetMs);
 	});
 });

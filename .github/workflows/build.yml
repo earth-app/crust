@@ -80,11 +80,14 @@ jobs:
         run: bunx playwright install --with-deps chromium
       - name: Typecheck
         run: bun run typecheck
+      - name: Build Test Build
+        run: bun run build:test
       - name: Run E2E tests with Coverage
         run: bun run test:e2e:coverage
         env:
           CI: true
           COVERAGE: '1'
+          PLAYWRIGHT_PROD: '1'
       - name: Upload Playwright Artifacts (Failure)
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7

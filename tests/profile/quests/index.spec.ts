@@ -5,15 +5,11 @@
 import { expect, test } from '../../utils/fixtures';
 
 test.describe('Quests page (anonymous)', () => {
-	test('renders the Quests heading even for anonymous users', async ({
-		asAnonymous,
-		page,
-		gotoHydrated
-	}) => {
+	test('redirects anonymous users to /login', async ({ asAnonymous, page, gotoHydrated }) => {
 		await asAnonymous();
 		await gotoHydrated('/profile/quests');
-		// Page may show loading or empty state; we just confirm route loads
-		await expect(page).toHaveURL(/\/profile\/quests/);
+		// Profile pages are auth-gated; an anonymous visit ends at /login.
+		await expect(page).toHaveURL(/\/login(\?|$)/);
 	});
 });
 

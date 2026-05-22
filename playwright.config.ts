@@ -23,6 +23,12 @@ const PROJECT_ROOT = fileURLToPath(new URL('.', import.meta.url));
 const isCI = !!process.env.CI;
 const coverage = process.env.COVERAGE === '1';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
+// `PLAYWRIGHT_PROD=1` runs tests against a pre-built node-server bundle
+// (`bun run start:test`) instead of `nuxi dev`. The bundle has all routes
+// compiled ahead of time, eliminating the per-route Vite cold-compile cost
+// that makes dev-mode CI runs take 17min. CI uses this mode; local dev keeps
+// `nuxi dev` for fast iteration.
+const prodServer = process.env.PLAYWRIGHT_PROD === '1';
 
 const reporters: any[] = [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]];
 
@@ -37,8 +43,12 @@ export default defineConfig<ConfigOptions>({
 	fullyParallel: true,
 	forbidOnly: isCI,
 	retries: isCI ? 2 : 3,
-	// Coverage requires modest parallelism so the V8 coverage stream stays sane.
-	workers: coverage ? 2 : isCI ? 2 : undefined,
+	// Worker counts:
+	//   - prod bundle: no Vite contention, push to 4 to drain the suite fast
+	//   - dev mode: 2 max (Vite compile is single-threaded; more workers just
+	//     create head-of-line blocking)
+	//   - coverage: keep modest so the V8 coverage stream doesn't get noisy
+	workers: prodServer ? 4 : coverage ? 2 : isCI ? 2 : undefined,
 	timeout: 120_000,
 	expect: {
 		timeout: 12_000
@@ -51,10 +61,12 @@ export default defineConfig<ConfigOptions>({
 	// failure screenshots / traces and produce a CI warning. Two distinct dirs.
 	outputDir: 'playwright-results',
 	webServer: {
-		command: 'bun run dev:test',
+		command: prodServer
+			? 'test -f .output/server/index.mjs || bun run build:test && bun run start:test'
+			: 'bun run dev:test',
 		url: BASE_URL,
 		reuseExistingServer: !isCI,
-		timeout: 240_000,
+		timeout: prodServer ? 360_000 : 240_000,
 		stdout: 'pipe',
 		stderr: 'pipe'
 	},
@@ -64,9 +76,7 @@ export default defineConfig<ConfigOptions>({
 		screenshot: 'only-on-failure',
 		video: 'retain-on-failure',
 		actionTimeout: 12_000,
-		navigationTimeout: 90_000,
-		// `host` tells @nuxt/test-utils a server is already running there —
-		// skip its own boot logic. Trailing slash matters; the lib joins URLs.
+		navigationTimeout: prodServer ? 30_000 : 90_000,
 		nuxt: {
 			rootDir: PROJECT_ROOT,
 			host: BASE_URL + '/'

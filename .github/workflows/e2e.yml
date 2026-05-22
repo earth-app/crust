@@ -72,6 +72,7 @@ jobs:
           curl -sf http://127.0.0.1:9898/ || (cat /tmp/cloud.log && exit 1)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           ADMIN_API_KEY: test-admin-key
           MANTLE_URL: http://127.0.0.1:8787
       - name: Install Crust dependencies
@@ -86,13 +87,20 @@ jobs:
         run: |
           cd crust
           bunx playwright install --with-deps chromium
-      - name: Run E2E tests with coverage
+      - name: Build production test bundle
         run: |
           cd crust
-          COVERAGE=1 MOCK_DISABLED=1 bunx playwright test --project=chromium
+          bun run build:test
+      - name: Run E2E tests with Coverage
+        run: |
+          cd crust
+          COVERAGE=1 bun run test:e2e:integration
         env:
           CI: true
-      - name: Upload Playwright artifacts on failure
+          PLAYWRIGHT_PROD: '1'
+          MOCK_DISABLED: '1'
+          COVERAGE: '1'
+      - name: Upload Playwright Artifacts (Failure)
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7
         with:
@@ -114,7 +122,7 @@ jobs:
           files: |
             crust/coverage/lcov.info
             crust/coverage/coverage-final.json
-      - name: Tear-down Servers
+      - name: Tear-Down Servers
         if: always()
         run: |
           # mantle2 is daemonized by ddev (no PID file). cloud was launched

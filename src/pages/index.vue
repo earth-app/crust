@@ -29,6 +29,7 @@
 				<p class="text-lg font-semibold">Welcome, @{{ user.username }}</p>
 			</div>
 			<div
+				data-testid="hero-ctas"
 				class="flex flex-col items-center justify-center flex-wrap sm:flex-row my-3 gap-x-2 gap-y-2 max-w-md"
 			>
 				<UButton
