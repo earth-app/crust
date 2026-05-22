@@ -13,10 +13,17 @@
  * do with the code being tested.
  */
 
-import { expect, test } from './utils/fixtures';
+import { expect, integrationMode, test } from './utils/fixtures';
 
 const PROD = process.env.PLAYWRIGHT_PROD === '1';
-const scale = (ms: number): number => (PROD ? ms : ms * 3);
+// Real-backend integration mode adds 1-7s of mantle2 round-trips per page on
+// top of hydration cost (data-heavy pages like /articles can hit 10s on a
+// cold mantle2). 3x keeps the test meaningful — catches a 25s+ regression —
+// without chasing CI per-request flake.
+const scale = (ms: number): number => {
+	if (PROD) return integrationMode ? ms * 3 : ms;
+	return ms * 3;
+};
 
 const PUBLIC_ROUTES: Array<{ path: string; budgetMs: number }> = [
 	{ path: '/', budgetMs: scale(4_000) },

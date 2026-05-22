@@ -2,7 +2,7 @@
  * E2E tests for `src/pages/profile/[id]/badges.vue` — badges grid for a user.
  */
 
-import { expect, test } from '../../utils/fixtures';
+import { expect, skipIfIntegration, test } from '../../utils/fixtures';
 
 test.describe('User badges page', () => {
 	test("renders a known user's badges page heading", async ({
@@ -10,6 +10,7 @@ test.describe('User badges page', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration('testuser does not exist on the real backend; page shows User Not Found');
 		await asAnonymous();
 		await gotoHydrated('/profile/testuser/badges');
 		// The heading uses the @username handle from useDisplayName -- expect "Badges"

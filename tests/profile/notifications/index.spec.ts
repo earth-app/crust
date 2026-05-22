@@ -2,7 +2,7 @@
  * E2E tests for `src/pages/profile/notifications/index.vue`.
  */
 
-import { expect, test } from '../../utils/fixtures';
+import { expect, skipIfIntegration, test } from '../../utils/fixtures';
 
 test.describe('Notifications list (anonymous)', () => {
 	test('shows "must be logged in" message for anonymous users', async ({
@@ -18,6 +18,7 @@ test.describe('Notifications list (anonymous)', () => {
 
 test.describe('Notifications list (logged in)', () => {
 	test('renders user-specific notifications heading', async ({ asUser, page, gotoHydrated }) => {
+		skipIfIntegration('asUser({username:gregory}) override does not apply to the real admin');
 		await asUser({ username: 'gregory' });
 		await gotoHydrated('/profile/notifications');
 		await expect(page.getByText(/Notifications for @gregory/i).first()).toBeVisible({

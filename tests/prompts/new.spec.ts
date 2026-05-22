@@ -4,7 +4,7 @@
  * Gate: users with PRIVATE profile are redirected to /profile with a toast.
  */
 
-import { expect, test } from '../utils/fixtures';
+import { expect, skipIfIntegration, test } from '../utils/fixtures';
 
 test.describe('Prompt creation (anonymous)', () => {
 	test('does not crash for anonymous users', async ({ asAnonymous, page, gotoHydrated }) => {
@@ -20,6 +20,7 @@ test.describe('Prompt creation (PRIVATE visibility)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration('asUser({visibility:PRIVATE}) override does not apply to the real admin');
 		await asUser({ account: { account_type: 'FREE', visibility: 'PRIVATE' } });
 		await gotoHydrated('/prompts/new');
 		await page.waitForURL(/\/profile$/, { timeout: 15_000 });

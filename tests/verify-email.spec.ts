@@ -29,6 +29,9 @@ test.describe('Verify email (already verified)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration(
+			"asUser({email_verified:true}) override does not apply; real admin's verified state is fixed"
+		);
 		await asUser({ account: { email_verified: true } });
 		await gotoHydrated('/verify-email');
 		await page.waitForURL(/\/$/, { timeout: 8000 });

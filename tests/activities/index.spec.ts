@@ -42,6 +42,7 @@ test.describe('Activities list (anonymous)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration('mockApi.set override does not apply against the real backend');
 		await mockApi.set({
 			method: 'GET',
 			path: '^/v2/activities$',
