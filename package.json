@@ -73,6 +73,7 @@
     "@nuxt/image": "^2.0.0"
   },
   "devDependencies": {
+    "@codecov/nuxt-plugin": "^2.0.1",
     "@iconify-json/bx": "^1.2.3",
     "@iconify-json/carbon": "^1.2.22",
     "@iconify-json/cib": "^1.2.3",

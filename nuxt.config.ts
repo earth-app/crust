@@ -182,7 +182,15 @@ export default defineNuxtConfig({
 				}
 			}
 		],
-		'@nuxt/test-utils/module'
+		'@nuxt/test-utils/module',
+		[
+			'@codecov/nuxt-plugin',
+			{
+				enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
+				bundleName: 'crust',
+				uploadToken: process.env.CODECOV_TOKEN
+			}
+		]
 	],
 	i18n: {
 		locales: [{ code: 'en', language: 'en-US' }],
@@ -214,7 +222,8 @@ export default defineNuxtConfig({
 		identity: defineOrganization({
 			name: 'The Earth App',
 			logo: '/earth-app.png',
-			url: 'https://earth-app.com'
+			url: 'https://earth-app.com',
+			foundingDate: '2025-05-04'
 		})
 	}
 });
