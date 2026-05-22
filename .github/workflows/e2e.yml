@@ -56,39 +56,6 @@ jobs:
         run: |
           cd mantle2
           bash startup.sh 2>&1 | tee /tmp/mantle2.log
-
-          SITE_DIR="/tmp/drupal-mantle2"
-          if [ -d "$SITE_DIR" ]; then
-            cd "$SITE_DIR"
-            ddev describe 2>&1 | tee -a /tmp/mantle2.log || true
-
-            # if drupal still thinks it's uninstalled finish the install
-            if ! curl -sS http://127.0.0.1:8787/v2/hello 2>/dev/null | grep -q '"message"'; then
-              echo ">>> Drupal not fully installed; running site:install + mantle2 enable" | tee -a /tmp/mantle2.log
-              ddev drush -y site:install minimal \
-                --account-name=admin \
-                --account-pass=admin \
-                --site-name="Drupal mantle2 Test" 2>&1 | tee -a /tmp/mantle2.log || true
-              ddev drush -y en field datetime options json_field key smtp node user comment redis openid_connect mantle2 2>&1 | tee -a /tmp/mantle2.log || true
-              ddev drush cr 2>&1 | tee -a /tmp/mantle2.log || true
-            fi
-          fi
-
-          # wait for mantle2 to be ready
-          for i in $(seq 1 60); do
-            body=$(curl -sS -L http://127.0.0.1:8787/v2/hello 2>/dev/null || true)
-            if echo "$body" | grep -q '"message"'; then
-              echo "mantle2 is up — body: $body"
-              break
-            fi
-            echo "[$i/60] mantle2 not ready yet; latest body: $(echo "$body" | head -c 120)"
-            sleep 5
-          done
-          curl -sS -L http://127.0.0.1:8787/v2/hello | grep -q '"message"' || {
-            echo "::error::mantle2 never returned a JSON greeting"
-            tail -n 200 /tmp/mantle2.log
-            exit 1
-          }
       - name: Boot earth-app/cloud
         run: |
           cd cloud
@@ -132,6 +99,7 @@ jobs:
           name: playwright-report-e2e
           path: |
             crust/playwright-report/
+            crust/playwright-results/
             /tmp/mantle2.log
             /tmp/cloud.log
           retention-days: 14
@@ -149,8 +117,9 @@ jobs:
       - name: Tear-down Servers
         if: always()
         run: |
-          if [ -f /tmp/mantle2.pid ]; then kill $(cat /tmp/mantle2.pid) || true; fi
-          if [ -f /tmp/cloud.pid ]; then kill $(cat /tmp/cloud.pid) || true; fi
+          # mantle2 is daemonized by ddev (no PID file). cloud was launched
+          # in the background by the Boot step and recorded its PID.
+          if [ -f /tmp/cloud.pid ]; then kill "$(cat /tmp/cloud.pid)" || true; fi
           if command -v ddev >/dev/null; then
             (cd /tmp/drupal-mantle2 && ddev stop) || true
           fi

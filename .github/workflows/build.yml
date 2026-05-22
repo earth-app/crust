@@ -92,6 +92,7 @@ jobs:
           name: playwright-report
           path: |
             playwright-report/
+            playwright-results/
             .coverage/
           retention-days: 7
       - name: Upload to Codecov

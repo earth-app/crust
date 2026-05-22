@@ -46,7 +46,10 @@ export default defineConfig<ConfigOptions>({
 	globalSetup: fileURLToPath(new URL('./tests/utils/global-setup.ts', import.meta.url)),
 	globalTeardown: fileURLToPath(new URL('./tests/utils/global-teardown.ts', import.meta.url)),
 	reporter: reporters,
-	outputDir: 'playwright-report/results',
+	// Keep test artifacts OUT of the HTML reporter folder. The HTML reporter
+	// clears its output dir before generating the report, which would wipe out
+	// failure screenshots / traces and produce a CI warning. Two distinct dirs.
+	outputDir: 'playwright-results',
 	webServer: {
 		command: 'bun run dev:test',
 		url: BASE_URL,
