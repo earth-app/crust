@@ -5,12 +5,13 @@ import { useAuthStore } from './auth';
 import { useAvatarStore } from './avatar';
 
 export const useUserStore = defineStore('user', () => {
-	const cache = reactive(new Map<string, User>());
+	const cache = reactive(new Map<string, User | null>());
 	const users = computed(() => {
 		const seen = new Set<string>();
 		const entries: User[] = [];
 
 		for (const user of cache.values()) {
+			if (!user) continue;
 			if (seen.has(user.id)) continue;
 			seen.add(user.id);
 			entries.push(user);
@@ -154,7 +155,7 @@ export const useUserStore = defineStore('user', () => {
 		bumpQuestSyncVersion(identifier);
 	};
 
-	const get = (identifier: string): User | undefined => {
+	const get = (identifier: string): User | null | undefined => {
 		if (!identifier) return undefined;
 		return cache.get(identifier);
 	};
@@ -198,9 +199,13 @@ export const useUserStore = defineStore('user', () => {
 					const avatarStore = useAvatarStore();
 					avatarStore.preloadAvatar(res.data.account?.avatar_url);
 				} else {
-					console.warn(`Failed to fetch user ${identifier}:`, res.message);
+					cache.set(identifier, null);
+					if (res.message) {
+						console.warn(`Failed to fetch user ${identifier}:`, res.message);
+					}
 				}
 			} catch (error) {
+				cache.set(identifier, null);
 				console.warn(`Failed to fetch user ${identifier}:`, error);
 			} finally {
 				fetchQueue.delete(identifier);
