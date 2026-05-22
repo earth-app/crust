@@ -52,6 +52,24 @@ jobs:
           echo "deb [signed-by=/etc/apt/trusted.gpg.d/ddev.gpg] https://apt.fury.io/drud/ * *" | sudo tee /etc/apt/sources.list.d/ddev.list
           sudo apt-get update
           sudo apt-get install -y ddev
+      - name: Generate Docker Cache Key
+        id: docker_cache_key
+        run: |
+          ddev_ver=$(ddev --version 2>/dev/null | head -n1)
+          startup_sha=$(sha1sum mantle2/startup.sh 2>/dev/null | awk '{print $1}')
+          # Include any committed docker-compose / Dockerfile files to future-proof
+          extra=$(find mantle2 cloud -type f \( -name 'docker-compose*.yml' -o -name 'Dockerfile*' \) 2>/dev/null \
+                  | sort | xargs -r cat | sha1sum | awk '{print $1}')
+          key=$(printf '%s|%s|%s' "$ddev_ver" "$startup_sha" "$extra" | sha1sum | awk '{print $1}')
+          echo "key=${key}" >> "$GITHUB_OUTPUT"
+          echo "ddev: $ddev_ver"
+          echo "startup.sh sha: $startup_sha"
+          echo "extra files sha: $extra"
+          echo "composite cache key: $key"
+      - name: Load Docker Cache
+        uses: ScribeMD/docker-cache@0.5.0
+        with:
+          key: docker-${{ runner.os }}-${{ steps.docker_cache_key.outputs.key }}
       - name: Boot earth-app/mantle2
         run: |
           cd mantle2
@@ -73,6 +91,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           ADMIN_API_KEY: test-admin-key
           MANTLE_URL: http://127.0.0.1:8787
       - name: Install Crust dependencies
