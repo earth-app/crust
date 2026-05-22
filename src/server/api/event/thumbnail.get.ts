@@ -44,10 +44,10 @@ export default defineEventHandler(async (event) => {
 		}
 	});
 
-	if (res.type !== 'image/webp') {
+	if (!res || res.type !== 'image/webp') {
 		throw createError({
-			statusCode: 500,
-			statusMessage: `Unexpected thumbnail content type: ${res.type}; expected image/webp`
+			statusCode: 404,
+			statusMessage: `Unexpected thumbnail content type: ${res?.type ?? 'missing'}; expected image/webp`
 		});
 	}
 
