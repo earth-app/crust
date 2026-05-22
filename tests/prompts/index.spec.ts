@@ -2,7 +2,7 @@
  * E2E tests for `src/pages/prompts/index.vue` — prompts list.
  */
 
-import { expect, test } from '../utils/fixtures';
+import { expect, skipIfIntegration, test } from '../utils/fixtures';
 
 test.describe('Prompts list (anonymous)', () => {
 	test('renders the "Today\'s Prompts" heading', async ({ asAnonymous, page, gotoHydrated }) => {
@@ -32,6 +32,7 @@ test.describe('Prompts list (anonymous)', () => {
 	});
 
 	test('renders prompts from the mock backend', async ({ asAnonymous, page, gotoHydrated }) => {
+		skipIfIntegration();
 		await asAnonymous();
 		await gotoHydrated('/prompts');
 		await expect(page.getByText(/Sample prompt 1\?/i).first()).toBeVisible({ timeout: 10_000 });

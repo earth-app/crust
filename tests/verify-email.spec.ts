@@ -6,7 +6,7 @@
  * an 8-digit PinInput that auto-submits to `/v2/users/current/verify_email`.
  */
 
-import { expect, test } from './utils/fixtures';
+import { expect, skipIfIntegration, test } from './utils/fixtures';
 
 test.describe('Verify email (anonymous)', () => {
 	test('redirects to /login when not authenticated', async ({
@@ -37,6 +37,7 @@ test.describe('Verify email (already verified)', () => {
 
 test.describe('Verify email (unverified user)', () => {
 	test('renders the 8-digit verification form', async ({ asUser, page, gotoHydrated }) => {
+		skipIfIntegration('depends on email_verified:false override; real admin is already verified');
 		await asUser({
 			username: 'pending',
 			account: { email: 'pending@example.com', email_verified: false }
@@ -56,6 +57,7 @@ test.describe('Verify email (unverified user)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration('depends on email_verified:false override; real admin is already verified');
 		await asUser({
 			account: { email: 'pending@example.com', email_verified: false }
 		});
@@ -76,6 +78,7 @@ test.describe('Verify email (unverified user)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration('depends on email_verified:false override; real admin is already verified');
 		await mockApi.set({
 			method: 'POST',
 			path: '^/v2/users/current/verify_email$',
@@ -96,6 +99,7 @@ test.describe('Verify email (unverified user)', () => {
 	});
 
 	test('resend button is clickable', async ({ asUser, page, gotoHydrated }) => {
+		skipIfIntegration('depends on email_verified:false override; real admin is already verified');
 		await asUser({
 			account: { email: 'pending@example.com', email_verified: false }
 		});

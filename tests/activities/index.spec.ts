@@ -5,7 +5,7 @@
  * a "Recommended for You" section sourced from `/v2/users/current/activities/recommend`.
  */
 
-import { expect, test } from '../utils/fixtures';
+import { expect, skipIfIntegration, test } from '../utils/fixtures';
 
 test.describe('Activities list (anonymous)', () => {
 	test('renders the All Activities heading', async ({ asAnonymous, page, gotoHydrated }) => {
@@ -29,6 +29,7 @@ test.describe('Activities list (anonymous)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration();
 		await asAnonymous();
 		await gotoHydrated('/activities');
 		// The mock provides 30 activities; at least one card should render

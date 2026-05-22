@@ -7,7 +7,7 @@
  *   - Activities panel (search/list, draft creation)
  */
 
-import { expect, test } from './utils/fixtures';
+import { expect, skipIfIntegration, test } from './utils/fixtures';
 
 test.describe('Admin page (anonymous)', () => {
 	test('does not render admin panels for anonymous user', async ({
@@ -23,6 +23,9 @@ test.describe('Admin page (anonymous)', () => {
 
 test.describe('Admin page (regular user)', () => {
 	test('does not render admin panels for a non-admin', async ({ asUser, page, gotoHydrated }) => {
+		skipIfIntegration(
+			'asUser() in integration mode is the seeded admin account, not a regular user'
+		);
 		await asUser();
 		await gotoHydrated('/admin');
 		await expect(page.getByText('MOTD Panel')).toHaveCount(0);

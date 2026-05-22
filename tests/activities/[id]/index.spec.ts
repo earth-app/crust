@@ -5,10 +5,11 @@
  * /v2/activities/{id} plus cloud enrichment from /v1/activity/{id}.
  */
 
-import { expect, test } from '../../utils/fixtures';
+import { expect, skipIfIntegration, test } from '../../utils/fixtures';
 
 test.describe('Activity detail (anonymous)', () => {
 	test('renders an activity name for a known id', async ({ asAnonymous, page, gotoHydrated }) => {
+		skipIfIntegration();
 		await asAnonymous();
 		await gotoHydrated('/activities/act-1');
 		await expect(page.getByText(/Sample Activity 1\b/i).first()).toBeVisible({ timeout: 10_000 });
@@ -49,6 +50,7 @@ test.describe('Activity detail (anonymous)', () => {
 
 test.describe('Activity detail (logged in)', () => {
 	test('renders the activity for a logged-in user', async ({ asUser, page, gotoHydrated }) => {
+		skipIfIntegration();
 		await asUser();
 		await gotoHydrated('/activities/act-2');
 		await expect(page.getByText(/Sample Activity 2\b/i).first()).toBeVisible({ timeout: 10_000 });

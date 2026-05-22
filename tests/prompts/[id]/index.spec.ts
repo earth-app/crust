@@ -2,10 +2,11 @@
  * E2E tests for `src/pages/prompts/[id]/index.vue` — single prompt page.
  */
 
-import { expect, test } from '../../utils/fixtures';
+import { expect, skipIfIntegration, test } from '../../utils/fixtures';
 
 test.describe('Prompt detail (anonymous)', () => {
 	test('renders the prompt for a known id', async ({ asAnonymous, page, gotoHydrated }) => {
+		skipIfIntegration();
 		await asAnonymous();
 		await gotoHydrated('/prompts/pmt-1');
 		await expect(page.getByText(/Sample prompt 1\?/).first()).toBeVisible({ timeout: 10_000 });
@@ -34,6 +35,7 @@ test.describe('Prompt detail (anonymous)', () => {
 
 test.describe('Prompt detail (logged in)', () => {
 	test('renders the prompt and triggers journey update', async ({ asUser, page, gotoHydrated }) => {
+		skipIfIntegration();
 		await asUser();
 		await gotoHydrated('/prompts/pmt-2');
 		await expect(page.getByText(/Sample prompt 2\?/).first()).toBeVisible({ timeout: 10_000 });

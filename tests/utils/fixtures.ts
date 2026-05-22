@@ -15,60 +15,66 @@
 import { test as baseTest, expect } from '@nuxt/test-utils/playwright';
 import type { BrowserContext, Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { saveCoverageForTest } from './coverage';
 import { MockClient } from './mock-client';
 import { makeAdmin, makeUser } from './mock-data';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const INTEGRATION_SESSION_FILE = resolve(__dirname, '../../.integration-session.json');
+
+/**
+ * `true` when running against the real mantle2/cloud backends rather than the
+ * in-process mocks. Specs that depend on seeded mock data can branch on this
+ * via `test.skip(integrationMode, '…')`.
+ */
+export const integrationMode = process.env.MOCK_DISABLED === '1';
+
 /**
  * Integration-mode login helper: when `MOCK_DISABLED=1` is set, the test suite
  * is running against the real mantle2 backend booted by `e2e.yml`. That
- * backend is seeded by `startup.sh` with a single admin user (admin/admin), so
- * any test that needs an authenticated session signs in as that account via
- * the real `/v2/users/login` (HTTP Basic) endpoint and stores the returned
- * `session_token` in a browser cookie.
+ * backend is seeded by `startup.sh` with a single admin user (admin/admin).
  *
- * Returns an object shaped like our mock user (`{ id, username, account: {...} }`)
- * so callers can read `.username` / `.account.account_type` the same way they
- * would in mock mode.
+ * mantle2 enforces aggressive rate limits on `/v2/users/login` (60 req per
+ * 28-second window globally, plus a ~25s per-account cooldown between token
+ * re-issues). With 152 tests × 4 workers each calling this per-test, those
+ * limits get blown immediately. Instead we log in ONCE in globalSetup and
+ * cache `{session_token, user}` to a temp file; every fixture invocation
+ * reads that file and stamps the same cookie on its browser context — zero
+ * additional login requests across the entire run.
  */
-async function loginAsRealAdmin(
-	context: BrowserContext,
-	overrides: Record<string, any> = {}
-): Promise<Record<string, any>> {
-	const apiBase = process.env.NUXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787';
-	const username = (overrides.username as string) || 'admin';
-	const password = (overrides.password as string) || 'admin';
-	const auth = Buffer.from(`${username}:${password}`).toString('base64');
-	const res = await fetch(`${apiBase}/v2/users/login`, {
-		method: 'POST',
-		headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' }
-	});
-	if (!res.ok) {
+let cachedSession: { session_token: string; user: Record<string, any> } | null = null;
+function loadIntegrationSession() {
+	if (cachedSession) return cachedSession;
+	try {
+		const raw = readFileSync(INTEGRATION_SESSION_FILE, 'utf-8');
+		cachedSession = JSON.parse(raw);
+		return cachedSession!;
+	} catch (err) {
 		throw new Error(
-			`[integration] real login as ${username} failed (${res.status}): ${await res.text()}`
+			`[integration] cached session file not found at ${INTEGRATION_SESSION_FILE} — global-setup must run with MOCK_DISABLED=1 first. ${(err as Error).message}`
 		);
 	}
-	const { session_token: token } = (await res.json()) as { session_token?: string };
-	if (!token) {
-		throw new Error('[integration] login succeeded but no session_token in response');
-	}
+}
+
+async function loginAsRealAdmin(
+	context: BrowserContext,
+	_overrides: Record<string, any> = {}
+): Promise<Record<string, any>> {
+	const session = loadIntegrationSession();
 	await context.addCookies([
 		{
 			name: 'session_token',
-			value: token,
+			value: session.session_token,
 			domain: '127.0.0.1',
 			path: '/',
 			sameSite: 'Lax',
 			secure: false
 		}
 	]);
-	// Fetch the current user so callers can use the returned shape.
-	const me = await fetch(`${apiBase}/v2/users/current`, {
-		headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
-	});
-	if (me.ok) return (await me.json()) as Record<string, any>;
-	// Fallback shape — enough for assertions that read .username only.
-	return { id: 'real-admin', username, account: { account_type: 'ADMINISTRATOR' } };
+	return session.user;
 }
 
 export interface TestFixtures {
@@ -299,6 +305,17 @@ export const test = baseTest.extend<TestFixtures>({
 });
 
 export { expect };
+
+/**
+ * Conditional `test.skip()` for tests that hardcode mock-shaped data (e.g.
+ * specific entity IDs like `act-1`, names like "Sample Activity 1", or rely on
+ * `mockApi.set` overrides that don't take effect against the real backend).
+ *
+ * Call inside a test body. No-op outside integration mode.
+ */
+export function skipIfIntegration(reason: string = 'requires seeded mock data') {
+	test.skip(integrationMode, reason);
+}
 
 export async function expectToast(page: Page, partial: string | RegExp) {
 	// Nuxt UI renders toasts inside a portal with data attribute

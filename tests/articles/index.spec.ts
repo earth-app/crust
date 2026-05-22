@@ -2,7 +2,7 @@
  * E2E tests for `src/pages/articles/index.vue` — article hub with multiple sections.
  */
 
-import { expect, test } from '../utils/fixtures';
+import { expect, skipIfIntegration, test } from '../utils/fixtures';
 
 test.describe('Articles list (anonymous)', () => {
 	test('renders the Explore Articles section', async ({ asAnonymous, page, gotoHydrated }) => {
@@ -50,6 +50,9 @@ test.describe('Articles list (logged in)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration(
+			'asUser({account_type:FREE}) overrides do not apply to the real admin session'
+		);
 		await asUser({ account: { account_type: 'FREE' } });
 		await gotoHydrated('/articles');
 		// Plus icon button next to refresh; gating depends on account_type

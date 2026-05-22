@@ -10,7 +10,7 @@
  * NUXT_PUBLIC_API_BASE_URL / NUXT_PUBLIC_CLOUD_BASE_URL pointing to these mocks.
  */
 
-import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startMockServers } from './mock-server';
@@ -18,6 +18,48 @@ import { startMockServers } from './mock-server';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
 const RAW_COVERAGE_DIR = resolve(PROJECT_ROOT, '.coverage', 'raw');
+const INTEGRATION_SESSION_FILE = resolve(PROJECT_ROOT, '.integration-session.json');
+
+/**
+ * Real-backend integration mode shares a single session across all workers.
+ *
+ * mantle2 applies two distinct rate limits to the `/v2/users/login` endpoint:
+ *   - global: 60 requests per ~28s window per client IP
+ *   - per-account: a fresh `session_token` can only be issued every ~25s
+ *
+ * With 152 tests × 4 workers each calling `loginAsRealAdmin` per test, those
+ * limits get blown immediately and every subsequent test fails with 409/429.
+ * Logging in *once* in globalSetup and writing the token to a temp file lets
+ * every fixture invocation reuse the same cookie — zero login traffic after
+ * setup. The file is git-ignored and lives for the duration of the run.
+ */
+async function loginAndCacheAdminSession() {
+	const apiBase = process.env.NUXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787';
+	const auth = Buffer.from('admin:admin').toString('base64');
+	const res = await fetch(`${apiBase}/v2/users/login`, {
+		method: 'POST',
+		headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' }
+	});
+	if (!res.ok) {
+		throw new Error(`[setup] integration login failed (${res.status}): ${await res.text()}`);
+	}
+	const body = (await res.json()) as { session_token?: string };
+	const token = body.session_token;
+	if (!token) {
+		throw new Error('[setup] integration login succeeded but no session_token returned');
+	}
+	let user: Record<string, any> = {
+		id: 'real-admin',
+		username: 'admin',
+		account: { account_type: 'ADMINISTRATOR' }
+	};
+	const me = await fetch(`${apiBase}/v2/users/current`, {
+		headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+	});
+	if (me.ok) user = (await me.json()) as Record<string, any>;
+	writeFileSync(INTEGRATION_SESSION_FILE, JSON.stringify({ session_token: token, user }));
+	console.log(`[setup] cached real admin session (user=${user.username || 'admin'})`);
+}
 
 export default async function globalSetup() {
 	// Clear any previous coverage run
@@ -27,11 +69,17 @@ export default async function globalSetup() {
 	if (process.env.COVERAGE === '1') {
 		mkdirSync(RAW_COVERAGE_DIR, { recursive: true });
 	}
+	// Remove any stale session from a prior run before deciding whether to mint
+	// a new one — keeps mock-mode runs from accidentally seeing the file.
+	if (existsSync(INTEGRATION_SESSION_FILE)) {
+		rmSync(INTEGRATION_SESSION_FILE, { force: true });
+	}
 
 	// Skip mock server boot when an explicit MOCK_DISABLED flag is set --
 	// e.g. when running the integration workflow against the real mantle2/cloud.
 	if (process.env.MOCK_DISABLED === '1') {
 		console.log('[setup] MOCK_DISABLED=1 → skipping mock server boot');
+		await loginAndCacheAdminSession();
 	} else {
 		await startMockServers();
 	}

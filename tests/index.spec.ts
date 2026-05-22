@@ -18,7 +18,7 @@
  */
 
 import type { Page } from '@playwright/test';
-import { expect, test } from './utils/fixtures';
+import { expect, skipIfIntegration, test } from './utils/fixtures';
 
 const heroCtas = (page: Page) => page.getByTestId('hero-ctas');
 
@@ -84,6 +84,7 @@ test.describe('Homepage (anonymous)', () => {
 
 test.describe('Homepage (logged-in user)', () => {
 	test('shows the welcome message with username', async ({ asUser, page, gotoHydrated }) => {
+		skipIfIntegration('asUser username override does not apply to the real admin session');
 		const user = await asUser({ username: 'gregory', id: 'gregory-id' });
 		await gotoHydrated('/');
 		await expect(page.getByText(`Welcome, @${user.username}`)).toBeVisible();
@@ -101,6 +102,7 @@ test.describe('Homepage (logged-in user)', () => {
 	});
 
 	test('does not show admin panel for non-admin', async ({ asUser, page, gotoHydrated }) => {
+		skipIfIntegration('asUser() in integration mode is the seeded admin account');
 		await asUser();
 		await gotoHydrated('/');
 		await expect(heroCtas(page).getByRole('button', { name: /Admin Panel/i })).toHaveCount(0);

@@ -13,7 +13,7 @@
  */
 
 import type { Page } from '@playwright/test';
-import { expect, test } from '../../utils/fixtures';
+import { expect, skipIfIntegration, test } from '../../utils/fixtures';
 import { makeEvent } from '../../utils/mock-data';
 
 function manageableEvent(overrides: Record<string, any> = {}) {
@@ -50,6 +50,7 @@ test.describe('Event manage page (logged in)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration('manage UI requires mockApi-injected can_edit:true event');
 		await mockApi.set({
 			method: 'GET',
 			path: '^/v2/events/evt-1$',
@@ -67,6 +68,7 @@ test.describe('Event manage page (logged in)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration('manage UI requires mockApi-injected event with attendee_count');
 		await mockApi.set({
 			method: 'GET',
 			path: '^/v2/events/evt-1$',
@@ -89,6 +91,7 @@ test.describe('Event manage page (logged in)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration('manage UI requires mockApi-injected upcoming event');
 		await mockApi.set({
 			method: 'GET',
 			path: '^/v2/events/evt-2$',
@@ -109,6 +112,7 @@ test.describe('Event manage page (logged in)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration('manage UI requires mockApi-injected cancelled event');
 		await mockApi.set({
 			method: 'GET',
 			path: '^/v2/events/evt-cancelled$',
@@ -135,6 +139,7 @@ test.describe('Event manage page (logged in)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration('redirect logic depends on mockApi-injected can_edit:false event');
 		await mockApi.set({
 			method: 'GET',
 			path: '^/v2/events/evt-noedit$',

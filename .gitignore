@@ -28,6 +28,7 @@ logs
 playwright-report/
 playwright-results/
 test-results/
+.integration-session.json
 
 # Coverage
 coverage/

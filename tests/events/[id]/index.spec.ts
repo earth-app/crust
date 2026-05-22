@@ -2,10 +2,11 @@
  * E2E tests for `src/pages/events/[id]/index.vue` — single event page.
  */
 
-import { expect, test } from '../../utils/fixtures';
+import { expect, skipIfIntegration, test } from '../../utils/fixtures';
 
 test.describe('Event detail (anonymous)', () => {
 	test('renders event details for known id', async ({ asAnonymous, page, gotoHydrated }) => {
+		skipIfIntegration();
 		await asAnonymous();
 		await gotoHydrated('/events/evt-1');
 		await expect(page.getByText(/Event 1\b/).first()).toBeVisible({ timeout: 10_000 });
@@ -27,6 +28,7 @@ test.describe('Event detail (anonymous)', () => {
 
 test.describe('Event detail (logged in)', () => {
 	test('renders event for logged-in user', async ({ asUser, page, gotoHydrated }) => {
+		skipIfIntegration();
 		await asUser();
 		await gotoHydrated('/events/evt-2');
 		await expect(page.getByText(/Event 2\b/).first()).toBeVisible({ timeout: 10_000 });
