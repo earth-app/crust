@@ -99,7 +99,7 @@ jobs:
             .coverage/
           retention-days: 7
       - name: Upload to Codecov
-        if: ${{ always() && hashFiles('coverage/lcov.info') != '' }}
+        if: ${{ always() }}
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -110,19 +110,12 @@ jobs:
             coverage/lcov.info
             coverage/coverage-final.json
       - name: Archive Coverage Artifacts
-        if: ${{ always() && hashFiles('coverage/lcov.info') != '' }}
-        id: archive
+        if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
           name: coverage-artifacts-${{ github.run_id }}
           path: coverage/
           retention-days: 14
-      - name: Attest Coverage Artifacts
-        if: success() || failure()
-        uses: actions/attest-build-provenance@v3
-        with:
-          subject-name: crust-coverage-${{ github.run_id }}
-          subject-digest: sha256:${{ steps.archive.outputs.artifact-digest }}
 
   publish:
     runs-on: ubuntu-latest

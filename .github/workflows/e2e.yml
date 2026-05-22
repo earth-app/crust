@@ -131,7 +131,7 @@ jobs:
             /tmp/cloud.log
           retention-days: 14
       - name: Upload to Codecov
-        if: ${{ always() && hashFiles('crust/coverage/lcov.info') != '' }}
+        if: ${{ always() }}
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -141,6 +141,13 @@ jobs:
           files: |
             crust/coverage/lcov.info
             crust/coverage/coverage-final.json
+      - name: Archive Coverage Artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-integration-artifacts-${{ github.run_id }}
+          path: coverage/
+          retention-days: 14
       - name: Tear-Down Servers
         if: always()
         run: |
