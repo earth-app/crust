@@ -15,10 +15,11 @@ jobs:
 
     permissions:
       contents: read
+      packages: read
       id-token: write
 
     steps:
-      - name: Checkout Crust
+      - name: Checkout crust
         uses: actions/checkout@v6
         with:
           path: crust
