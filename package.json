@@ -21,7 +21,7 @@
     "dev:remote": "bunx nuxi dev --dotenv .config/production.env --dotenv .env --dotenv .env.local --no-restart --public --port 3000",
     "dev:test": "bunx nuxi dev --dotenv .config/test.env --no-restart --port 3000 --host 127.0.0.1",
     "build": "NODE_OPTIONS='--max-old-space-size=4096' nuxt build",
-    "build:test": "NUXT_TEST_BUILD=1 NODE_OPTIONS='--max-old-space-size=6144' bunx nuxi build --dotenv .config/test.env",
+    "build:test": "NUXT_TEST_BUILD=1 NODE_OPTIONS='--max-old-space-size=8192' bunx nuxi build --dotenv .config/test.env",
     "start:test": "NUXT_TEST_BUILD=1 PORT=3000 HOST=127.0.0.1 node --env-file=.config/test.env .output/server/index.mjs",
     "postinstall": "nuxt prepare",
     "prepack": "cp nuxt.config.library.ts nuxt.config.ts",
