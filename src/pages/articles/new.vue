@@ -9,9 +9,12 @@ const router = useRouter();
 const toast = useToast();
 const { user } = useAuth();
 
-onMounted(() => {
-	if (user.value) {
-		if (user.value.account.visibility !== 'PUBLIC') {
+watch(
+	() => user.value,
+	(currentUser) => {
+		if (!currentUser) return;
+
+		if (currentUser.account.visibility !== 'PUBLIC') {
 			router.push('/profile');
 			toast.add({
 				title: 'Profile Private',
@@ -20,9 +23,10 @@ onMounted(() => {
 				color: 'warning',
 				duration: 5000
 			});
+			return;
 		}
 
-		if (user.value.account.account_type === 'FREE' || user.value.account.account_type === 'PRO') {
+		if (currentUser.account.account_type === 'FREE' || currentUser.account.account_type === 'PRO') {
 			router.push('/');
 			toast.add({
 				title: 'Upgrade Required',
@@ -32,6 +36,7 @@ onMounted(() => {
 				duration: 5000
 			});
 		}
-	}
-});
+	},
+	{ immediate: true }
+);
 </script>
