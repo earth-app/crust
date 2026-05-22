@@ -13,11 +13,63 @@
  */
 
 import { test as baseTest, expect } from '@nuxt/test-utils/playwright';
-import type { Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { saveCoverageForTest } from './coverage';
 import { MockClient } from './mock-client';
 import { makeAdmin, makeUser } from './mock-data';
+
+/**
+ * Integration-mode login helper: when `MOCK_DISABLED=1` is set, the test suite
+ * is running against the real mantle2 backend booted by `e2e.yml`. That
+ * backend is seeded by `startup.sh` with a single admin user (admin/admin), so
+ * any test that needs an authenticated session signs in as that account via
+ * the real `/v2/users/login` (HTTP Basic) endpoint and stores the returned
+ * `session_token` in a browser cookie.
+ *
+ * Returns an object shaped like our mock user (`{ id, username, account: {...} }`)
+ * so callers can read `.username` / `.account.account_type` the same way they
+ * would in mock mode.
+ */
+async function loginAsRealAdmin(
+	context: BrowserContext,
+	overrides: Record<string, any> = {}
+): Promise<Record<string, any>> {
+	const apiBase = process.env.NUXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787';
+	const username = (overrides.username as string) || 'admin';
+	const password = (overrides.password as string) || 'admin';
+	const auth = Buffer.from(`${username}:${password}`).toString('base64');
+	const res = await fetch(`${apiBase}/v2/users/login`, {
+		method: 'POST',
+		headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' }
+	});
+	if (!res.ok) {
+		throw new Error(
+			`[integration] real login as ${username} failed (${res.status}): ${await res.text()}`
+		);
+	}
+	const { session_token: token } = (await res.json()) as { session_token?: string };
+	if (!token) {
+		throw new Error('[integration] login succeeded but no session_token in response');
+	}
+	await context.addCookies([
+		{
+			name: 'session_token',
+			value: token,
+			domain: '127.0.0.1',
+			path: '/',
+			sameSite: 'Lax',
+			secure: false
+		}
+	]);
+	// Fetch the current user so callers can use the returned shape.
+	const me = await fetch(`${apiBase}/v2/users/current`, {
+		headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+	});
+	if (me.ok) return (await me.json()) as Record<string, any>;
+	// Fallback shape — enough for assertions that read .username only.
+	return { id: 'real-admin', username, account: { account_type: 'ADMINISTRATOR' } };
+}
 
 export interface TestFixtures {
 	testId: string;
@@ -35,7 +87,7 @@ export const test = baseTest.extend<TestFixtures>({
 	},
 
 	// Browser context is rebuilt with a header injector + JS coverage hooks
-	context: async ({ context, testId, browserName }, use, testInfo) => {
+	context: async ({ context, testId, browserName }, use) => {
 		await context.setExtraHTTPHeaders({ 'x-test-id': testId });
 
 		// Stamp X-Test-Id on every request so that requests routed through the
@@ -91,15 +143,30 @@ export const test = baseTest.extend<TestFixtures>({
 	mockApi: async ({ testId }, use) => {
 		const client = new MockClient(testId);
 		// Clear the Nitro server's in-memory apiCache (and request dedupe queue)
-		// so default mock data doesn't bleed across tests. Best-effort — the
-		// endpoint is dev-only and the cache disable flag is also active.
+		// so default mock data doesn't bleed across tests. Best-effort with a
+		// hard 3s timeout — under heavy CI load the dev server can pause for
+		// minutes on a single request, and we don't want the fixture setup to
+		// consume the whole test's 120s budget on this one call. The cache
+		// disable flag (`DISABLE_API_CACHE=1`) is the primary defense; this
+		// reset is a belt-and-suspenders.
 		try {
-			await fetch('http://127.0.0.1:3000/api/__test__/reset', { method: 'POST' });
+			const ac = new AbortController();
+			const timer = setTimeout(() => ac.abort(), 3_000);
+			await fetch('http://127.0.0.1:3000/api/__test__/reset', {
+				method: 'POST',
+				signal: ac.signal
+			}).catch(() => {});
+			clearTimeout(timer);
 		} catch {
 			// dev server may not be up yet on first test; non-fatal
 		}
 		await use(client);
-		await client.reset();
+		// Same timeout discipline on teardown — never let cleanup block the
+		// next test if the dev server is wedged.
+		const ac = new AbortController();
+		const timer = setTimeout(() => ac.abort(), 3_000);
+		await client.reset({ signal: ac.signal }).catch(() => {});
+		clearTimeout(timer);
 	},
 
 	asAnonymous: async ({ context, mockApi }, use) => {
@@ -112,8 +179,15 @@ export const test = baseTest.extend<TestFixtures>({
 
 	asUser: async ({ context, mockApi, testId }, use) => {
 		const fn = async (overrides: Record<string, any> = {}) => {
-			// Give each test a unique user id + session token derived from its
-			// testId so parallel workers don't overwrite each other's state.
+			if (process.env.MOCK_DISABLED === '1') {
+				// Integration mode: hit real mantle2. We don't have a way to
+				// create arbitrary users on the fly, so log in as the seeded
+				// admin/admin account that `startup.sh` provisions. Most "logged
+				// in" tests just need *some* authenticated user.
+				return await loginAsRealAdmin(context, overrides);
+			}
+			// Mock mode: each test gets a unique user id + session token derived
+			// from its testId so parallel workers don't overwrite each other.
 			const sessionToken = `mock-token-${testId}`;
 			const user = makeUser({
 				id: overrides.id ?? `test-user-${testId.slice(0, 8)}`,
@@ -139,6 +213,9 @@ export const test = baseTest.extend<TestFixtures>({
 
 	asAdmin: async ({ context, mockApi, testId }, use) => {
 		const fn = async (overrides: Record<string, any> = {}) => {
+			if (process.env.MOCK_DISABLED === '1') {
+				return await loginAsRealAdmin(context, overrides);
+			}
 			const sessionToken = `mock-admin-token-${testId}`;
 			const admin = makeAdmin({
 				id: overrides.id ?? `admin-user-${testId.slice(0, 8)}`,

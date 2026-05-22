@@ -89,12 +89,13 @@ export class MockClient {
 		});
 	}
 
-	async reset(): Promise<void> {
+	async reset(opts: { signal?: AbortSignal } = {}): Promise<void> {
 		for (const backend of ['mantle', 'cloud'] as const) {
 			await fetch(`${baseUrl(backend)}/__mock__/reset`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ testId: this.testId })
+				body: JSON.stringify({ testId: this.testId }),
+				signal: opts.signal
 			});
 		}
 	}
