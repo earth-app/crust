@@ -544,6 +544,23 @@ Ensure a `GITHUB_TOKEN` is set to install from github packages
 4. **Testing**: Manual testing required (automated tests TBD)
 5. **Documentation**: Update README for significant changes
 
+## 📦 Library Packaging & Publishing
+
+- The package is prepared for publishing as a library. A `prepack` script copies `nuxt.config.library.ts` into place before packaging, and `postpack` restores the working tree. Releases are published to GitHub Packages as configured in `package.json` (`publishConfig`). The CI `build.yml` demonstrates the canonical publish flow (install, postinstall, bump version, publish).
+
+**Local packaging tips**:
+
+- Use `bun run postinstall` after `bun install` to ensure native hooks are prepared before building or publishing.
+- When preparing a package release, prefer running the CI workflow or following the steps in `.github/workflows/build.yml` to replicate the published artifact.
+
+## 🔗 Backend Repositories
+
+- This frontend works closely with upstream backend repositories. Two commonly referenced backends are:
+  - `earth-app/mantle2` — core API and business logic (user, activities, prompts, articles)
+  - `earth-app/cloud` — Cloud/edge services and worker-side integrations used by NuxtHub/Cloudflare deployments
+
+When updating API surface (paths, response schemas), coordinate changes with the backend repos and update the local Zod schemas in `src/shared/utils/schemas.ts` and the TypeScript types if shared contracts change.
+
 ## 📄 License
 
 See [LICENSE](LICENSE) file for details.
