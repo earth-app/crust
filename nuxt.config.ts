@@ -119,6 +119,7 @@ export default defineNuxtConfig({
 		'/change-password': { ssr: false },
 		'/profile/**': { ssr: false },
 		'/admin': { ssr: false },
+		'/oauth/complete': { ssr: false },
 
 		// Content listing pages (ISR); disabled in test builds
 		'/': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 3600 },
