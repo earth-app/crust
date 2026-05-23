@@ -1,0 +1,23 @@
+{
+	"applinks": {
+		"apps": [],
+		"details": [
+			{
+				"appID": "H6V5BVL48P.com.earthapp.sky",
+				"paths": [
+					"/oauth/complete",
+					"/oauth/complete/*",
+					"/oauth-complete",
+					"/oauth-complete/*",
+					"/auth/complete",
+					"/auth/complete/*",
+					"/auth/callback-mobile",
+					"/auth/callback-mobile/*"
+				]
+			}
+		]
+	},
+	"webcredentials": {
+		"apps": ["H6V5BVL48P.com.earthapp.sky"]
+	}
+}
