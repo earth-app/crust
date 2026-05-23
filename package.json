@@ -61,6 +61,8 @@
     "@pinia/nuxt": "^0.11.3",
     "@tailwindcss/vite": "^4.3.0",
     "@types/luxon": "^3.7.1",
+    "@vueuse/core": "^14.3.0",
+    "@vueuse/nuxt": "^14.3.0",
     "luxon": "^3.7.2",
     "nuxt": "^4.4.6",
     "nuxt-api-shield": "^0.10.2",

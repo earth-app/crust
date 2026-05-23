@@ -169,6 +169,7 @@ export default defineNuxtConfig({
 		'nuxt-api-shield',
 		'@pinia/nuxt',
 		'@nuxt/hints',
+		'@vueuse/nuxt',
 		[
 			'@nuxtjs/google-fonts',
 			{
