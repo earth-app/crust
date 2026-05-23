@@ -184,8 +184,11 @@ export default defineEventHandler(async (event) => {
 		}
 
 		if (successParam)
-			return sendRedirect(event, `/profile?success=${successParam}&force_refresh=true`);
-		else return sendRedirect(event, '/profile?force_refresh=true');
+			return sendRedirect(
+				event,
+				`/profile?success=${successParam}&provider=${provider}&force_refresh=true`
+			);
+		else return sendRedirect(event, `/profile?provider=${provider}&force_refresh=true`);
 	} catch (error: any) {
 		console.error('OAuth error:', error);
 

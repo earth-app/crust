@@ -16,11 +16,35 @@
 </template>
 
 <script setup lang="ts">
-const { user } = useAuth();
+import { OAUTH_PROVIDERS, type OAuthProvider } from 'types/user';
+
+const { user, fetchUser } = useAuth();
 
 const toast = useToast();
 const route = useRoute();
-const { success, error } = route.query;
+const { success, error, provider } = route.query;
+
+// Optimistically reflect a freshly linked/unlinked OAuth provider in the local
+// user object so the UI flips immediately, without waiting for mantle2's cache
+// to expire. We run after fetchUser() so the force_refresh fetch in
+// default.vue can't clobber the optimistic mutation with a still-stale response.
+onMounted(async () => {
+	const isLink = success === 'oauth_linked' || success === 'oauth_signup';
+	const isUnlink = success === 'oauth_unlinked';
+	if (!isLink && !isUnlink) return;
+	if (typeof provider !== 'string') return;
+	if (!OAUTH_PROVIDERS.includes(provider as OAuthProvider)) return;
+
+	await fetchUser();
+
+	const linked = user.value?.account?.linked_providers;
+	if (!linked) return;
+
+	const p = provider as OAuthProvider;
+	const idx = linked.indexOf(p);
+	if (isLink && idx === -1) linked.push(p);
+	else if (isUnlink && idx !== -1) linked.splice(idx, 1);
+});
 
 if (success) {
 	switch (success) {
@@ -102,6 +126,7 @@ if (error) {
 				color: 'error',
 				duration: 5000
 			});
+			break;
 		case 'no_provider':
 			toast.add({
 				title: 'Authentication Error',
@@ -129,6 +154,7 @@ if (error) {
 				color: 'error',
 				duration: 5000
 			});
+			break;
 		case 'body_parsing_error':
 			toast.add({
 				title: 'Body Parsing Error',

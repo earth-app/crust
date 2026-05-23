@@ -20,7 +20,10 @@ export default defineEventHandler(async (event) => {
 				}
 			});
 
-			return sendRedirect(event, '/profile?success=oauth_unlinked&force_refresh=true');
+			return sendRedirect(
+				event,
+				`/profile?success=oauth_unlinked&provider=${provider}&force_refresh=true`
+			);
 		} catch (error: any) {
 			if (error?.statusCode === 400 || error?.status === 400) {
 				return sendRedirect(event, '/profile?error=cannot_unlink_only_method');
