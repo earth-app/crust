@@ -86,6 +86,15 @@ export default defineNuxtConfig({
 			noExternal: ['@earth-app/ocean']
 		}
 	},
+	// External sourcemaps in the test build so V8 → istanbul coverage maps
+	// the prod-bundle chunks (`/_nuxt/{hash}.js`) back to original src/*
+	// paths. v8-to-istanbul follows the `//# sourceMappingURL=` comment to
+	// fetch the .map file. Without this the coverage report lists chunk
+	// hashes, not real component files. Inline mode overflows the parser.
+	sourcemap: {
+		client: process.env.NUXT_TEST_BUILD === '1',
+		server: process.env.NUXT_TEST_BUILD === '1'
+	},
 	nitro: {
 		preset: process.env.NUXT_TEST_BUILD === '1' ? 'node-server' : 'cloudflare_module',
 		cloudflare: {

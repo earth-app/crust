@@ -25,8 +25,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
 const RAW_DIR = resolve(PROJECT_ROOT, '.coverage', 'raw');
 const OUT_DIR = resolve(PROJECT_ROOT, 'coverage');
+const CHUNK_DIR = resolve(PROJECT_ROOT, '.output/public/_nuxt');
 
-// We only keep coverage for app code, not vendor/node_modules
+// After sourcemap remap, keep only app source files (not vendor/runtime).
 const KEEP_PREFIXES = [
 	'src/',
 	'/src/',
@@ -37,14 +38,27 @@ const KEEP_PREFIXES = [
 	'shared/'
 ];
 
-function isAppFile(url: string): boolean {
+// First-pass URL filter: drop only the things we KNOW are not app code.
+// We intentionally keep `/_nuxt/{hash}.js` chunks — these compile from src/
+// and after sourcemap remap will surface as `src/pages/foo.vue` etc. The
+// post-merge KEEP_PREFIXES filter trims any vendor chunks that remap to
+// `node_modules/`.
+function isCandidateUrl(url: string): boolean {
 	if (!url) return false;
 	if (url.includes('node_modules')) return false;
-	if (url.includes('/_nuxt/builds/')) return false;
 	if (url.startsWith('data:')) return false;
 	if (url.startsWith('chrome-extension:')) return false;
 	if (url.includes('hot-update')) return false;
-	return KEEP_PREFIXES.some((p) => url.includes(p));
+	if (url.includes('/_nuxt/builds/')) return false;
+	// Only chunks served from the dev/prod server matter — skip cross-origin
+	// scripts (which would have been blocked by our route handler anyway).
+	return url.startsWith('http://127.0.0.1:3000/') || url.includes('/_nuxt/');
+}
+
+function isAppSourcePath(filePath: string): boolean {
+	if (!filePath) return false;
+	if (filePath.includes('node_modules')) return false;
+	return KEEP_PREFIXES.some((p) => filePath.includes(p));
 }
 
 export async function saveCoverageForTest(
@@ -52,7 +66,7 @@ export async function saveCoverageForTest(
 	entries: Array<{ url: string; source?: string; functions: any[] }>
 ) {
 	if (!entries.length) return;
-	const filtered = entries.filter((e) => e.source && isAppFile(e.url));
+	const filtered = entries.filter((e) => e.source && isCandidateUrl(e.url));
 	if (!filtered.length) return;
 	if (!existsSync(RAW_DIR)) await mkdir(RAW_DIR, { recursive: true });
 	await writeFile(resolve(RAW_DIR, `${testId}.json`), JSON.stringify(filtered), 'utf8');
@@ -90,11 +104,20 @@ export async function mergeAndReport(): Promise<void> {
 		const raw = JSON.parse(await readFile(resolve(RAW_DIR, file), 'utf8')) as V8Entry[];
 		for (const entry of raw) {
 			try {
-				const converter = v8toIstanbul('', 0, { source: entry.source });
+				// Map the served URL (`http://127.0.0.1:3000/_nuxt/abc.js`) to
+				// the on-disk chunk path so v8-to-istanbul can read the
+				// adjacent `.js.map` and remap coverage onto `src/*` paths.
+				// SSR/HTML entries (no `/_nuxt/` segment) have no sourcemap
+				// to follow — convert them in source-only mode.
+				const chunkMatch = entry.url.match(/\/_nuxt\/([^/?#]+\.js)(?:[?#]|$)/);
+				const chunkName = chunkMatch?.[1];
+				const scriptPath = chunkName ? resolve(CHUNK_DIR, chunkName) : '';
+				const converter = v8toIstanbul(scriptPath, 0, { source: entry.source });
 				await converter.load();
 				converter.applyCoverage(entry.functions);
 				const istanbul = converter.toIstanbul();
 				for (const [filePath, fileCov] of Object.entries(istanbul)) {
+					if (!isAppSourcePath(filePath)) continue;
 					if (!merged[filePath]) {
 						merged[filePath] = fileCov;
 					} else {
