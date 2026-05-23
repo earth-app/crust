@@ -41,6 +41,8 @@ const icon = computed(() => {
 			return 'mdi:github';
 		case 'facebook':
 			return 'mdi:facebook';
+		case 'apple':
+			return 'mdi:apple';
 		default:
 			return 'mdi:login-variant';
 	}

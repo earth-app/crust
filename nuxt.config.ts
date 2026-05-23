@@ -22,6 +22,8 @@ export default defineNuxtConfig({
 			githubClientId: process.env.NUXT_PUBLIC_GITHUB_CLIENT_ID || '',
 			discordClientId: process.env.NUXT_PUBLIC_DISCORD_CLIENT_ID || '',
 			facebookClientId: process.env.NUXT_PUBLIC_FACEBOOK_CLIENT_ID || '',
+			appleTeamId: process.env.NUXT_PUBLIC_APPLE_TEAM_ID || '',
+			appleClientId: process.env.NUXT_PUBLIC_APPLE_CLIENT_ID || '',
 			// public keys & ids
 			mapsApiKey: process.env.NUXT_PUBLIC_MAPS_API_KEY || '',
 			unsplashApplicationId: process.env.NUXT_PUBLIC_UNSPLASH_APPLICATION_ID || ''
@@ -39,7 +41,9 @@ export default defineNuxtConfig({
 		microsoftClientSecret: process.env.NUXT_MICROSOFT_CLIENT_SECRET || '',
 		discordClientSecret: process.env.NUXT_DISCORD_CLIENT_SECRET || '',
 		githubClientSecret: process.env.NUXT_GITHUB_CLIENT_SECRET || '',
-		facebookClientSecret: process.env.NUXT_FACEBOOK_CLIENT_SECRET || ''
+		facebookClientSecret: process.env.NUXT_FACEBOOK_CLIENT_SECRET || '',
+		applePrivateKey: process.env.NUXT_APPLE_PRIVATE_KEY || '',
+		appleKeyId: process.env.NUXT_APPLE_KEY_ID || ''
 	},
 	ssr: true,
 	compatibilityDate: '2025-12-13',

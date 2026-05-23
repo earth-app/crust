@@ -843,7 +843,7 @@ export function useJourneyLeaderboard(
 
 // OAuth Utils
 
-const microsoftAuth = () => {
+const microsoftAuth = (state: string) => {
 	const config = useRuntimeConfig();
 	const linkUri = `${config.public.baseUrl}/api/auth/callback`;
 
@@ -856,11 +856,11 @@ const microsoftAuth = () => {
 		`redirect_uri=${encodeURIComponent(linkUri)}&` +
 		`response_type=code&` +
 		`scope=${encodeURIComponent(scope)}&` +
-		`state=microsoft`
+		`state=${encodeURIComponent(state)}`
 	);
 };
 
-const googleAuth = () => {
+const googleAuth = (state: string) => {
 	const config = useRuntimeConfig();
 	const linkUri = `${config.public.baseUrl}/api/auth/callback`;
 
@@ -873,11 +873,11 @@ const googleAuth = () => {
 		`redirect_uri=${encodeURIComponent(linkUri)}&` +
 		`response_type=code&` +
 		`scope=${encodeURIComponent(scope)}&` +
-		`state=google`
+		`state=${encodeURIComponent(state)}`
 	);
 };
 
-const discordAuth = () => {
+const discordAuth = (state: string) => {
 	const config = useRuntimeConfig();
 	const linkUri = `${config.public.baseUrl}/api/auth/callback`;
 
@@ -890,11 +890,11 @@ const discordAuth = () => {
 		`redirect_uri=${encodeURIComponent(linkUri)}&` +
 		`response_type=code&` +
 		`scope=${encodeURIComponent(scope)}&` +
-		`state=discord`
+		`state=${encodeURIComponent(state)}`
 	);
 };
 
-const githubAuth = () => {
+const githubAuth = (state: string) => {
 	const config = useRuntimeConfig();
 	const linkUri = `${config.public.baseUrl}/api/auth/callback`;
 
@@ -906,11 +906,11 @@ const githubAuth = () => {
 		`client_id=${clientId}&` +
 		`redirect_uri=${encodeURIComponent(linkUri)}&` +
 		`scope=${encodeURIComponent(scope)}&` +
-		`state=github`
+		`state=${encodeURIComponent(state)}`
 	);
 };
 
-const facebookAuth = () => {
+const facebookAuth = (state: string) => {
 	const config = useRuntimeConfig();
 	const linkUri = `${config.public.baseUrl}/api/auth/callback`;
 
@@ -923,22 +923,48 @@ const facebookAuth = () => {
 		`redirect_uri=${encodeURIComponent(linkUri)}&` +
 		`response_type=code&` +
 		`scope=${encodeURIComponent(scope)}&` +
-		`state=facebook`
+		`state=${encodeURIComponent(state)}`
 	);
 };
 
-export function authLink(provider: string) {
+const appleAuth = (state: string) => {
+	const config = useRuntimeConfig();
+	const linkUri = `${config.public.baseUrl}/api/auth/callback`;
+
+	const clientId = config.public.appleClientId;
+	const scope = 'name email';
+
+	return (
+		`https://appleid.apple.com/auth/authorize?` +
+		`client_id=${clientId}&` +
+		`redirect_uri=${encodeURIComponent(linkUri)}&` +
+		`response_type=code&` +
+		`scope=${encodeURIComponent(scope)}&` +
+		`response_mode=form_post&` +
+		`state=${encodeURIComponent(state)}`
+	);
+};
+
+export function authLink(
+	provider: string,
+	context: OAuthContext = 'login',
+	source: OAuthSource = 'web'
+) {
+	const state = `${provider}:${source}:${context}`;
+
 	switch (provider) {
 		case 'google':
-			return googleAuth();
+			return googleAuth(state);
 		case 'microsoft':
-			return microsoftAuth();
+			return microsoftAuth(state);
 		case 'discord':
-			return discordAuth();
+			return discordAuth(state);
 		case 'github':
-			return githubAuth();
+			return githubAuth(state);
 		case 'facebook':
-			return facebookAuth();
+			return facebookAuth(state);
+		case 'apple':
+			return appleAuth(state);
 		default:
 			throw new Error('Unsupported OAuth provider');
 	}

@@ -1,4 +1,5 @@
 import { H3Event } from 'h3';
+import jwt from 'jsonwebtoken';
 import { InternetArchiveSearch } from '~/shared/types/activity';
 
 export async function ensureAdministrator(event: H3Event) {
@@ -184,6 +185,31 @@ export async function exchangeCodeForToken(provider: OAuthProvider, code: string
 			);
 
 			return fb.access_token;
+		case 'apple': {
+			const privateKey = config.applePrivateKey.replace(/\\n/g, '\n');
+			const clientSecret = jwt.sign({}, privateKey, {
+				algorithm: 'ES256',
+				expiresIn: '1h',
+				audience: 'https://appleid.apple.com',
+				issuer: config.public.appleTeamId,
+				subject: config.public.appleClientId,
+				keyid: config.appleKeyId
+			});
+
+			const apple = await $fetch<{ id_token: string }>('https://appleid.apple.com/auth/token', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body: new URLSearchParams({
+					code,
+					client_id: config.public.appleClientId,
+					client_secret: clientSecret,
+					redirect_uri: 'https://app.earth-app.com/api/auth/callback',
+					grant_type: 'authorization_code'
+				})
+			});
+
+			return apple.id_token;
+		}
 		default:
 			throw new Error(`Unknown provider: ${provider}`);
 	}

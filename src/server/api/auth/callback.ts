@@ -1,8 +1,5 @@
 import { exchangeCodeForToken } from '~/server/utils';
 
-type OAuthSource = 'web' | 'mobile';
-type OAuthContext = 'login' | 'signup' | 'link';
-
 function parseState(state: string): {
 	provider: OAuthProvider | null;
 	source: OAuthSource;
@@ -21,7 +18,12 @@ function parseState(state: string): {
 }
 
 export default defineEventHandler(async (event) => {
-	const query = getQuery(event);
+	let query = getQuery(event);
+	if (event.method === 'POST') {
+		const body = await readBody(event);
+		query = { ...query, ...body };
+	}
+
 	const { code, state, error, error_description } = query;
 	const config = useRuntimeConfig();
 
