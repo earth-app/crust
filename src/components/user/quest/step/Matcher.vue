@@ -38,30 +38,40 @@
 
 		<template v-else-if="phase === 'playing'">
 			<div class="flex items-center gap-2!">
-				<span class="text-xs! font-mono! tabular-nums! w-6!">{{ timeLeft }}s</span>
+				<span
+					class="text-xs! font-mono! tabular-nums! w-8!"
+					:class="lowTime ? 'text-red-400!' : ''"
+					>{{ timeLeft }}s</span
+				>
 				<div class="flex-1! h-1.5! bg-neutral-800! rounded-full! overflow-hidden!">
 					<div
-						class="h-full! bg-primary! rounded-full! transition-all duration-1000"
+						class="h-full! rounded-full! transition-all duration-1000"
+						:class="lowTime ? 'bg-red-500!' : 'bg-primary!'"
 						:style="{ width: `${(timeLeft / 60) * 100}%` }"
 					/>
 				</div>
 			</div>
-			<div class="grid grid-cols-2 gap-2!">
-				<button
+
+			<div
+				ref="boardEl"
+				class="relative! w-full! rounded-2xl! border! border-neutral-900! bg-neutral-950/40! overflow-hidden! touch-none!"
+				:style="{ height: `${boardHeight}px` }"
+			>
+				<div
 					v-for="card in cards"
 					:key="card.id"
-					class="p-3! rounded-xl! border-2! text-sm! font-medium! text-center! transition-all duration-150 min-h-14! cursor-grab active:cursor-grabbing!"
-					:class="cardClass(card)"
-					:disabled="card.matched || props.disabled"
-					draggable="true"
-					@dragstart="onDragStart(card)"
-					@dragend="draggingCard = null"
-					@dragover.prevent
-					@drop.prevent="onDrop(card)"
-					@click="selectCard(card)"
+					:ref="(el) => setCardRef(card.id, el as HTMLElement | null)"
+					:data-card-id="card.id"
+					class="absolute! rounded-xl! border-2! text-sm! font-medium! text-center! shadow-lg! flex items-center justify-center! px-3! py-2! transition-opacity"
+					:class="[
+						cardClass(card),
+						card.matched ? 'pointer-events-none' : 'cursor-grab active:cursor-grabbing!'
+					]"
+					:style="cardStyle(card)"
+					@pointerdown="onPointerDown(card, $event)"
 				>
-					{{ card.text }}
-				</button>
+					<span class="pointer-events-none break-words">{{ card.text }}</span>
+				</div>
 			</div>
 		</template>
 
@@ -106,6 +116,11 @@ interface Card {
 	pairId: number;
 	side: 'left' | 'right';
 	matched: boolean;
+	fading: boolean;
+	x: number;
+	y: number;
+	rot: number;
+	z: number;
 }
 
 type Phase = 'countdown' | 'playing' | 'win' | 'lose';
@@ -134,146 +149,298 @@ const phase = ref<Phase>('countdown');
 const countdown = ref(3);
 const timeLeft = ref(60);
 const cards = ref<Card[]>([]);
-const selected = ref<Card | null>(null);
 const shaking = ref<string | null>(null);
-const draggingCard = ref<Card | null>(null);
+const boardEl = ref<HTMLElement | null>(null);
+const boardHeight = ref(420);
+const cardRefs = new Map<string, HTMLElement>();
+const dragId = ref<string | null>(null);
+const dragOffset = ref({ x: 0, y: 0 });
+const dragPos = ref({ x: 0, y: 0 });
+const pointerStart = ref({ x: 0, y: 0 });
+const moved = ref(false);
+const selected = ref<string | null>(null);
+const zCounter = ref(1);
 
-let timerInterval: ReturnType<typeof setInterval> | null = null;
-let cdInterval: ReturnType<typeof setInterval> | null = null;
+const MOVE_THRESHOLD = 8;
+
+const lowTime = computed(() => timeLeft.value <= 10 && phase.value === 'playing');
+
+const { width: boardWidth, height: boardElHeight } = useElementSize(boardEl);
+const countdownTick = useIntervalFn(
+	() => {
+		countdown.value--;
+		if (countdown.value <= 0) {
+			countdownTick.pause();
+			phase.value = 'playing';
+			nextTick(() => rescatter());
+			gameTick.resume();
+		}
+	},
+	1000,
+	{ immediate: false }
+);
+const gameTick = useIntervalFn(
+	() => {
+		timeLeft.value--;
+		if (timeLeft.value <= 0) {
+			gameTick.pause();
+			phase.value = 'lose';
+		}
+	},
+	1000,
+	{ immediate: false }
+);
+
+function setCardRef(id: string, el: HTMLElement | null) {
+	if (el) cardRefs.set(id, el);
+	else cardRefs.delete(id);
+}
 
 function shuffle<T>(arr: T[]): T[] {
-	return [...arr].sort(() => Math.random() - 0.5);
+	const a = [...arr];
+	for (let i = a.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		const tmp = a[i] as T;
+		a[i] = a[j] as T;
+		a[j] = tmp;
+	}
+	return a;
+}
+
+function rand(min: number, max: number) {
+	return min + Math.random() * (max - min);
+}
+
+function scatterPositions(count: number, width: number, height: number) {
+	// Approximate card dims used to keep cards inside the board.
+	const cardW = Math.min(160, width * 0.42);
+	const cardH = 64;
+	const padX = 8;
+	const padY = 8;
+	const positions: { x: number; y: number; rot: number }[] = [];
+	const maxAttempts = 80;
+	const desiredGap = 24;
+
+	for (let i = 0; i < count; i++) {
+		let best = { x: padX, y: padY, rot: 0, dist: -Infinity };
+		for (let attempt = 0; attempt < maxAttempts; attempt++) {
+			const x = rand(padX, Math.max(padX, width - cardW - padX));
+			const y = rand(padY, Math.max(padY, height - cardH - padY));
+			let minDist = Infinity;
+			for (const p of positions) {
+				const dx = p.x - x;
+				const dy = p.y - y;
+				const d = Math.sqrt(dx * dx + dy * dy);
+				if (d < minDist) minDist = d;
+			}
+			if (minDist > best.dist) best = { x, y, rot: rand(-10, 10), dist: minDist };
+			if (minDist >= desiredGap) break;
+		}
+		positions.push({ x: best.x, y: best.y, rot: best.rot });
+	}
+	return positions;
+}
+
+function rescatter() {
+	if (!boardWidth.value || !boardElHeight.value) return;
+	const active = cards.value.filter((c) => !c.matched);
+	const positions = scatterPositions(active.length, boardWidth.value, boardElHeight.value);
+	let pi = 0;
+	cards.value = cards.value.map((c) => {
+		if (c.matched) return c;
+		const p = positions[pi++];
+		if (!p) return c;
+		return { ...c, x: p.x, y: p.y, rot: p.rot };
+	});
 }
 
 function init() {
-	if (cdInterval) {
-		clearInterval(cdInterval);
-		cdInterval = null;
-	}
-	if (timerInterval) {
-		clearInterval(timerInterval);
-		timerInterval = null;
-	}
+	countdownTick.pause();
+	gameTick.pause();
 
 	const params = props.step.parameters as [string, [string, string][]] | undefined;
 	if (!params || !Array.isArray(params[1])) return;
 	const pairs = params[1];
 
-	const left: Card[] = pairs.map(([term], i) => ({
+	// Size the board responsively based on number of cards.
+	const totalCards = pairs.length * 2;
+	boardHeight.value = Math.min(620, Math.max(360, 120 + totalCards * 40));
+
+	const left: Omit<Card, 'x' | 'y' | 'rot' | 'z'>[] = pairs.map(([term], i) => ({
 		id: `L${i}`,
 		text: term,
 		pairId: i,
 		side: 'left',
-		matched: false
+		matched: false,
+		fading: false
 	}));
-	const right: Card[] = pairs.map(([, def], i) => ({
+	const right: Omit<Card, 'x' | 'y' | 'rot' | 'z'>[] = pairs.map(([, def], i) => ({
 		id: `R${i}`,
 		text: def,
 		pairId: i,
 		side: 'right',
-		matched: false
+		matched: false,
+		fading: false
 	}));
-	cards.value = shuffle([...left, ...right]);
-	selected.value = null;
+	const shuffled = shuffle([...left, ...right]);
+
+	// Initial positions get computed once the board is mounted; place at 0,0 first.
+	cards.value = shuffled.map((c) => ({ ...c, x: 0, y: 0, rot: 0, z: 1 }));
+
 	timeLeft.value = 60;
 	phase.value = 'countdown';
 	countdown.value = 3;
+	zCounter.value = 1;
 
 	if (props.disabled) return;
-
-	cdInterval = setInterval(() => {
-		countdown.value--;
-		if (countdown.value <= 0) {
-			clearInterval(cdInterval!);
-			cdInterval = null;
-			phase.value = 'playing';
-			startTimer();
-		}
-	}, 1000);
-}
-
-function startTimer() {
-	if (timerInterval) clearInterval(timerInterval);
-	timerInterval = setInterval(() => {
-		timeLeft.value--;
-		if (timeLeft.value <= 0) {
-			clearInterval(timerInterval!);
-			phase.value = 'lose';
-		}
-	}, 1000);
+	countdownTick.resume();
 }
 
 function cardClass(card: Card) {
-	if (card.matched) return 'border-success/30 bg-success/10 text-success/50 cursor-default';
+	if (card.fading) return 'border-success/40 bg-success/10 text-success opacity-0';
+	if (card.matched) return 'opacity-0';
 	if (props.disabled)
 		return 'border-neutral-800 bg-neutral-900/40 text-neutral-600 cursor-not-allowed opacity-50';
 	if (shaking.value?.split(',').includes(card.id))
 		return 'border-red-500 bg-red-500/10 text-red-300 animate-shake';
-	if (selected.value?.id === card.id) return 'border-primary bg-primary/20 text-white scale-[1.03]';
-	return 'border-neutral-700 bg-neutral-900/60 text-neutral-200 active:scale-95';
+	if (dragId.value === card.id) return 'border-primary bg-primary/30 text-white shadow-2xl!';
+	if (selected.value === card.id) return 'border-primary bg-primary/20 text-white';
+	return 'border-neutral-700 bg-neutral-900/80 text-neutral-100';
 }
 
-function onDragStart(card: Card) {
-	if (card.matched || props.disabled) return;
-	draggingCard.value = card;
+function cardStyle(card: Card): Record<string, string> {
+	const isPressed = dragId.value === card.id;
+	const isMoving = isPressed && moved.value;
+	const x = isMoving ? dragPos.value.x : card.x;
+	const y = isMoving ? dragPos.value.y : card.y;
+	const rot = isMoving ? 0 : card.rot;
+	const scale = isPressed ? 1.05 : selected.value === card.id ? 1.03 : 1;
+	return {
+		left: '0',
+		top: '0',
+		width: 'min(160px, 42%)',
+		transform: `translate(${x}px, ${y}px) rotate(${rot}deg) scale(${scale})`,
+		transition: isMoving ? 'none' : 'transform 0.25s ease, opacity 0.4s ease',
+		zIndex: String(isPressed ? 999 : card.z),
+		touchAction: 'none'
+	};
+}
+
+function onPointerDown(card: Card, e: PointerEvent) {
+	if (card.matched || shaking.value?.includes(card.id) || props.disabled) return;
+	if (phase.value !== 'playing') return;
+	const board = boardEl.value;
+	if (!board) return;
+
+	(e.target as Element).setPointerCapture?.(e.pointerId);
+	const boardRect = board.getBoundingClientRect();
+	dragId.value = card.id;
+	dragOffset.value = {
+		x: e.clientX - (boardRect.left + card.x),
+		y: e.clientY - (boardRect.top + card.y)
+	};
+	dragPos.value = { x: card.x, y: card.y };
+	pointerStart.value = { x: e.clientX, y: e.clientY };
+	moved.value = false;
+
+	zCounter.value++;
+	const z = zCounter.value;
+	cards.value = cards.value.map((c) => (c.id === card.id ? { ...c, z } : c));
+}
+
+useEventListener('pointermove', (e: PointerEvent) => {
+	if (!dragId.value || !boardWidth.value || !boardElHeight.value) return;
+	const board = boardEl.value;
+	if (!board) return;
+	if (!moved.value) {
+		const dx = e.clientX - pointerStart.value.x;
+		const dy = e.clientY - pointerStart.value.y;
+		if (Math.hypot(dx, dy) > MOVE_THRESHOLD) moved.value = true;
+	}
+	const rect = board.getBoundingClientRect();
+	const cardW = Math.min(160, rect.width * 0.42);
+	const cardH = 64;
+	const x = e.clientX - rect.left - dragOffset.value.x;
+	const y = e.clientY - rect.top - dragOffset.value.y;
+	dragPos.value = {
+		x: Math.max(0, Math.min(rect.width - cardW, x)),
+		y: Math.max(0, Math.min(rect.height - cardH, y))
+	};
+});
+
+useEventListener(['pointerup', 'pointercancel'], (e: PointerEvent) => {
+	const draggedId = dragId.value;
+	if (!draggedId) return;
+
+	const src = cards.value.find((c) => c.id === draggedId);
+	if (!src) {
+		dragId.value = null;
+		return;
+	}
+
+	// Tap (no movement past threshold) → toggle selection, attempt match with prior tap.
+	if (!moved.value && e.type === 'pointerup') {
+		dragId.value = null;
+		const prevId = selected.value;
+		if (prevId === draggedId) {
+			selected.value = null;
+		} else if (prevId) {
+			const prev = cards.value.find((c) => c.id === prevId);
+			selected.value = null;
+			if (prev && !prev.matched) tryMatch(prev, src);
+		} else {
+			selected.value = draggedId;
+		}
+		return;
+	}
+
+	// Drag → commit new resting position; detect drop on another card.
+	const newX = dragPos.value.x;
+	const newY = dragPos.value.y;
+
+	let targetCard: Card | undefined;
+	if (e.type === 'pointerup') {
+		const draggedEl = cardRefs.get(draggedId);
+		if (draggedEl) {
+			const prevPe = draggedEl.style.pointerEvents;
+			draggedEl.style.pointerEvents = 'none';
+			const under = document.elementFromPoint(e.clientX, e.clientY);
+			draggedEl.style.pointerEvents = prevPe;
+			const targetEl = under?.closest('[data-card-id]') as HTMLElement | null;
+			if (targetEl) {
+				const id = targetEl.dataset.cardId;
+				if (id && id !== draggedId) targetCard = cards.value.find((c) => c.id === id);
+			}
+		}
+	}
+
+	dragId.value = null;
 	selected.value = null;
-}
+	cards.value = cards.value.map((c) => (c.id === draggedId ? { ...c, x: newX, y: newY } : c));
 
-function onDrop(target: Card) {
-	const src = draggingCard.value;
-	draggingCard.value = null;
-	if (!src || src.id === target.id || target.matched || src.matched) return;
-	if (src.pairId === target.pairId && src.side !== target.side) {
-		const a = src.id,
-			b = target.id;
-		setTimeout(() => {
+	if (targetCard && !targetCard.matched) tryMatch(src, targetCard);
+});
+
+function tryMatch(a: Card, b: Card) {
+	if (a.pairId === b.pairId && a.side !== b.side) {
+		const ida = a.id;
+		const idb = b.id;
+		cards.value = cards.value.map((c) =>
+			c.id === ida || c.id === idb ? { ...c, fading: true } : c
+		);
+		useTimeoutFn(() => {
 			cards.value = cards.value.map((c) =>
-				c.id === a || c.id === b ? { ...c, matched: true } : c
+				c.id === ida || c.id === idb ? { ...c, matched: true, fading: false } : c
 			);
 			if (cards.value.every((c) => c.matched)) {
-				clearInterval(timerInterval!);
+				gameTick.pause();
 				phase.value = 'win';
 				sendUpdate();
 			}
-		}, 150);
+		}, 350);
 	} else {
-		shaking.value = [src.id, target.id].join(',');
-		setTimeout(() => {
-			shaking.value = null;
-		}, 480);
-	}
-}
-
-function selectCard(card: Card) {
-	if (card.matched || shaking.value || props.disabled) return;
-	if (!selected.value) {
-		selected.value = card;
-		return;
-	}
-	if (selected.value.id === card.id) {
-		selected.value = null;
-		return;
-	}
-
-	if (selected.value.pairId === card.pairId && selected.value.side !== card.side) {
-		const a = selected.value.id,
-			b = card.id;
-		selected.value = null;
-		setTimeout(() => {
-			cards.value = cards.value.map((c) =>
-				c.id === a || c.id === b ? { ...c, matched: true } : c
-			);
-			if (cards.value.every((c) => c.matched)) {
-				clearInterval(timerInterval!);
-				phase.value = 'win';
-				sendUpdate();
-			}
-		}, 150);
-	} else {
-		const wrongIds = [selected.value.id, card.id];
-		shaking.value = wrongIds.join(',');
-		selected.value = null;
-		setTimeout(() => {
+		shaking.value = [a.id, b.id].join(',');
+		useTimeoutFn(() => {
 			shaking.value = null;
 		}, 480);
 	}
@@ -298,12 +465,19 @@ async function sendUpdate() {
 	emit('submitted');
 }
 
-onMounted(init);
+watchDebounced(
+	boardWidth,
+	() => {
+		if (phase.value === 'playing') rescatter();
+	},
+	{ debounce: 150 }
+);
 
-onBeforeUnmount(() => {
-	if (cdInterval) clearInterval(cdInterval);
-	if (timerInterval) clearInterval(timerInterval);
+onKeyStroke('Escape', () => {
+	if (selected.value) selected.value = null;
 });
+
+onMounted(init);
 </script>
 
 <style scoped>

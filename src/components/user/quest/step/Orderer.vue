@@ -38,10 +38,15 @@
 
 		<template v-else-if="phase === 'playing'">
 			<div class="flex items-center gap-2!">
-				<span class="text-xs! font-mono! tabular-nums! w-6!">{{ timeLeft }}s</span>
+				<span
+					class="text-xs! font-mono! tabular-nums! w-8!"
+					:class="lowTime ? 'text-red-400!' : ''"
+					>{{ timeLeft }}s</span
+				>
 				<div class="flex-1! h-1.5! bg-neutral-800! rounded-full! overflow-hidden!">
 					<div
-						class="h-full! bg-primary! rounded-full! transition-all duration-1000"
+						class="h-full! rounded-full! transition-all duration-1000"
+						:class="lowTime ? 'bg-red-500!' : 'bg-primary!'"
 						:style="{ width: `${(timeLeft / 60) * 100}%` }"
 					/>
 				</div>
@@ -59,53 +64,68 @@
 				<div
 					v-for="(slot, i) in slots"
 					:key="i"
-					class="flex items-center gap-2! min-h-12! rounded-xl! border-2! px-3! py-2! transition-all duration-150"
+					:data-slot-index="i"
+					class="flex items-center gap-2! min-h-12! rounded-xl! border-2! px-3! py-2! transition-all duration-150 touch-none!"
 					:class="slotClass(slot, i)"
-					@click="placeOrRemove(i)"
-					@dragover.prevent="dragOverSlot = i"
-					@dragleave="dragOverSlot = null"
-					@drop.prevent="onDropSlot(i)"
+					@click="onSlotClick(i)"
 				>
 					<span class="text-xs! text-neutral-500! w-4! shrink-0 tabular-nums!">{{ i + 1 }}</span>
 					<span
-						v-if="slot"
-						class="text-sm! font-medium! text-white!"
+						v-if="slot && !(dragSource?.kind === 'slot' && dragSource.index === i)"
+						class="text-sm! font-medium! text-white! flex-1! cursor-grab active:cursor-grabbing!"
+						@pointerdown="onTilePointerDown($event, slot, { kind: 'slot', index: i })"
 						>{{ slot }}</span
 					>
 					<span
 						v-else
-						class="text-xs! italic!"
-						:class="selectedTile || dragOverSlot === i ? 'text-primary/70' : 'text-neutral-600'"
-						>{{ selectedTile || dragOverSlot === i ? 'Drop here' : 'Empty' }}</span
+						class="text-xs! italic! flex-1"
+						:class="
+							selectedTile || draggingTile || dragOverSlot === i
+								? 'text-primary/70'
+								: 'text-neutral-600'
+						"
+						>{{ selectedTile || draggingTile || dragOverSlot === i ? 'Drop here' : 'Empty' }}</span
 					>
 				</div>
 			</div>
 
 			<div class="flex flex-col gap-1.5!">
 				<p class="text-xs! text-neutral-500! uppercase tracking-wider!">Items</p>
-				<div class="flex flex-wrap gap-2!">
+				<div
+					data-bank
+					class="flex flex-wrap gap-2! min-h-12! rounded-xl! border! border-dashed! border-neutral-800! p-2! transition-colors"
+					:class="
+						dragSource?.kind === 'slot' && dragOverBank ? 'border-primary/50 bg-primary/5' : ''
+					"
+				>
 					<button
 						v-for="tile in bank"
 						:key="tile"
-						class="px-3! py-2! rounded-xl! border-2! text-sm! font-medium! transition-all duration-150 cursor-grab active:cursor-grabbing!"
+						class="px-3! py-2! rounded-xl! border-2! text-sm! font-medium! transition-all duration-150 cursor-grab active:cursor-grabbing! touch-none!"
 						:class="
-							selectedTile === tile
+							selectedTile === tile || draggingTile === tile
 								? 'border-primary bg-primary/20 text-white scale-105'
 								: 'border-neutral-700 bg-neutral-900/60 text-neutral-200 active:scale-95'
 						"
-						draggable="true"
-						@dragstart="onDragStartTile(tile)"
-						@dragend="draggingTile = null"
-						@click="selectTile(tile)"
+						@pointerdown="onTilePointerDown($event, tile, { kind: 'bank' })"
+						@click.stop="selectTile(tile)"
 					>
 						{{ tile }}
 					</button>
 					<span
 						v-if="bank.length === 0"
-						class="text-xs! text-neutral-600! italic! py-2!"
+						class="text-xs! text-neutral-600! italic! py-2! px-1!"
 						>All placed</span
 					>
 				</div>
+			</div>
+
+			<div
+				v-if="draggingTile"
+				class="fixed pointer-events-none z-50 px-3! py-2! rounded-xl! border-2! border-primary bg-primary/30 text-white text-sm! font-medium! shadow-2xl!"
+				:style="ghostStyle"
+			>
+				{{ draggingTile }}
 			</div>
 		</template>
 
@@ -143,6 +163,7 @@
 
 <script setup lang="ts">
 type Phase = 'countdown' | 'playing' | 'win' | 'lose';
+type DragSource = { kind: 'bank' } | { kind: 'slot'; index: number };
 
 const props = defineProps<{
 	step: QuestStep & {
@@ -171,25 +192,60 @@ const correctOrder = ref<string[]>([]);
 const bank = ref<string[]>([]);
 const slots = ref<(string | null)[]>([]);
 const selectedTile = ref<string | null>(null);
-const draggingTile = ref<string | null>(null);
-const dragOverSlot = ref<number | null>(null);
 
-let timerInterval: ReturnType<typeof setInterval> | null = null;
-let cdInterval: ReturnType<typeof setInterval> | null = null;
+const draggingTile = ref<string | null>(null);
+const dragSource = ref<DragSource | null>(null);
+const dragPos = ref({ x: 0, y: 0 });
+const dragOverSlot = ref<number | null>(null);
+const dragOverBank = ref(false);
+
+const lowTime = computed(() => timeLeft.value <= 10 && phase.value === 'playing');
+
+const ghostStyle = computed(() => ({
+	left: `${dragPos.value.x}px`,
+	top: `${dragPos.value.y}px`,
+	transform: 'translate(-50%, -50%)'
+}));
+
+const countdownTick = useIntervalFn(
+	() => {
+		countdown.value--;
+		if (countdown.value <= 0) {
+			countdownTick.pause();
+			phase.value = 'playing';
+			gameTick.resume();
+		}
+	},
+	1000,
+	{ immediate: false }
+);
+
+const gameTick = useIntervalFn(
+	() => {
+		timeLeft.value--;
+		if (timeLeft.value <= 0) {
+			gameTick.pause();
+			phase.value = 'lose';
+		}
+	},
+	1000,
+	{ immediate: false }
+);
 
 function shuffle<T>(arr: T[]): T[] {
-	return [...arr].sort(() => Math.random() - 0.5);
+	const a = [...arr];
+	for (let i = a.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		const tmp = a[i] as T;
+		a[i] = a[j] as T;
+		a[j] = tmp;
+	}
+	return a;
 }
 
 function init() {
-	if (cdInterval) {
-		clearInterval(cdInterval);
-		cdInterval = null;
-	}
-	if (timerInterval) {
-		clearInterval(timerInterval);
-		timerInterval = null;
-	}
+	countdownTick.pause();
+	gameTick.pause();
 
 	const params = props.step.parameters as [string[]] | undefined;
 	if (!params || !Array.isArray(params[0])) return;
@@ -202,67 +258,39 @@ function init() {
 	phase.value = 'countdown';
 	countdown.value = 3;
 	if (props.disabled) return;
-
-	cdInterval = setInterval(() => {
-		countdown.value--;
-		if (countdown.value <= 0) {
-			clearInterval(cdInterval!);
-			cdInterval = null;
-			phase.value = 'playing';
-			startTimer();
-		}
-	}, 1000);
-}
-
-function startTimer() {
-	if (timerInterval) clearInterval(timerInterval);
-	timerInterval = setInterval(() => {
-		timeLeft.value--;
-		if (timeLeft.value <= 0) {
-			clearInterval(timerInterval!);
-			phase.value = 'lose';
-		}
-	}, 1000);
+	countdownTick.resume();
 }
 
 function slotClass(slot: string | null, i: number) {
 	if (dragOverSlot.value === i) return 'border-primary border-dashed bg-primary/10 cursor-pointer';
 	if (slot) return 'border-primary/50 bg-primary/10 cursor-pointer';
-	if (selectedTile.value) return 'border-primary/30 border-dashed cursor-pointer';
+	if (selectedTile.value || draggingTile.value)
+		return 'border-primary/30 border-dashed cursor-pointer';
 	return 'border-neutral-800 cursor-default';
 }
 
 function selectTile(tile: string) {
-	if (props.disabled) return;
+	if (props.disabled || draggingTile.value) return;
 	selectedTile.value = selectedTile.value === tile ? null : tile;
 }
 
-function onDragStartTile(tile: string) {
+function onTilePointerDown(e: PointerEvent, tile: string, source: DragSource) {
 	if (props.disabled) return;
+	if (phase.value !== 'playing') return;
+	(e.target as Element).setPointerCapture?.(e.pointerId);
 	draggingTile.value = tile;
+	dragSource.value = source;
+	dragPos.value = { x: e.clientX, y: e.clientY };
 	selectedTile.value = null;
+	e.preventDefault();
 }
 
-function onDropSlot(slotIndex: number) {
-	if (props.disabled) return;
-	dragOverSlot.value = null;
-	const tile = draggingTile.value;
-	draggingTile.value = null;
-	if (!tile) return;
-	const current = slots.value[slotIndex];
-	if (current) bank.value.push(current);
-	slots.value[slotIndex] = tile;
-	bank.value = bank.value.filter((t) => t !== tile);
-	validate();
-}
-
-function placeOrRemove(slotIndex: number) {
-	if (props.disabled) return;
-	const current = slots.value[slotIndex];
+function onSlotClick(i: number) {
+	if (props.disabled || draggingTile.value) return;
+	const current = slots.value[i];
 	if (current && selectedTile.value) {
-		// Swap: return current occupant to bank, place selected tile
 		bank.value.push(current);
-		slots.value[slotIndex] = selectedTile.value;
+		slots.value[i] = selectedTile.value;
 		bank.value = bank.value.filter((t) => t !== selectedTile.value);
 		selectedTile.value = null;
 		validate();
@@ -270,20 +298,91 @@ function placeOrRemove(slotIndex: number) {
 	}
 	if (current) {
 		bank.value.push(current);
-		slots.value[slotIndex] = null;
+		slots.value[i] = null;
 		return;
 	}
 	if (!selectedTile.value) return;
-	slots.value[slotIndex] = selectedTile.value;
+	slots.value[i] = selectedTile.value;
 	bank.value = bank.value.filter((t) => t !== selectedTile.value);
 	selectedTile.value = null;
 	validate();
 }
 
+function findTargetUnderPointer(clientX: number, clientY: number) {
+	const under = import.meta.client ? document.elementFromPoint(clientX, clientY) : null;
+	if (!under) return { slot: null as number | null, bank: false };
+	const slotEl = under.closest('[data-slot-index]') as HTMLElement | null;
+	if (slotEl) {
+		const idx = Number(slotEl.dataset.slotIndex);
+		return { slot: idx, bank: false };
+	}
+	const bankEl = under.closest('[data-bank]');
+	if (bankEl) return { slot: null, bank: true };
+	return { slot: null, bank: false };
+}
+
+useEventListener('pointermove', (e: PointerEvent) => {
+	if (!draggingTile.value) return;
+	dragPos.value = { x: e.clientX, y: e.clientY };
+	const target = findTargetUnderPointer(e.clientX, e.clientY);
+	dragOverSlot.value = target.slot;
+	dragOverBank.value = target.bank;
+});
+
+useEventListener(['pointerup', 'pointercancel'], (e: PointerEvent) => {
+	if (!draggingTile.value) return;
+	const tile = draggingTile.value;
+	const source = dragSource.value;
+	const target =
+		e.type === 'pointerup'
+			? findTargetUnderPointer(e.clientX, e.clientY)
+			: { slot: null as number | null, bank: false };
+	draggingTile.value = null;
+	dragSource.value = null;
+	dragOverSlot.value = null;
+	dragOverBank.value = false;
+	if (!source) return;
+	commitDrop(tile, source, target);
+});
+
+function commitDrop(
+	tile: string,
+	source: DragSource,
+	target: { slot: number | null; bank: boolean }
+) {
+	if (target.slot !== null) {
+		const targetIdx = target.slot;
+		if (source.kind === 'bank') {
+			const current = slots.value[targetIdx];
+			if (current) bank.value.push(current);
+			slots.value[targetIdx] = tile;
+			bank.value = bank.value.filter((t) => t !== tile);
+		} else {
+			const srcIdx = source.index;
+			if (srcIdx === targetIdx) return;
+			const tmp = slots.value[targetIdx] ?? null;
+			slots.value[targetIdx] = tile;
+			slots.value[srcIdx] = tmp;
+		}
+		validate();
+		return;
+	}
+	if (target.bank && source.kind === 'slot') {
+		bank.value.push(tile);
+		slots.value[source.index] = null;
+		return;
+	}
+	// Released outside any drop zone — for slot tiles, return to bank so they aren't stranded.
+	if (source.kind === 'slot') {
+		bank.value.push(tile);
+		slots.value[source.index] = null;
+	}
+}
+
 function validate() {
 	if (slots.value.some((s) => s === null)) return;
 	if (slots.value.every((s, i) => s === correctOrder.value[i])) {
-		clearInterval(timerInterval!);
+		gameTick.pause();
 		phase.value = 'win';
 		sendUpdate();
 	}
@@ -309,9 +408,4 @@ async function sendUpdate() {
 }
 
 onMounted(init);
-
-onBeforeUnmount(() => {
-	if (cdInterval) clearInterval(cdInterval);
-	if (timerInterval) clearInterval(timerInterval);
-});
 </script>
