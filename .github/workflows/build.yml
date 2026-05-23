@@ -46,7 +46,7 @@ jobs:
           retention-days: 14
       - name: Attest Build Artifacts
         if: ${{ !cancelled()}}
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: crust-build-${{ github.run_id }}
           subject-digest: sha256:${{ steps.archive.outputs.artifact-digest }}
