@@ -299,7 +299,7 @@ export const useUserStore = defineStore('user', () => {
 		return [];
 	};
 
-	const getChipColor = (user: User | undefined) => {
+	const getChipColor = (user: User | null | undefined) => {
 		if (!user) return undefined;
 
 		switch (user.account?.account_type) {
@@ -314,7 +314,7 @@ export const useUserStore = defineStore('user', () => {
 		}
 	};
 
-	const getMaxEventAttendees = (user: User | undefined): number => {
+	const getMaxEventAttendees = (user: User | null | undefined): number => {
 		if (!user) return 0;
 
 		switch (user.account?.account_type) {
