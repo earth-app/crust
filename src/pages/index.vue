@@ -56,6 +56,15 @@
 					>Sign Up</UButton
 				>
 				<UButton
+					v-if="user"
+					icon="mdi:sword-cross"
+					color="neutral"
+					variant="soft"
+					@click="$router.push('/profile/quests')"
+				>
+					My Quests
+				</UButton>
+				<UButton
 					v-if="user && user.is_admin"
 					icon="mdi:cog-outline"
 					color="error"
