@@ -19,17 +19,16 @@
 				icon="mdi:book-multiple-variant"
 				hydrate-on-visible
 			>
-				<InfoCardSkeleton
-					v-if="!relatedLoaded"
-					v-for="n in 3"
-					:key="n"
-				/>
 				<LazyArticleCard
-					v-else
-					v-for="article in relatedArticles"
-					:key="article.id"
-					:article="article"
+					v-for="similarArticle in related.items"
+					:key="similarArticle.id"
+					:article="similarArticle"
+					class="motion-preset-fade-md"
 					hydrate-on-visible
+				/>
+				<InfoCardSkeleton
+					v-for="n in related.remaining"
+					:key="`related-skel-${n}`"
 				/>
 			</LazyInfoCardGroup>
 		</div>
@@ -50,19 +49,19 @@ const { user, tapCurrentJourney } = useAuth();
 const { setTitleSuffix } = useTitleSuffix();
 const { article, fetch } = useArticle(route.params.id as string);
 
-const relatedLoaded = ref(false);
-const relatedArticles = ref<Article[]>([]);
+const related = useIncrementalList<Article>({
+	staggerMs: 120,
+	initialExpectedCount: 3
+});
+
 const similarLoadedFor = ref<string | null>(null);
-const similarInFlight = ref(false);
 const journeyTrackedArticleId = ref<string | null>(null);
 const journeyTrackingArticleId = ref<string | null>(null);
 
-// Fetch article data on mount
 onMounted(() => {
 	fetch();
 });
 
-// Keep title in sync with article
 watch(
 	() => article.value,
 	(a) => {
@@ -70,15 +69,13 @@ watch(
 			setTitleSuffix(a.title);
 		} else {
 			setTitleSuffix('Article');
-			relatedLoaded.value = false;
-			relatedArticles.value = [];
+			related.reset(3);
 			similarLoadedFor.value = null;
 		}
 	},
 	{ immediate: true }
 );
 
-// Load similar articles only once both article and user are available
 watch(
 	[() => article.value, () => user.value] as const,
 	([a, u]) => {
@@ -87,7 +84,7 @@ watch(
 			!('error' in (a as any)) &&
 			u &&
 			similarLoadedFor.value !== a.id &&
-			!similarInFlight.value
+			!related.isLoading
 		) {
 			loadSimilar(a);
 		}
@@ -144,31 +141,27 @@ useSeoMeta({
 async function loadSimilar(article?: Article) {
 	if (!article) return;
 	if (!user.value) return;
-	if (similarInFlight.value) return;
+	if (related.isLoading) return;
 	if (similarLoadedFor.value === article.id) return;
 
-	similarInFlight.value = true;
-	relatedLoaded.value = false;
+	similarLoadedFor.value = article.id;
 
-	try {
+	await related.load(async () => {
 		const { fetchSimilar } = useArticle(article.id);
 		const res = await fetchSimilar();
 		if (valid(res)) {
-			relatedArticles.value = res.data;
-			similarLoadedFor.value = article.id;
-		} else {
-			console.error('Failed to load similar articles:', res.message);
-			toast.add({
-				title: 'Error',
-				icon: 'mdi:alert-circle',
-				description: res.message || 'Failed to load similar articles.',
-				color: 'error'
-			});
+			return res.data;
 		}
-	} finally {
-		relatedLoaded.value = true;
-		similarInFlight.value = false;
-	}
+		console.error('Failed to load similar articles:', res.message);
+		toast.add({
+			title: 'Error',
+			icon: 'mdi:alert-circle',
+			description: res.message || 'Failed to load similar articles.',
+			color: 'error'
+		});
+		similarLoadedFor.value = null;
+		return null;
+	});
 }
 
 // articles read time tracking

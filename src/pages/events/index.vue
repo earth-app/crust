@@ -29,17 +29,17 @@
 			description="Based on your interests and activities"
 			icon="mdi:calendar-star"
 		>
-			<InfoCardSkeleton
-				v-if="!recommendedLoaded"
-				v-for="n in 2"
-				:key="n"
-				content-size="small"
-			/>
 			<LazyEventCard
-				v-for="event in recommendedEvents"
+				v-for="event in recommended.items"
 				:key="event.id"
 				:event="event"
+				class="motion-preset-fade-md"
 				hydrate-on-visible
+			/>
+			<InfoCardSkeleton
+				v-for="n in recommended.remaining"
+				:key="`event-recommended-skel-${n}`"
+				content-size="small"
 			/>
 		</InfoCardGroup>
 		<InfoCardGroup
@@ -47,17 +47,17 @@
 			description="Don't miss out on these!"
 			icon="mdi:calendar-clock"
 		>
-			<InfoCardSkeleton
-				v-if="!upcomingLoaded"
-				v-for="n in 3"
-				:key="n"
-				content-size="small"
-			/>
 			<LazyEventCard
-				v-for="event in upcomingEvents"
+				v-for="event in upcoming.items"
 				:key="event.id"
 				:event="event"
+				class="motion-preset-fade-md"
 				hydrate-on-visible
+			/>
+			<InfoCardSkeleton
+				v-for="n in upcoming.remaining"
+				:key="`event-upcoming-skel-${n}`"
+				content-size="small"
 			/>
 		</InfoCardGroup>
 		<InfoCardGroup
@@ -66,17 +66,17 @@
 			icon="mdi:compass"
 			id="events"
 		>
-			<InfoCardSkeleton
-				v-if="!randomLoaded"
-				v-for="n in 3"
-				:key="n"
-				content-size="small"
-			/>
 			<LazyEventCard
-				v-for="event in randomEvents"
+				v-for="event in random.items"
 				:key="event.id"
 				:event="event"
+				class="motion-preset-fade-md"
 				hydrate-on-visible
+			/>
+			<InfoCardSkeleton
+				v-for="n in random.remaining"
+				:key="`event-random-skel-${n}`"
+				content-size="small"
 			/>
 		</InfoCardGroup>
 		<InfoCardGroup
@@ -84,17 +84,17 @@
 			description="Latest events from the community"
 			icon="mdi:history"
 		>
-			<InfoCardSkeleton
-				v-if="!recentLoaded"
-				v-for="n in 2"
-				:key="n"
-				content-size="small"
-			/>
 			<LazyEventCard
-				v-for="event in recentEvents"
+				v-for="event in recent.items"
 				:key="event.id"
 				:event="event"
+				class="motion-preset-fade-md"
 				hydrate-on-visible
+			/>
+			<InfoCardSkeleton
+				v-for="n in recent.remaining"
+				:key="`event-recent-skel-${n}`"
+				content-size="small"
 			/>
 		</InfoCardGroup>
 	</div>
@@ -109,131 +109,83 @@ setTitleSuffix('Events');
 
 const { user } = useAuth();
 
-const recommendedLoaded = ref(false);
-const recommendedEvents = ref<Event[]>([]);
-
-const randomLoaded = ref(false);
-const randomEvents = ref<Event[]>([]);
-
-const recentLoaded = ref(false);
-const recentEvents = ref<Event[]>([]);
-
-const upcomingLoaded = ref(false);
-const upcomingEvents = ref<Event[]>([]);
+const recommended = useIncrementalList<Event>({ staggerMs: 80, initialExpectedCount: 2 });
+const random = useIncrementalList<Event>({ staggerMs: 80, initialExpectedCount: 3 });
+const recent = useIncrementalList<Event>({ staggerMs: 80, initialExpectedCount: 2 });
+const upcoming = useIncrementalList<Event>({ staggerMs: 80, initialExpectedCount: 3 });
 
 const loading = computed(() => {
-	const loaded = !randomLoaded.value || !recentLoaded.value;
-	if (!user.value) {
-		return loaded;
-	}
-
-	return !recommendedLoaded.value || loaded;
+	const loaded = random.isLoading || recent.isLoading;
+	if (!user.value) return loaded;
+	return recommended.isLoading || loaded;
 });
 
-// Prevent concurrent calls to loadContent
 const isLoadingContent = ref(false);
 
-function loadRecommended() {
-	if (recommendedEvents.value.length > 0) return;
-
-	if (user.value) {
-		const { fetchRecommended } = useEvents();
-		fetchRecommended().then((recommendedRes) => {
-			if (recommendedRes.success && recommendedRes.data) {
-				recommendedEvents.value = recommendedRes.data;
-				recommendedLoaded.value = true;
-			} else {
-				console.error('Failed to load recommended events:', recommendedRes.message);
-				recommendedLoaded.value = true;
-
-				toast.add({
-					title: 'Error',
-					icon: 'mdi:alert-circle',
-					description: recommendedRes.message || 'Failed to load recommended events.',
-					color: 'error'
-				});
-			}
-		});
-	} else {
-		recommendedLoaded.value = true;
-	}
+function reportError(label: string, message?: string) {
+	console.error(`Failed to load ${label}:`, message);
+	toast.add({
+		title: 'Error',
+		icon: 'mdi:alert-circle',
+		description: message || `Failed to load ${label}.`,
+		color: 'error'
+	});
 }
 
-async function loadContent() {
-	// Prevent duplicate concurrent loads
-	if (isLoadingContent.value) {
+async function loadRecommended() {
+	if (recommended.items.length > 0) return;
+
+	if (!user.value) {
+		recommended.reset(0);
 		return;
 	}
 
+	await recommended.load(async () => {
+		const { fetchRecommended } = useEvents();
+		const res = await fetchRecommended();
+		if (res.success && res.data) return res.data;
+		reportError('recommended events', res.message);
+		return null;
+	});
+}
+
+async function loadContent() {
+	if (isLoadingContent.value) return;
 	isLoadingContent.value = true;
 
-	// reset states
-	randomLoaded.value = false;
-	randomEvents.value = [];
-	recentLoaded.value = false;
-	recentEvents.value = [];
-	upcomingLoaded.value = false;
-	upcomingEvents.value = [];
+	try {
+		const { fetchRandom, fetchRecent, fetchUpcoming } = useEvents();
 
-	recommendedLoaded.value = false;
-	recommendedEvents.value = [];
-	loadRecommended();
+		recommended.reset(user.value ? 2 : 0);
+		random.reset(3);
+		recent.reset(2);
+		upcoming.reset(3);
 
-	const { fetchRandom, fetchRecent, fetchUpcoming } = useEvents();
-	fetchRandom(10).then((res) => {
-		if (valid(res)) {
-			randomEvents.value = res.data;
-			randomLoaded.value = true;
-		} else {
-			randomLoaded.value = true;
-			randomEvents.value = [];
+		void loadRecommended();
 
-			console.error('Failed to load random events:', res.message);
+		void random.load(async () => {
+			const res = await fetchRandom(10);
+			if (valid(res)) return res.data;
+			reportError('random events', res.message);
+			return null;
+		});
 
-			toast.add({
-				title: 'Error',
-				icon: 'mdi:alert-circle',
-				description: res.message || 'Failed to load random events.',
-				color: 'error'
-			});
-		}
-	});
+		void recent.load(async () => {
+			const res = await fetchRecent(10);
+			if (valid(res)) return res.data.items;
+			reportError('recent events', res.message);
+			return null;
+		});
 
-	fetchRecent(10).then((res) => {
-		if (valid(res)) {
-			recentEvents.value = res.data.items;
-			recentLoaded.value = true;
-		} else {
-			console.error('Failed to load recent events:', res.message);
-			recentLoaded.value = true;
-
-			toast.add({
-				title: 'Error',
-				icon: 'mdi:alert-circle',
-				description: res.message || 'Failed to load recent events.',
-				color: 'error'
-			});
-		}
-	});
-
-	fetchUpcoming(10).then((res) => {
-		if (valid(res)) {
-			upcomingEvents.value = res.data.items;
-			upcomingLoaded.value = true;
-		} else {
-			console.error('Failed to load upcoming events:', res.message);
-			upcomingLoaded.value = true;
-
-			toast.add({
-				title: 'Error',
-				icon: 'mdi:alert-circle',
-				description: res.message || 'Failed to load upcoming events.',
-				color: 'error'
-			});
-		}
-	});
-
-	isLoadingContent.value = false;
+		void upcoming.load(async () => {
+			const res = await fetchUpcoming(10);
+			if (valid(res)) return res.data.items;
+			reportError('upcoming events', res.message);
+			return null;
+		});
+	} finally {
+		isLoadingContent.value = false;
+	}
 }
 
 watch(
@@ -252,6 +204,6 @@ onMounted(async () => {
 
 const newDisabled = computed(() => {
 	if (user.value === null) return true;
-	return false; // TODO: Implement event count check
+	return false;
 });
 </script>

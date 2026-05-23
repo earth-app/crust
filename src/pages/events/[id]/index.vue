@@ -16,18 +16,17 @@
 				class="w-full mt-8 px-4"
 				hydrate-on-visible
 			>
-				<InfoCardSkeleton
-					v-if="!relatedLoaded"
-					v-for="n in 3"
-					:key="n"
-					content-size="small"
-				/>
 				<LazyEventCard
-					v-else
-					v-for="event in relatedEvents"
-					:key="event.id"
-					:event="event"
+					v-for="similarEvent in related.items"
+					:key="similarEvent.id"
+					:event="similarEvent"
+					class="motion-preset-fade-md"
 					hydrate-on-visible
+				/>
+				<InfoCardSkeleton
+					v-for="n in related.remaining"
+					:key="`event-related-skel-${n}`"
+					content-size="small"
 				/>
 			</LazyInfoCardGroup>
 		</div>
@@ -50,12 +49,13 @@ const { setTitleSuffix } = useTitleSuffix();
 const { user } = useAuth();
 const { event, fetch } = useEvent(route.params.id as string);
 
-const relatedLoaded = ref(false);
-const relatedEvents = ref<Event[]>([]);
-const similarLoadedFor = ref<string | null>(null);
-const similarInFlight = ref(false);
+const related = useIncrementalList<Event>({
+	staggerMs: 120,
+	initialExpectedCount: 3
+});
 
-// Force fetch on mount to ensure fresh data on page refresh
+const similarLoadedFor = ref<string | null>(null);
+
 onMounted(() => {
 	fetch();
 });
@@ -65,18 +65,17 @@ watch(
 	(e) => {
 		setTitleSuffix(e ? e.name : 'Event');
 
-		if (e && user.value && similarLoadedFor.value !== e.id && !similarInFlight.value) {
+		if (e && user.value && similarLoadedFor.value !== e.id && !related.isLoading) {
 			loadSimilar(e);
 		} else if (!e) {
-			relatedLoaded.value = false;
-			relatedEvents.value = [];
+			related.reset(3);
 			similarLoadedFor.value = null;
 		}
 	},
 	{ immediate: true }
 );
 watch([() => event.value, () => user.value] as const, ([e, u]) => {
-	if (e && u && similarLoadedFor.value !== e.id && !similarInFlight.value) {
+	if (e && u && similarLoadedFor.value !== e.id && !related.isLoading) {
 		loadSimilar(e);
 	}
 });
@@ -89,30 +88,26 @@ useSeoMeta({
 async function loadSimilar(event?: Event) {
 	if (!event) return;
 	if (!user.value) return;
-	if (similarInFlight.value) return;
+	if (related.isLoading) return;
 	if (similarLoadedFor.value === event.id) return;
 
-	similarInFlight.value = true;
-	relatedLoaded.value = false;
+	similarLoadedFor.value = event.id;
 
-	try {
+	await related.load(async () => {
 		const { fetchSimilar } = useEvent(event.id);
 		const res = await fetchSimilar();
 		if (valid(res)) {
-			relatedEvents.value = res.data;
-			similarLoadedFor.value = event.id;
-		} else {
-			console.error('Failed to load similar events:', res.message);
-			toast.add({
-				title: 'Error',
-				icon: 'mdi:alert-circle',
-				description: res.message || 'Failed to load similar events.',
-				color: 'error'
-			});
+			return res.data;
 		}
-	} finally {
-		relatedLoaded.value = true;
-		similarInFlight.value = false;
-	}
+		console.error('Failed to load similar events:', res.message);
+		toast.add({
+			title: 'Error',
+			icon: 'mdi:alert-circle',
+			description: res.message || 'Failed to load similar events.',
+			color: 'error'
+		});
+		similarLoadedFor.value = null;
+		return null;
+	});
 }
 </script>

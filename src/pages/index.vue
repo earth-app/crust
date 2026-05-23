@@ -118,20 +118,17 @@
 					icon="material-symbols:apps"
 					class="w-11/12"
 				>
-					<template v-if="loadingActivities">
-						<InfoCardSkeleton
-							v-for="i in 5"
-							:key="`skeleton-activity-${i}`"
-						/>
-					</template>
-					<template v-else>
-						<LazyActivityCard
-							v-for="activity in randomActivities"
-							:key="activity.id"
-							:activity="activity"
-							hydrate-on-visible
-						/>
-					</template>
+					<LazyActivityCard
+						v-for="activity in activities.items"
+						:key="activity.id"
+						:activity="activity"
+						class="motion-preset-fade-md"
+						hydrate-on-visible
+					/>
+					<InfoCardSkeleton
+						v-for="n in activities.remaining"
+						:key="`home-activity-skel-${n}`"
+					/>
 				</InfoCardGroup>
 				<InfoCardGroup
 					:title="user ? `A Fun Prompt` : 'Get Inspired'"
@@ -139,20 +136,17 @@
 					icon="mdi:lightbulb-on-outline"
 					class="w-11/12 mt-4"
 				>
-					<template v-if="loadingPrompts">
-						<InfoCardSkeleton
-							v-for="i in 3"
-							:key="`skeleton-prompt-${i}`"
-						/>
-					</template>
-					<template v-else>
-						<LazyPromptCard
-							v-for="prompt in randomPrompts"
-							:key="prompt.id"
-							:prompt="prompt"
-							hydrate-on-visible
-						/>
-					</template>
+					<LazyPromptCard
+						v-for="prompt in prompts.items"
+						:key="prompt.id"
+						:prompt="prompt"
+						class="motion-preset-fade-md"
+						hydrate-on-visible
+					/>
+					<InfoCardSkeleton
+						v-for="n in prompts.remaining"
+						:key="`home-prompt-skel-${n}`"
+					/>
 				</InfoCardGroup>
 				<InfoCardGroup
 					title="A Good Read"
@@ -160,20 +154,17 @@
 					icon="mdi:book-multiple-variant"
 					class="w-11/12 mt-4"
 				>
-					<template v-if="loadingArticles">
-						<InfoCardSkeleton
-							v-for="i in 4"
-							:key="`skeleton-article-${i}`"
-						/>
-					</template>
-					<template v-else>
-						<LazyArticleCard
-							v-for="article in randomArticles"
-							:key="article.id"
-							:article="article"
-							hydrate-on-visible
-						/>
-					</template>
+					<LazyArticleCard
+						v-for="article in articles.items"
+						:key="article.id"
+						:article="article"
+						class="motion-preset-fade-md"
+						hydrate-on-visible
+					/>
+					<InfoCardSkeleton
+						v-for="n in articles.remaining"
+						:key="`home-article-skel-${n}`"
+					/>
 				</InfoCardGroup>
 				<InfoCardGroup
 					title="Join The Community"
@@ -181,20 +172,17 @@
 					icon="mdi:account-group-outline"
 					class="w-11/12 mt-4"
 				>
-					<template v-if="loadingEvents">
-						<InfoCardSkeleton
-							v-for="i in 5"
-							:key="`skeleton-event-${i}`"
-						/>
-					</template>
-					<template v-else>
-						<LazyEventCard
-							v-for="event in randomEvents"
-							:key="event.id"
-							:event="event"
-							hydrate-on-visible
-						/>
-					</template>
+					<LazyEventCard
+						v-for="event in events.items"
+						:key="event.id"
+						:event="event"
+						class="motion-preset-fade-md"
+						hydrate-on-visible
+					/>
+					<InfoCardSkeleton
+						v-for="n in events.remaining"
+						:key="`home-event-skel-${n}`"
+					/>
 				</InfoCardGroup>
 			</div>
 		</ClientOnly>
@@ -212,103 +200,60 @@ const { user, avatar128 } = useAuth();
 const toast = useToast();
 const tours = useSiteTour();
 const { visitedSite, markVisited } = useVisitedSite();
-const randomPrompts = ref<Prompt[]>([]);
-const randomActivities = ref<Activity[]>([]);
-const randomArticles = ref<Article[]>([]);
-const randomEvents = ref<Event[]>([]);
 
-// Loading states for progressive rendering
-const loadingPrompts = ref(true);
-const loadingActivities = ref(true);
-const loadingArticles = ref(true);
-const loadingEvents = ref(true);
+const prompts = useIncrementalList<Prompt>({ staggerMs: 100, initialExpectedCount: 3 });
+const activities = useIncrementalList<Activity>({ staggerMs: 100, initialExpectedCount: 5 });
+const articles = useIncrementalList<Article>({ staggerMs: 100, initialExpectedCount: 4 });
+const events = useIncrementalList<Event>({ staggerMs: 100, initialExpectedCount: 5 });
+
+function reportError(label: string, message?: string) {
+	console.error(`Failed to load ${label}:`, message);
+	toast.add({
+		title: `Error Fetching ${label}`,
+		description: message || 'An unknown error occurred.',
+		icon: 'mdi:alert-circle-outline',
+		color: 'error',
+		duration: 5000
+	});
+}
 
 onMounted(async () => {
-	// Start Welcome Tour if anonymous and new
 	if (!user.value && !visitedSite.value) {
 		welcomeTour();
 	}
 	markVisited();
 
-	// Fetch content independently for progressive rendering
 	const { fetchRandom: fetchRandomPrompts } = usePrompts();
 	const { fetchRandom: fetchRandomActivities } = useActivities();
 	const { fetchRandom: fetchRandomArticles } = useArticles();
 	const { fetchRandom: fetchRandomEvents } = useEvents();
 
-	// Fetch prompts
-	fetchRandomPrompts(5).then((resPrompt) => {
-		if (valid(resPrompt)) {
-			randomPrompts.value = resPrompt.data;
-		} else {
-			toast.add({
-				title: 'Error Fetching Prompts',
-				description: resPrompt.message || 'An unknown error occurred.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error',
-				duration: 5000
-			});
-			console.error('Failed to load random prompts:', resPrompt.message);
-			randomPrompts.value = [];
-		}
-
-		loadingPrompts.value = false;
+	void prompts.load(async () => {
+		const res = await fetchRandomPrompts(5);
+		if (valid(res)) return res.data;
+		reportError('Prompts', res.message);
+		return null;
 	});
 
-	// Fetch activities
-	fetchRandomActivities(10).then((res) => {
-		if (valid(res)) {
-			randomActivities.value = res.data;
-		} else {
-			toast.add({
-				title: 'Error Fetching Activities',
-				description: res.message || 'An unknown error occurred.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error',
-				duration: 5000
-			});
-			console.error('Failed to load random activities:', res.message);
-			randomActivities.value = [];
-		}
-
-		loadingActivities.value = false;
+	void activities.load(async () => {
+		const res = await fetchRandomActivities(10);
+		if (valid(res)) return res.data;
+		reportError('Activities', res.message);
+		return null;
 	});
 
-	// Fetch articles
-	fetchRandomArticles(8).then((res) => {
-		if (valid(res)) {
-			randomArticles.value = res.data;
-		} else {
-			toast.add({
-				title: 'Error Fetching Articles',
-				description: res.message || 'An unknown error occurred.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error',
-				duration: 5000
-			});
-			console.error('Failed to load random articles:', res.message);
-			randomArticles.value = [];
-		}
-		loadingArticles.value = false;
+	void articles.load(async () => {
+		const res = await fetchRandomArticles(8);
+		if (valid(res)) return res.data;
+		reportError('Articles', res.message);
+		return null;
 	});
 
-	// Fetch events
-	fetchRandomEvents(10).then((res) => {
-		if (valid(res)) {
-			randomEvents.value = res.data;
-		} else {
-			toast.add({
-				title: 'Error Fetching Events',
-				description: res.message || 'An unknown error occurred.',
-				icon: 'mdi:alert-circle-outline',
-				color: 'error',
-				duration: 5000
-			});
-			console.error('Failed to load random events:', res.message);
-			randomEvents.value = [];
-		}
-
-		loadingEvents.value = false;
+	void events.load(async () => {
+		const res = await fetchRandomEvents(10);
+		if (valid(res)) return res.data;
+		reportError('Events', res.message);
+		return null;
 	});
 });
 

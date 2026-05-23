@@ -13,8 +13,8 @@
 				color="neutral"
 				variant="outline"
 				class="mt-2"
-				:loading="promptsLoading"
-				:disabled="promptsLoading"
+				:loading="promptsList.isLoading"
+				:disabled="promptsList.isLoading"
 				@click="fetchPrompts"
 			/>
 			<UTooltip
@@ -40,18 +40,18 @@
 			id="prompts"
 			class="mt-12 w-9/10 grid grid-cols-1 lg:grid-cols-2 gap-x-8"
 		>
-			<InfoCardSkeleton
-				v-if="promptsLoading"
-				v-for="n in 5"
-				:key="n"
-				content-size="xs"
-				class="mb-4"
-			/>
 			<LazyPromptCard
-				v-for="prompt in prompts"
+				v-for="prompt in promptsList.items"
 				:key="prompt.id"
 				:prompt="prompt"
+				class="motion-preset-fade-md"
 				hydrate-on-visible
+			/>
+			<InfoCardSkeleton
+				v-for="n in promptsList.remaining"
+				:key="`prompt-skel-${n}`"
+				content-size="xs"
+				class="mb-4"
 			/>
 		</div>
 	</div>
@@ -63,8 +63,7 @@ setTitleSuffix('Prompts');
 
 const toast = useToast();
 
-const prompts = ref<Prompt[]>([]);
-const promptsLoading = ref(false);
+const promptsList = useIncrementalList<Prompt>({ staggerMs: 60, initialExpectedCount: 5 });
 
 const { user, fetchUser } = useAuth();
 const total = ref(0);
@@ -79,15 +78,14 @@ const newDisabled = computed(() => {
 			return total.value >= 1;
 	}
 });
-async function fetchPrompts() {
-	promptsLoading.value = true;
-	const { fetchRandom } = usePrompts();
-	const res = await fetchRandom(25);
-	promptsLoading.value = false;
 
-	if (valid(res)) {
-		prompts.value = res.data;
-	} else {
+async function fetchPrompts() {
+	promptsList.reset(5);
+	await promptsList.load(async () => {
+		const { fetchRandom } = usePrompts();
+		const res = await fetchRandom(25);
+		if (valid(res)) return res.data;
+
 		toast.add({
 			title: 'Error',
 			icon: 'mdi:comment-off-outline',
@@ -95,13 +93,13 @@ async function fetchPrompts() {
 			color: 'error',
 			duration: 5000
 		});
-
 		console.error('Failed to load prompts:', res.message);
-	}
+		return null;
+	});
 }
 
 onMounted(async () => {
-	await fetchUser(); // ensure user is loaded
+	await fetchUser();
 	if (user.value) {
 		const { total: total0 } = useUserPrompts(user.value.id);
 		total.value = total0.value;
