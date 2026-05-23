@@ -30,12 +30,7 @@
 							/>
 							<span class="font-medium text-sm">
 								{{ item.label }}
-								<span
-									v-if="
-										com.earthapp.account.Account.isNeverPublic(props.field) &&
-										item.value === 'PUBLIC'
-									"
-								>
+								<span v-if="isNeverPublic(props.field) && item.value === 'PUBLIC'">
 									(Disabled)</span
 								>
 							</span>
@@ -96,10 +91,19 @@ const items = ref<DropdownMenuItem[]>(
 		description: descriptions[value.ordinal],
 		checked: selected.value === value.name,
 		disabled:
-			(com.earthapp.account.Account.isNeverPublic(props.field) && value.name === 'PUBLIC') ||
-			selected.value === value.name
+			(isNeverPublic(props.field) && value.name === 'PUBLIC') || selected.value === value.name
 	}))
 );
+
+function isNeverPublic(field: keyof User['account']['field_privacy']) {
+	switch (field) {
+		case 'address':
+		case 'phone_number':
+			return true;
+		default:
+			return false;
+	}
+}
 
 async function updatePrivacy(item: DropdownMenuItem) {
 	if (item.disabled) return;
