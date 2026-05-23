@@ -74,10 +74,11 @@ export default defineEventHandler(async (event) => {
 				rank
 			},
 			onResponseError: (ctx) => {
+				const message = ctx.response._data?.message;
 				throw createError({
 					data: ctx.response._data,
 					statusCode: ctx.response.status,
-					statusMessage: `Failed to update quest: ${ctx.response.statusText}`
+					statusMessage: message || `Failed to update quest: ${ctx.response.statusText}`
 				});
 			}
 		}
