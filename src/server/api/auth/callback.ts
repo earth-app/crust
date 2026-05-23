@@ -18,18 +18,28 @@ function parseState(state: string): {
 }
 
 export default defineEventHandler(async (event) => {
+	const sessionToken = getCookie(event, 'session_token');
+	const isLoggedIn = !!sessionToken;
+	const page = isLoggedIn ? 'profile' : 'login';
+
 	let query = getQuery(event);
-	if (event.method === 'POST') {
-		const body = await readBody(event);
-		query = { ...query, ...body };
+
+	try {
+		if (event.method === 'POST') {
+			const body = await readBody(event);
+			query = { ...query, ...body };
+		}
+	} catch (error) {
+		setHeader(event, 'X-Error-Type', 'body_parsing_error');
+		setHeader(event, 'X-Error-Detail', 'Failed to parse request body');
+		setHeader(event, 'X-Error-Extra', error);
+		console.error('Error occurred while processing OAuth callback:', error);
+
+		return sendRedirect(event, `/${page}?error=body_parsing_error`);
 	}
 
 	const { code, state, error, error_description } = query;
 	const config = useRuntimeConfig();
-
-	const sessionToken = getCookie(event, 'session_token');
-	const isLoggedIn = !!sessionToken;
-	const page = isLoggedIn ? 'profile' : 'login';
 
 	const stateStr = typeof state === 'string' ? state : '';
 	const { provider, source, context: stateContext } = parseState(stateStr);
@@ -40,45 +50,49 @@ export default defineEventHandler(async (event) => {
 	};
 	const fallbackContext = (): OAuthContext => stateContext || (isLoggedIn ? 'link' : 'login');
 
-	if (error) {
-		setHeader(event, 'X-Error-Type', 'oauth_provider_error');
-		setHeader(event, 'X-Error-Detail', (error_description as string) || 'No description provided');
-		setHeader(event, 'X-Error-Extra', `Provider error: ${error}`);
-		console.error(`OAuth provider error: ${error} - ${error_description}`);
-		if (source === 'mobile' && provider) {
-			return mobileRedirect({
-				error: 'provider_error',
-				provider,
-				context: fallbackContext()
-			});
-		}
-		return sendRedirect(event, `/${page}?error=provider_error`);
-	}
-
-	if (!state || Array.isArray(state) || typeof state !== 'string') {
-		setHeader(event, 'X-Error-Type', 'missing_provider');
-		return sendRedirect(event, `/${page}?error=no_provider`);
-	}
-
-	if (!code || Array.isArray(code) || typeof code !== 'string') {
-		setHeader(event, 'X-Error-Type', 'missing_code');
-		if (source === 'mobile' && provider) {
-			return mobileRedirect({
-				error: 'no_code',
-				provider,
-				context: fallbackContext()
-			});
-		}
-		return sendRedirect(event, `/${page}?error=no_code`);
-	}
-
-	if (!provider) {
-		setHeader(event, 'X-Error-Type', 'invalid_provider');
-		setHeader(event, 'X-Error-Extra', `Provided: ${state}`);
-		return sendRedirect(event, `/${page}?error=invalid_provider`);
-	}
-
 	try {
+		if (error) {
+			setHeader(event, 'X-Error-Type', 'oauth_provider_error');
+			setHeader(
+				event,
+				'X-Error-Detail',
+				(error_description as string) || 'No description provided'
+			);
+			setHeader(event, 'X-Error-Extra', `Provider error: ${error}`);
+			console.error(`OAuth provider error: ${error} - ${error_description}`);
+			if (source === 'mobile' && provider) {
+				return mobileRedirect({
+					error: 'provider_error',
+					provider,
+					context: fallbackContext()
+				});
+			}
+			return sendRedirect(event, `/${page}?error=provider_error`);
+		}
+
+		if (!state || Array.isArray(state) || typeof state !== 'string') {
+			setHeader(event, 'X-Error-Type', 'missing_provider');
+			return sendRedirect(event, `/${page}?error=no_provider`);
+		}
+
+		if (!code || Array.isArray(code) || typeof code !== 'string') {
+			setHeader(event, 'X-Error-Type', 'missing_code');
+			if (source === 'mobile' && provider) {
+				return mobileRedirect({
+					error: 'no_code',
+					provider,
+					context: fallbackContext()
+				});
+			}
+			return sendRedirect(event, `/${page}?error=no_code`);
+		}
+
+		if (!provider) {
+			setHeader(event, 'X-Error-Type', 'invalid_provider');
+			setHeader(event, 'X-Error-Extra', `Provided: ${state}`);
+			return sendRedirect(event, `/${page}?error=invalid_provider`);
+		}
+
 		const token = await exchangeCodeForToken(provider, code);
 		const response = await $fetch<{ session_token: string; user: any }>(
 			`https://api.earth-app.com/v2/users/oauth/${provider}?is_linking=${isLoggedIn}`,
@@ -143,10 +157,11 @@ export default defineEventHandler(async (event) => {
 		if (source === 'mobile') {
 			return mobileRedirect({
 				error: 'auth_failed',
-				provider,
+				provider: provider || '<no provider>',
 				context: fallbackContext()
 			});
 		}
+
 		return sendRedirect(event, `/${page}?error=auth_failed`);
 	}
 });

@@ -53,6 +53,10 @@ if (error) {
 			description = 'You must be logged in to perform this action.';
 			icon = 'mdi:login-variant';
 			break;
+		case 'body_parsing_error':
+			description = 'An error occurred while parsing the request body.';
+			icon = 'mdi:alert-box-outline';
+			break;
 		default:
 			description = 'An unknown error occurred during login.';
 			icon = 'mdi:alert-circle';

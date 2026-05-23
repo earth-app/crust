@@ -63,6 +63,8 @@ const errorMessage = computed(() => {
 	switch (errorCode.value) {
 		case 'provider_error':
 			return 'The sign-in provider returned an error.';
+		case 'body_parsing_error':
+			return 'An error occurred while parsing the request body.';
 		case 'no_code':
 			return 'No authorization code was received.';
 		case 'auth_failed':

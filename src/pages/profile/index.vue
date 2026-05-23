@@ -129,6 +129,14 @@ if (error) {
 				color: 'error',
 				duration: 5000
 			});
+		case 'body_parsing_error':
+			toast.add({
+				title: 'Body Parsing Error',
+				description: 'An error occurred while parsing the request body.',
+				icon: 'mdi:alert-box-outline',
+				color: 'error',
+				duration: 5000
+			});
 			break;
 	}
 }
