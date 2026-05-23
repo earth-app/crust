@@ -62,15 +62,19 @@
 					:key="card.id"
 					:ref="(el) => setCardRef(card.id, el as HTMLElement | null)"
 					:data-card-id="card.id"
-					class="absolute! rounded-xl! border-2! text-sm! font-medium! text-center! shadow-lg! flex items-center justify-center! px-3! py-2! transition-opacity"
-					:class="[
-						cardClass(card),
-						card.matched ? 'pointer-events-none' : 'cursor-grab active:cursor-grabbing!'
-					]"
+					class="absolute!"
 					:style="cardStyle(card)"
 					@pointerdown="onPointerDown(card, $event)"
 				>
-					<span class="pointer-events-none break-words">{{ card.text }}</span>
+					<div
+						class="rounded-xl! border-2! text-sm! font-medium! text-center! shadow-lg! flex items-center justify-center! px-3! py-2! transition-opacity w-full!"
+						:class="[
+							cardClass(card),
+							card.matched ? 'pointer-events-none' : 'cursor-grab active:cursor-grabbing!'
+						]"
+					>
+						<span class="pointer-events-none break-words">{{ card.text }}</span>
+					</div>
 				</div>
 			</div>
 		</template>
@@ -212,31 +216,31 @@ function rand(min: number, max: number) {
 }
 
 function scatterPositions(count: number, width: number, height: number) {
-	// Approximate card dims used to keep cards inside the board.
+	// Divide the board into vertical bands so cards spread top→bottom; allow each card
+	// a small vertical drift into neighbouring bands so adjacent cards can overlap a bit.
 	const cardW = Math.min(160, width * 0.42);
 	const cardH = 64;
-	const padX = 8;
-	const padY = 8;
+	const padX = 12;
+	const padY = 12;
 	const positions: { x: number; y: number; rot: number }[] = [];
-	const maxAttempts = 80;
-	const desiredGap = 24;
+	if (count === 0) return positions;
+
+	const usableH = Math.max(0, height - 2 * padY - cardH);
+	const bandH = usableH / count;
+	const overlap = 0.3; // fraction of bandH that may bleed into neighbouring bands
+
+	// Randomize which card lands in which band so DOM order doesn't determine vertical order.
+	const bandOrder = shuffle(Array.from({ length: count }, (_, i) => i));
 
 	for (let i = 0; i < count; i++) {
-		let best = { x: padX, y: padY, rot: 0, dist: -Infinity };
-		for (let attempt = 0; attempt < maxAttempts; attempt++) {
-			const x = rand(padX, Math.max(padX, width - cardW - padX));
-			const y = rand(padY, Math.max(padY, height - cardH - padY));
-			let minDist = Infinity;
-			for (const p of positions) {
-				const dx = p.x - x;
-				const dy = p.y - y;
-				const d = Math.sqrt(dx * dx + dy * dy);
-				if (d < minDist) minDist = d;
-			}
-			if (minDist > best.dist) best = { x, y, rot: rand(-10, 10), dist: minDist };
-			if (minDist >= desiredGap) break;
-		}
-		positions.push({ x: best.x, y: best.y, rot: best.rot });
+		const bandIdx = bandOrder[i] ?? i;
+		const bandTop = padY + bandIdx * bandH;
+		const bandBottom = padY + (bandIdx + 1) * bandH;
+		const yMin = Math.max(padY, bandTop - bandH * overlap);
+		const yMax = Math.min(padY + usableH, bandBottom + bandH * overlap);
+		const y = rand(yMin, yMax);
+		const x = rand(padX, Math.max(padX, width - cardW - padX));
+		positions.push({ x, y, rot: rand(-10, 10) });
 	}
 	return positions;
 }
@@ -264,7 +268,7 @@ function init() {
 
 	// Size the board responsively based on number of cards.
 	const totalCards = pairs.length * 2;
-	boardHeight.value = Math.min(620, Math.max(360, 120 + totalCards * 40));
+	boardHeight.value = Math.min(720, Math.max(440, 120 + totalCards * 60));
 
 	const left: Omit<Card, 'x' | 'y' | 'rot' | 'z'>[] = pairs.map(([term], i) => ({
 		id: `L${i}`,

@@ -120,13 +120,17 @@
 				</div>
 			</div>
 
-			<div
+			<Teleport
 				v-if="draggingTile"
-				class="fixed pointer-events-none z-50 px-3! py-2! rounded-xl! border-2! border-primary bg-primary/30 text-white text-sm! font-medium! shadow-2xl!"
-				:style="ghostStyle"
+				to="body"
 			>
-				{{ draggingTile }}
-			</div>
+				<div
+					class="fixed pointer-events-none z-50 px-3! py-2! rounded-xl! border-2! border-primary bg-primary/30 text-white text-sm! font-medium! shadow-2xl!"
+					:style="ghostStyle"
+				>
+					{{ draggingTile }}
+				</div>
+			</Teleport>
 		</template>
 
 		<div
@@ -198,6 +202,7 @@ const dragSource = ref<DragSource | null>(null);
 const dragPos = ref({ x: 0, y: 0 });
 const dragOverSlot = ref<number | null>(null);
 const dragOverBank = ref(false);
+const incorrectSlots = ref<number[]>([]);
 
 const lowTime = computed(() => timeLeft.value <= 10 && phase.value === 'playing');
 
@@ -254,6 +259,7 @@ function init() {
 	bank.value = shuffle([...items]);
 	slots.value = Array(items.length).fill(null);
 	selectedTile.value = null;
+	incorrectSlots.value = [];
 	timeLeft.value = 60;
 	phase.value = 'countdown';
 	countdown.value = 3;
@@ -262,6 +268,8 @@ function init() {
 }
 
 function slotClass(slot: string | null, i: number) {
+	if (incorrectSlots.value.includes(i))
+		return 'border-red-500 bg-red-500/10 text-red-300 cursor-pointer';
 	if (dragOverSlot.value === i) return 'border-primary border-dashed bg-primary/10 cursor-pointer';
 	if (slot) return 'border-primary/50 bg-primary/10 cursor-pointer';
 	if (selectedTile.value || draggingTile.value)
@@ -385,7 +393,15 @@ function validate() {
 		gameTick.pause();
 		phase.value = 'win';
 		sendUpdate();
+		return;
 	}
+	incorrectSlots.value = slots.value.reduce<number[]>((acc, s, i) => {
+		if (s !== correctOrder.value[i]) acc.push(i);
+		return acc;
+	}, []);
+	useTimeoutFn(() => {
+		incorrectSlots.value = [];
+	}, 1500);
 }
 
 async function sendUpdate() {
