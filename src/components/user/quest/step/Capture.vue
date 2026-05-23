@@ -253,7 +253,7 @@ async function flipCamera() {
 	isFlipping.value = true;
 	facingMode.value = facingMode.value === 'environment' ? 'user' : 'environment';
 	await startCamera();
-	setTimeout(() => (isFlipping.value = false), 400);
+	useTimeoutFn(() => (isFlipping.value = false), 400);
 }
 
 function detectDevice(): { make: string; model: string } {
@@ -392,7 +392,7 @@ async function takePhoto() {
 	if (props.disabled || !videoEl.value || !canvasEl.value) return;
 
 	isFlashing.value = true;
-	setTimeout(() => (isFlashing.value = false), 120);
+	useTimeoutFn(() => (isFlashing.value = false), 120);
 
 	const video = videoEl.value;
 	const canvas = canvasEl.value;

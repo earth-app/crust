@@ -147,10 +147,29 @@ const previewUrl = ref('');
 
 let mediaRecorder: MediaRecorder | null = null;
 let chunks: Blob[] = [];
-let timerInterval: ReturnType<typeof setInterval> | null = null;
-let animFrame: number | null = null;
 let analyser: AnalyserNode | null = null;
 let stream: MediaStream | null = null;
+
+const timer = useIntervalFn(
+	() => {
+		elapsed.value++;
+		if (elapsed.value >= 300) stopRecording();
+	},
+	1000,
+	{ immediate: false }
+);
+
+const rafLoop = useRafFn(
+	() => {
+		if (!analyser) return;
+		const buf = new Uint8Array(analyser.frequencyBinCount);
+		analyser.getByteFrequencyData(buf);
+		bars.value = Array.from({ length: 20 }, (_, i) =>
+			Math.max(4, ((buf[Math.floor((i * buf.length) / 20)] ?? 0) / 255) * 52)
+		);
+	},
+	{ immediate: false }
+);
 
 const MIMES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
 const mimeType = MIMES.find((m) => MediaRecorder.isTypeSupported(m)) || 'audio/webm';
@@ -185,21 +204,8 @@ function startRecording() {
 	mediaRecorder.start(100);
 	stage.value = 'recording';
 
-	timerInterval = setInterval(() => {
-		elapsed.value++;
-		if (elapsed.value >= 300) stopRecording();
-	}, 1000);
-
-	const tick = () => {
-		if (!analyser) return;
-		const buf = new Uint8Array(analyser.frequencyBinCount);
-		analyser.getByteFrequencyData(buf);
-		bars.value = Array.from({ length: 20 }, (_, i) =>
-			Math.max(4, ((buf[Math.floor((i * buf.length) / 20)] ?? 0) / 255) * 52)
-		);
-		animFrame = requestAnimationFrame(tick);
-	};
-	animFrame = requestAnimationFrame(tick);
+	timer.resume();
+	rafLoop.resume();
 }
 
 function stopRecording() {
@@ -210,8 +216,8 @@ function stopRecording() {
 		stage.value = 'preview';
 	};
 	mediaRecorder.stop();
-	if (timerInterval) clearInterval(timerInterval);
-	if (animFrame) cancelAnimationFrame(animFrame);
+	timer.pause();
+	rafLoop.pause();
 	analyser = null;
 }
 
@@ -235,8 +241,6 @@ function formatTime(s: number) {
 
 onBeforeUnmount(() => {
 	stream?.getTracks().forEach((t) => t.stop());
-	if (timerInterval) clearInterval(timerInterval);
-	if (animFrame) cancelAnimationFrame(animFrame);
 	if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
 });
 </script>

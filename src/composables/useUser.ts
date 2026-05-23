@@ -818,7 +818,7 @@ export function useJourneyLeaderboard(
 	};
 
 	if (import.meta.client) {
-		const refreshLeaderboard = (event: Event) => {
+		useEventListener(window, 'earth-app:journey-updated', (event: Event) => {
 			const journeyEvent = event as CustomEvent<{
 				type?: string;
 				incremented?: boolean;
@@ -828,14 +828,6 @@ export function useJourneyLeaderboard(
 			if (journeyEvent.detail.type !== type) return;
 
 			void fetchLeaderboard(currentLimit.value);
-		};
-
-		onMounted(() => {
-			window.addEventListener('earth-app:journey-updated', refreshLeaderboard as EventListener);
-		});
-
-		onUnmounted(() => {
-			window.removeEventListener('earth-app:journey-updated', refreshLeaderboard as EventListener);
 		});
 	}
 

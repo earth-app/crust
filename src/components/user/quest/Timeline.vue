@@ -278,7 +278,9 @@ const toast = useToast();
 
 const loading = ref(false);
 const now = ref(Date.now());
-let _nowTimer: ReturnType<typeof setInterval>;
+useIntervalFn(() => {
+	now.value = Date.now();
+}, 10_000);
 
 watch(
 	userId,
@@ -289,16 +291,6 @@ watch(
 	},
 	{ immediate: true }
 );
-
-onMounted(() => {
-	_nowTimer = setInterval(() => {
-		now.value = Date.now();
-	}, 10_000);
-});
-
-onUnmounted(() => {
-	clearInterval(_nowTimer);
-});
 
 const completed = computed(() => {
 	if (quest.value?.questId === props.quest.id) return false;

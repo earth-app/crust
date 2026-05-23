@@ -132,23 +132,15 @@ async function loadActivities() {
 
 const loadMoreRef = ref<HTMLElement | null>(null);
 
-onMounted(async () => {
-	await loadActivities();
-	const observer = new IntersectionObserver(
-		(entries) => {
-			if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value) {
-				loadActivities();
-			}
-		},
-		{ rootMargin: '100px' }
-	);
+useIntersectionObserver(
+	loadMoreRef,
+	(entries) => {
+		if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value) {
+			loadActivities();
+		}
+	},
+	{ rootMargin: '100px' }
+);
 
-	if (loadMoreRef.value) {
-		observer.observe(loadMoreRef.value);
-	}
-
-	onUnmounted(() => {
-		observer.disconnect();
-	});
-});
+onMounted(loadActivities);
 </script>

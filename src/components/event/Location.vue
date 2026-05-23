@@ -235,8 +235,8 @@ async function handleCoordinatesBlur() {
 	await reverseGeocode(lat, lng);
 }
 
-// Handle search term change
-let searchTimeout: NodeJS.Timeout | null = null;
+const debouncedSearch = useDebounceFn((term: string) => performSearch(term), 300);
+
 async function handleSearchChange(term: string) {
 	searchTerm.value = term;
 
@@ -245,14 +245,7 @@ async function handleSearchChange(term: string) {
 		return;
 	}
 
-	// Debounce search
-	if (searchTimeout) {
-		clearTimeout(searchTimeout);
-	}
-
-	searchTimeout = setTimeout(async () => {
-		await performSearch(term);
-	}, 300);
+	debouncedSearch(term);
 }
 
 async function performSearch(term: string) {

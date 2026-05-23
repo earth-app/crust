@@ -65,7 +65,7 @@
 			</div>
 			<div
 				v-if="hasMore"
-				id="scroll-sentinel"
+				ref="sentinelEl"
 				class="h-1"
 			></div>
 			<p
@@ -120,7 +120,11 @@ async function postResponse() {
 	posting.value = false;
 }
 
-let observer: IntersectionObserver | null = null;
+const sentinelEl = useTemplateRef<HTMLElement>('sentinelEl');
+
+useIntersectionObserver(sentinelEl, async (entries) => {
+	if (entries[0]?.isIntersecting) await loadResponses();
+});
 
 async function loadResponses() {
 	if (isLoading.value || !hasMore.value) return;
@@ -154,17 +158,6 @@ onMounted(async () => {
 	hasMore.value = true;
 
 	await loadResponses();
-
-	const sentinel = document.querySelector('#scroll-sentinel');
-	observer = new IntersectionObserver(async (entries) => {
-		if (entries[0]?.isIntersecting) await loadResponses();
-	});
-
-	if (sentinel) observer.observe(sentinel);
-});
-
-onBeforeUnmount(() => {
-	if (observer) observer.disconnect();
 });
 
 // prompt tour

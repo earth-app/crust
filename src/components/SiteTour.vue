@@ -138,9 +138,9 @@ const tooltipStyle = ref({
 let currentElementId: string | null = null;
 
 // observers for tracking position of the highlighted element and changes in the DOM
-let resizeObserver: ResizeObserver | null = null;
 let mutationObserver: MutationObserver | null = null;
-let observedElement: HTMLElement | null = null;
+const observedElement = ref<HTMLElement | null>(null);
+useResizeObserver(observedElement, () => updateBoxPosition());
 
 // track active layer container (e.g. dialog or popover) to ensure the highlight is visible above it and to avoid
 // closing modals or popovers when interacting with the tooltip
@@ -376,18 +376,8 @@ function scrollTargetIntoView(element: HTMLElement) {
 }
 
 function ensureObserversForTarget(element: HTMLElement) {
-	if (observedElement === element) return;
-
-	if (resizeObserver) {
-		resizeObserver.disconnect();
-	}
-
-	resizeObserver = new ResizeObserver(() => {
-		updateBoxPosition();
-	});
-	resizeObserver.observe(element);
-
-	observedElement = element;
+	if (observedElement.value === element) return;
+	observedElement.value = element;
 }
 
 function ensureGlobalPositionObservers() {
@@ -402,10 +392,12 @@ function ensureGlobalPositionObservers() {
 			attributeFilter: ['style', 'class']
 		});
 	}
-
-	window.addEventListener('scroll', updateBoxPosition, true);
-	window.addEventListener('resize', updateBoxPosition);
 }
+
+// Window scroll/resize listeners are always attached; updateBoxPosition() bails
+// early when no tour is active, so this is equivalent to the lazy version.
+useEventListener('scroll', () => updateBoxPosition(), { capture: true });
+useEventListener('resize', () => updateBoxPosition());
 
 // Throttle update to prevent layout thrashing
 let updateTicking = false;
@@ -612,23 +604,16 @@ function destroyTourHighlight() {
 		display: 'none'
 	};
 	currentElementId = null;
-	observedElement = null;
+	observedElement.value = null;
 	activeLayerContainer = null;
 	hasScrolledToFallbackTooltip = false;
 	missingElementWarningId = null;
 	overlayTeleportTarget.value = 'body';
 
-	// Clean up observers and listeners
-	if (resizeObserver) {
-		resizeObserver.disconnect();
-		resizeObserver = null;
-	}
 	if (mutationObserver) {
 		mutationObserver.disconnect();
 		mutationObserver = null;
 	}
-	window.removeEventListener('scroll', updateBoxPosition, true);
-	window.removeEventListener('resize', updateBoxPosition);
 }
 
 // Register/unregister tour

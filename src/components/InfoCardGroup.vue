@@ -95,35 +95,23 @@ function updateProgress() {
 	}
 }
 
+let scrollTicking = false;
+useEventListener(
+	scrollContainer,
+	'scroll',
+	() => {
+		if (scrollTicking) return;
+		scrollTicking = true;
+		requestAnimationFrame(() => {
+			updateProgress();
+			scrollTicking = false;
+		});
+	},
+	{ passive: true }
+);
+
 onMounted(() => {
-	if (scrollContainer.value) {
-		// Throttle scroll updates to animation frame
-		let ticking = false;
-		const onScroll = () => {
-			if (!ticking) {
-				ticking = true;
-				requestAnimationFrame(() => {
-					updateProgress();
-					ticking = false;
-				});
-			}
-		};
-		scrollContainer.value.addEventListener('scroll', onScroll, { passive: true });
-		// Store listener for cleanup
-		(scrollContainer.value as any)._onScroll = onScroll;
-
-		// Initial progress calculation
-		updateProgress();
-	}
-});
-
-onUnmounted(() => {
-	if (scrollContainer.value) {
-		const onScroll = (scrollContainer.value as any)._onScroll;
-		if (onScroll) {
-			scrollContainer.value.removeEventListener('scroll', onScroll);
-		}
-	}
+	if (scrollContainer.value) updateProgress();
 });
 
 const startDrag = (e: MouseEvent) => {

@@ -54,23 +54,16 @@ export function useTimeOnPage(field: string, metadata: Record<string, any> = {})
 		}
 	};
 
-	const onVisibilityChange = () => {
-		if (document.visibilityState === 'hidden') {
-			stopTimer();
-		} else {
-			startTimer();
+	// visibilitychange covers both tab-switching and window focus/blur;
+	// using it alone avoids the double-fire that occurs when pairing it with focus/blur.
+	useEventListener(
+		() => (import.meta.client ? document : null),
+		'visibilitychange',
+		() => {
+			if (document.visibilityState === 'hidden') stopTimer();
+			else startTimer();
 		}
-	};
-
-	onMounted(() => {
-		// visibilitychange covers both tab-switching and window focus/blur;
-		// using it alone avoids the double-fire that occurs when pairing it with focus/blur.
-		document.addEventListener('visibilitychange', onVisibilityChange);
-	});
-
-	onUnmounted(() => {
-		document.removeEventListener('visibilitychange', onVisibilityChange);
-	});
+	);
 
 	return {
 		timeOnPage,

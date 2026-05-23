@@ -461,17 +461,12 @@ const rgb = computed<[number, number, number]>(() => {
 
 // Ensure fade/translate animation reliably completes and final state sticks
 const isVisible = ref(false);
+const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
 onMounted(async () => {
-	// Respect prefers-reduced-motion
-	const prefersReduced =
-		typeof window !== 'undefined' &&
-		window.matchMedia &&
-		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 	await nextTick();
 	requestAnimationFrame(() => {
-		isVisible.value = !prefersReduced;
+		isVisible.value = !prefersReducedMotion.value;
 	});
 });
 

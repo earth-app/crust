@@ -161,7 +161,6 @@ const { cards, loadCardsForActivity, loadMore, hasMore, isLoadingMore } = useAct
 
 const editing = ref(false);
 const loadMoreRef = ref<HTMLElement | null>(null);
-let observer: IntersectionObserver | null = null;
 let loadMoreRaf: number | null = null;
 let sentinelCheckRaf: number | null = null;
 
@@ -214,32 +213,19 @@ watch(
 	{ immediate: true }
 );
 
-onMounted(() => {
-	observer = new IntersectionObserver(
-		(entries) => {
-			if (entries[0]?.isIntersecting) {
-				queueLoadMore();
-			}
-		},
-		{ rootMargin: '300px 0px 300px 0px', threshold: 0.01 }
-	);
+useIntersectionObserver(
+	loadMoreRef,
+	(entries) => {
+		if (entries[0]?.isIntersecting) queueLoadMore();
+	},
+	{ rootMargin: '300px 0px 300px 0px', threshold: 0.01 }
+);
 
-	if (loadMoreRef.value) {
-		observer.observe(loadMoreRef.value);
-	}
-
-	scheduleSentinelCheck();
+watch(loadMoreRef, (el) => {
+	if (el) scheduleSentinelCheck();
 });
 
-watch(loadMoreRef, (newEl, oldEl) => {
-	if (!observer) return;
-	if (oldEl) {
-		observer.unobserve(oldEl);
-	}
-	if (newEl) {
-		observer.observe(newEl);
-	}
-});
+onMounted(scheduleSentinelCheck);
 
 watch(
 	() => cards.value.length,
@@ -262,11 +248,6 @@ onUnmounted(() => {
 	if (import.meta.client && sentinelCheckRaf !== null) {
 		window.cancelAnimationFrame(sentinelCheckRaf);
 		sentinelCheckRaf = null;
-	}
-
-	if (observer) {
-		observer.disconnect();
-		observer = null;
 	}
 });
 

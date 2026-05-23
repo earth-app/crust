@@ -11,7 +11,7 @@ export const useAuthStore = defineStore('auth', () => {
 	const sessionToken = ref<string | null>(null);
 	const isLoading = ref(false);
 	const fetchPromise = ref<Promise<void> | null>(null);
-	const lastLogoutAt = ref<number>(0);
+	const lastLogoutAt = useSessionStorage<number>(LAST_LOGOUT_STORAGE_KEY, 0);
 
 	const isAuthenticated = computed(() => !!sessionToken.value && !!currentUser.value);
 	const isAdmin = computed(() => currentUser.value?.is_admin || false);
@@ -33,48 +33,17 @@ export const useAuthStore = defineStore('auth', () => {
 		return normalized || null;
 	};
 
-	const readLastLogoutAt = (): number => {
-		if (import.meta.server) return 0;
-
-		try {
-			const raw = window.sessionStorage.getItem(LAST_LOGOUT_STORAGE_KEY);
-			if (!raw) return 0;
-
-			const parsed = Number(raw);
-			return Number.isFinite(parsed) ? parsed : 0;
-		} catch {
-			return 0;
-		}
-	};
-
-	const writeLastLogoutAt = (value: number) => {
-		lastLogoutAt.value = value;
-		if (import.meta.server) return;
-
-		try {
-			if (value > 0) {
-				window.sessionStorage.setItem(LAST_LOGOUT_STORAGE_KEY, String(value));
-			} else {
-				window.sessionStorage.removeItem(LAST_LOGOUT_STORAGE_KEY);
-			}
-		} catch {
-			// noop
-		}
-	};
-
 	const hasRecentLogout = () => {
 		if (lastLogoutAt.value <= 0) return false;
 		return Date.now() - lastLogoutAt.value < RECENT_LOGOUT_SUPPRESSION_MS;
 	};
 
 	const markRecentLogout = () => {
-		writeLastLogoutAt(Date.now());
+		lastLogoutAt.value = Date.now();
 	};
 
 	const clearRecentLogout = () => {
-		if (lastLogoutAt.value > 0) {
-			writeLastLogoutAt(0);
-		}
+		if (lastLogoutAt.value > 0) lastLogoutAt.value = 0;
 	};
 
 	const setSessionToken = (token: string | null) => {
@@ -203,8 +172,6 @@ export const useAuthStore = defineStore('auth', () => {
 
 	// initialize session token from cookie on client
 	if (import.meta.client) {
-		lastLogoutAt.value = readLastLogoutAt();
-
 		const sessionCookie = useCookie('session_token', {
 			maxAge: SESSION_COOKIE_MAX_AGE,
 			secure: true,

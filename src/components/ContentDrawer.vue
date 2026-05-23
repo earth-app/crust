@@ -54,57 +54,40 @@ const open = ref(false);
 const search = ref('');
 const loadMoreRef = ref<HTMLElement | null>(null);
 
-let observer: IntersectionObserver | null = null;
 let emitLoadMoreRaf: number | null = null;
 
 const queueLoadMoreEmit = () => {
 	if (!import.meta.client) return;
+	if (!open.value) return;
 	if (props.isLoading === true) return;
 	if (emitLoadMoreRaf !== null) return;
 
 	emitLoadMoreRaf = window.requestAnimationFrame(() => {
 		emitLoadMoreRaf = null;
-		if (props.isLoading === true) return;
+		if (!open.value || props.isLoading === true) return;
 		emit('loadMore');
 	});
 };
 
-if (import.meta.client) {
-	watch(open, (isOpen) => {
-		if (isOpen && loadMoreRef.value) {
-			nextTick(() => {
-				observer = new IntersectionObserver(
-					(entries) => {
-						if (entries[0]?.isIntersecting) {
-							queueLoadMoreEmit();
-						}
-					},
-					{ rootMargin: '200px 0px 200px 0px', threshold: 0.01 }
-				);
-				if (loadMoreRef.value) {
-					observer.observe(loadMoreRef.value);
-				}
-			});
-		} else if (!isOpen && observer) {
-			observer.disconnect();
-			observer = null;
-			if (emitLoadMoreRaf !== null) {
-				window.cancelAnimationFrame(emitLoadMoreRaf);
-				emitLoadMoreRaf = null;
-			}
-		}
-	});
-}
+useIntersectionObserver(
+	loadMoreRef,
+	(entries) => {
+		if (entries[0]?.isIntersecting) queueLoadMoreEmit();
+	},
+	{ rootMargin: '200px 0px 200px 0px', threshold: 0.01 }
+);
+
+watch(open, (isOpen) => {
+	if (!isOpen && emitLoadMoreRaf !== null) {
+		window.cancelAnimationFrame(emitLoadMoreRaf);
+		emitLoadMoreRaf = null;
+	}
+});
 
 onUnmounted(() => {
 	if (import.meta.client && emitLoadMoreRaf !== null) {
 		window.cancelAnimationFrame(emitLoadMoreRaf);
 		emitLoadMoreRaf = null;
-	}
-
-	if (observer) {
-		observer.disconnect();
-		observer = null;
 	}
 });
 
