@@ -17,32 +17,54 @@ function parseState(state: string): {
 	return { provider, source, context };
 }
 
+function safeHeader(event: any, name: string, value: unknown) {
+	let str: string;
+	if (value === null || value === undefined) {
+		str = '';
+	} else if (typeof value === 'string') {
+		str = value;
+	} else if (value instanceof Error) {
+		str = value.message || value.name || 'Error';
+	} else {
+		try {
+			str = JSON.stringify(value);
+		} catch {
+			str = String(value);
+		}
+	}
+
+	// HTTP header values can't contain CR/LF and shouldn't be unbounded
+	str = str.replace(/[\r\n]+/g, ' ').slice(0, 1024);
+	try {
+		setHeader(event, name, str);
+	} catch {
+		// never let a header write blow up the handler
+	}
+}
+
+function errorSummary(error: any): string {
+	const safe: Record<string, unknown> = {
+		name: error?.name,
+		message: error instanceof Error ? error.message : undefined,
+		statusCode: error?.statusCode ?? error?.status,
+		statusMessage: error?.statusMessage ?? error?.statusText
+	};
+	try {
+		return JSON.stringify(safe);
+	} catch {
+		return '{}';
+	}
+}
+
 export default defineEventHandler(async (event) => {
 	const sessionToken = getCookie(event, 'session_token');
 	const isLoggedIn = !!sessionToken;
 	const page = isLoggedIn ? 'profile' : 'login';
-
-	let query = getQuery(event);
-
-	try {
-		if (event.method === 'POST') {
-			const body = await readBody(event);
-			query = { ...query, ...body };
-		}
-	} catch (error) {
-		setHeader(event, 'X-Error-Type', 'body_parsing_error');
-		setHeader(event, 'X-Error-Detail', 'Failed to parse request body');
-		setHeader(event, 'X-Error-Extra', error);
-		console.error('Error occurred while processing OAuth callback:', error);
-
-		return sendRedirect(event, `/${page}?error=body_parsing_error`);
-	}
-
-	const { code, state, error, error_description } = query;
 	const config = useRuntimeConfig();
 
-	const stateStr = typeof state === 'string' ? state : '';
-	const { provider, source, context: stateContext } = parseState(stateStr);
+	let source: OAuthSource = 'web';
+	let provider: OAuthProvider | null = null;
+	let stateContext: OAuthContext | null = null;
 
 	const mobileRedirect = (params: Record<string, string>) => {
 		const qp = new URLSearchParams(params).toString();
@@ -51,14 +73,38 @@ export default defineEventHandler(async (event) => {
 	const fallbackContext = (): OAuthContext => stateContext || (isLoggedIn ? 'link' : 'login');
 
 	try {
+		let query = getQuery(event);
+
+		try {
+			if (event.method === 'POST') {
+				const body = await readBody(event);
+				if (body && typeof body === 'object') {
+					query = { ...query, ...body };
+				}
+			}
+		} catch (parseError) {
+			safeHeader(event, 'X-Error-Type', 'body_parsing_error');
+			safeHeader(event, 'X-Error-Detail', 'Failed to parse request body');
+			safeHeader(event, 'X-Error-Extra', parseError);
+			console.error('Error occurred while processing OAuth callback body:', parseError);
+			return sendRedirect(event, `/${page}?error=body_parsing_error`);
+		}
+
+		const { code, state, error, error_description } = query;
+		const stateStr = typeof state === 'string' ? state : '';
+		const parsed = parseState(stateStr);
+		provider = parsed.provider;
+		source = parsed.source;
+		stateContext = parsed.context;
+
 		if (error) {
-			setHeader(event, 'X-Error-Type', 'oauth_provider_error');
-			setHeader(
+			safeHeader(event, 'X-Error-Type', 'oauth_provider_error');
+			safeHeader(
 				event,
 				'X-Error-Detail',
 				(error_description as string) || 'No description provided'
 			);
-			setHeader(event, 'X-Error-Extra', `Provider error: ${error}`);
+			safeHeader(event, 'X-Error-Extra', `Provider error: ${error}`);
 			console.error(`OAuth provider error: ${error} - ${error_description}`);
 			if (source === 'mobile' && provider) {
 				return mobileRedirect({
@@ -71,12 +117,12 @@ export default defineEventHandler(async (event) => {
 		}
 
 		if (!state || Array.isArray(state) || typeof state !== 'string') {
-			setHeader(event, 'X-Error-Type', 'missing_provider');
+			safeHeader(event, 'X-Error-Type', 'missing_provider');
 			return sendRedirect(event, `/${page}?error=no_provider`);
 		}
 
 		if (!code || Array.isArray(code) || typeof code !== 'string') {
-			setHeader(event, 'X-Error-Type', 'missing_code');
+			safeHeader(event, 'X-Error-Type', 'missing_code');
 			if (source === 'mobile' && provider) {
 				return mobileRedirect({
 					error: 'no_code',
@@ -88,17 +134,21 @@ export default defineEventHandler(async (event) => {
 		}
 
 		if (!provider) {
-			setHeader(event, 'X-Error-Type', 'invalid_provider');
-			setHeader(event, 'X-Error-Extra', `Provided: ${state}`);
+			safeHeader(event, 'X-Error-Type', 'invalid_provider');
+			safeHeader(event, 'X-Error-Extra', `Provided: ${state}`);
 			return sendRedirect(event, `/${page}?error=invalid_provider`);
 		}
 
 		const token = await exchangeCodeForToken(provider, code);
+		// mantle2 prefers `id_token` for Apple/Microsoft (it's an OIDC id_token,
+		// not an OAuth2 access token), and falls back to `access_token`.
+		const tokenField =
+			provider === 'apple' || provider === 'microsoft' ? 'id_token' : 'access_token';
 		const response = await $fetch<{ session_token: string; user: any }>(
 			`https://api.earth-app.com/v2/users/oauth/${provider}?is_linking=${isLoggedIn}`,
 			{
 				method: 'POST',
-				body: { access_token: token, session_token: sessionToken },
+				body: { [tokenField]: token, session_token: sessionToken },
 				onResponse({ response: res }) {
 					event.context.oauthStatus = res.status;
 				},
@@ -139,21 +189,12 @@ export default defineEventHandler(async (event) => {
 	} catch (error: any) {
 		console.error('OAuth error:', error);
 
-		setHeader(event, 'X-Error-Detail', error instanceof Error ? error.message : 'Unknown error');
-		setHeader(event, 'X-Error-Response', JSON.stringify(event.context.oauthStatus || {}));
-		setHeader(
-			event,
-			'X-Error-Extra',
-			JSON.stringify({
-				statusMessage: error?.statusMessage,
-				statusText: error?.statusText,
-				statusCode: error?.statusCode,
-				...error
-			})
-		);
-		if (error.data) setHeader(event, 'X-Error-Data', JSON.stringify(error.data));
+		safeHeader(event, 'X-Error-Type', 'oauth_failure');
+		safeHeader(event, 'X-Error-Detail', error instanceof Error ? error.message : 'Unknown error');
+		safeHeader(event, 'X-Error-Response', String(event.context?.oauthStatus ?? ''));
+		safeHeader(event, 'X-Error-Extra', errorSummary(error));
+		if (error?.data) safeHeader(event, 'X-Error-Data', error.data);
 
-		setHeader(event, 'X-Error-Type', 'oauth_failure');
 		if (source === 'mobile') {
 			return mobileRedirect({
 				error: 'auth_failed',

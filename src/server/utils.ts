@@ -1,5 +1,5 @@
 import { H3Event } from 'h3';
-import jwt from 'jsonwebtoken';
+import { importPKCS8, SignJWT } from 'jose';
 import { InternetArchiveSearch } from '~/shared/types/activity';
 
 export async function ensureAdministrator(event: H3Event) {
@@ -186,15 +186,24 @@ export async function exchangeCodeForToken(provider: OAuthProvider, code: string
 
 			return fb.access_token;
 		case 'apple': {
-			const privateKey = config.applePrivateKey.replace(/\\n/g, '\n');
-			const clientSecret = jwt.sign({}, privateKey, {
-				algorithm: 'ES256',
-				expiresIn: '1h',
-				audience: 'https://appleid.apple.com',
-				issuer: config.public.appleTeamId,
-				subject: config.public.appleClientId,
-				keyid: config.appleKeyId
-			});
+			if (!config.applePrivateKey || !config.appleKeyId) {
+				throw new Error('Apple OAuth is not configured: missing private key or key id');
+			}
+			if (!config.public.appleTeamId || !config.public.appleClientId) {
+				throw new Error('Apple OAuth is not configured: missing team id or client id');
+			}
+
+			const pkcs8 = config.applePrivateKey.replace(/\\n/g, '\n').trim();
+			const privateKey = await importPKCS8(pkcs8, 'ES256');
+
+			const clientSecret = await new SignJWT({})
+				.setProtectedHeader({ alg: 'ES256', kid: config.appleKeyId })
+				.setIssuer(config.public.appleTeamId)
+				.setAudience('https://appleid.apple.com')
+				.setSubject(config.public.appleClientId)
+				.setIssuedAt()
+				.setExpirationTime('1h')
+				.sign(privateKey);
 
 			const apple = await $fetch<{ id_token: string }>('https://appleid.apple.com/auth/token', {
 				method: 'POST',
