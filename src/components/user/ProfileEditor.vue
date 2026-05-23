@@ -145,21 +145,30 @@
 				Reset
 			</UButton>
 			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 py-4 w-full">
-				<div
-					v-for="cosmetic in cosmetics"
-					:key="cosmetic.key"
-					class="min-w-40 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
-					:class="cosmetic.state === 'selected' ? 'ring-2 ring-green-500 rounded-lg' : ''"
-					@click="handleCosmeticClick(cosmetic)"
-				>
-					<LazyUserCosmetic
-						:cosmetic-key="cosmetic.key"
-						:state="cosmetic.state"
-						:rarity="cosmetic.rarity"
-						:price="cosmetic.price"
-						hydrate-on-visible
+				<template v-if="cosmeticsLoaded">
+					<div
+						v-for="cosmetic in cosmetics"
+						:key="cosmetic.key"
+						class="min-w-40 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+						:class="cosmetic.state === 'selected' ? 'ring-2 ring-green-500 rounded-lg' : ''"
+						@click="handleCosmeticClick(cosmetic)"
+					>
+						<LazyUserCosmetic
+							:cosmetic-key="cosmetic.key"
+							:state="cosmetic.state"
+							:rarity="cosmetic.rarity"
+							:price="cosmetic.price"
+							hydrate-on-visible
+						/>
+					</div>
+				</template>
+				<template v-else>
+					<USkeleton
+						v-for="i in 10"
+						:key="`cosmetic-skeleton-${i}`"
+						class="min-w-40 h-52 rounded-lg"
 					/>
-				</div>
+				</template>
 			</div>
 		</div>
 
@@ -773,10 +782,18 @@ const points = computed(() => userStore.points.get(user.value.id) || 0);
 
 type CosmeticWithState = AvatarCosmetic & { state: 'selected' | 'available' | 'locked' };
 
+const cosmeticsAllLoaded = ref(false);
+const cosmeticsUserLoaded = ref(false);
+const cosmeticsLoaded = computed(() => cosmeticsAllLoaded.value && cosmeticsUserLoaded.value);
+
 onMounted(() => {
 	userStore.fetchPoints(user.value.id);
-	avatarStore.fetchAllCosmetics();
-	avatarStore.fetchCosmeticsForUser(user.value.id);
+	void avatarStore.fetchAllCosmetics().finally(() => {
+		cosmeticsAllLoaded.value = true;
+	});
+	void avatarStore.fetchCosmeticsForUser(user.value.id).finally(() => {
+		cosmeticsUserLoaded.value = true;
+	});
 });
 
 const cosmetics = computed((): CosmeticWithState[] =>

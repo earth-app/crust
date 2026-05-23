@@ -19,11 +19,16 @@
 const { setTitleSuffix } = useTitleSuffix();
 const toast = useToast();
 const route = useRoute();
-const { user: currentUser, fetchUser } = useUser(route.params.id as string);
+const identifier = computed(() => route.params.id as string);
+const { user: currentUser, fetchUser } = useUser(identifier);
 
-onMounted(() => {
-	fetchUser();
-});
+watch(
+	identifier,
+	() => {
+		void fetchUser();
+	},
+	{ immediate: true }
+);
 
 watch(
 	() => currentUser.value,
@@ -33,7 +38,7 @@ watch(
 		if (user === null) {
 			toast.add({
 				title: 'User not found',
-				description: `The user "${route.params.id}" does not exist.`,
+				description: `The user "${identifier.value}" does not exist.`,
 				icon: 'mdi:account-off',
 				color: 'error',
 				duration: 10000

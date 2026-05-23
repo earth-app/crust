@@ -12,9 +12,14 @@
 	>
 		<div class="flex flex-col items-center gap-1 mb-4 w-full">
 			<UAvatar
+				v-if="url"
 				:src="url"
 				:alt="props.cosmeticKey"
 				size="2xl"
+			/>
+			<USkeleton
+				v-else
+				class="size-16 rounded-full"
 			/>
 			<h2 class="font-semibold text-sm text-center line-clamp-2">
 				{{ capitalizeFully(props.cosmeticKey.replaceAll('_', ' ')) }}
@@ -64,7 +69,11 @@ const props = defineProps<{
 }>();
 
 const avatarStore = useAvatarStore();
-const url = ref<string>();
+
+// Read directly from the reactive store cache. Blob URLs are owned by the
+// store, so we must not revoke them here — multiple components may share
+// the same cached URL, and revoking would break siblings.
+const url = computed(() => avatarStore.getPreview(props.cosmeticKey));
 
 const rarityColor = computed(() => {
 	switch (props.rarity) {
@@ -79,23 +88,13 @@ const rarityColor = computed(() => {
 	}
 });
 
-onMounted(async () => {
-	url.value = await avatarStore.previewCosmetic(props.cosmeticKey);
-});
-
-onUnmounted(() => {
-	if (url.value && url.value.startsWith('blob:')) {
-		URL.revokeObjectURL(url.value);
-	}
-});
-
 watch(
 	() => props.cosmeticKey,
-	async (newKey) => {
-		if (url.value && url.value.startsWith('blob:')) {
-			URL.revokeObjectURL(url.value);
-		}
-		url.value = await avatarStore.previewCosmetic(newKey);
-	}
+	(newKey) => {
+		if (!newKey) return;
+		if (avatarStore.getPreview(newKey)) return;
+		void avatarStore.previewCosmetic(newKey);
+	},
+	{ immediate: true }
 );
 </script>

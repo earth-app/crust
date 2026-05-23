@@ -6,6 +6,7 @@ import { useAvatarStore } from './avatar';
 
 export const useUserStore = defineStore('user', () => {
 	const cache = reactive(new Map<string, User | null>());
+	const loading = reactive(new Set<string>());
 	const users = computed(() => {
 		const seen = new Set<string>();
 		const entries: User[] = [];
@@ -157,12 +158,21 @@ export const useUserStore = defineStore('user', () => {
 
 	const get = (identifier: string): User | null | undefined => {
 		if (!identifier) return undefined;
+		// While a fetch is in flight and nothing valid has been seen yet,
+		// return `undefined` so consumers stay in the "loading" branch
+		// instead of flipping to "not found" mid-refetch.
+		if (loading.has(identifier) && !cache.get(identifier)) return undefined;
 		return cache.get(identifier);
 	};
 
 	const has = (identifier: string): boolean => {
 		if (!identifier) return false;
 		return cache.has(identifier);
+	};
+
+	const isLoading = (identifier: string | null | undefined): boolean => {
+		if (!identifier) return false;
+		return loading.has(identifier);
 	};
 
 	const fetchUser = async (identifier: string, force: boolean = false): Promise<User | null> => {
@@ -178,7 +188,8 @@ export const useUserStore = defineStore('user', () => {
 			return cache.get(identifier) || null;
 		}
 
-		// create new fetch promise
+		loading.add(identifier);
+
 		const fetchPromise = (async () => {
 			try {
 				const authStore = useAuthStore();
@@ -208,6 +219,7 @@ export const useUserStore = defineStore('user', () => {
 				cache.set(identifier, null);
 				console.warn(`Failed to fetch user ${identifier}:`, error);
 			} finally {
+				loading.delete(identifier);
 				fetchQueue.delete(identifier);
 			}
 		})();
@@ -641,6 +653,7 @@ export const useUserStore = defineStore('user', () => {
 		if (identifier) {
 			bumpQuestSyncVersion(identifier);
 			cache.delete(identifier);
+			loading.delete(identifier);
 			attendingEvents.delete(identifier);
 			hostingEvents.delete(identifier);
 			badges.delete(identifier);
@@ -651,6 +664,7 @@ export const useUserStore = defineStore('user', () => {
 			questHistory.delete(identifier);
 		} else {
 			cache.clear();
+			loading.clear();
 			attendingEvents.clear();
 			hostingEvents.clear();
 			badges.clear();
@@ -669,6 +683,7 @@ export const useUserStore = defineStore('user', () => {
 
 	return {
 		cache,
+		loading,
 		users,
 		attendingEvents,
 		hostingEvents,
@@ -682,6 +697,7 @@ export const useUserStore = defineStore('user', () => {
 		questsCache,
 		get,
 		has,
+		isLoading,
 		getChipColor,
 		getMaxEventAttendees,
 		fetchUser,

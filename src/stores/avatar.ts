@@ -8,25 +8,48 @@ interface AvatarSizes {
 	avatar128: string;
 }
 
+const FALLBACK_AVATAR: AvatarSizes = Object.freeze({
+	avatar: '/earth-app.png',
+	avatar32: '/favicon.png',
+	avatar128: '/favicon.png'
+});
+
+const isBlobUrl = (url: string | undefined | null): boolean =>
+	typeof url === 'string' && url.startsWith('blob:');
+
 export const useAvatarStore = defineStore('avatar', () => {
 	const authStore = useAuthStore();
 
 	const cache = reactive(new Map<string, AvatarSizes>());
+	const loadingUrls = reactive(new Set<string>());
+	const failedUrls = reactive(new Set<string>());
+
 	const allCosmetics = reactive<AvatarCosmetic[]>([]);
 	const userCosmetics = reactive(
 		new Map<string, { current: AvatarCosmetic['key'] | null; unlocked: AvatarCosmetic['key'][] }>()
 	);
+
 	const fetchQueue = new Map<string, Promise<AvatarSizes>>();
-	const previewCache = reactive(new Map<string, Promise<string | undefined>>());
+
+	const previewCache = reactive(new Map<string, string>());
+	const previewLoading = reactive(new Set<string>());
+	const previewQueue = new Map<string, Promise<string | undefined>>();
 
 	const get = (url: string): AvatarSizes | undefined => {
-		// Force reactivity tracking by checking has() first
 		if (!cache.has(url)) return undefined;
 		return cache.get(url);
 	};
 
-	const has = (url: string): boolean => {
-		return cache.has(url);
+	const has = (url: string): boolean => cache.has(url);
+
+	const isLoading = (url: string | undefined | null): boolean => {
+		if (!url) return false;
+		return loadingUrls.has(url);
+	};
+
+	const hasFailed = (url: string | undefined | null): boolean => {
+		if (!url) return false;
+		return failedUrls.has(url);
 	};
 
 	const fetchAvatarBlobs = async (url: string): Promise<AvatarSizes> => {
@@ -40,7 +63,9 @@ export const useAvatarStore = defineStore('avatar', () => {
 			return existing;
 		}
 
-		// create new fetch promise (don't set cache yet to avoid false positives)
+		loadingUrls.add(url);
+		failedUrls.delete(url);
+
 		const fetchPromise = (async () => {
 			try {
 				const headers: HeadersInit = {};
@@ -48,12 +73,8 @@ export const useAvatarStore = defineStore('avatar', () => {
 					headers['Authorization'] = `Bearer ${authStore.sessionToken}`;
 				}
 
-				// Initialize result object
-				const result: AvatarSizes = {
-					avatar: '/earth-app.png',
-					avatar32: '/favicon.png',
-					avatar128: '/favicon.png'
-				};
+				const result: AvatarSizes = { ...FALLBACK_AVATAR };
+				let anySucceeded = false;
 
 				const fetchAndUpdate = async (size: keyof AvatarSizes, sizeParam?: string) => {
 					try {
@@ -61,34 +82,38 @@ export const useAvatarStore = defineStore('avatar', () => {
 						const response = await fetch(fetchUrl, { headers });
 						if (response.ok) {
 							const blob = await response.blob();
-							const objectUrl = URL.createObjectURL(blob);
-							result[size] = objectUrl;
+							if (blob.size > 0) {
+								result[size] = URL.createObjectURL(blob);
+								anySucceeded = true;
+							}
 						}
 					} catch (error) {
 						console.warn(`Failed to fetch ${size} for ${url}:`, error);
 					}
 				};
 
-				// fetch all sizes in parallel
 				await Promise.all([
 					fetchAndUpdate('avatar'),
 					fetchAndUpdate('avatar32', '32'),
 					fetchAndUpdate('avatar128', '128')
 				]);
 
-				// Only set cache after all fetches complete
-				cache.set(url, result);
-				return result;
+				if (anySucceeded) {
+					cache.set(url, result);
+					return result;
+				}
+
+				// All sizes failed — mark URL as failed so consumers can show fallback
+				// without retrying repeatedly. Don't cache the fallback object
+				// (so future force-fetches still try the network).
+				failedUrls.add(url);
+				return { ...FALLBACK_AVATAR };
 			} catch (error) {
 				console.warn(`Failed to fetch avatars for ${url}:`, error);
-				const fallback: AvatarSizes = {
-					avatar: '/earth-app.png',
-					avatar32: '/favicon.png',
-					avatar128: '/favicon.png'
-				};
-				cache.set(url, fallback);
-				return fallback;
+				failedUrls.add(url);
+				return { ...FALLBACK_AVATAR };
 			} finally {
+				loadingUrls.delete(url);
 				fetchQueue.delete(url);
 			}
 		})();
@@ -97,30 +122,35 @@ export const useAvatarStore = defineStore('avatar', () => {
 		return fetchPromise;
 	};
 
-	const preloadAvatar = (url: string | undefined) => {
+	const preloadAvatar = (url: string | undefined | null) => {
 		if (!url || !url.startsWith('http')) return;
-		// Check if already fetched OR currently fetching
 		if (cache.has(url) || fetchQueue.has(url)) return;
-		fetchAvatarBlobs(url);
+		void fetchAvatarBlobs(url);
 	};
 
 	const clear = (url?: string) => {
 		if (url) {
-			// revoke object URLs to prevent memory leaks
 			const cached = cache.get(url);
 			if (cached) {
-				URL.revokeObjectURL(cached.avatar);
-				URL.revokeObjectURL(cached.avatar32);
-				URL.revokeObjectURL(cached.avatar128);
+				if (isBlobUrl(cached.avatar)) URL.revokeObjectURL(cached.avatar);
+				if (isBlobUrl(cached.avatar32)) URL.revokeObjectURL(cached.avatar32);
+				if (isBlobUrl(cached.avatar128)) URL.revokeObjectURL(cached.avatar128);
 			}
 			cache.delete(url);
+			failedUrls.delete(url);
 		} else {
 			for (const [, avatars] of cache) {
-				URL.revokeObjectURL(avatars.avatar);
-				URL.revokeObjectURL(avatars.avatar32);
-				URL.revokeObjectURL(avatars.avatar128);
+				if (isBlobUrl(avatars.avatar)) URL.revokeObjectURL(avatars.avatar);
+				if (isBlobUrl(avatars.avatar32)) URL.revokeObjectURL(avatars.avatar32);
+				if (isBlobUrl(avatars.avatar128)) URL.revokeObjectURL(avatars.avatar128);
 			}
 			cache.clear();
+			failedUrls.clear();
+
+			for (const previewUrl of previewCache.values()) {
+				if (isBlobUrl(previewUrl)) URL.revokeObjectURL(previewUrl);
+			}
+			previewCache.clear();
 		}
 	};
 
@@ -156,6 +186,11 @@ export const useAvatarStore = defineStore('avatar', () => {
 				unlocked: res.data.unlocked
 			});
 		} else {
+			// On failure, ensure an empty entry exists so consumers stop showing
+			// "loading" and render a stable empty state.
+			if (!userCosmetics.has(userId)) {
+				userCosmetics.set(userId, { current: null, unlocked: [] });
+			}
 			console.warn(`Failed to fetch cosmetics for user ${userId}:`, res.message);
 		}
 
@@ -201,51 +236,73 @@ export const useAvatarStore = defineStore('avatar', () => {
 		return res;
 	};
 
-	const previewCosmetic = async (cosmeticKey: AvatarCosmetic['key']) => {
-		if (cache.has(`preview-${cosmeticKey}`)) {
-			return cache.get(`preview-${cosmeticKey}`)?.avatar || undefined;
-		}
+	const getPreview = (cosmeticKey: AvatarCosmetic['key']): string | undefined =>
+		previewCache.get(cosmeticKey);
 
-		if (previewCache.has(cosmeticKey)) {
-			return await previewCache.get(cosmeticKey);
-		}
+	const isPreviewLoading = (cosmeticKey: AvatarCosmetic['key']): boolean =>
+		previewLoading.has(cosmeticKey);
 
-		const authStore = useAuthStore();
-		const previewPromise = (async () => {
+	const previewCosmetic = async (
+		cosmeticKey: AvatarCosmetic['key']
+	): Promise<string | undefined> => {
+		const cached = previewCache.get(cosmeticKey);
+		if (cached) return cached;
+
+		const inFlight = previewQueue.get(cosmeticKey);
+		if (inFlight) return inFlight;
+
+		previewLoading.add(cosmeticKey);
+
+		const promise = (async () => {
 			try {
 				const res = await makeAPIRequest<Blob>(
 					`cosmetic-preview-${cosmeticKey}`,
 					`/v2/users/cosmetics/preview?cosmetic=${cosmeticKey}`,
-					authStore.sessionToken ? `Bearer ${authStore.sessionToken}` : undefined,
+					authStore.sessionToken,
 					{ responseType: 'blob' }
 				);
 
-				if (valid(res)) {
+				if (valid(res) && res.data instanceof Blob && res.data.size > 0) {
 					const objectUrl = URL.createObjectURL(res.data);
-					cache.set(`preview-${cosmeticKey}`, {
-						avatar: objectUrl,
-						avatar32: objectUrl,
-						avatar128: objectUrl
-					});
-
+					previewCache.set(cosmeticKey, objectUrl);
 					return objectUrl;
 				}
 
-				console.warn(`Failed to fetch preview for cosmetic ${cosmeticKey}:`, res.message);
-				return undefined; // undefined (not null) for type reasons
+				if (!res.success) {
+					console.warn(`Failed to fetch preview for cosmetic ${cosmeticKey}:`, res.message);
+				}
+				return undefined;
 			} finally {
-				previewCache.delete(cosmeticKey);
+				previewLoading.delete(cosmeticKey);
+				previewQueue.delete(cosmeticKey);
 			}
 		})();
 
-		previewCache.set(cosmeticKey, previewPromise);
-		return await previewPromise;
+		previewQueue.set(cosmeticKey, promise);
+		return promise;
+	};
+
+	const clearPreview = (cosmeticKey?: AvatarCosmetic['key']) => {
+		if (cosmeticKey) {
+			const url = previewCache.get(cosmeticKey);
+			if (isBlobUrl(url)) URL.revokeObjectURL(url!);
+			previewCache.delete(cosmeticKey);
+		} else {
+			for (const url of previewCache.values()) {
+				if (isBlobUrl(url)) URL.revokeObjectURL(url);
+			}
+			previewCache.clear();
+		}
 	};
 
 	return {
 		cache,
+		loadingUrls,
+		failedUrls,
 		get,
 		has,
+		isLoading,
+		hasFailed,
 		fetchAvatarBlobs,
 		preloadAvatar,
 		clear,
@@ -255,6 +312,11 @@ export const useAvatarStore = defineStore('avatar', () => {
 		fetchCosmeticsForUser,
 		setCosmeticForUser,
 		purchaseCosmetic,
-		previewCosmetic
+		previewCache,
+		previewLoading,
+		getPreview,
+		isPreviewLoading,
+		previewCosmetic,
+		clearPreview
 	};
 });
