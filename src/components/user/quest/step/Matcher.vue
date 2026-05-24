@@ -54,7 +54,7 @@
 
 			<div
 				ref="boardEl"
-				class="relative! w-full! rounded-2xl! border! border-neutral-900! bg-neutral-950/40! overflow-hidden! touch-none!"
+				class="relative! w-full! rounded-2xl! border! border-neutral-900! bg-neutral-950/40! overflow-hidden!"
 				:style="{ height: `${boardHeight}px` }"
 			>
 				<div
@@ -67,10 +67,12 @@
 					@pointerdown="onPointerDown(card, $event)"
 				>
 					<div
-						class="rounded-xl! border-2! text-sm! font-medium! text-center! shadow-lg! flex items-center justify-center! px-3! py-2! transition-opacity w-full!"
+						class="rounded-xl! border-2! text-sm! font-medium! text-center! shadow-lg! flex items-center justify-center! px-3! py-2! transition-all duration-500 w-full!"
 						:class="[
 							cardClass(card),
-							card.matched ? 'pointer-events-none' : 'cursor-grab active:cursor-grabbing!'
+							card.matched || card.fading || card.celebrate
+								? 'pointer-events-none'
+								: 'cursor-grab active:cursor-grabbing!'
 						]"
 					>
 						<span class="pointer-events-none break-words">{{ card.text }}</span>
@@ -119,8 +121,9 @@ interface Card {
 	text: string;
 	pairId: number;
 	side: 'left' | 'right';
-	matched: boolean;
+	celebrate: boolean;
 	fading: boolean;
+	matched: boolean;
 	x: number;
 	y: number;
 	rot: number;
@@ -267,24 +270,27 @@ function init() {
 	const pairs = params[1];
 
 	// Size the board responsively based on number of cards.
+	// Generous height — the page can scroll, so giving each card room to breathe is preferred.
 	const totalCards = pairs.length * 2;
-	boardHeight.value = Math.min(720, Math.max(440, 120 + totalCards * 60));
+	boardHeight.value = Math.min(1000, Math.max(560, 100 + totalCards * 90));
 
 	const left: Omit<Card, 'x' | 'y' | 'rot' | 'z'>[] = pairs.map(([term], i) => ({
 		id: `L${i}`,
 		text: term,
 		pairId: i,
 		side: 'left',
-		matched: false,
-		fading: false
+		celebrate: false,
+		fading: false,
+		matched: false
 	}));
 	const right: Omit<Card, 'x' | 'y' | 'rot' | 'z'>[] = pairs.map(([, def], i) => ({
 		id: `R${i}`,
 		text: def,
 		pairId: i,
 		side: 'right',
-		matched: false,
-		fading: false
+		celebrate: false,
+		fading: false,
+		matched: false
 	}));
 	const shuffled = shuffle([...left, ...right]);
 
@@ -301,8 +307,10 @@ function init() {
 }
 
 function cardClass(card: Card) {
-	if (card.fading) return 'border-success/40 bg-success/10 text-success opacity-0';
 	if (card.matched) return 'opacity-0';
+	if (card.fading) return 'border-success bg-success/25 text-success opacity-0 shadow-success/40';
+	if (card.celebrate)
+		return 'border-success bg-success/25 text-success shadow-lg! shadow-success/40';
 	if (props.disabled)
 		return 'border-neutral-800 bg-neutral-900/40 text-neutral-600 cursor-not-allowed opacity-50';
 	if (shaking.value?.split(',').includes(card.id))
@@ -331,7 +339,14 @@ function cardStyle(card: Card): Record<string, string> {
 }
 
 function onPointerDown(card: Card, e: PointerEvent) {
-	if (card.matched || shaking.value?.includes(card.id) || props.disabled) return;
+	if (
+		card.matched ||
+		card.fading ||
+		card.celebrate ||
+		shaking.value?.includes(card.id) ||
+		props.disabled
+	)
+		return;
 	if (phase.value !== 'playing') return;
 	const board = boardEl.value;
 	if (!board) return;
@@ -429,19 +444,29 @@ function tryMatch(a: Card, b: Card) {
 	if (a.pairId === b.pairId && a.side !== b.side) {
 		const ida = a.id;
 		const idb = b.id;
+		// Phase 1 — green celebrate (visible).
 		cards.value = cards.value.map((c) =>
-			c.id === ida || c.id === idb ? { ...c, fading: true } : c
+			c.id === ida || c.id === idb ? { ...c, celebrate: true } : c
 		);
+		// Phase 2 — fade to transparent after the celebrate beat.
 		useTimeoutFn(() => {
 			cards.value = cards.value.map((c) =>
-				c.id === ida || c.id === idb ? { ...c, matched: true, fading: false } : c
+				c.id === ida || c.id === idb ? { ...c, fading: true } : c
 			);
-			if (cards.value.every((c) => c.matched)) {
-				gameTick.pause();
-				phase.value = 'win';
-				sendUpdate();
-			}
-		}, 350);
+			// Phase 3 — fully matched (removed from play).
+			useTimeoutFn(() => {
+				cards.value = cards.value.map((c) =>
+					c.id === ida || c.id === idb
+						? { ...c, matched: true, celebrate: false, fading: false }
+						: c
+				);
+				if (cards.value.every((c) => c.matched)) {
+					gameTick.pause();
+					phase.value = 'win';
+					sendUpdate();
+				}
+			}, 500);
+		}, 900);
 	} else {
 		shaking.value = [a.id, b.id].join(',');
 		useTimeoutFn(() => {
