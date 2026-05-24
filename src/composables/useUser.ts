@@ -671,6 +671,8 @@ export function useQuests() {
 				return 'mdi:account-clock';
 			case 'article_read_time':
 				return 'mdi:book-clock-outline';
+			case 'submit_event_image':
+				return 'ph:device-mobile-camera';
 			default:
 				return 'mdi:account';
 		}
