@@ -731,6 +731,10 @@ export function useNotifications() {
 		await fetchNotifications();
 	};
 
+	const addLiveNotification = (notification: UserNotification) => {
+		return notificationStore.addLiveNotification(notification);
+	};
+
 	return {
 		notifications,
 		unreadCount,
@@ -742,7 +746,8 @@ export function useNotifications() {
 		markNotificationUnread,
 		markAllNotificationsRead,
 		markAllNotificationsUnread,
-		clearAllNotifications
+		clearAllNotifications,
+		addLiveNotification
 	};
 }
 
