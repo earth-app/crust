@@ -67,7 +67,7 @@
 					@pointerdown="onPointerDown(card, $event)"
 				>
 					<div
-						class="rounded-xl! border-2! text-sm! font-medium! text-center! shadow-lg! flex items-center justify-center! px-3! py-2! transition-all duration-500 w-full!"
+						class="rounded-xl! border-2! text-sm! font-medium! text-center! shadow-lg! flex items-center justify-center! px-3! py-2! transition-all duration-300 w-full!"
 						:class="[
 							cardClass(card),
 							card.matched || card.fading || card.celebrate
@@ -230,7 +230,7 @@ function scatterPositions(count: number, width: number, height: number) {
 
 	const usableH = Math.max(0, height - 2 * padY - cardH);
 	const bandH = usableH / count;
-	const overlap = 0.3; // fraction of bandH that may bleed into neighbouring bands
+	const overlap = 0.15; // fraction of bandH that may bleed into neighbouring bands
 
 	// Randomize which card lands in which band so DOM order doesn't determine vertical order.
 	const bandOrder = shuffle(Array.from({ length: count }, (_, i) => i));
@@ -270,9 +270,10 @@ function init() {
 	const pairs = params[1];
 
 	// Size the board responsively based on number of cards.
-	// Generous height — the page can scroll, so giving each card room to breathe is preferred.
+	// Generous height — the page can scroll (plus auto-scroll while dragging), so giving
+	// each card room to breathe avoids occlusion when a card sits partially under another.
 	const totalCards = pairs.length * 2;
-	boardHeight.value = Math.min(1000, Math.max(560, 100 + totalCards * 90));
+	boardHeight.value = Math.min(1200, Math.max(640, 100 + totalCards * 110));
 
 	const left: Omit<Card, 'x' | 'y' | 'rot' | 'z'>[] = pairs.map(([term], i) => ({
 		id: `L${i}`,
@@ -317,7 +318,10 @@ function cardClass(card: Card) {
 		return 'border-red-500 bg-red-500/10 text-red-300 animate-shake';
 	if (dragId.value === card.id) return 'border-primary bg-primary/30 text-white shadow-2xl!';
 	if (selected.value === card.id) return 'border-primary bg-primary/20 text-white';
-	return 'border-neutral-700 bg-neutral-900/80 text-neutral-100';
+	// Terms (left) are visually lighter than definitions (right) so the two card kinds
+	// are distinguishable at a glance.
+	if (card.side === 'left') return 'border-neutral-500 bg-neutral-700/80 text-white';
+	return 'border-neutral-800 bg-neutral-950/85 text-neutral-300';
 }
 
 function cardStyle(card: Card): Record<string, string> {
@@ -367,10 +371,56 @@ function onPointerDown(card: Card, e: PointerEvent) {
 	cards.value = cards.value.map((c) => (c.id === card.id ? { ...c, z } : c));
 }
 
+const lastPointer = ref({ x: 0, y: 0 });
+const SCROLL_ZONE = 90;
+const SCROLL_SPEED = 14;
+
+function findScrollableUnder(x: number, y: number): HTMLElement | Window {
+	if (!import.meta.client) return window;
+	let el = document.elementFromPoint(x, y) as HTMLElement | null;
+	while (el && el !== document.body && el !== document.documentElement) {
+		const style = getComputedStyle(el);
+		if (
+			(style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+			el.scrollHeight > el.clientHeight
+		) {
+			return el;
+		}
+		el = el.parentElement;
+	}
+	return window;
+}
+
+const autoScroll = useRafFn(
+	() => {
+		if (!dragId.value || !moved.value) return;
+		const target = findScrollableUnder(lastPointer.value.x, lastPointer.value.y);
+		let topEdge: number;
+		let bottomEdge: number;
+		if (target === window) {
+			topEdge = SCROLL_ZONE;
+			bottomEdge = window.innerHeight - SCROLL_ZONE;
+		} else {
+			const rect = (target as HTMLElement).getBoundingClientRect();
+			topEdge = rect.top + SCROLL_ZONE;
+			bottomEdge = rect.bottom - SCROLL_ZONE;
+		}
+		const y = lastPointer.value.y;
+		const direction = y < topEdge ? -1 : y > bottomEdge ? 1 : 0;
+		if (direction === 0) return;
+		(target as Window | HTMLElement).scrollBy({
+			top: SCROLL_SPEED * direction,
+			behavior: 'instant'
+		});
+	},
+	{ immediate: false }
+);
+
 useEventListener('pointermove', (e: PointerEvent) => {
 	if (!dragId.value || !boardWidth.value || !boardElHeight.value) return;
 	const board = boardEl.value;
 	if (!board) return;
+	lastPointer.value = { x: e.clientX, y: e.clientY };
 	if (!moved.value) {
 		const dx = e.clientX - pointerStart.value.x;
 		const dy = e.clientY - pointerStart.value.y;
@@ -385,11 +435,13 @@ useEventListener('pointermove', (e: PointerEvent) => {
 		x: Math.max(0, Math.min(rect.width - cardW, x)),
 		y: Math.max(0, Math.min(rect.height - cardH, y))
 	};
+	if (moved.value && !autoScroll.isActive.value) autoScroll.resume();
 });
 
 useEventListener(['pointerup', 'pointercancel'], (e: PointerEvent) => {
 	const draggedId = dragId.value;
 	if (!draggedId) return;
+	if (autoScroll.isActive.value) autoScroll.pause();
 
 	const src = cards.value.find((c) => c.id === draggedId);
 	if (!src) {
@@ -465,8 +517,8 @@ function tryMatch(a: Card, b: Card) {
 					phase.value = 'win';
 					sendUpdate();
 				}
-			}, 500);
-		}, 900);
+			}, 300);
+		}, 550);
 	} else {
 		shaking.value = [a.id, b.id].join(',');
 		useTimeoutFn(() => {

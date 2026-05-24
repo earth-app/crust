@@ -105,6 +105,7 @@
 						v-if="slot && !(dragSource?.kind === 'slot' && dragSource.index === i)"
 						class="text-sm! font-medium! text-white! flex-1! cursor-grab active:cursor-grabbing!"
 						@pointerdown="onTilePointerDown($event, slot, { kind: 'slot', index: i })"
+						@click.stop
 						>{{ slot }}</span
 					>
 					<span
@@ -299,21 +300,11 @@ function onTilePointerDown(e: PointerEvent, tile: string, source: DragSource) {
 
 function onSlotClick(i: number) {
 	if (props.disabled || draggingTile.value) return;
-	const current = slots.value[i];
-	if (current && selectedTile.value) {
-		bank.value.push(current);
-		slots.value[i] = selectedTile.value;
-		bank.value = bank.value.filter((t) => t !== selectedTile.value);
-		selectedTile.value = null;
-		validate();
-		return;
-	}
-	if (current) {
-		bank.value.push(current);
-		slots.value[i] = null;
-		return;
-	}
+	// Click on a slot only places the currently-selected bank tile. Removing a placed tile
+	// is drag-only (to bank or outside any drop zone) — keeps drag and click consistent.
 	if (!selectedTile.value) return;
+	const current = slots.value[i];
+	if (current) bank.value.push(current);
 	slots.value[i] = selectedTile.value;
 	bank.value = bank.value.filter((t) => t !== selectedTile.value);
 	selectedTile.value = null;
@@ -334,7 +325,6 @@ function findTargetUnderPointer(clientX: number, clientY: number) {
 }
 
 const lastPointer = ref({ x: 0, y: 0 });
-const scrollEdge = ref<-1 | 0 | 1>(0);
 
 const SCROLL_ZONE = 90;
 const SCROLL_SPEED = 14;
@@ -357,10 +347,25 @@ function findScrollableUnder(x: number, y: number): HTMLElement | Window {
 
 const autoScroll = useRafFn(
 	() => {
-		if (!draggingTile.value || scrollEdge.value === 0) return;
+		if (!draggingTile.value) return;
 		const target = findScrollableUnder(lastPointer.value.x, lastPointer.value.y);
+		// Compute top/bottom edges from the scrollable container so it works inside modals,
+		// where viewport-based edges would never trigger near the modal's bottom.
+		let topEdge: number;
+		let bottomEdge: number;
+		if (target === window) {
+			topEdge = SCROLL_ZONE;
+			bottomEdge = window.innerHeight - SCROLL_ZONE;
+		} else {
+			const rect = (target as HTMLElement).getBoundingClientRect();
+			topEdge = rect.top + SCROLL_ZONE;
+			bottomEdge = rect.bottom - SCROLL_ZONE;
+		}
+		const y = lastPointer.value.y;
+		const direction = y < topEdge ? -1 : y > bottomEdge ? 1 : 0;
+		if (direction === 0) return;
 		(target as Window | HTMLElement).scrollBy({
-			top: SCROLL_SPEED * scrollEdge.value,
+			top: SCROLL_SPEED * direction,
 			behavior: 'instant'
 		});
 		// Page moved under the pointer — refresh drop target.
@@ -378,12 +383,7 @@ useEventListener('pointermove', (e: PointerEvent) => {
 	const target = findTargetUnderPointer(e.clientX, e.clientY);
 	dragOverSlot.value = target.slot;
 	dragOverBank.value = target.bank;
-
-	const vh = import.meta.client ? window.innerHeight : 0;
-	const next = e.clientY < SCROLL_ZONE ? -1 : e.clientY > vh - SCROLL_ZONE ? 1 : 0;
-	scrollEdge.value = next;
-	if (next !== 0 && !autoScroll.isActive.value) autoScroll.resume();
-	else if (next === 0 && autoScroll.isActive.value) autoScroll.pause();
+	if (!autoScroll.isActive.value) autoScroll.resume();
 });
 
 useEventListener(['pointerup', 'pointercancel'], (e: PointerEvent) => {
@@ -398,7 +398,6 @@ useEventListener(['pointerup', 'pointercancel'], (e: PointerEvent) => {
 	dragSource.value = null;
 	dragOverSlot.value = null;
 	dragOverBank.value = false;
-	scrollEdge.value = 0;
 	if (autoScroll.isActive.value) autoScroll.pause();
 	if (!source) return;
 	commitDrop(tile, source, target);
