@@ -74,12 +74,25 @@ export default defineEventHandler(async (event) => {
 
 	try {
 		let query = getQuery(event);
+		let appleUserFromBody: {
+			name?: { firstName?: string; lastName?: string };
+			email?: string;
+		} | null = null;
 
 		try {
 			if (event.method === 'POST') {
 				const body = await readBody(event);
 				if (body && typeof body === 'object') {
 					query = { ...query, ...body };
+
+					const rawUser = (body as any).user;
+					if (rawUser) {
+						try {
+							appleUserFromBody = typeof rawUser === 'string' ? JSON.parse(rawUser) : rawUser;
+						} catch {
+							// Apple sends `user` JSON-encoded only on first authorization; ignore malformed payloads.
+						}
+					}
 				}
 			}
 		} catch (parseError) {
@@ -148,7 +161,17 @@ export default defineEventHandler(async (event) => {
 			`https://api.earth-app.com/v2/users/oauth/${provider}?is_linking=${isLoggedIn}`,
 			{
 				method: 'POST',
-				body: { [tokenField]: token, session_token: sessionToken },
+				body: {
+					[tokenField]: token,
+					session_token: sessionToken,
+					...(appleUserFromBody?.email ? { email: appleUserFromBody.email } : {}),
+					...(appleUserFromBody?.name?.firstName
+						? { given_name: appleUserFromBody.name.firstName }
+						: {}),
+					...(appleUserFromBody?.name?.lastName
+						? { family_name: appleUserFromBody.name.lastName }
+						: {})
+				},
 				onResponse({ response: res }) {
 					event.context.oauthStatus = res.status;
 				},
