@@ -103,12 +103,15 @@ export function useLogout() {
 	const config = useRuntimeConfig();
 	const authStore = useAuthStore();
 
-	return async function logout() {
+	return async function logout(platform: string = 'web') {
 		try {
 			await $fetch(`${config.public.apiBaseUrl}/v2/users/logout`, {
 				method: 'POST',
 				headers: {
 					Authorization: `Bearer ${authStore.sessionToken}`
+				},
+				body: {
+					platform
 				}
 			});
 
