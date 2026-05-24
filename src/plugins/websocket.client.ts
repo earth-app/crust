@@ -1,3 +1,4 @@
+import type { ButtonProps } from '@nuxt/ui';
 import { useAuthStore } from 'stores/auth';
 import { useNotificationStore } from 'stores/notification';
 import type { UserNotification } from 'types/user';
@@ -48,23 +49,36 @@ export default defineNuxtPlugin((nuxtApp) => {
 
 						notificationStore.addLiveNotification(notification);
 
+						const actions: ButtonProps[] = [
+							{
+								label: 'Show Notification',
+								trailingIcon: 'mdi:open-in-new',
+								color: 'neutral',
+								onClick: () => {
+									router.push(`/profile/notifications/${notification.id}`);
+								}
+							}
+						];
+
+						if (notification.link) {
+							actions.push({
+								label: 'Go to Link',
+								trailingIcon: 'mdi:arrow-right-circle',
+								color: 'primary',
+								onClick: () => {
+									navigateTo(notification.link!, {
+										external: notification.link?.startsWith('http')
+									});
+								}
+							});
+						}
+
 						toast.add({
 							title: notification.title,
 							description: notification.message,
 							icon: 'mdi:bell-ring',
 							color: notification.type,
-							actions: notification.link
-								? [
-										{
-											label: 'View',
-											trailingIcon: 'mdi:arrow-right-circle',
-											color: 'neutral',
-											onClick: () => {
-												router.push(notification.link!);
-											}
-										}
-									]
-								: undefined
+							actions
 						});
 						break;
 					}
