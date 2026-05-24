@@ -21,5 +21,9 @@
 
 <script setup lang="ts">
 const { user } = useAuth();
-const { unreadCount } = useNotifications();
+const { unreadCount, fetch } = useNotifications();
+
+onMounted(() => {
+	fetch();
+});
 </script>

@@ -29,6 +29,10 @@ export function apiCache_TEST_ONLY_CLEAR(): void {
 	requestQueue.clear();
 }
 
+export function invalidateAPICache(key: string): void {
+	apiCache.delete(key);
+}
+
 const evictOldestCacheEntry = () => {
 	if (apiCache.size >= MAX_CACHE_SIZE) {
 		const firstKey = apiCache.keys().next().value;

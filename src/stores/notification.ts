@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { UserNotification } from 'types/user';
-import { makeAPIRequest, makeClientAPIRequest } from 'utils';
+import { invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
 import { computed, reactive, ref } from 'vue';
 import { useAuthStore } from './auth';
 
@@ -30,6 +30,10 @@ export const useNotificationStore = defineStore('notification', () => {
 		if (fetchPromise.value && !force) {
 			await fetchPromise.value;
 			return;
+		}
+
+		if (force) {
+			invalidateAPICache('notifications-current');
 		}
 
 		isLoading.value = true;
@@ -106,7 +110,9 @@ export const useNotificationStore = defineStore('notification', () => {
 				cached.read = true;
 			}
 
-			// refresh cached data
+			invalidateAPICache(`notification-${id}`);
+			invalidateAPICache('notifications-current');
+
 			if (import.meta.client) {
 				await refreshNuxtData(`notification-${id}`);
 				await refreshNuxtData('notifications-current');
@@ -135,6 +141,9 @@ export const useNotificationStore = defineStore('notification', () => {
 			if (cached) {
 				cached.read = false;
 			}
+
+			invalidateAPICache(`notification-${id}`);
+			invalidateAPICache('notifications-current');
 		}
 
 		return res;
@@ -154,6 +163,7 @@ export const useNotificationStore = defineStore('notification', () => {
 			}
 		}
 		unreadCount.value = 0;
+		invalidateAPICache('notifications-current');
 
 		const res = await makeClientAPIRequest<void>(
 			`/v2/users/current/notifications/mark_all_read`,
@@ -188,6 +198,7 @@ export const useNotificationStore = defineStore('notification', () => {
 			}
 		}
 		unreadCount.value = notifications.value.length;
+		invalidateAPICache('notifications-current');
 
 		const res = await makeClientAPIRequest<void>(
 			`/v2/users/current/notifications/mark_all_unread`,
@@ -217,8 +228,14 @@ export const useNotificationStore = defineStore('notification', () => {
 		);
 
 		if (res.success) {
+			const removed = notifications.value.find((n) => n.id === id);
 			notifications.value = notifications.value.filter((n) => n.id !== id);
 			cache.delete(id);
+			if (removed && !removed.read) {
+				unreadCount.value = Math.max(0, unreadCount.value - 1);
+			}
+			invalidateAPICache(`notification-${id}`);
+			invalidateAPICache('notifications-current');
 		}
 
 		return res;
@@ -233,6 +250,7 @@ export const useNotificationStore = defineStore('notification', () => {
 		notifications.value = [];
 		unreadCount.value = 0;
 		cache.clear();
+		invalidateAPICache('notifications-current');
 
 		const res = await makeClientAPIRequest<void>(
 			`/v2/users/current/notifications/clear`,
@@ -251,6 +269,20 @@ export const useNotificationStore = defineStore('notification', () => {
 		return res;
 	};
 
+	const addLiveNotification = (notification: UserNotification) => {
+		if (notifications.value.some((n) => n.id === notification.id)) return;
+
+		notifications.value = [notification, ...notifications.value];
+		cache.set(notification.id, notification);
+		if (!notification.read) {
+			unreadCount.value += 1;
+		}
+		if (notification.type === 'warning') hasWarnings.value = true;
+		if (notification.type === 'error') hasErrors.value = true;
+
+		invalidateAPICache('notifications-current');
+	};
+
 	return {
 		notifications,
 		unreadCount,
@@ -267,6 +299,7 @@ export const useNotificationStore = defineStore('notification', () => {
 		markAllRead,
 		markAllUnread,
 		deleteNotification,
-		clearAll
+		clearAll,
+		addLiveNotification
 	};
 });

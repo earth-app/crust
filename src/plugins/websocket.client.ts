@@ -1,10 +1,12 @@
 import { useAuthStore } from 'stores/auth';
+import { useNotificationStore } from 'stores/notification';
 import type { UserNotification } from 'types/user';
 
 export default defineNuxtPlugin((nuxtApp) => {
 	const toast = useToast();
 	const router = useRouter();
 	const config = useRuntimeConfig();
+	const notificationStore = useNotificationStore();
 
 	let ws: WebSocket | null = null;
 	// "https://" -> "wss://"
@@ -43,6 +45,8 @@ export default defineNuxtPlugin((nuxtApp) => {
 				switch (message.type) {
 					case 'notification': {
 						const notification = message.data as UserNotification;
+
+						notificationStore.addLiveNotification(notification);
 
 						toast.add({
 							title: notification.title,
