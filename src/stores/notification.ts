@@ -142,21 +142,33 @@ export const useNotificationStore = defineStore('notification', () => {
 
 	const markAllRead = async () => {
 		const authStore = useAuthStore();
+
+		const previous = notifications.value.map((n) => ({ id: n.id, read: n.read }));
+		const previousUnread = unreadCount.value;
+
+		for (const n of notifications.value) {
+			n.read = true;
+			const cached = cache.get(n.id);
+			if (cached) {
+				cached.read = true;
+			}
+		}
+		unreadCount.value = 0;
+
 		const res = await makeClientAPIRequest<void>(
 			`/v2/users/current/notifications/mark_all_read`,
 			authStore.sessionToken,
 			{ method: 'POST' }
 		);
 
-		if (res.success) {
-			for (const n of notifications.value) {
-				n.read = true;
-				const cached = cache.get(n.id);
-				if (cached) {
-					cached.read = true;
-				}
+		if (!res.success) {
+			for (const { id, read } of previous) {
+				const n = notifications.value.find((x) => x.id === id);
+				if (n) n.read = read;
+				const cached = cache.get(id);
+				if (cached) cached.read = read;
 			}
-			unreadCount.value = 0;
+			unreadCount.value = previousUnread;
 		}
 
 		return res;
@@ -164,21 +176,33 @@ export const useNotificationStore = defineStore('notification', () => {
 
 	const markAllUnread = async () => {
 		const authStore = useAuthStore();
+
+		const previous = notifications.value.map((n) => ({ id: n.id, read: n.read }));
+		const previousUnread = unreadCount.value;
+
+		for (const n of notifications.value) {
+			n.read = false;
+			const cached = cache.get(n.id);
+			if (cached) {
+				cached.read = false;
+			}
+		}
+		unreadCount.value = notifications.value.length;
+
 		const res = await makeClientAPIRequest<void>(
 			`/v2/users/current/notifications/mark_all_unread`,
 			authStore.sessionToken,
 			{ method: 'POST' }
 		);
 
-		if (res.success) {
-			for (const n of notifications.value) {
-				n.read = false;
-				const cached = cache.get(n.id);
-				if (cached) {
-					cached.read = false;
-				}
+		if (!res.success) {
+			for (const { id, read } of previous) {
+				const n = notifications.value.find((x) => x.id === id);
+				if (n) n.read = read;
+				const cached = cache.get(id);
+				if (cached) cached.read = read;
 			}
-			unreadCount.value = notifications.value.length;
+			unreadCount.value = previousUnread;
 		}
 
 		return res;
@@ -200,6 +224,33 @@ export const useNotificationStore = defineStore('notification', () => {
 		return res;
 	};
 
+	const clearAll = async () => {
+		const authStore = useAuthStore();
+
+		const previous = notifications.value.slice();
+		const previousUnread = unreadCount.value;
+
+		notifications.value = [];
+		unreadCount.value = 0;
+		cache.clear();
+
+		const res = await makeClientAPIRequest<void>(
+			`/v2/users/current/notifications/clear`,
+			authStore.sessionToken,
+			{ method: 'DELETE' }
+		);
+
+		if (!res.success) {
+			notifications.value = previous;
+			unreadCount.value = previousUnread;
+			for (const n of previous) {
+				cache.set(n.id, n);
+			}
+		}
+
+		return res;
+	};
+
 	return {
 		notifications,
 		unreadCount,
@@ -215,6 +266,7 @@ export const useNotificationStore = defineStore('notification', () => {
 		markUnread,
 		markAllRead,
 		markAllUnread,
-		deleteNotification
+		deleteNotification,
+		clearAll
 	};
 });

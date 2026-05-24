@@ -723,6 +723,10 @@ export function useNotifications() {
 		return await notificationStore.markAllUnread();
 	};
 
+	const clearAllNotifications = async () => {
+		return await notificationStore.clearAll();
+	};
+
 	const fetch = async () => {
 		await fetchNotifications();
 	};
@@ -737,7 +741,8 @@ export function useNotifications() {
 		markNotificationRead,
 		markNotificationUnread,
 		markAllNotificationsRead,
-		markAllNotificationsUnread
+		markAllNotificationsUnread,
+		clearAllNotifications
 	};
 }
 

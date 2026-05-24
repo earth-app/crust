@@ -23,7 +23,7 @@
 					</h2>
 					<h2
 						class="text-sm sm:text-md mb-4 text-gray-400 hover:cursor-pointer"
-						@click="notifications.splice(0, notifications.length)"
+						@click="clearAll"
 					>
 						Clear All
 					</h2>
@@ -45,10 +45,31 @@ const props = defineProps<{
 	additional?: boolean;
 }>();
 
-const { notifications, markAllNotificationsRead } = useNotifications();
+const { notifications, markAllNotificationsRead, clearAllNotifications } = useNotifications();
+const toast = useToast();
 
 async function markAllRead() {
-	await markAllNotificationsRead();
+	const res = await markAllNotificationsRead();
+	if (!res.success) {
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to mark all notifications as read.',
+			icon: 'mdi:alert-circle',
+			color: 'error'
+		});
+	}
+}
+
+async function clearAll() {
+	const res = await clearAllNotifications();
+	if (!res.success) {
+		toast.add({
+			title: 'Error',
+			description: res.message || 'Failed to clear notifications.',
+			icon: 'mdi:alert-circle',
+			color: 'error'
+		});
+	}
 }
 
 const displayed = computed(() => {
