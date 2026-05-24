@@ -4,8 +4,9 @@ function parseState(state: string): {
 	provider: OAuthProvider | null;
 	source: OAuthSource;
 	context: OAuthContext | null;
+	mobileSessionToken: string | null;
 } {
-	const [providerPart, sourcePart, contextPart] = state.split(':');
+	const [providerPart, sourcePart, contextPart, ...rest] = state.split(':');
 	const provider = OAUTH_PROVIDERS.includes(providerPart as OAuthProvider)
 		? (providerPart as OAuthProvider)
 		: null;
@@ -14,7 +15,11 @@ function parseState(state: string): {
 		contextPart === 'login' || contextPart === 'signup' || contextPart === 'link'
 			? contextPart
 			: null;
-	return { provider, source, context };
+	// Mobile clients (e.g. sky) can't rely on cookies inside SFSafariViewController,
+	// so they may append their session token as a 4th colon-separated segment.
+	const tokenPart = rest.join(':').trim();
+	const mobileSessionToken = source === 'mobile' && tokenPart ? tokenPart : null;
+	return { provider, source, context, mobileSessionToken };
 }
 
 function safeHeader(event: any, name: string, value: unknown) {
@@ -57,9 +62,9 @@ function errorSummary(error: any): string {
 }
 
 export default defineEventHandler(async (event) => {
-	const sessionToken = getCookie(event, 'session_token');
-	const isLoggedIn = !!sessionToken;
-	const page = isLoggedIn ? 'profile' : 'login';
+	const cookieSessionToken = getCookie(event, 'session_token');
+	let sessionToken = cookieSessionToken;
+	let isLoggedIn = !!sessionToken;
 	const config = useRuntimeConfig();
 
 	let source: OAuthSource = 'web';
@@ -71,6 +76,7 @@ export default defineEventHandler(async (event) => {
 		return sendRedirect(event, `${config.public.baseUrl}/oauth/complete?${qp}`);
 	};
 	const fallbackContext = (): OAuthContext => stateContext || (isLoggedIn ? 'link' : 'login');
+	const page = () => (isLoggedIn ? 'profile' : 'login');
 
 	try {
 		let query = getQuery(event);
@@ -100,7 +106,7 @@ export default defineEventHandler(async (event) => {
 			safeHeader(event, 'X-Error-Detail', 'Failed to parse request body');
 			safeHeader(event, 'X-Error-Extra', parseError);
 			console.error('Error occurred while processing OAuth callback body:', parseError);
-			return sendRedirect(event, `/${page}?error=body_parsing_error`);
+			return sendRedirect(event, `/${page()}?error=body_parsing_error`);
 		}
 
 		const { code, state, error, error_description } = query;
@@ -109,6 +115,20 @@ export default defineEventHandler(async (event) => {
 		provider = parsed.provider;
 		source = parsed.source;
 		stateContext = parsed.context;
+
+		// Mobile clients can't share cookies with the SFSafariViewController OAuth flow,
+		// so accept the session token from the state's 4th segment or a `mobile_session_token`
+		// query/body param. Only honored when source === 'mobile' to keep the cookie path
+		// authoritative for web.
+		if (source === 'mobile') {
+			const queryMobileToken =
+				typeof query.mobile_session_token === 'string' ? query.mobile_session_token : '';
+			const mobileToken = parsed.mobileSessionToken || queryMobileToken;
+			if (mobileToken && !sessionToken) {
+				sessionToken = mobileToken;
+				isLoggedIn = true;
+			}
+		}
 
 		if (error) {
 			safeHeader(event, 'X-Error-Type', 'oauth_provider_error');
@@ -126,12 +146,12 @@ export default defineEventHandler(async (event) => {
 					context: fallbackContext()
 				});
 			}
-			return sendRedirect(event, `/${page}?error=provider_error`);
+			return sendRedirect(event, `/${page()}?error=provider_error`);
 		}
 
 		if (!state || Array.isArray(state) || typeof state !== 'string') {
 			safeHeader(event, 'X-Error-Type', 'missing_provider');
-			return sendRedirect(event, `/${page}?error=no_provider`);
+			return sendRedirect(event, `/${page()}?error=no_provider`);
 		}
 
 		if (!code || Array.isArray(code) || typeof code !== 'string') {
@@ -143,13 +163,13 @@ export default defineEventHandler(async (event) => {
 					context: fallbackContext()
 				});
 			}
-			return sendRedirect(event, `/${page}?error=no_code`);
+			return sendRedirect(event, `/${page()}?error=no_code`);
 		}
 
 		if (!provider) {
 			safeHeader(event, 'X-Error-Type', 'invalid_provider');
 			safeHeader(event, 'X-Error-Extra', `Provided: ${state}`);
-			return sendRedirect(event, `/${page}?error=invalid_provider`);
+			return sendRedirect(event, `/${page()}?error=invalid_provider`);
 		}
 
 		const token = await exchangeCodeForToken(provider, code);
@@ -229,6 +249,6 @@ export default defineEventHandler(async (event) => {
 			});
 		}
 
-		return sendRedirect(event, `/${page}?error=auth_failed`);
+		return sendRedirect(event, `/${page()}?error=auth_failed`);
 	}
 });
