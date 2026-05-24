@@ -60,36 +60,6 @@
 			</p>
 
 			<div class="flex flex-col gap-1.5!">
-				<p class="text-xs! text-neutral-500! uppercase tracking-wider!">Order</p>
-				<div
-					v-for="(slot, i) in slots"
-					:key="i"
-					:data-slot-index="i"
-					class="flex items-center gap-2! min-h-12! rounded-xl! border-2! px-3! py-2! transition-all duration-150 touch-none!"
-					:class="slotClass(slot, i)"
-					@click="onSlotClick(i)"
-				>
-					<span class="text-xs! text-neutral-500! w-4! shrink-0 tabular-nums!">{{ i + 1 }}</span>
-					<span
-						v-if="slot && !(dragSource?.kind === 'slot' && dragSource.index === i)"
-						class="text-sm! font-medium! text-white! flex-1! cursor-grab active:cursor-grabbing!"
-						@pointerdown="onTilePointerDown($event, slot, { kind: 'slot', index: i })"
-						>{{ slot }}</span
-					>
-					<span
-						v-else
-						class="text-xs! italic! flex-1"
-						:class="
-							selectedTile || draggingTile || dragOverSlot === i
-								? 'text-primary/70'
-								: 'text-neutral-600'
-						"
-						>{{ selectedTile || draggingTile || dragOverSlot === i ? 'Drop here' : 'Empty' }}</span
-					>
-				</div>
-			</div>
-
-			<div class="flex flex-col gap-1.5!">
 				<p class="text-xs! text-neutral-500! uppercase tracking-wider!">Items</p>
 				<div
 					data-bank
@@ -116,6 +86,36 @@
 						v-if="bank.length === 0"
 						class="text-xs! text-neutral-600! italic! py-2! px-1!"
 						>All placed</span
+					>
+				</div>
+			</div>
+
+			<div class="flex flex-col gap-1.5!">
+				<p class="text-xs! text-neutral-500! uppercase tracking-wider!">Order</p>
+				<div
+					v-for="(slot, i) in slots"
+					:key="i"
+					:data-slot-index="i"
+					class="flex items-center gap-2! min-h-12! rounded-xl! border-2! px-3! py-2! transition-all duration-150 touch-none!"
+					:class="slotClass(slot, i)"
+					@click="onSlotClick(i)"
+				>
+					<span class="text-xs! text-neutral-500! w-4! shrink-0 tabular-nums!">{{ i + 1 }}</span>
+					<span
+						v-if="slot && !(dragSource?.kind === 'slot' && dragSource.index === i)"
+						class="text-sm! font-medium! text-white! flex-1! cursor-grab active:cursor-grabbing!"
+						@pointerdown="onTilePointerDown($event, slot, { kind: 'slot', index: i })"
+						>{{ slot }}</span
+					>
+					<span
+						v-else
+						class="text-xs! italic! flex-1"
+						:class="
+							selectedTile || draggingTile || dragOverSlot === i
+								? 'text-primary/70'
+								: 'text-neutral-600'
+						"
+						>{{ selectedTile || draggingTile || dragOverSlot === i ? 'Drop here' : 'Empty' }}</span
 					>
 				</div>
 			</div>
@@ -202,9 +202,14 @@ const dragSource = ref<DragSource | null>(null);
 const dragPos = ref({ x: 0, y: 0 });
 const dragOverSlot = ref<number | null>(null);
 const dragOverBank = ref(false);
-const incorrectSlots = ref<number[]>([]);
 
 const lowTime = computed(() => timeLeft.value <= 10 && phase.value === 'playing');
+const wrongSlots = computed(() =>
+	slots.value.reduce<number[]>((acc, s, i) => {
+		if (s !== null && s !== correctOrder.value[i]) acc.push(i);
+		return acc;
+	}, [])
+);
 
 const ghostStyle = computed(() => ({
 	left: `${dragPos.value.x}px`,
@@ -259,7 +264,6 @@ function init() {
 	bank.value = shuffle([...items]);
 	slots.value = Array(items.length).fill(null);
 	selectedTile.value = null;
-	incorrectSlots.value = [];
 	timeLeft.value = 60;
 	phase.value = 'countdown';
 	countdown.value = 3;
@@ -268,10 +272,10 @@ function init() {
 }
 
 function slotClass(slot: string | null, i: number) {
-	if (incorrectSlots.value.includes(i))
+	if (slot !== null && wrongSlots.value.includes(i))
 		return 'border-red-500 bg-red-500/10 text-red-300 cursor-pointer';
 	if (dragOverSlot.value === i) return 'border-primary border-dashed bg-primary/10 cursor-pointer';
-	if (slot) return 'border-primary/50 bg-primary/10 cursor-pointer';
+	if (slot) return 'border-neutral-600 bg-neutral-900/60 cursor-pointer';
 	if (selectedTile.value || draggingTile.value)
 		return 'border-primary/30 border-dashed cursor-pointer';
 	return 'border-neutral-800 cursor-default';
@@ -329,12 +333,57 @@ function findTargetUnderPointer(clientX: number, clientY: number) {
 	return { slot: null, bank: false };
 }
 
+const lastPointer = ref({ x: 0, y: 0 });
+const scrollEdge = ref<-1 | 0 | 1>(0);
+
+const SCROLL_ZONE = 90;
+const SCROLL_SPEED = 14;
+
+function findScrollableUnder(x: number, y: number): HTMLElement | Window {
+	if (!import.meta.client) return window;
+	let el = document.elementFromPoint(x, y) as HTMLElement | null;
+	while (el && el !== document.body && el !== document.documentElement) {
+		const style = getComputedStyle(el);
+		if (
+			(style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+			el.scrollHeight > el.clientHeight
+		) {
+			return el;
+		}
+		el = el.parentElement;
+	}
+	return window;
+}
+
+const autoScroll = useRafFn(
+	() => {
+		if (!draggingTile.value || scrollEdge.value === 0) return;
+		const target = findScrollableUnder(lastPointer.value.x, lastPointer.value.y);
+		(target as Window | HTMLElement).scrollBy({
+			top: SCROLL_SPEED * scrollEdge.value,
+			behavior: 'instant'
+		});
+		// Page moved under the pointer — refresh drop target.
+		const dropTarget = findTargetUnderPointer(lastPointer.value.x, lastPointer.value.y);
+		dragOverSlot.value = dropTarget.slot;
+		dragOverBank.value = dropTarget.bank;
+	},
+	{ immediate: false }
+);
+
 useEventListener('pointermove', (e: PointerEvent) => {
 	if (!draggingTile.value) return;
 	dragPos.value = { x: e.clientX, y: e.clientY };
+	lastPointer.value = { x: e.clientX, y: e.clientY };
 	const target = findTargetUnderPointer(e.clientX, e.clientY);
 	dragOverSlot.value = target.slot;
 	dragOverBank.value = target.bank;
+
+	const vh = import.meta.client ? window.innerHeight : 0;
+	const next = e.clientY < SCROLL_ZONE ? -1 : e.clientY > vh - SCROLL_ZONE ? 1 : 0;
+	scrollEdge.value = next;
+	if (next !== 0 && !autoScroll.isActive.value) autoScroll.resume();
+	else if (next === 0 && autoScroll.isActive.value) autoScroll.pause();
 });
 
 useEventListener(['pointerup', 'pointercancel'], (e: PointerEvent) => {
@@ -349,6 +398,8 @@ useEventListener(['pointerup', 'pointercancel'], (e: PointerEvent) => {
 	dragSource.value = null;
 	dragOverSlot.value = null;
 	dragOverBank.value = false;
+	scrollEdge.value = 0;
+	if (autoScroll.isActive.value) autoScroll.pause();
 	if (!source) return;
 	commitDrop(tile, source, target);
 });
@@ -389,19 +440,11 @@ function commitDrop(
 
 function validate() {
 	if (slots.value.some((s) => s === null)) return;
-	if (slots.value.every((s, i) => s === correctOrder.value[i])) {
+	if (wrongSlots.value.length === 0) {
 		gameTick.pause();
 		phase.value = 'win';
 		sendUpdate();
-		return;
 	}
-	incorrectSlots.value = slots.value.reduce<number[]>((acc, s, i) => {
-		if (s !== correctOrder.value[i]) acc.push(i);
-		return acc;
-	}, []);
-	useTimeoutFn(() => {
-		incorrectSlots.value = [];
-	}, 1500);
 }
 
 async function sendUpdate() {
