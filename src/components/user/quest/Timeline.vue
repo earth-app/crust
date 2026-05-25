@@ -9,13 +9,13 @@
 				:loading="loading"
 				:disabled="loading"
 				class="self-center"
-				@click="handleEnd"
+				@click="handleEndClick"
 				>End Quest</UButton
 			>
 
 			<UTooltip
 				v-else-if="hasOtherActiveQuest && !completed"
-				:text="`You already have an active quest (${quest?.quest.title}). Starting this one will replace it.`"
+				:text="activeQuestReplaceTooltip"
 			>
 				<UButton
 					id="quest-button"
@@ -24,7 +24,7 @@
 					:loading="loading"
 					:disabled="loading"
 					class="self-center"
-					@click="handleStart(true)"
+					@click="handleReplaceClick"
 					>Replace &amp; Start Quest</UButton
 				>
 			</UTooltip>
@@ -245,6 +245,40 @@
 				:tour-id="`quest-timeline-${props.quest.id}`"
 			/>
 		</ClientOnly>
+
+		<UModal
+			v-model:open="masteryConfirmOpen"
+			:dismissible="!loading"
+			:title="masteryConfirmTitle"
+		>
+			<template #body>
+				<div class="flex flex-col gap-3">
+					<UAlert
+						color="warning"
+						variant="subtle"
+						icon="mdi:alert-octagon-outline"
+						:title="masteryConfirmTitle"
+						:description="masteryConfirmDescription"
+					/>
+					<div class="flex justify-end gap-2 mt-2">
+						<UButton
+							color="neutral"
+							variant="outline"
+							:disabled="loading"
+							@click="masteryConfirmOpen = false"
+							>Keep mastery</UButton
+						>
+						<UButton
+							color="error"
+							:loading="loading"
+							:disabled="loading"
+							@click="confirmMasteryAction"
+							>{{ masteryConfirmCta }}</UButton
+						>
+					</div>
+				</div>
+			</template>
+		</UModal>
 	</div>
 </template>
 
@@ -328,6 +362,70 @@ function formatRelative(millis: number) {
 const hasOtherActiveQuest = computed(
 	() => !!quest.value?.questId && quest.value.questId !== props.quest.id
 );
+
+const isMasteryQuest = computed(() => props.quest.id.startsWith('badge_mastery_'));
+const activeQuestIsMastery = computed(() =>
+	(quest.value?.questId ?? '').startsWith('badge_mastery_')
+);
+
+const activeQuestReplaceTooltip = computed(() => {
+	if (activeQuestIsMastery.value) {
+		return `You're in the middle of a Badge Mastery quest (${quest.value?.quest.title}). Starting this one will permanently lock that mastery.`;
+	}
+	return `You already have an active quest (${quest.value?.quest.title}). Starting this one will replace it.`;
+});
+
+type MasteryConfirmAction = 'end' | 'replace' | null;
+const masteryConfirmOpen = ref(false);
+const masteryConfirmAction = ref<MasteryConfirmAction>(null);
+
+const masteryConfirmTitle = computed(() => {
+	if (masteryConfirmAction.value === 'end') return 'End this mastery quest?';
+	if (masteryConfirmAction.value === 'replace') return 'Abandon mastery for this quest?';
+	return 'Mastery warning';
+});
+const masteryConfirmDescription = computed(() => {
+	if (masteryConfirmAction.value === 'end') {
+		return 'This Badge Mastery quest is one-shot. Ending it now will permanently lock the mastery — you will not be able to regenerate it again.';
+	}
+	if (masteryConfirmAction.value === 'replace') {
+		return `Your active quest "${quest.value?.quest.title}" is a Badge Mastery quest. Starting this one will permanently lock that mastery.`;
+	}
+	return '';
+});
+const masteryConfirmCta = computed(() => {
+	if (masteryConfirmAction.value === 'end') return 'End & lock mastery';
+	if (masteryConfirmAction.value === 'replace') return 'Lock mastery & start';
+	return 'Confirm';
+});
+
+function handleEndClick() {
+	if (isCurrentQuest.value && isMasteryQuest.value) {
+		masteryConfirmAction.value = 'end';
+		masteryConfirmOpen.value = true;
+		return;
+	}
+	handleEnd();
+}
+
+function handleReplaceClick() {
+	if (activeQuestIsMastery.value) {
+		masteryConfirmAction.value = 'replace';
+		masteryConfirmOpen.value = true;
+		return;
+	}
+	handleStart(true);
+}
+
+async function confirmMasteryAction() {
+	if (masteryConfirmAction.value === 'end') {
+		await handleEnd();
+	} else if (masteryConfirmAction.value === 'replace') {
+		await handleStart(true);
+	}
+	masteryConfirmOpen.value = false;
+	masteryConfirmAction.value = null;
+}
 
 async function handleStart(override: boolean = false) {
 	loading.value = true;

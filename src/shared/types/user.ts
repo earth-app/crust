@@ -110,6 +110,9 @@ export type Badge = {
 	icon: string;
 	rarity: Rarity;
 	tracker_id?: string;
+	mastered?: boolean;
+	mastered_at?: string | null;
+	mastery_exempt?: boolean;
 };
 
 export type UserBadge = Badge & {
@@ -118,6 +121,29 @@ export type UserBadge = Badge & {
 	granted_at?: string;
 	progress: number;
 };
+
+export type BadgeMasteryStatus = {
+	generated: boolean;
+	locked: boolean;
+	mastered: boolean;
+	mastered_at: string | null;
+	exempt?: boolean;
+	quest: Quest | null;
+};
+
+export type BadgeMasteryError = 'locked' | 'conflict' | 'ai_failed' | 'exempt' | 'unknown';
+
+export class BadgeMasteryGenerationError extends Error {
+	readonly code: BadgeMasteryError;
+	readonly httpStatus?: number;
+
+	constructor(code: BadgeMasteryError, message: string, httpStatus?: number) {
+		super(message);
+		this.name = 'BadgeMasteryGenerationError';
+		this.code = code;
+		this.httpStatus = httpStatus;
+	}
+}
 
 export type UserJourneyLeaderboardEntry = {
 	id: string;

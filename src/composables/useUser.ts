@@ -3,6 +3,7 @@ import { useAvatarStore } from 'stores/avatar';
 import { useFriendsStore } from 'stores/friends';
 import { useNotificationStore } from 'stores/notification';
 import { useUserStore } from 'stores/user';
+import { BadgeMasteryGenerationError } from 'types/user';
 import type { MaybeRefOrGetter } from 'vue';
 
 export function useVisitedSite() {
@@ -587,6 +588,25 @@ export function useUser(
 		return await userStore.setAccountType(resolvedIdentifier, type);
 	};
 
+	const getMasteryStatus = async (badgeId: string) => {
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return null;
+		const resolvedUser = await userStore.fetchUser(resolvedIdentifier);
+		const ownerId = resolvedUser?.id || resolvedIdentifier;
+		return await userStore.getMasteryStatus(ownerId, badgeId);
+	};
+	const generateMastery = async (badgeId: string) => {
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) {
+			throw new BadgeMasteryGenerationError('unknown', 'Invalid identifier');
+		}
+		const resolvedUser = await userStore.fetchUser(resolvedIdentifier);
+		const ownerId = resolvedUser?.id || resolvedIdentifier;
+		return await userStore.generateMastery(ownerId, badgeId);
+	};
+	const getMasteryQuest = async (badgeId: string) => await userStore.getMasteryQuest(badgeId);
+	const isMasteryLocked = (badgeId: string) => userStore.lockedMasteries.has(badgeId);
+
 	return {
 		user,
 		fetchUser,
@@ -621,7 +641,11 @@ export function useUser(
 		endQuest,
 		questHistory,
 		fetchQuestHistory,
-		setAccountType
+		setAccountType,
+		getMasteryStatus,
+		generateMastery,
+		getMasteryQuest,
+		isMasteryLocked
 	};
 }
 

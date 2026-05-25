@@ -223,6 +223,9 @@ export function makeBadge(overrides: Record<string, any> = {}): Record<string, a
 		rarity: overrides.rarity ?? 'normal',
 		granted: overrides.granted ?? false,
 		user_id: overrides.user_id ?? 'test-user-1',
+		mastered: overrides.mastered ?? false,
+		mastered_at: overrides.mastered_at ?? null,
+		mastery_exempt: overrides.mastery_exempt ?? false,
 		...overrides
 	};
 }

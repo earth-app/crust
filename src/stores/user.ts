@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import type { Event } from 'types/event';
+import { BadgeMasteryGenerationError, type BadgeMasteryStatus } from 'types/user';
 import { computed, reactive, ref } from 'vue';
 import { useAuthStore } from './auth';
 import { useAvatarStore } from './avatar';
@@ -33,6 +34,13 @@ export const useUserStore = defineStore('user', () => {
 	const questSyncVersions = reactive(new Map<string, number>());
 	const questsList = ref<Set<string> | null>(null);
 	const questsCache = reactive(new Map<string, Quest>());
+
+	const masteryStatuses = reactive(new Map<string, BadgeMasteryStatus>());
+	const masteryLoading = reactive(new Set<string>());
+	const lockedMasteries = reactive(new Set<string>());
+
+	const masteryKey = (userId: string, badgeId: string) => `${userId}:${badgeId}`;
+	const masteryQuestId = (badgeId: string) => `badge_mastery_${badgeId}`;
 
 	type QuestProgressPayload = {
 		type: string;
@@ -613,6 +621,123 @@ export const useUserStore = defineStore('user', () => {
 		return quest;
 	};
 
+	const getMasteryStatus = async (
+		userId: string,
+		badgeId: string
+	): Promise<BadgeMasteryStatus | null> => {
+		if (!userId || !badgeId) return null;
+		const authStore = useAuthStore();
+		const cacheKey = masteryKey(userId, badgeId);
+		masteryLoading.add(cacheKey);
+		try {
+			const res = await makeAPIRequest<BadgeMasteryStatus>(
+				`user-${userId}-badge-${badgeId}-mastery`,
+				`/v2/users/${userId}/badges/${badgeId}/mastery`,
+				authStore.sessionToken
+			);
+
+			if (valid(res)) {
+				masteryStatuses.set(cacheKey, res.data);
+				if (res.data.locked) lockedMasteries.add(badgeId);
+				if (res.data.quest) questsCache.set(res.data.quest.id, res.data.quest);
+				return res.data;
+			}
+
+			return null;
+		} finally {
+			masteryLoading.delete(cacheKey);
+		}
+	};
+
+	const generateMastery = async (userId: string, badgeId: string): Promise<Quest> => {
+		if (!userId || !badgeId) {
+			throw new BadgeMasteryGenerationError('unknown', 'Invalid identifier');
+		}
+		if (lockedMasteries.has(badgeId)) {
+			throw new BadgeMasteryGenerationError('locked', 'Mastery permanently locked');
+		}
+
+		const authStore = useAuthStore();
+		const config = useRuntimeConfig();
+		const url = `${config.public.apiBaseUrl}/v2/users/${userId}/badges/${badgeId}/mastery/generate`;
+		const cacheKey = masteryKey(userId, badgeId);
+		masteryLoading.add(cacheKey);
+
+		try {
+			const quest = await $fetch<Quest>(url, {
+				method: 'POST',
+				headers: authStore.sessionToken
+					? { Authorization: `Bearer ${authStore.sessionToken}` }
+					: undefined
+			});
+
+			questsCache.set(quest.id, quest);
+			if (questsList.value) {
+				questsList.value.add(quest.id);
+			}
+
+			const nextStatus: BadgeMasteryStatus = {
+				generated: true,
+				locked: false,
+				mastered: false,
+				mastered_at: null,
+				quest
+			};
+			masteryStatuses.set(cacheKey, nextStatus);
+
+			return quest;
+		} catch (error: any) {
+			const status =
+				error?.status ?? error?.statusCode ?? error?.response?.status ?? error?.data?.code;
+			const message =
+				error?.data?.message || error?.message || 'Failed to generate badge mastery quest.';
+
+			if (status === 410) {
+				lockedMasteries.add(badgeId);
+				const current = masteryStatuses.get(cacheKey);
+				masteryStatuses.set(cacheKey, {
+					generated: current?.generated ?? false,
+					locked: true,
+					mastered: current?.mastered ?? false,
+					mastered_at: current?.mastered_at ?? null,
+					exempt: current?.exempt ?? false,
+					quest: current?.quest ?? null
+				});
+				throw new BadgeMasteryGenerationError('locked', message, 410);
+			}
+			if (status === 400) {
+				const current = masteryStatuses.get(cacheKey);
+				masteryStatuses.set(cacheKey, {
+					generated: current?.generated ?? false,
+					locked: current?.locked ?? false,
+					mastered: current?.mastered ?? false,
+					mastered_at: current?.mastered_at ?? null,
+					exempt: true,
+					quest: current?.quest ?? null
+				});
+				throw new BadgeMasteryGenerationError('exempt', message, 400);
+			}
+			if (status === 409) {
+				throw new BadgeMasteryGenerationError('conflict', message, 409);
+			}
+			if (status === 500) {
+				throw new BadgeMasteryGenerationError('ai_failed', message, 500);
+			}
+
+			throw new BadgeMasteryGenerationError('unknown', message, status);
+		} finally {
+			masteryLoading.delete(cacheKey);
+		}
+	};
+
+	const getMasteryQuest = async (badgeId: string): Promise<Quest | null> => {
+		if (!badgeId) return null;
+		const id = masteryQuestId(badgeId);
+		const cached = questsCache.get(id);
+		if (cached) return cached;
+		return await fetchQuest(id);
+	};
+
 	const setAccountType = async (identifier: string, type: User['account']['account_type']) => {
 		if (!identifier)
 			return Promise.resolve({ success: false, message: 'Invalid identifier' } as any);
@@ -662,6 +787,13 @@ export const useUserStore = defineStore('user', () => {
 			pointsHistory.delete(identifier);
 			quest.delete(identifier);
 			questHistory.delete(identifier);
+			const prefix = `${identifier}:`;
+			for (const key of [...masteryStatuses.keys()]) {
+				if (key.startsWith(prefix)) masteryStatuses.delete(key);
+			}
+			for (const key of [...masteryLoading]) {
+				if (key.startsWith(prefix)) masteryLoading.delete(key);
+			}
 		} else {
 			cache.clear();
 			loading.clear();
@@ -678,6 +810,9 @@ export const useUserStore = defineStore('user', () => {
 			}
 			questsCache.clear();
 			questsList.value = null;
+			masteryStatuses.clear();
+			masteryLoading.clear();
+			lockedMasteries.clear();
 		}
 	};
 
@@ -714,6 +849,12 @@ export const useUserStore = defineStore('user', () => {
 		fetchQuestHistory,
 		fetchQuestsList,
 		fetchQuest,
+		masteryStatuses,
+		masteryLoading,
+		lockedMasteries,
+		getMasteryStatus,
+		generateMastery,
+		getMasteryQuest,
 		setAccountType,
 		clear
 	};

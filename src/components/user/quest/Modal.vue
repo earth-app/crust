@@ -10,11 +10,22 @@
 			<template #header>
 				<div class="flex items-center w-full space-x-2">
 					<UIcon
-						:name="quest.icon"
-						class="size-12 text-primary"
+						:name="isMasteryQuest ? 'mdi:medal-outline' : quest.icon"
+						class="size-12"
+						:class="isMasteryQuest ? 'text-warning' : 'text-primary'"
 					/>
 					<div class="flex flex-col">
-						<h1 class="font-semibold text-lg">{{ quest.title }}</h1>
+						<div class="flex items-center gap-2">
+							<h1 class="font-semibold text-lg">{{ quest.title }}</h1>
+							<UBadge
+								v-if="isMasteryQuest"
+								color="warning"
+								variant="soft"
+								icon="mdi:medal-outline"
+								size="sm"
+								>Badge Mastery</UBadge
+							>
+						</div>
 						<span class="font-medium opacity-90 text-base">{{ quest.description }}</span>
 						<span
 							v-if="completedAtNormal"
@@ -37,6 +48,16 @@
 					class="h-full w-full overscroll-contain"
 					:class="stepOpen ? 'overflow-hidden' : 'overflow-y-auto'"
 				>
+					<UAlert
+						v-if="isMasteryQuest && !completedAtNormal"
+						id="mastery-warning"
+						color="warning"
+						variant="subtle"
+						icon="mdi:alert-octagon-outline"
+						title="One-shot mastery quest"
+						description="Resetting this quest or starting any other quest before you finish it will permanently lock this Badge Mastery. There is no second chance."
+						class="mx-4 my-3"
+					/>
 					<LazyUserQuestTimeline
 						:quest="quest"
 						:progress="progress"
@@ -149,6 +170,8 @@ const completedAtNormal = computed(() => {
 	if (!props.completedAt) return null;
 	return DateTime.fromMillis(props.completedAt).toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS);
 });
+
+const isMasteryQuest = computed(() => props.quest?.id?.startsWith('badge_mastery_') ?? false);
 
 const stepOpen = ref(false);
 const openStep = ref<
