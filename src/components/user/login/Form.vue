@@ -7,13 +7,13 @@
 			:schema="z.object({ userOrEmail: userOrEmailSchema, password: passwordSchema })"
 		>
 			<UFormField
-				label="Username or email"
+				label="Username or Email"
 				name="userOrEmail"
 				:required="true"
 			>
 				<UInput
 					v-model="userOrEmail"
-					placeholder="Username or email"
+					placeholder="Username or Email"
 					class="min-w-60 w-2/5 max-w-120"
 				/>
 			</UFormField>
@@ -91,7 +91,7 @@ const userOrEmailSchema = z
 	.max(100, 'Must be at most 100 characters');
 
 const login = useLogin();
-const { fetchUser } = useAuth();
+const { user, fetchUser } = useAuth();
 const router = useRouter();
 const pendingLogin = useState<{
 	ticket: string;
@@ -115,20 +115,16 @@ async function handleLogin() {
 
 	if (result.success && result.verified) {
 		message.value = 'Welcome!';
-
-		// Fetch user data and ensure state is updated before emitting
+		emit('loginSuccess');
 		await fetchUser();
 
 		toast.add({
 			title: 'Login Successful',
-			description: `Welcome back, @${userOrEmail.value}!`,
+			description: `Welcome back, @${user.value?.username ?? userOrEmail.value}!`,
 			icon: 'mdi:login',
 			color: 'success',
 			duration: 3000
 		});
-
-		// Emit after state is ready
-		emit('loginSuccess');
 	} else if (result.success && !result.verified) {
 		pendingLogin.value = {
 			ticket: result.ticket,
