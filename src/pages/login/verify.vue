@@ -58,14 +58,15 @@
 							<template v-else> Resend code </template>
 						</UButton>
 						<UButton
-							variant="ghost"
+							variant="soft"
+							color="neutral"
 							size="sm"
 							class="p-2"
 							trailing-icon="mdi:arrow-left"
 							:disabled="loading"
 							@click="backToLogin"
 						>
-							Back to login
+							Back to Login
 						</UButton>
 					</div>
 					<div
