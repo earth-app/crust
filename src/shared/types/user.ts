@@ -77,6 +77,20 @@ export type User = {
 	max_circle_count?: number;
 };
 
+export type LoginResponse = {
+	id: string;
+	username: string;
+	session_token: string;
+};
+
+export type LoginVerificationRequired = {
+	requires_verification: true;
+	ticket: string;
+	email: string;
+	expires_in: number;
+	message?: string;
+};
+
 export type UserNotification = {
 	id: string;
 	title: string;

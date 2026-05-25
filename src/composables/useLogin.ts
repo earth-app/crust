@@ -1,5 +1,30 @@
 import { useAuthStore } from 'stores/auth';
-import type { User } from 'types/user';
+import type { LoginResponse, LoginVerificationRequired, User } from 'types/user';
+
+export type LoginResult =
+	| { success: true; verified: true; message: string }
+	| {
+			success: true;
+			verified: false;
+			ticket: string;
+			email: string;
+			expiresIn: number;
+			message?: string;
+	  }
+	| { success: false; message: string; retryAfter?: number };
+
+export type VerifyNewIPLoginResult =
+	| { success: true; message: string }
+	| { success: false; message: string; retryAllowed: boolean };
+
+function isLoginVerificationRequired(
+	response: LoginResponse | LoginVerificationRequired
+): response is LoginVerificationRequired {
+	return (
+		(response as LoginVerificationRequired).requires_verification === true &&
+		typeof (response as LoginVerificationRequired).ticket === 'string'
+	);
+}
 
 export function useSignup() {
 	const config = useRuntimeConfig();
@@ -65,11 +90,11 @@ export function useLogin() {
 	const config = useRuntimeConfig();
 	const authStore = useAuthStore();
 
-	return async function login(username: string, password: string) {
-		const auth = btoa(`${username}:${password}`);
+	return async function login(userOrEmail: string, password: string): Promise<LoginResult> {
+		const auth = btoa(`${userOrEmail}:${password}`);
 
 		try {
-			const response = await $fetch<{ session_token: string }>(
+			const response = await $fetch<LoginResponse | LoginVerificationRequired>(
 				`${config.public.apiBaseUrl}/v2/users/login`,
 				{
 					method: 'POST',
@@ -80,21 +105,87 @@ export function useLogin() {
 				}
 			);
 
+			if (isLoginVerificationRequired(response)) {
+				return {
+					success: true,
+					verified: false,
+					ticket: response.ticket,
+					email: response.email,
+					expiresIn: response.expires_in,
+					message: response.message
+				};
+			}
+
 			authStore.setSessionToken(response.session_token);
 			await authStore.fetchCurrentUser();
 
-			return { success: true, message: 'Login successful' };
+			return { success: true, verified: true, message: 'Login successful' };
 		} catch (error: any) {
 			console.error('Login failed:', error);
 			const statusCode = error?.response?.status || error?.statusCode || error?.status;
 			const message =
 				error?.data?.message || error?.message || 'Login failed. Please check your credentials.';
+			const retryAfter =
+				typeof error?.data?.retry_after === 'number' ? error.data.retry_after : undefined;
 
 			if (statusCode) {
-				return { success: false, message: `${statusCode}: ${message}` };
+				return { success: false, message: `${statusCode}: ${message}`, retryAfter };
 			}
 
-			return { success: false, message };
+			return { success: false, message, retryAfter };
+		}
+	};
+}
+
+export function useVerifyNewIPLogin() {
+	const config = useRuntimeConfig();
+	const authStore = useAuthStore();
+
+	return async function verifyNewIPLogin(
+		ticket: string,
+		code: string
+	): Promise<VerifyNewIPLoginResult> {
+		try {
+			const params = new URLSearchParams({ ticket, code });
+			const response = await $fetch<LoginResponse>(
+				`${config.public.apiBaseUrl}/v2/users/login/verify_new_ip?${params.toString()}`,
+				{
+					method: 'POST',
+					headers: {
+						Accept: 'application/json'
+					}
+				}
+			);
+
+			authStore.setSessionToken(response.session_token);
+			await authStore.fetchCurrentUser();
+
+			return { success: true, message: 'Verification successful' };
+		} catch (error: any) {
+			console.error('Login verification failed:', error);
+			const statusCode = error?.response?.status || error?.statusCode || error?.status;
+			const rawMessage: string =
+				error?.data?.message || error?.message || 'Verification failed. Please try again.';
+			const lower = rawMessage.toLowerCase();
+
+			// 400s that kill the ticket: too many attempts, expired/invalid ticket,
+			// missing fields. Caller must restart from /login.
+			const ticketDead =
+				statusCode === 400 &&
+				(lower.includes('too many') ||
+					lower.includes('expired') ||
+					lower.includes('invalid') ||
+					lower.includes('missing'));
+
+			// "Invalid verification code" is the only retryable 400 — but our string
+			// match above would catch it. Narrow back: pure "invalid verification code"
+			// keeps the PIN input open.
+			const codeOnlyInvalid = statusCode === 400 && lower === 'invalid verification code';
+
+			const retryAllowed = codeOnlyInvalid || (!ticketDead && statusCode !== 403);
+
+			const message = statusCode ? `${statusCode}: ${rawMessage}` : rawMessage;
+			return { success: false, message, retryAllowed };
 		}
 	};
 }

@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/login.vue`.
+ * E2E tests for `src/pages/login/index.vue`.
  *
  * Login is a client-only page (`/login` → ssr: false) that wraps a form posting
  * to `/v2/users/login` (Basic auth). On success the user is set in the auth
@@ -16,7 +16,7 @@ test.describe('Login page (anonymous)', () => {
 	test('renders the heading and the login form', async ({ page, gotoHydrated }) => {
 		await gotoHydrated('/login');
 		await expect(page.getByRole('heading', { name: 'Login' })).toBeVisible();
-		await expect(page.getByPlaceholder('Username')).toBeVisible();
+		await expect(page.getByPlaceholder('Username or email')).toBeVisible();
 		await expect(page.getByPlaceholder('Password')).toBeVisible();
 		// Scope to the form to avoid matching navbar Discover popover buttons
 		const submitBtn = page.locator('form button[type="submit"]').first();
@@ -30,9 +30,9 @@ test.describe('Login page (anonymous)', () => {
 		await expect(page.getByRole('heading', { name: 'Login' })).toBeVisible();
 	});
 
-	test('shows validation error for short username', async ({ page, gotoHydrated }) => {
+	test('shows validation error for short identifier', async ({ page, gotoHydrated }) => {
 		await gotoHydrated('/login');
-		await page.getByPlaceholder('Username').fill('ab');
+		await page.getByPlaceholder('Username or email').fill('ab');
 		await page.getByPlaceholder('Password').fill('validpassword123');
 		const submitBtn = page.locator('form button[type="submit"]').first();
 		// Even if disabled (Turnstile pending), clicking should trigger validation
@@ -42,7 +42,7 @@ test.describe('Login page (anonymous)', () => {
 
 	test('shows validation error for short password', async ({ page, gotoHydrated }) => {
 		await gotoHydrated('/login');
-		await page.getByPlaceholder('Username').fill('validuser');
+		await page.getByPlaceholder('Username or email').fill('validuser');
 		await page.getByPlaceholder('Password').fill('short');
 		const submitBtn = page.locator('form button[type="submit"]').first();
 		await submitBtn.click({ force: true }).catch(() => {});
