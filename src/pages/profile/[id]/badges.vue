@@ -81,7 +81,7 @@ watch(
 	() => user.value,
 	(user) => {
 		if (user) {
-			setTitleSuffix(`${handle}'s Badges`);
+			setTitleSuffix(`${handle.value}'s Badges`);
 		} else if (user === null) {
 			setTitleSuffix('User Not Found');
 		} else {
