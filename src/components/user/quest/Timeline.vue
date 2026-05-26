@@ -14,6 +14,21 @@
 			>
 
 			<UTooltip
+				v-else-if="mobileOnly && !completed"
+				text="This quest is only available on The Earth App mobile app."
+			>
+				<UButton
+					id="quest-button"
+					color="info"
+					variant="soft"
+					icon="mdi:cellphone-lock"
+					disabled
+					class="self-center"
+					>Mobile App Only</UButton
+				>
+			</UTooltip>
+
+			<UTooltip
 				v-else-if="hasOtherActiveQuest && !completed"
 				:text="activeQuestReplaceTooltip"
 			>
@@ -334,6 +349,9 @@ const completed = computed(() => {
 // true while the initial quest fetch hasn't resolved yet (quest is still undefined)
 const questLoading = computed(() => quest.value === undefined);
 const isCurrentQuest = computed(() => !!quest.value && quest.value.questId === props.quest.id);
+// Crust is the web frontend — mobile_only quests must be started from the
+// mobile app, even when a user is browsing here from a mobile browser.
+const mobileOnly = computed(() => props.quest.mobile_only === true);
 
 function isCurrentStep(index: number) {
 	if (!quest.value) return false;
@@ -427,9 +445,71 @@ async function confirmMasteryAction() {
 	masteryConfirmAction.value = null;
 }
 
+const PERMISSION_LABELS: Record<Quest['permissions'][number], string> = {
+	camera: 'camera',
+	record: 'microphone',
+	location: 'location'
+};
+
+async function requestQuestPermissions(
+	perms: Quest['permissions']
+): Promise<{ ok: true } | { ok: false; failed: Quest['permissions'][number] }> {
+	for (const perm of perms) {
+		try {
+			if (perm === 'camera') {
+				const s = await navigator.mediaDevices.getUserMedia({ video: true });
+				s.getTracks().forEach((t) => t.stop());
+			} else if (perm === 'record') {
+				const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+				s.getTracks().forEach((t) => t.stop());
+			} else if (perm === 'location') {
+				await new Promise<void>((resolve, reject) => {
+					if (!navigator.geolocation) {
+						reject(new Error('Geolocation is not supported by this browser.'));
+						return;
+					}
+					navigator.geolocation.getCurrentPosition(
+						() => resolve(),
+						(err) => reject(err)
+					);
+				});
+			}
+		} catch {
+			return { ok: false, failed: perm };
+		}
+	}
+	return { ok: true };
+}
+
 async function handleStart(override: boolean = false) {
+	if (mobileOnly.value) {
+		toast.add({
+			title: 'Mobile app only',
+			description: 'This quest can only be started from The Earth App mobile app.',
+			icon: 'mdi:cellphone-lock',
+			color: 'info',
+			duration: 4000
+		});
+		return;
+	}
+
 	loading.value = true;
 	try {
+		const perms = props.quest.permissions ?? [];
+		if (perms.length > 0) {
+			const result = await requestQuestPermissions(perms);
+			if (!result.ok) {
+				toast.add({
+					title: 'Permission required',
+					description: `This quest needs ${PERMISSION_LABELS[result.failed]} access. Please grant it in your browser and try again.`,
+					icon: 'mdi:lock-alert-outline',
+					color: 'error',
+					duration: 5000
+				});
+				return;
+			}
+		}
+
 		const res = await startQuest(props.quest.id, override);
 		toast.add({
 			title: 'Quest started!',

@@ -58,6 +58,16 @@
 						description="Resetting this quest or starting any other quest before you finish it will permanently lock this Badge Mastery. There is no second chance."
 						class="mx-4 my-3"
 					/>
+					<UAlert
+						v-if="quest.mobile_only"
+						id="mobile-only-warning"
+						color="info"
+						variant="subtle"
+						icon="mdi:cellphone-lock"
+						title="Mobile app only"
+						description="This quest can only be started from The Earth App mobile app. You can preview the steps here, but you'll need the mobile app to complete it."
+						class="mx-4 my-3"
+					/>
 					<LazyUserQuestTimeline
 						:quest="quest"
 						:progress="progress"
