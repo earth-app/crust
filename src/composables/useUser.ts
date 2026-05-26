@@ -697,6 +697,10 @@ export function useQuests() {
 				return 'mdi:book-clock-outline';
 			case 'submit_event_image':
 				return 'ph:device-mobile-camera';
+			case 'distance_covered':
+				return 'mdi:map-marker-radius';
+			case 'scan_barcode':
+				return 'mdi:barcode';
 			default:
 				return 'mdi:account';
 		}
