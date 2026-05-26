@@ -119,7 +119,7 @@
 interface Card {
 	id: string;
 	text: string;
-	pairId: number;
+	def: string;
 	side: 'left' | 'right';
 	celebrate: boolean;
 	fading: boolean;
@@ -275,10 +275,10 @@ function init() {
 	const totalCards = pairs.length * 2;
 	boardHeight.value = Math.min(1200, Math.max(640, 100 + totalCards * 110));
 
-	const left: Omit<Card, 'x' | 'y' | 'rot' | 'z'>[] = pairs.map(([term], i) => ({
+	const left: Omit<Card, 'x' | 'y' | 'rot' | 'z'>[] = pairs.map(([term, def], i) => ({
 		id: `L${i}`,
 		text: term,
-		pairId: i,
+		def,
 		side: 'left',
 		celebrate: false,
 		fading: false,
@@ -287,7 +287,7 @@ function init() {
 	const right: Omit<Card, 'x' | 'y' | 'rot' | 'z'>[] = pairs.map(([, def], i) => ({
 		id: `R${i}`,
 		text: def,
-		pairId: i,
+		def,
 		side: 'right',
 		celebrate: false,
 		fading: false,
@@ -493,7 +493,8 @@ useEventListener(['pointerup', 'pointercancel'], (e: PointerEvent) => {
 });
 
 function tryMatch(a: Card, b: Card) {
-	if (a.pairId === b.pairId && a.side !== b.side) {
+	const norm = (s: string) => s.trim().toLowerCase();
+	if (a.side !== b.side && norm(a.def) === norm(b.def)) {
 		const ida = a.id;
 		const idb = b.id;
 		// Phase 1 — green celebrate (visible).
