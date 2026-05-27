@@ -1,32 +1,43 @@
 <template>
-	<NuxtImg
-		src="/earth-app.png"
-		alt="Earth App Logo"
-		format="webp"
-		width="512"
-		height="512"
-		class="absolute h-full w-full rounded-full"
-		id="earth-circle"
-		loading="eager"
-		decoding="async"
-		fetchpriority="high"
-	/>
+	<div class="ea-circle-root">
+		<NuxtImg
+			src="/earth-app.png"
+			alt="Earth App Logo"
+			format="webp"
+			width="512"
+			height="512"
+			class="absolute h-full w-full rounded-full"
+			id="earth-circle"
+			loading="eager"
+			decoding="async"
+			fetchpriority="high"
+		/>
 
-	<UIcon
-		v-for="(icon, idx) in icons"
-		:key="idx"
-		:name="icon.name"
-		:title="`Satellite ${idx + 1}`"
-		size="calc(24px + 0.8vw)"
-		class="absolute"
-		:style="iconStyle(idx, icon.offset, icon.radius)"
-	/>
+		<div
+			v-for="(icon, idx) in icons"
+			:key="idx"
+			class="ea-orbit"
+			:style="orbitStyle(icon, idx)"
+		>
+			<UIcon
+				:name="icon.name"
+				:title="`Satellite ${idx + 1}`"
+				size="calc(24px + 0.8vw)"
+				class="ea-satellite"
+			/>
+		</div>
+	</div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
+type Orbit = {
+	name: string;
+	speed: number;
+	radius: number;
+	offset: number;
+};
 
-const icons = [
+const icons: Orbit[] = [
 	{ name: 'carbon:satellite', speed: 6, radius: 65, offset: 0 },
 	{ name: 'solar:satellite-linear', speed: 8, radius: 85, offset: 45 },
 	{ name: 'circum:satellite-1', speed: 6, radius: 70, offset: 90 },
@@ -35,62 +46,72 @@ const icons = [
 	{ name: 'mdi:space-station', speed: 5, radius: 70, offset: 120 },
 	{ name: 'mdi:satellite-variant', speed: 7, radius: 70, offset: 240 },
 	{ name: 'solar:ufo-bold', speed: 4, radius: 85, offset: 300 },
-	{ name: 'mdi:space-invaders', speed: 7, radius: 90, offset: 180 }
+	{ name: 'mdi:space-invaders', speed: 7, radius: 90, offset: 180 },
+	{ name: 'solar:asteroid-line-duotone', speed: 9, radius: 90, offset: 270 },
+	{ name: 'solar:moon-bold-duotone', speed: 0, radius: 75, offset: 320 }
 ];
 
-const angles = icons.map(() => ref(0));
-let rafId: number | null = null;
-let lastTimestamp = 0;
-let isActive = true;
-
-function animateFrame(timestamp: number) {
-	if (!isActive) return; // Stop animation if component is inactive
-
-	if (!lastTimestamp) lastTimestamp = timestamp;
-	const deltaMs = timestamp - lastTimestamp;
-	lastTimestamp = timestamp;
-
-	icons.forEach((icon, idx) => {
-		const degreesPerMs = 360 / (icon.speed * 1000);
-		const angleRef = angles[idx];
-		if (angleRef) {
-			angleRef.value = (angleRef.value + degreesPerMs * deltaMs) % 360;
-		}
-	});
-
-	if (isActive) {
-		rafId = requestAnimationFrame(animateFrame);
-	}
-}
-
-function iconStyle(idx: number, offset: number = 360 / icons.length, radius: number = 65) {
-	const baseAngle = offset * idx;
-	const angleRef = angles[idx];
-	if (!angleRef) return { display: 'none' };
-
-	const total = angleRef.value + baseAngle;
-	const rad = (total * Math.PI) / 180;
-	const radiusPercent = radius ?? 65;
-	const x = 50 + Math.cos(rad) * radiusPercent;
-	const y = 50 + Math.sin(rad) * radiusPercent;
+function orbitStyle(icon: Orbit, idx: number) {
 	return {
-		top: `${y}%`,
-		left: `${x}%`,
-		transform: 'translate(-50%, -50%)'
+		// ring diameter is 2x the orbit radius, expressed as a percentage of the
+		// (square) container so the orbit scales with the responsive logo size
+		'--ea-diameter': `${icon.radius * 2}%`,
+		'--ea-phase': `${(icon.offset * idx) % 360}deg`,
+		'--ea-period': `${icon.speed}s`,
+		'--ea-z': idx
 	};
 }
-
-onMounted(() => {
-	isActive = true;
-	rafId = requestAnimationFrame(animateFrame);
-});
-
-onUnmounted(() => {
-	isActive = false;
-	if (rafId) {
-		cancelAnimationFrame(rafId);
-		rafId = null;
-	}
-	lastTimestamp = 0;
-});
 </script>
+
+<style scoped>
+.ea-circle-root {
+	position: absolute;
+	inset: 0;
+}
+
+.ea-orbit {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: var(--ea-diameter);
+	z-index: var(--ea-z);
+	aspect-ratio: 1 / 1;
+	/* Decorative: never intercept clicks on nearby content (e.g. hero buttons). */
+	pointer-events: none;
+	transform: translate(-50%, -50%) rotate(var(--ea-phase));
+	animation: ea-orbit-spin var(--ea-period) linear infinite;
+}
+
+.ea-satellite {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translate(-50%, -50%) rotate(calc(-1 * var(--ea-phase)));
+	animation: ea-satellite-upright var(--ea-period) linear infinite;
+}
+
+@keyframes ea-orbit-spin {
+	from {
+		transform: translate(-50%, -50%) rotate(var(--ea-phase));
+	}
+	to {
+		transform: translate(-50%, -50%) rotate(calc(var(--ea-phase) + 360deg));
+	}
+}
+
+@keyframes ea-satellite-upright {
+	from {
+		transform: translate(-50%, -50%) rotate(calc(-1 * var(--ea-phase)));
+	}
+	to {
+		transform: translate(-50%, -50%) rotate(calc(-1 * var(--ea-phase) - 360deg));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ea-orbit,
+	.ea-satellite {
+		animation: none;
+	}
+}
+</style>
