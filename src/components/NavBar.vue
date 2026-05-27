@@ -64,7 +64,7 @@
 							user.username
 						}}</span>
 					</div>
-					<div class="flex space-x-2 md:space-x-4 items-center justify-center">
+					<div class="flex space-x-2 items-center justify-center">
 						<NuxtLink
 							to="/profile/notifications"
 							class="size-6 lg:size-7 relative"
