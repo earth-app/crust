@@ -165,25 +165,53 @@ export type AvatarCosmetic = {
 	rarity: Rarity;
 };
 
+export type QuestPermission = 'camera' | 'location' | 'record';
+
 export type Quest = {
 	id: string;
 	title: string;
 	description: string;
 	icon: string;
 	rarity: Rarity;
-	mobile_only?: boolean;
+	mobile_only?: boolean; // whether the whole quest can only be started/completed on a mobile device
 	steps: (QuestStep | QuestStep[])[]; // single step (required) or alternative steps (user can complete any one of them)
 	reward: number;
 	premium?: boolean;
-	permissions: ('camera' | 'location' | 'record')[]; // e.g. ['camera', 'location']
+	permissions?: QuestPermission[]; // e.g. ['camera', 'location']
 };
 
+// Mirrors cloud's quest step `type` union (see earth-app/cloud src/user/quests/index.ts).
+// `distance_covered` and `scan_barcode` are always mobile-only and handled by the mobile app.
+export type QuestStepType =
+	| 'take_photo_location'
+	| 'take_photo_classification'
+	| 'take_photo_objects'
+	| 'take_photo_caption'
+	| 'take_photo_validation'
+	| 'take_photo_list'
+	| 'article_quiz'
+	| 'draw_picture'
+	| 'attend_event'
+	| 'respond_to_prompt'
+	| 'article_read_time'
+	| 'activity_read_time'
+	| 'transcribe_audio'
+	| 'match_terms'
+	| 'order_items'
+	| 'describe_text'
+	| 'submit_event_image'
+	| 'distance_covered'
+	| 'scan_barcode';
+
 export type QuestStep = {
-	type: string;
+	type: QuestStepType;
 	description: string;
 	parameters: any[];
 	reward?: number;
 	delay?: number; // delay in seconds before this step can be completed after the previous one
+	// whether this step is only available on mobile; alternatives are normally provided so
+	// desktop users can still progress. The submission interface is blocked here when true.
+	mobile_only?: boolean;
 };
 
 export type QuestProgressEntry = {

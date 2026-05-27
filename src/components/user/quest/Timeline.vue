@@ -24,7 +24,7 @@
 					icon="mdi:cellphone-lock"
 					disabled
 					class="self-center"
-					>Mobile App Only</UButton
+					>Mobile Only</UButton
 				>
 			</UTooltip>
 
@@ -92,36 +92,42 @@
 					mode="hover"
 				>
 					<div class="flex flex-col items-center gap-1">
-						<LazyUBadge
-							:key="altIndex"
-							:id="`tile-${index}:${altIndex}`"
-							:icon="altStep.icon"
-							:color="
-								isCurrentQuest
-									? isCurrentStep(index)
-										? 'primary'
-										: altStep.completed
-											? 'warning'
-											: 'secondary'
-									: 'neutral'
-							"
-							:variant="altStep.completed ? 'solid' : 'subtle'"
-							size="xl"
-							:class="
-								altStep.delayedUntil > now
-									? 'opacity-40 hover:cursor-not-allowed'
-									: 'hover:cursor-pointer'
-							"
-							@click="
-								altStep.delayedUntil <= now &&
-								emit('select-step', {
-									...altStep,
-									isCurrentQuest,
-									isCurrentStep: isCurrentStep(index)
-								})
-							"
-							hydrate-on-visible
-						/>
+						<UChip
+							:show="isStepMobileOnly(altStep)"
+							color="info"
+							position="top-right"
+							:ui="{ base: 'size-4 p-0' }"
+						>
+							<template #content>
+								<UIcon
+									name="mdi:cellphone"
+									class="size-2.5 text-inverted"
+								/>
+							</template>
+							<LazyUBadge
+								:key="altIndex"
+								:id="`tile-${index}:${altIndex}`"
+								:icon="altStep.icon"
+								:color="
+									isCurrentQuest
+										? isCurrentStep(index)
+											? 'primary'
+											: altStep.completed
+												? 'warning'
+												: 'secondary'
+										: 'neutral'
+								"
+								:variant="altStep.completed ? 'solid' : 'subtle'"
+								size="xl"
+								:class="
+									altStep.delayedUntil > now
+										? 'opacity-40 hover:cursor-not-allowed'
+										: 'hover:cursor-pointer'
+								"
+								@click="selectStep(altStep, index)"
+								hydrate-on-visible
+							/>
+						</UChip>
 						<span
 							v-if="altStep.reward"
 							class="text-xs opacity-70"
@@ -137,6 +143,16 @@
 							/>
 							<div class="flex flex-col ml-2">
 								<p class="text-sm opacity-90">{{ trimString(altStep.description, 150) }}</p>
+								<p
+									v-if="isStepMobileOnly(altStep)"
+									class="flex items-center gap-1 text-xs font-semibold text-info mt-1"
+								>
+									<UIcon
+										name="mdi:cellphone-lock"
+										class="size-3.5"
+									/>
+									Mobile Only
+								</p>
 								<p
 									v-if="altStep.reward"
 									class="text-xs opacity-70"
@@ -164,35 +180,41 @@
 					mode="hover"
 				>
 					<div class="flex flex-col items-center gap-1">
-						<LazyUBadge
-							:id="`tile-${index}:0`"
-							:icon="item.icon"
-							:color="
-								isCurrentQuest
-									? isCurrentStep(index)
-										? 'primary'
-										: item.completed
-											? 'warning'
-											: 'secondary'
-									: 'neutral'
-							"
-							:variant="item.completed ? 'solid' : 'subtle'"
-							size="xl"
-							:class="
-								item.delayedUntil > now
-									? 'opacity-40 hover:cursor-not-allowed'
-									: 'hover:cursor-pointer'
-							"
-							@click="
-								item.delayedUntil <= now &&
-								emit('select-step', {
-									...item,
-									isCurrentQuest,
-									isCurrentStep: isCurrentStep(index)
-								})
-							"
-							hydrate-on-visible
-						/>
+						<UChip
+							:show="isStepMobileOnly(item)"
+							color="info"
+							position="top-right"
+							:ui="{ base: 'size-4 p-0' }"
+						>
+							<template #content>
+								<UIcon
+									name="mdi:cellphone"
+									class="size-2.5 text-inverted"
+								/>
+							</template>
+							<LazyUBadge
+								:id="`tile-${index}:0`"
+								:icon="item.icon"
+								:color="
+									isCurrentQuest
+										? isCurrentStep(index)
+											? 'primary'
+											: item.completed
+												? 'warning'
+												: 'secondary'
+										: 'neutral'
+								"
+								:variant="item.completed ? 'solid' : 'subtle'"
+								size="xl"
+								:class="
+									item.delayedUntil > now
+										? 'opacity-40 hover:cursor-not-allowed'
+										: 'hover:cursor-pointer'
+								"
+								@click="selectStep(item, index)"
+								hydrate-on-visible
+							/>
+						</UChip>
 
 						<span
 							v-if="item.reward"
@@ -208,6 +230,16 @@
 							/>
 							<div class="flex flex-col ml-2">
 								<p class="text-sm opacity-90">{{ trimString(item.description, 150) }}</p>
+								<p
+									v-if="isStepMobileOnly(item)"
+									class="flex items-center gap-1 text-xs font-semibold text-info mt-1"
+								>
+									<UIcon
+										name="mdi:cellphone-lock"
+										class="size-3.5"
+									/>
+									Mobile Only
+								</p>
 								<p
 									v-if="item.reward"
 									class="text-xs opacity-70"
@@ -353,6 +385,43 @@ const isCurrentQuest = computed(() => !!quest.value && quest.value.questId === p
 // mobile app, even when a user is browsing here from a mobile browser.
 const mobileOnly = computed(() => props.quest.mobile_only === true);
 
+type TimelineStep = QuestStep & {
+	icon: string;
+	index: number;
+	altIndex?: number;
+	completed: boolean;
+	completedAt: number;
+	delayedUntil: number;
+};
+
+// A step is unavailable here when it (or its parent quest) is mobile-only.
+// Alternatives are normally provided so desktop users can still progress.
+function isStepMobileOnly(step: { mobile_only?: boolean }) {
+	return step.mobile_only === true || mobileOnly.value;
+}
+
+function selectStep(step: TimelineStep, index: number) {
+	if (step.delayedUntil > now.value) return;
+
+	if (isStepMobileOnly(step)) {
+		toast.add({
+			title: 'Mobile Only',
+			description:
+				'This step can only be completed in The Earth App mobile app. Complete an alternative step if one is available.',
+			icon: 'mdi:cellphone-lock',
+			color: 'info',
+			duration: 4000
+		});
+		return;
+	}
+
+	emit('select-step', {
+		...step,
+		isCurrentQuest: isCurrentQuest.value,
+		isCurrentStep: isCurrentStep(index)
+	});
+}
+
 function isCurrentStep(index: number) {
 	if (!quest.value) return false;
 	return currentIndex.value === index;
@@ -445,15 +514,15 @@ async function confirmMasteryAction() {
 	masteryConfirmAction.value = null;
 }
 
-const PERMISSION_LABELS: Record<Quest['permissions'][number], string> = {
+const PERMISSION_LABELS: Record<NonNullable<Quest['permissions']>[number], string> = {
 	camera: 'camera',
 	record: 'microphone',
 	location: 'location'
 };
 
 async function requestQuestPermissions(
-	perms: Quest['permissions']
-): Promise<{ ok: true } | { ok: false; failed: Quest['permissions'][number] }> {
+	perms: NonNullable<Quest['permissions']>
+): Promise<{ ok: true } | { ok: false; failed: NonNullable<Quest['permissions']>[number] }> {
 	for (const perm of perms) {
 		try {
 			if (perm === 'camera') {

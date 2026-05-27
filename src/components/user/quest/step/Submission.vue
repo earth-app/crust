@@ -78,6 +78,21 @@
 				/>
 			</div>
 
+			<div
+				v-else-if="stepMobileOnly"
+				class="flex flex-col items-center gap-3 py-8 text-center"
+			>
+				<UIcon
+					name="mdi:cellphone-lock"
+					class="size-14 text-info"
+				/>
+				<span class="text-base! font-medium!">Mobile app only</span>
+				<span class="text-sm! opacity-70 max-w-sm!">
+					This step can only be completed in The Earth App mobile app. Complete an alternative step
+					if one is available.
+				</span>
+			</div>
+
 			<template v-else-if="category === 'photo'">
 				<UserQuestStepCapture
 					v-if="!submitting && !succeeded"
@@ -243,6 +258,12 @@ const submitting = ref(false);
 const succeeded = ref(false);
 const submitError = ref('');
 
+// Mobile-only steps (or any step in a mobile-only quest) can't be completed on
+// the web app — alternatives are provided so the user can still progress.
+const stepMobileOnly = computed(
+	() => props.step.mobile_only === true || props.quest.mobile_only === true
+);
+
 const category = computed(() => {
 	switch (props.step.type) {
 		case 'take_photo_location':
@@ -268,7 +289,7 @@ const category = computed(() => {
 });
 
 onMounted(() => {
-	if (props.quest.permissions.includes('location')) {
+	if (props.quest.permissions?.includes('location')) {
 		fetchLocation();
 	}
 });
