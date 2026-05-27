@@ -158,6 +158,7 @@
 				<UserQuestStepRecorder
 					v-if="!submitting && !succeeded"
 					:disabled="!step.isCurrentQuest || !step.isCurrentStep"
+					:min-length="audioMinLength"
 					@capture="submitPhoto"
 				/>
 				<div
@@ -258,11 +259,14 @@ const submitting = ref(false);
 const succeeded = ref(false);
 const submitError = ref('');
 
-// Mobile-only steps (or any step in a mobile-only quest) can't be completed on
-// the web app — alternatives are provided so the user can still progress.
 const stepMobileOnly = computed(
 	() => props.step.mobile_only === true || props.quest.mobile_only === true
 );
+
+const audioMinLength = computed<number | undefined>(() => {
+	const raw = props.step.parameters?.[2];
+	return typeof raw === 'number' && raw > 0 ? raw : undefined;
+});
 
 const category = computed(() => {
 	switch (props.step.type) {

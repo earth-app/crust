@@ -73,9 +73,21 @@
 				>Tap to start recording</span
 			>
 
+			<span
+				v-if="stage === 'recording' && !canStop"
+				class="-mt-4! text-[0.72rem]! text-neutral-500! tabular-nums!"
+				>Keep recording — {{ stopCountdown }}s until you can stop</span
+			>
+
 			<button
 				v-if="stage === 'recording'"
-				class="size-16! rounded-full! border-4! border-red-500! flex items-center justify-center! active:scale-90 transition-transform!"
+				class="size-16! rounded-full! border-4! flex items-center justify-center! transition-all!"
+				:class="
+					canStop
+						? 'border-red-500! active:scale-90 cursor-pointer'
+						: 'border-red-500/30 opacity-40 cursor-not-allowed'
+				"
+				:disabled="!canStop"
 				@click="stopRecording"
 			>
 				<span class="w-5 h-5 bg-red-500 rounded-sm" />
@@ -136,7 +148,9 @@
 <script setup lang="ts">
 type Stage = 'permission' | 'ready' | 'recording' | 'preview' | 'error';
 
-const props = defineProps<{ disabled?: boolean }>();
+const props = withDefaults(defineProps<{ disabled?: boolean; minLength?: number }>(), {
+	minLength: 10
+});
 const emit = defineEmits<{ capture: [file: File] }>();
 
 const stage = ref<Stage>('permission');
@@ -144,6 +158,9 @@ const errorMsg = ref('');
 const elapsed = ref(0);
 const bars = ref<number[]>(Array(20).fill(4));
 const previewUrl = ref('');
+
+const canStop = computed(() => elapsed.value >= props.minLength);
+const stopCountdown = computed(() => Math.max(0, Math.ceil(props.minLength - elapsed.value)));
 
 let mediaRecorder: MediaRecorder | null = null;
 let chunks: Blob[] = [];
