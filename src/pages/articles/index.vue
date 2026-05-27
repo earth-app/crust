@@ -119,27 +119,11 @@
 				content-size="small"
 			/>
 		</InfoCardGroup>
-		<LazyInfoCardGroup
+		<ArticleTagGroup
 			v-for="tag in tagOrder"
 			:key="tag"
-			:title="`${capitalizeFully(tag.replace(/_/g, ' '))} Articles`"
-			:description="`Explore articles related to the ${tag.replace(/_/g, ' ').toLowerCase()} tag`"
-			icon="mdi:tag"
-		>
-			<LazyArticleCard
-				v-for="article in tagLists.get(tag)?.items || []"
-				:key="article.id"
-				:article="article"
-				class="motion-preset-fade-md"
-				hydrate-on-visible
-			/>
-			<LazyInfoCardSkeleton
-				v-for="n in tagLists.get(tag)?.remaining || 0"
-				:key="`tag-skel-${tag}-${n}`"
-				content-size="small"
-				hydrate-on-visible
-			/>
-		</LazyInfoCardGroup>
+			:tag="tag"
+		/>
 	</div>
 </template>
 
@@ -165,9 +149,7 @@ const recent = useIncrementalList<Article>({ staggerMs: 80, initialExpectedCount
 const older = useIncrementalList<Article>({ staggerMs: 80, initialExpectedCount: 2 });
 const byCloud = useIncrementalList<Article>({ staggerMs: 80, initialExpectedCount: 2 });
 
-type TagList = ReturnType<typeof useIncrementalList<Article>>;
 const tagOrder = ref<string[]>([]);
-const tagLists = reactive(new Map<string, TagList>()) as Map<string, TagList>;
 
 const loading = computed(() => {
 	const loaded = random.isLoading || recent.isLoading;
@@ -217,8 +199,6 @@ async function loadContent() {
 	recent.reset(2);
 	older.reset(2);
 	byCloud.reset(2);
-	tagOrder.value = [];
-	tagLists.clear();
 
 	void loadRecommended();
 
@@ -250,22 +230,9 @@ async function loadContent() {
 		return null;
 	});
 
-	const randomTypes = com.earthapp.activity.ActivityType.values().sort(
-		(_a, _b) => Math.random() - 0.5
-	);
-	for (const type of randomTypes) {
-		const tag = type.name.toLowerCase();
-		const list = useIncrementalList<Article>({ staggerMs: 80, initialExpectedCount: 2 });
-		tagLists.set(tag, list);
-		tagOrder.value.push(tag);
-
-		void list.load(async () => {
-			const res = await fetchRandom(15, undefined, tag);
-			if (valid(res)) return res.data;
-			reportError(`articles for tag ${tag}`, res.message);
-			return null;
-		});
-	}
+	tagOrder.value = com.earthapp.activity.ActivityType.values()
+		.map((type) => type.name.toLowerCase())
+		.sort(() => Math.random() - 0.5);
 }
 
 onMounted(async () => {
