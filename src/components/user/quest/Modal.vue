@@ -56,7 +56,7 @@
 						icon="mdi:alert-octagon-outline"
 						title="One-Shot Mastery Quest"
 						description="Resetting this quest or starting any other quest before you finish it will permanently lock this Badge Mastery. There is no second chance."
-						class="mx-4 my-3"
+						class="my-3"
 					/>
 					<UAlert
 						v-if="quest.mobile_only"
@@ -65,8 +65,8 @@
 						variant="subtle"
 						icon="mdi:cellphone-lock"
 						title="Mobile Only"
-						description="This quest can only be started from The Earth App mobile app. You can preview the steps here, but you'll need the mobile app to complete it."
-						class="mx-4 my-3"
+						description="This quest can only be started and continued from The Earth App mobile app. You can preview the steps here, but you'll need the mobile app to complete it."
+						class="my-3"
 					/>
 					<LazyUserQuestTimeline
 						:quest="quest"
