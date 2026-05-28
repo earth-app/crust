@@ -1055,7 +1055,7 @@ export function useFriends(id?: string) {
 
 // Geolocation
 
-export function useGeolocation() {
+export function useQuestGeolocation() {
 	const lat = ref<number | null>(null);
 	const lng = ref<number | null>(null);
 	const alt = ref<number | null>(null);
