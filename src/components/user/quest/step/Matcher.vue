@@ -159,7 +159,7 @@ interface Card {
 
 type Phase = 'countdown' | 'playing' | 'win' | 'lose';
 
-const props = defineProps<{
+interface Props {
 	step: QuestStep & {
 		icon: string;
 		completed: boolean;
@@ -170,7 +170,9 @@ const props = defineProps<{
 	submit?: boolean;
 	disabled?: boolean;
 	serverRequest?: typeof makeServerRequest;
-}>();
+}
+
+const props = withDefaults(defineProps<Props>(), { submit: true });
 
 const emit = defineEmits<{ submitted: [] }>();
 
@@ -558,7 +560,6 @@ function tryMatch(a: Card, b: Card) {
 }
 
 async function sendUpdate() {
-	// use '=== false' because of undefined
 	if (props.disabled || props.submit === false) {
 		emit('submitted');
 		return;
