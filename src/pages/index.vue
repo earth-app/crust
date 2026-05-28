@@ -112,78 +112,96 @@
 					/>
 				</InfoCardGroup>
 
-				<InfoCardGroup
-					:title="user ? `Today's Content` : 'Discover Content'"
-					:description="user ? 'Topics you might enjoy' : 'Explore interests from around the world'"
-					icon="material-symbols:apps"
+				<div
+					ref="activitiesSentinel"
 					class="w-11/12"
 				>
-					<LazyActivityCard
-						v-for="activity in activities.items"
-						:key="activity.id"
-						:activity="activity"
-						class="motion-preset-fade-md"
-						hydrate-on-visible
-					/>
-					<InfoCardSkeleton
-						v-for="n in activities.remaining"
-						:key="`home-activity-skel-${n}`"
-					/>
-				</InfoCardGroup>
-				<InfoCardGroup
-					:title="user ? `A Fun Prompt` : 'Get Inspired'"
-					description="Writing prompts to spark your creativity"
-					icon="mdi:lightbulb-on-outline"
+					<InfoCardGroup
+						:title="user ? `Today's Content` : 'Discover Content'"
+						:description="
+							user ? 'Topics you might enjoy' : 'Explore interests from around the world'
+						"
+						icon="material-symbols:apps"
+					>
+						<LazyActivityCard
+							v-for="activity in activities.items"
+							:key="activity.id"
+							:activity="activity"
+							class="motion-preset-fade-md"
+							hydrate-on-visible
+						/>
+						<InfoCardSkeleton
+							v-for="n in activities.remaining"
+							:key="`home-activity-skel-${n}`"
+						/>
+					</InfoCardGroup>
+				</div>
+				<div
+					ref="promptsSentinel"
 					class="w-11/12 mt-4"
 				>
-					<LazyPromptCard
-						v-for="prompt in prompts.items"
-						:key="prompt.id"
-						:prompt="prompt"
-						class="motion-preset-fade-md"
-						hydrate-on-visible
-					/>
-					<InfoCardSkeleton
-						v-for="n in prompts.remaining"
-						:key="`home-prompt-skel-${n}`"
-					/>
-				</InfoCardGroup>
-				<InfoCardGroup
-					title="A Good Read"
-					description="Articles you might find interesting"
-					icon="mdi:book-multiple-variant"
+					<InfoCardGroup
+						:title="user ? `A Fun Prompt` : 'Get Inspired'"
+						description="Writing prompts to spark your creativity"
+						icon="mdi:lightbulb-on-outline"
+					>
+						<LazyPromptCard
+							v-for="prompt in prompts.items"
+							:key="prompt.id"
+							:prompt="prompt"
+							class="motion-preset-fade-md"
+							hydrate-on-visible
+						/>
+						<InfoCardSkeleton
+							v-for="n in prompts.remaining"
+							:key="`home-prompt-skel-${n}`"
+						/>
+					</InfoCardGroup>
+				</div>
+				<div
+					ref="articlesSentinel"
 					class="w-11/12 mt-4"
 				>
-					<LazyArticleCard
-						v-for="article in articles.items"
-						:key="article.id"
-						:article="article"
-						class="motion-preset-fade-md"
-						hydrate-on-visible
-					/>
-					<InfoCardSkeleton
-						v-for="n in articles.remaining"
-						:key="`home-article-skel-${n}`"
-					/>
-				</InfoCardGroup>
-				<InfoCardGroup
-					title="Join The Community"
-					description="Sign up for events to personalize your experience"
-					icon="mdi:account-group-outline"
+					<InfoCardGroup
+						title="A Good Read"
+						description="Articles you might find interesting"
+						icon="mdi:book-multiple-variant"
+					>
+						<LazyArticleCard
+							v-for="article in articles.items"
+							:key="article.id"
+							:article="article"
+							class="motion-preset-fade-md"
+							hydrate-on-visible
+						/>
+						<InfoCardSkeleton
+							v-for="n in articles.remaining"
+							:key="`home-article-skel-${n}`"
+						/>
+					</InfoCardGroup>
+				</div>
+				<div
+					ref="eventsSentinel"
 					class="w-11/12 mt-4"
 				>
-					<LazyEventCard
-						v-for="event in events.items"
-						:key="event.id"
-						:event="event"
-						class="motion-preset-fade-md"
-						hydrate-on-visible
-					/>
-					<InfoCardSkeleton
-						v-for="n in events.remaining"
-						:key="`home-event-skel-${n}`"
-					/>
-				</InfoCardGroup>
+					<InfoCardGroup
+						title="Join The Community"
+						description="Sign up for events to personalize your experience"
+						icon="mdi:account-group-outline"
+					>
+						<LazyEventCard
+							v-for="event in events.items"
+							:key="event.id"
+							:event="event"
+							class="motion-preset-fade-md"
+							hydrate-on-visible
+						/>
+						<InfoCardSkeleton
+							v-for="n in events.remaining"
+							:key="`home-event-skel-${n}`"
+						/>
+					</InfoCardGroup>
+				</div>
 			</div>
 		</ClientOnly>
 	</div>
@@ -217,44 +235,91 @@ function reportError(label: string, message?: string) {
 	});
 }
 
-onMounted(async () => {
-	if (!user.value && !visitedSite.value) {
-		welcomeTour();
-	}
-	markVisited();
+const activitiesSentinel = ref<HTMLElement | null>(null);
+const promptsSentinel = ref<HTMLElement | null>(null);
+const articlesSentinel = ref<HTMLElement | null>(null);
+const eventsSentinel = ref<HTMLElement | null>(null);
 
-	const { fetchRandom: fetchRandomPrompts } = usePrompts();
-	const { fetchRandom: fetchRandomActivities } = useActivities();
-	const { fetchRandom: fetchRandomArticles } = useArticles();
-	const { fetchRandom: fetchRandomEvents } = useEvents();
+const loadedActivities = ref(false);
+const loadedPrompts = ref(false);
+const loadedArticles = ref(false);
+const loadedEvents = ref(false);
 
-	void prompts.load(async () => {
-		const res = await fetchRandomPrompts(5);
-		if (valid(res)) return res.data;
-		reportError('Prompts', res.message);
-		return null;
-	});
-
+function loadActivities() {
+	if (loadedActivities.value) return;
+	loadedActivities.value = true;
+	const { fetchRandom } = useActivities();
 	void activities.load(async () => {
-		const res = await fetchRandomActivities(10);
+		const res = await fetchRandom(10);
 		if (valid(res)) return res.data;
 		reportError('Activities', res.message);
 		return null;
 	});
+}
 
+function loadPrompts() {
+	if (loadedPrompts.value) return;
+	loadedPrompts.value = true;
+	const { fetchRandom } = usePrompts();
+	void prompts.load(async () => {
+		const res = await fetchRandom(5);
+		if (valid(res)) return res.data;
+		reportError('Prompts', res.message);
+		return null;
+	});
+}
+
+function loadArticles() {
+	if (loadedArticles.value) return;
+	loadedArticles.value = true;
+	const { fetchRandom } = useArticles();
 	void articles.load(async () => {
-		const res = await fetchRandomArticles(8);
+		const res = await fetchRandom(8);
 		if (valid(res)) return res.data;
 		reportError('Articles', res.message);
 		return null;
 	});
+}
 
+function loadEvents() {
+	if (loadedEvents.value) return;
+	loadedEvents.value = true;
+	const { fetchRandom } = useEvents();
 	void events.load(async () => {
-		const res = await fetchRandomEvents(10);
+		const res = await fetchRandom(10);
 		if (valid(res)) return res.data;
 		reportError('Events', res.message);
 		return null;
 	});
+}
+
+if (import.meta.client) {
+	const observe = (target: Ref<HTMLElement | null>, load: () => void) => {
+		const { stop } = useIntersectionObserver(
+			target,
+			(entries) => {
+				if (entries[0]?.isIntersecting) {
+					stop();
+					load();
+				}
+			},
+			{ rootMargin: '300px' }
+		);
+	};
+
+	onMounted(() => {
+		observe(activitiesSentinel, loadActivities);
+		observe(promptsSentinel, loadPrompts);
+		observe(articlesSentinel, loadArticles);
+		observe(eventsSentinel, loadEvents);
+	});
+}
+
+onMounted(() => {
+	if (!user.value && !visitedSite.value) {
+		welcomeTour();
+	}
+	markVisited();
 });
 
 function welcomeTour() {
