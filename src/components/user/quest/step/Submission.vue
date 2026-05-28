@@ -253,7 +253,7 @@ const emit = defineEmits<{
 const { user } = useAuth(props.serverRequest || makeServerRequest);
 const userId = computed(() => user.value?.id);
 const { updateQuest } = useUser(userId, props.serverRequest || makeServerRequest);
-const { lat, lng, fetchLocation } = useGeolocation();
+const { lat, lng, fetchLocation } = useQuestGeolocation();
 
 const submitting = ref(false);
 const succeeded = ref(false);
