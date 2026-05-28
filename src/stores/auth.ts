@@ -114,7 +114,7 @@ export const useAuthStore = defineStore('auth', () => {
 			const hadCurrentUser = !!currentUser.value;
 
 			try {
-				if (import.meta.client && (force || !sessionToken.value)) {
+				if (import.meta.client && force) {
 					await syncSessionToken({ allowNullOverwrite: !sessionToken.value });
 				}
 
