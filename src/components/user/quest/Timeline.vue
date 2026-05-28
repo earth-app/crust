@@ -120,7 +120,7 @@
 								:variant="altStep.completed ? 'solid' : 'subtle'"
 								size="xl"
 								:class="
-									altStep.delayedUntil > now
+									altStep.delayedUntil > now || isFutureStep(index)
 										? 'opacity-40 hover:cursor-not-allowed'
 										: 'hover:cursor-pointer'
 								"
@@ -207,7 +207,7 @@
 								:variant="item.completed ? 'solid' : 'subtle'"
 								size="xl"
 								:class="
-									item.delayedUntil > now
+									item.delayedUntil > now || isFutureStep(index)
 										? 'opacity-40 hover:cursor-not-allowed'
 										: 'hover:cursor-pointer'
 								"
@@ -402,6 +402,7 @@ function isStepMobileOnly(step: { mobile_only?: boolean }) {
 
 function selectStep(step: TimelineStep, index: number) {
 	if (step.delayedUntil > now.value) return;
+	if (isFutureStep(index)) return;
 
 	if (isStepMobileOnly(step)) {
 		toast.add({
@@ -425,6 +426,15 @@ function selectStep(step: TimelineStep, index: number) {
 function isCurrentStep(index: number) {
 	if (!quest.value) return false;
 	return currentIndex.value === index;
+}
+
+// only the active quest's future tiles are locked; past alt-step groups stay
+// clickable so users can fill in alternatives before finishing the quest.
+function isFutureStep(index: number) {
+	if (!isCurrentQuest.value) return false;
+	const ci = currentIndex.value;
+	if (ci < 0) return false;
+	return index > ci;
 }
 
 function formatTime(seconds: number) {
