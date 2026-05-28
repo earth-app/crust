@@ -144,6 +144,33 @@
 			/>
 			<h3 class="text-xl! font-bold!">Correct Order!</h3>
 			<p class="text-sm! text-neutral-400!">Completed in {{ 60 - timeLeft }}s</p>
+
+			<div
+				v-if="submitting"
+				class="flex items-center gap-2! text-sm! text-neutral-400!"
+			>
+				<UIcon
+					name="i-lucide-loader-circle"
+					class="size-4 animate-spin"
+				/>
+				<span>Saving Progress...</span>
+			</div>
+
+			<UAlert
+				v-if="submitError"
+				color="error"
+				variant="soft"
+				icon="i-lucide-triangle-alert"
+				:description="submitError"
+				class="w-full mt-2"
+			/>
+			<button
+				v-if="submitError && !submitting"
+				class="mt-2! px-6! py-2! rounded-xl! border border-neutral-700 bg-neutral-900 text-white text-sm! font-medium! active:scale-95 transition-transform"
+				@click="sendUpdate"
+			>
+				Try Again
+			</button>
 		</div>
 
 		<div
@@ -188,7 +215,7 @@ const emit = defineEmits<{ submitted: [] }>();
 const { user } = useAuth(props.serverRequest || makeServerRequest);
 const userId = computed(() => user.value?.id);
 const { updateQuest } = useUser(userId, props.serverRequest || makeServerRequest);
-const { lat, lng } = useGeolocation();
+const { lat, lng } = useQuestGeolocation();
 
 const phase = ref<Phase>('countdown');
 const countdown = ref(3);
@@ -197,6 +224,8 @@ const correctOrder = ref<string[]>([]);
 const bank = ref<string[]>([]);
 const slots = ref<(string | null)[]>([]);
 const selectedTile = ref<string | null>(null);
+const submitting = ref(false);
+const submitError = ref('');
 
 const draggingTile = ref<string | null>(null);
 const dragSource = ref<DragSource | null>(null);
@@ -452,17 +481,34 @@ async function sendUpdate() {
 		emit('submitted');
 		return;
 	}
-	await updateQuest(
-		{
-			type: props.step.type,
-			index: props.step.index,
-			...(props.step.altIndex !== undefined ? { altIndex: props.step.altIndex } : {})
-		},
-		lat.value,
-		lng.value
-	).catch(() => {});
-	await new Promise((r) => setTimeout(r, 800));
-	emit('submitted');
+	if (!userId.value) {
+		submitError.value = 'Your account is still loading…';
+		return;
+	}
+	submitError.value = '';
+	submitting.value = true;
+	try {
+		const res = await updateQuest(
+			{
+				type: props.step.type,
+				index: props.step.index,
+				...(props.step.altIndex !== undefined ? { altIndex: props.step.altIndex } : {})
+			},
+			lat.value,
+			lng.value
+		);
+		if (res.validated) {
+			await new Promise((r) => setTimeout(r, 800));
+			emit('submitted');
+		} else {
+			submitError.value = res.message || 'Could not save your progress. Please try again.';
+		}
+	} catch (e: any) {
+		submitError.value =
+			e?.data?.message || e?.statusMessage || e?.message || 'Submission failed. Please try again.';
+	} finally {
+		submitting.value = false;
+	}
 }
 
 onMounted(init);
