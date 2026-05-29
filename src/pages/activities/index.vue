@@ -20,13 +20,20 @@
 			/>
 		</InfoCardGroup>
 	</div>
-	<div class="flex w-full justify-center my-4">
+	<div class="flex w-full justify-center items-center my-4 gap-2">
 		<h2
 			id="activities"
 			class="text-2xl mt-24 sm:mt-0 text-center font-semibold"
 		>
 			All Activities
 		</h2>
+		<UButton
+			icon="mdi:progress-question"
+			color="secondary"
+			variant="subtle"
+			class="mt-24 sm:mt-0"
+			@click="startTour('activities-index')"
+		/>
 	</div>
 	<div class="flex flex-col w-full justify-between items-center">
 		<div
@@ -58,6 +65,14 @@
 		ref="loadMoreRef"
 		class="h-1"
 	></div>
+
+	<ClientOnly>
+		<SiteTour
+			:steps="activitiesIndexTour"
+			name="Activities Index Tour"
+			tour-id="activities-index"
+		/>
+	</ClientOnly>
 </template>
 <script setup lang="ts">
 const { setTitleSuffix } = useTitleSuffix();
@@ -143,4 +158,27 @@ useIntersectionObserver(
 );
 
 onMounted(loadActivities);
+
+const { startTour } = useSiteTour();
+
+const activitiesIndexTour: SiteTourStep[] = [
+	{
+		id: 'activities',
+		title: 'Browse Activities',
+		description:
+			'This is the full catalog of activities on the Earth App - from gardening and running to astronomy and creative writing. Each one has its own page with curated resources and an optional quest.',
+		footer: "Don't see something? The list grows over time, and admins can add new activities.",
+		icon: 'mdi:format-list-bulleted-square',
+		highlightPadding: 8
+	},
+	{
+		title: 'Personalized Picks',
+		description:
+			'Signed-in users get a "Recommended for You" section at the top, generated from the activities on your profile. The more accurate your profile, the better the picks.',
+		footer:
+			'Pick an activity and visit its page to see resources, related events, and start a quest.',
+		icon: 'mdi:star',
+		placement: 'center'
+	}
+];
 </script>

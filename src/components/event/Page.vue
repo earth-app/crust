@@ -201,24 +201,28 @@ function openInfo() {
 const eventTour: SiteTourStep[] = [
 	{
 		id: 'event-profile-card',
-		title: 'Welcome to Events!',
+		title: 'Event Overview',
 		description:
-			'This card provides an overview of the event, including its name, date, location, and a brief description. You can click on the event name to view more details about the event, such as the schedule, speakers, and more!',
-		footer: 'Click next to learn more about events.'
+			'Everything you need at a glance: name, date, location, sign-up status, attendee count, and a description. The Sign Up button appears here if registration is open.',
+		footer: 'Live status banners show ongoing, starting soon, or concluded events.',
+		icon: 'mdi:calendar-star',
+		highlightPadding: 12
 	},
 	{
 		id: 'event-host-card',
-		title: 'Event Host',
+		title: 'Meet the Host',
 		description:
-			"This card displays information about the host of the event. You can click on the host's name to view their profile and learn more about them!",
-		footer: 'Click next to learn about event thumbnails.'
+			"This card shows who's running the event. Click the host's name or avatar to visit their profile, see their other events, and add them as a friend.",
+		footer: 'Pro tip: hosts often share extra context on their profile bio.',
+		icon: 'mdi:account-tie-outline'
 	},
 	{
 		id: 'event-submissions',
-		title: 'Event Submissions',
+		title: 'Event Submissions & Gallery',
 		description:
-			'Attendees can submit photos for impact points and to be featured in the event gallery. If the event is still accepting submissions, you can upload your own photos to share your experience with others!',
-		footer: 'Enjoy exploring the event!'
+			'During and shortly after the event, attendees can upload photos to share their experience. Submissions earn Impact Points and can be featured in the public gallery.',
+		footer: 'Submissions are open from the event start through 3 days after it ends.',
+		icon: 'mdi:image-multiple-outline'
 	}
 ];
 </script>

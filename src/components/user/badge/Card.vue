@@ -127,7 +127,7 @@
 						v-else-if="masteryQuestReady && masteryExpiresInDays !== null"
 						class="text-xs opacity-70 text-center max-w-72"
 					>
-						Pick up where you left off — expires in
+						Pick up where you left off - expires in
 						{{ masteryExpiresInDays }} day{{ masteryExpiresInDays === 1 ? '' : 's' }}. Resetting
 						will permanently lock this mastery.
 					</span>
@@ -277,7 +277,7 @@ const generatingMessages = [
 const generatingMessage = ref(generatingMessages[0]);
 let generatingInterval: ReturnType<typeof setInterval> | null = null;
 
-// beforeunload guard while generation is in-flight — abandoning the request loses the slot
+// beforeunload guard while generation is in-flight - abandoning the request loses the slot
 // without a stored quest, so warn before letting the tab close/navigate
 const beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 	if (!masteryLoading.value) return;
@@ -361,7 +361,7 @@ const canShowMastery = computed(() => {
 });
 
 // cap state pulled from the per-user mastery list cached in userStore. cap blocks NEW
-// generation only — a quest already generated (masteryQuestReady) is always startable
+// generation only - a quest already generated (masteryQuestReady) is always startable
 const masteryList = computed(() => {
 	const uid = authUser.value?.id;
 	if (!uid) return null;
@@ -566,7 +566,7 @@ async function confirmGenerate() {
 					color: 'warning',
 					duration: 5000
 				});
-				// Refetch status — it may have changed underneath us
+				// Refetch status - it may have changed underneath us
 				masteryStatusFetched.value = false;
 				await loadMasteryStatus();
 			} else if (e.code === 'cap_reached') {
@@ -611,29 +611,43 @@ async function confirmGenerate() {
 	}
 }
 
-const masteryTour: SiteTourStep[] = [
+const masteryTour = computed<SiteTourStep[]>(() => [
 	{
 		id: 'badge-mastery-cta',
 		title: 'Badge Mastery',
 		description:
-			'After earning a badge, you can deepen it with a personalised AI quest tailored to your profile and activities.',
-		footer: 'Click "Next" to learn how starting a mastery quest works.'
+			"After earning a badge, you can deepen it with a personalised AI quest tailored to your profile and activities. It's an optional way to turn a badge into a long-form challenge - drawings, photos, audio, reflection.",
+		footer: 'Mastery is opt-in. Plenty of users skip it; plenty love the structure.',
+		icon: 'mdi:medal-outline',
+		highlightPadding: 8
 	},
 	{
 		id: 'badge-mastery-cta',
-		title: 'One-shot commitment',
+		title: 'One-shot Commitment',
 		description:
-			'Each Badge Mastery is a single attempt. Resetting the quest or starting a different one before finishing will permanently lock the mastery for that badge.',
-		footer: "You'll get a clear confirmation prompt before generation starts."
+			'Each Badge Mastery is a single attempt. Resetting it, or starting a different mastery before finishing, will permanently lock this one - you cannot regenerate it.\n\nThere is also a hard cap on active mastery quests at any given time.',
+		footer: "You'll see a clear confirmation prompt before generation starts.",
+		icon: 'mdi:alert-octagon-outline',
+		dim: true,
+		condition: () => !masteryLocked.value && !masteryDisabled.value,
+		cta: {
+			label: masteryQuestReady.value ? 'Continue Mastery' : 'Start Mastery',
+			icon: 'mdi:medal-outline',
+			color: 'warning',
+			advance: false,
+			closeOnSuccess: true,
+			handler: () => handleMasteryClick()
+		}
 	},
 	{
 		id: 'badge-mastery-help',
 		title: 'Need a refresher?',
 		description:
-			'Click this help button any time to revisit this tour. The "Mastered" badge will appear here once you finish the quest.',
-		footer: 'Good luck!'
+			'Tap this help button any time to revisit this tour. Once you finish the mastery, a "Mastered" chip appears next to the badge - visible on your profile too.',
+		footer: 'Good luck - and have fun with it!',
+		icon: 'mdi:progress-question'
 	}
-];
+]);
 
 onMounted(() => {
 	if ('user_id' in props.badge) {

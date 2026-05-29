@@ -228,22 +228,40 @@ const completedQuests = computed(() => {
 
 // quest tours
 const { startTour } = useSiteTour();
-const questTour: SiteTourStep[] = [
+const questTour = computed<SiteTourStep[]>(() => [
 	{
 		id: 'quests-title',
-		title: 'Welcome to Quests!',
+		title: 'Your Quest Hub',
 		description:
-			'Quests are a way to track your progress and earn rewards as you explore The Earth App and its activities.',
-		footer: 'Click "Next" to learn how to use quests and start your journey!'
+			'Quests turn an activity into a structured journey: a series of steps to complete with a reward at the end. Browse by rarity below, or jump back into your active quest if you have one.',
+		footer: 'You can only have one active quest at a time - pick one that excites you.',
+		icon: 'mdi:sword-cross',
+		placement: 'bottom'
 	},
 	{
-		id: 'quest-1',
-		title: 'Your Quests',
+		id: 'current-quest',
+		title: 'Your Active Quest',
 		description:
-			'By clicking on a quest, you can look through the steps you need to complete it. Read Articles, Sort Items, Take Pictures, Record Yourself, and more to complete quests and earn rewards!',
-		footer: 'Complete quests to earn rewards and show off your progress on your profile!'
+			"This is the quest you're currently working through. Click it to open the timeline and submit progress on the next step.",
+		footer: 'Only one quest is active at a time.',
+		icon: 'mdi:shield-sword',
+		highlightPadding: 8,
+		condition: () => !!quest.value?.quest
+	},
+	{
+		id: 'quest-0',
+		title: 'Browse Quests',
+		description:
+			'Click any quest to see its steps. Tasks might ask you to read articles, take a photo, record audio, sort items, or visit a place. Premium quests are unlocked with PRO accounts.',
+		footer:
+			'Steps may include time delays or be mobile-only - those will be flagged in the quest timeline.',
+		icon: 'mdi:map-marker-path',
+		highlightPadding: 8,
+		waitFor: 'quest-0',
+		waitTimeout: 4000,
+		condition: () => !!quests.value && quests.value.length > 0
 	}
-];
+]);
 
 setTitleSuffix('Quests');
 useSeoMeta({

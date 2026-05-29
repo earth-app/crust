@@ -6,7 +6,10 @@
 		>
 			Today's Prompts
 		</h2>
-		<div class="flex gap-x-2">
+		<div
+			id="prompts-toolbar"
+			class="flex gap-x-2"
+		>
 			<UButton
 				title="Refresh"
 				icon="i-lucide-refresh-cw"
@@ -35,6 +38,13 @@
 					@click="$router.push('/prompts/new')"
 				/>
 			</UTooltip>
+			<UButton
+				icon="mdi:progress-question"
+				color="secondary"
+				variant="subtle"
+				class="mt-2"
+				@click="startTour('prompts-index')"
+			/>
 		</div>
 		<div
 			id="prompts"
@@ -55,6 +65,14 @@
 			/>
 		</div>
 	</div>
+
+	<ClientOnly>
+		<SiteTour
+			:steps="promptsIndexTour"
+			name="Prompts Index Tour"
+			tour-id="prompts-index"
+		/>
+	</ClientOnly>
 </template>
 
 <script setup lang="ts">
@@ -106,4 +124,37 @@ onMounted(async () => {
 	}
 	await fetchPrompts();
 });
+
+const { startTour } = useSiteTour();
+
+const promptsIndexTour: SiteTourStep[] = [
+	{
+		id: 'prompts-title',
+		title: "Today's Prompts",
+		description:
+			'A fresh batch of creative or thoughtful questions. Read one, answer one, or scroll until something catches your eye.',
+		footer: 'Prompts rotate over time. Hit Refresh to see a new mix.',
+		icon: 'mdi:lightbulb-on-outline'
+	},
+	{
+		id: 'prompts-toolbar',
+		title: 'Refresh & Create',
+		description:
+			'Refresh shuffles new prompts in. The plus button creates your own prompt - Writers and above can post multiple per day; Free accounts can post one.',
+		footer: 'Want to post more? Upgrading to PRO removes the daily limit.',
+		icon: 'mdi:plus-box-outline',
+		highlightPadding: 8
+	},
+	{
+		id: 'prompts',
+		title: 'Prompt Cards',
+		description:
+			"Click any card to open the prompt page where you can read everyone's responses and post your own.",
+		footer: 'Best practice: write your own response BEFORE reading others, for an unbiased take.',
+		icon: 'mdi:cards-outline',
+		highlightPadding: 12,
+		waitFor: 'prompts',
+		waitTimeout: 3000
+	}
+];
 </script>

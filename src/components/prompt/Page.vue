@@ -166,24 +166,30 @@ const { startTour } = useSiteTour();
 
 const promptTour: SiteTourStep[] = [
 	{
-		title: 'Welcome to Prompts!',
+		title: 'Welcome to Prompts',
 		description:
-			'Prompts are a fun way to ask intellectual questions and share creative ideas with the community. This card displays the prompt details, including the prompt question, description, and any associated media.',
-		footer: 'You can read the prompt and scroll down to see how others have responded to it!'
+			'Prompts are short, creative or thoughtful questions designed to make you think - and to spark conversation. Read the prompt above, then scroll to see what the community wrote.',
+		footer: 'There’s no right answer. The best responses are honest and specific.',
+		icon: 'mdi:lightbulb-on-outline',
+		placement: 'center',
+		dim: true
 	},
 	{
 		id: 'response-input',
-		title: 'Write a Response',
+		title: 'Write Your Response',
 		description:
-			'If you have a thought or idea related to the prompt, you can share it by writing a response in the input box. Just type your response and click the "Post" button to share it with the community!',
-		footer: 'Try posting your own response to the prompt!'
+			'Type your thoughts here. Keep it as short or as long as you like - a sentence is fine, an essay is fine. Press Enter to submit, Shift+Enter for a new line.',
+		footer: 'You must be signed in to post. Responses inherit your account privacy settings.',
+		icon: 'mdi:text-box-edit-outline',
+		actions: user.value ? [{ type: 'focus', target: 'response-input', delay: 300 }] : undefined
 	},
 	{
 		id: 'post-button',
-		title: 'Posting a Response',
+		title: 'Post & Join the Conversation',
 		description:
-			'After you write your response, click the "Post" button to share it with the community. Your response will appear below, and others can read it and even reply to it!',
-		footer: 'Go ahead and post your response to join the conversation!'
+			'Click Post to share your response. It joins the feed below where others can read, react, and reply. You can edit or delete it later from your own profile.',
+		footer: 'Posting a thoughtful prompt response earns Impact Points.',
+		icon: 'mdi:send'
 	}
 ];
 </script>

@@ -1242,86 +1242,103 @@ const { startTour } = useSiteTour();
 const userProfileTour: SiteTourStep[] = [
 	{
 		id: 'avatar',
-		title: 'Welcome to your profile!',
+		title: 'Welcome to your profile',
 		description:
-			'This is where you can view and edit your profile information, manage your account settings, and customize your avatar with cool cosmetics.',
-		footer: 'Feel free to explore and make your profile your own!'
+			"This is your home base on the Earth App. From here you edit your identity, manage activities, pick cosmetics, and control who sees what.\n\nWe'll walk through the highlights in 30 seconds.",
+		footer: 'Tip: click your avatar to preview your public profile in a new tab.',
+		icon: 'mdi:account-circle',
+		dim: true,
+		placement: 'bottom'
 	},
 	{
 		id: 'name',
-		title: 'Personal Information',
+		title: 'Your Identity',
 		description:
-			'Here you can update your name, username, and bio. Keep your information up to date so your friends can recognize you and learn more about you!',
-		footer: 'Make sure to save your changes after updating your information!'
+			'Click directly on your first name, last name, or username to edit them inline - no save button needed, just press Enter when done.',
+		footer: 'Your username must be unique. Changing it updates your public profile URL.',
+		icon: 'mdi:badge-account-outline'
 	},
 	{
 		id: 'bio',
-		title: 'Biography',
+		title: 'Your Bio',
 		description:
-			'Share a little bit about yourself in your bio! Whether you want to talk about your love for nature, your favorite Earth App features, or your environmental goals, this is the place to let others know who you are and what you care about.',
-		footer: 'A great bio can help you connect with like-minded Earthlings and make new friends!'
+			"A great bio is short, honest, and a little fun. Share what you're passionate about, what you're learning, or what brought you here.",
+		footer: 'Friends and visitors see this prominently on your public profile.',
+		icon: 'mdi:text-account'
 	},
 	{
 		id: 'activities',
-		title: 'Activities',
+		title: 'Your Activities',
 		description:
-			'Select your favorite activities to let others know what you enjoy doing. This helps us personalize your experience and connect you with like-minded Earthlings!',
-		footer: 'Choose as many activities as you like to showcase your interests!'
+			'Activities are the engine behind your recommendations. The more accurately you list what you care about, the better your articles, prompts, and event suggestions become.',
+		footer: 'Aim for at least 3–5 activities. Update them whenever your interests shift.',
+		icon: 'mdi:run',
+		highlightPadding: 12
 	},
 	{
 		id: 'cosmetics',
-		title: 'Cosmetics',
+		title: 'Avatar Cosmetics',
 		description:
-			'Customize your profile with cool cosmetics! Earn points through journies, badges, and quests to unlock new cosmetics and show off your unique style.',
-		footer: 'Keep engaging to earn more points and unlock awesome rewards!'
+			'Spend Impact Points to unlock visual flair for your avatar - frames, accents, themed sets. Selected cosmetics show on your profile and on every comment you make.',
+		footer: 'Click any locked cosmetic to see the price and preview. Reset is one button away.',
+		icon: 'mdi:palette',
+		highlightPadding: 12
 	},
 	{
 		id: 'visibility',
 		title: 'Account Visibility',
 		description:
-			"Control who can see your profile and activities with our visibility settings. You can choose to keep your profile private, visible only to registered users, or public for everyone to see. It's up to you to decide how much of your Earth App journey you want to share with the world!",
-		footer:
-			'Remember, you can change your visibility settings anytime to find the right balance between privacy and sharing!'
+			'Three modes:\n• Private - only you and your circle\n• Unlisted - hidden from search, but visible to anyone with the link\n• Public - anyone can find and view\n\nYou can change this anytime.',
+		footer: 'This is the master switch. Per-field privacy below gives you finer control.',
+		icon: 'mdi:shield-account'
 	},
 	{
 		id: 'privacy',
-		title: 'Field Privacy',
+		title: 'Field-Level Privacy',
 		description:
-			'Manage the privacy of specific fields in your profile. You can choose to make certain information like your email, physical address, or country of origin visible to friends, or yourself, or a select few. This gives you granular control over your personal information and how you connect with others on Earth App',
-		footer:
-			'The "Circle" setting is your trusted group of friends on Earth App. Administrators can see all fields regardless of privacy settings, so remember to only provide information you think is necessary and appropriate for your profile.'
+			'For each field - email, address, country, etc. - pick exactly who can see it: just you, your circle of friends, all users, or fully public.\n\nAdministrators can always see all fields for moderation purposes.',
+		footer: 'Only fill in fields you’re comfortable sharing per your chosen privacy level.',
+		icon: 'mdi:lock-outline'
 	},
 	{
 		id: 'oauth',
 		title: 'OAuth Providers',
 		description:
-			'Link your Earth App account with popular platforms like Google, Microsoft, and GitHub for easy and secure login. By connecting your accounts, you can quickly sign in to Earth App without having to remember another password. Plus, it adds an extra layer of security to your account!',
-		footer:
-			'You can link or unlink these providers at any time in your profile settings. Choose the ones that work best for you and enjoy seamless access to Earth App!'
+			'Link Google, Microsoft, or GitHub to sign in without a password. Linking multiple providers means you’re never locked out if one is unavailable.',
+		footer: 'You can unlink any provider at any time as long as another login method remains.',
+		icon: 'mdi:link-variant'
 	},
 	{
 		id: 'email-subscriptions',
 		title: 'Email Notifications',
 		description:
-			"Stay in the loop with email notifications! You can choose to receive updates about your activities, new features, and important announcements from Earth App. It's a great way to stay connected and never miss out on what's happening in the Earth App community.",
-		footer:
-			'You can toggle email notifications on or off at any time in your profile settings. Choose what works best for you and stay informed about all things Earth App!'
+			'Toggle email notifications for replies, friend activity, weekly recaps, and feature announcements. We never sell your email and we keep the volume low.',
+		footer: "Off by default for new accounts. Turn it on for a weekly digest if you'd like.",
+		icon: 'mdi:email-outline'
 	},
 	{
 		id: 'password-change',
 		title: 'Change Password',
 		description:
-			"For your account security, we recommend changing your password regularly. You can update your password here to keep your account safe. Make sure to choose a strong and unique password that you don't use for other accounts. If you have linked OAuth providers, you can also use those to log in without a password.",
-		footer:
-			'If you ever suspect any unauthorized access to your account, changing your password immediately is a good security measure. Stay safe and secure on your Earth journey!'
+			"Update your password here. Use something long and unique - a password manager makes this painless. If you signed up via OAuth, you don't need a password at all.",
+		footer: 'Changing your password signs you out of all other sessions.',
+		icon: 'mdi:shield-lock-outline',
+		cta: {
+			label: 'Open Password Form',
+			icon: 'mdi:shield-lock',
+			color: 'warning',
+			advance: true,
+			handler: () => passwordChangeModal.value?.open()
+		}
 	},
 	{
 		id: 'account-deletion',
 		title: 'Account Deletion',
 		description:
-			'We hope you never have to use this feature, but if you decide to delete your account, you can do so here. Please note that account deletion is permanent and cannot be undone. If you have any concerns or need assistance, feel free to reach out to our support team before taking this step.',
+			'Deleting your account is permanent - your profile, content, and history are removed and cannot be recovered. If you’re unsure, we recommend setting your profile to Private instead.',
 		footer:
-			"If you choose to delete your account, we recommend downloading any important data or memories you want to keep before proceeding. We're sad to see you go, but we wish you all the best on your Earth journey!"
+			'Before deleting, consider exporting anything you want to keep. Reach out to support if you need help.',
+		icon: 'mdi:account-remove-outline'
 	}
 ];
 </script>

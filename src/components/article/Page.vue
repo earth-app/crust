@@ -371,32 +371,47 @@ const { startTour } = useSiteTour();
 const articleTour: SiteTourStep[] = [
 	{
 		id: 'author-avatar',
-		title: 'Welcome to Articles!',
+		title: 'Welcome to Articles',
 		description:
-			'Articles are little bits of information where anyone can share their knowledge on unique topics. They can be about anything - from how to compost at home, to the history of a local park, to a deep dive into the science of tides.',
-		footer:
-			'@cloud writes articles based on scientific papers. Click next to learn more about this article.'
+			'Articles are short, focused reads on hobbies, sciences, places, and ideas. Anyone can publish - and our @cloud account adapts scientific papers into approachable summaries.',
+		footer: 'Click the avatar to visit the author’s profile.',
+		icon: 'mdi:book-open-page-variant-outline'
 	},
 	{
 		id: 'article-tags',
 		title: props.article.title,
-		description: `This article is written by @${props.article.author.username}. It reads, "${props.article.description}". Click next to learn more about the article content!`,
-		footer: 'Scroll down to read the article and explore!'
+		description: `By @${props.article.author.username}.\n\n"${props.article.description}"\n\nTags below describe what this piece covers - useful for finding more like it.`,
+		footer: 'Click any tag chip to find related articles.',
+		icon: 'mdi:tag-multiple-outline'
 	},
 	{
 		id: 'quiz-button',
 		anonymous: false,
-		title: 'Test Your Knowledge!',
+		title: 'Test Your Knowledge',
 		description:
-			'Many articles have quizzes to test your knowledge on the topic. Click this button to take the quiz and see how much you learned!',
+			'Most articles include a quick quiz. Taking it locks in what you read, awards Impact Points, and progresses any related quests you have running.',
 		footer:
-			'If you have already taken the quiz, you can click the button to view your score and see which questions you got right or wrong.'
+			"You can take a quiz once. After that, this button switches to 'View Quiz Score' so you can review your answers.",
+		icon: 'mdi:school-outline',
+		highlightPadding: 6,
+		condition: () => Array.isArray(quiz.value) && quiz.value.length > 0,
+		cta: {
+			label: 'Open Quiz',
+			icon: 'mdi:school',
+			color: 'success',
+			advance: false,
+			closeOnSuccess: true,
+			handler: () => {
+				quizOpen.value = true;
+			}
+		}
 	},
 	{
 		id: 'article-time',
-		title: 'Learning More!',
-		description: `This article was published on ${time.value}. If the article cites any scientific papers, you can find them linked at the bottom along with a summary of their content.`,
-		footer: 'Enjoy exploring the article!'
+		title: 'Sources & Citations',
+		description: `Published on ${time.value}.\n\nIf this article is based on a paper or external source, you'll find the citation and a short summary right below - perfect for going deeper.`,
+		footer: 'Enjoy the read!',
+		icon: 'mdi:link-variant'
 	}
 ];
 </script>

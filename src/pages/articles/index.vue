@@ -1,6 +1,9 @@
 <template>
 	<div class="flex flex-col pt-20 sm:pt-0">
-		<div class="flex justify-center mt-2 gap-x-2">
+		<div
+			id="articles-toolbar"
+			class="flex justify-center mt-2 gap-x-2"
+		>
 			<UButton
 				title="Refresh"
 				icon="i-lucide-refresh-cw"
@@ -26,6 +29,13 @@
 					@click="$router.push('/articles/new')"
 				/>
 			</UTooltip>
+			<UButton
+				icon="mdi:progress-question"
+				color="secondary"
+				variant="subtle"
+				class="mt-2"
+				@click="startTour('articles-index')"
+			/>
 		</div>
 		<InfoCardGroup
 			v-if="user"
@@ -125,6 +135,14 @@
 			:tag="tag"
 		/>
 	</div>
+
+	<ClientOnly>
+		<SiteTour
+			:steps="articlesIndexTour"
+			name="Articles Index Tour"
+			tour-id="articles-index"
+		/>
+	</ClientOnly>
 </template>
 
 <script setup lang="ts">
@@ -248,4 +266,29 @@ watch(
 	},
 	{ immediate: false }
 );
+
+const { startTour } = useSiteTour();
+
+const articlesIndexTour: SiteTourStep[] = [
+	{
+		id: 'articles-toolbar',
+		title: 'Articles Library',
+		description:
+			'Refresh to shuffle in a fresh batch. The plus button creates a new article if your account tier allows it (Organizer and above).',
+		footer: 'You always get a fresh mix when you reload.',
+		icon: 'mdi:book-multiple-outline',
+		highlightPadding: 8
+	},
+	{
+		id: 'articles',
+		title: 'Curated Sections',
+		description:
+			'Articles are grouped to help you find something: Recommended (based on your activities), Explore (random discovery), Recent (latest publishes), Older (archive dives), By Cloud (AI-summarized papers), and per-tag collections lower down.',
+		footer: 'Logged-in users get personalized "Recommended for You" at the top.',
+		icon: 'mdi:format-list-bulleted-type',
+		highlightPadding: 12,
+		waitFor: 'articles',
+		waitTimeout: 3000
+	}
+];
 </script>

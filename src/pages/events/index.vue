@@ -1,6 +1,9 @@
 <template>
 	<div class="flex flex-col pt-20 sm:pt-0">
-		<div class="flex justify-center mt-2 gap-x-2">
+		<div
+			id="events-toolbar"
+			class="flex justify-center mt-2 gap-x-2"
+		>
 			<UButton
 				title="Refresh"
 				icon="i-lucide-refresh-cw"
@@ -22,6 +25,13 @@
 					:disabled="newDisabled"
 				/>
 			</EventEditor>
+			<UButton
+				icon="mdi:progress-question"
+				color="secondary"
+				variant="subtle"
+				class="mt-2"
+				@click="startTour('events-index')"
+			/>
 		</div>
 		<InfoCardGroup
 			v-if="user"
@@ -98,6 +108,14 @@
 			/>
 		</InfoCardGroup>
 	</div>
+
+	<ClientOnly>
+		<SiteTour
+			:steps="eventsIndexTour"
+			name="Events Index Tour"
+			tour-id="events-index"
+		/>
+	</ClientOnly>
 </template>
 
 <script setup lang="ts">
@@ -206,4 +224,29 @@ const newDisabled = computed(() => {
 	if (user.value === null) return true;
 	return false;
 });
+
+const { startTour } = useSiteTour();
+
+const eventsIndexTour: SiteTourStep[] = [
+	{
+		id: 'events-toolbar',
+		title: 'Events Hub',
+		description:
+			"Browse upcoming gatherings, online sessions, and in-person meetups. Refresh shuffles the picks. The plus button creates a new event if you're signed in.",
+		footer: 'Logged-in users get personalized recommendations based on their activities.',
+		icon: 'mdi:calendar-multiple',
+		highlightPadding: 8
+	},
+	{
+		id: 'events',
+		title: 'Explore Events',
+		description:
+			'Each card shows the date, host, format (online / in-person / hybrid), tags, and current attendance. Click a card to view full details and sign up.',
+		footer: 'Events near their start time get a "Starting soon" badge so you don\'t miss them.',
+		icon: 'mdi:compass-outline',
+		highlightPadding: 12,
+		waitFor: 'events',
+		waitTimeout: 3000
+	}
+];
 </script>

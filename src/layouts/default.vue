@@ -10,12 +10,14 @@
 			:steps="welcomeTour"
 			name="Welcome Tour"
 			tour-id="welcome"
+			:pulse="true"
 		/>
 	</ClientOnly>
 </template>
 
 <script setup lang="ts">
 const route = useRoute();
+const router = useRouter();
 const { user, fetchUser } = useAuth();
 
 onMounted(async () => {
@@ -39,159 +41,208 @@ onMounted(async () => {
 const welcomeTour = computed<SiteTourStep[]>(() => [
 	{
 		id: 'title',
-		title: 'Welcome to the Earth App',
+		title: 'Welcome to The Earth App',
 		description:
-			'The Earth App is a new take on the app experience, encouraging you to explore new things and engage with people of similar interests.',
-		footer: 'Click Next to continue.'
+			'A new kind of social experience: discover hobbies, dive into articles, answer thoughtful prompts, and meet people with similar interests.\n\nThis short tour will walk you through the highlights - feel free to skip it at any time with Esc or the X button.',
+		footer: 'Press Next, or use ← / → on your keyboard to step through.',
+		icon: 'mdi:earth',
+		placement: 'center',
+		dim: true,
+		highlightPadding: 16
 	},
 	{
 		id: 'navbar',
-		title: 'Navigation Bar',
+		title: 'Your Navigation Bar',
 		description:
-			'The navigation bar at the top of the page allows you to easily access different sections of the app, including your profile, articles, and more.',
-		footer: 'Click Next to continue.'
+			'The navigation bar is your home base. Jump between Activities, Articles, Prompts, Events, and your Profile from anywhere on the site.',
+		footer: 'It stays pinned to the top while you explore.',
+		icon: 'mdi:compass-outline'
 	},
 	{
 		url: '/activities',
 		id: 'activities',
-		title: 'Activities Page',
+		title: 'Activities - Find What You Love',
 		description:
-			'The Activities page is where you can discover and participate in various activities. Engage with the community and find events that interest you!',
-		footer: 'There are a lot of things to explore. Click Next to continue.',
-		prerendered: true
+			'Activities are hobbies, sports, and interests you can explore. Each activity has curated guides, resources, and even quests you can complete to level up.',
+		footer: 'Tip: pick a few activities on your profile to get personalized recommendations.',
+		icon: 'mdi:run',
+		prerendered: true,
+		waitFor: 'activities',
+		highlightPadding: 12
 	},
 	{
 		url: '/articles',
 		id: 'navbar',
-		title: 'Articles Page',
+		title: 'Articles - Read & Learn',
 		description:
-			'The Articles page offers a wide range of articles tailored to your interests. Read, learn, and share your thoughts with others!',
+			'Bite-sized articles tailored to your interests. Read about science, culture, sustainability, and more - then take a quick quiz to lock in what you learned.',
 		footer:
-			'Your articles are recommended to you based on your profile. Creating an account helps us personalize your experience even more. Click Next to continue.'
+			'Articles personalize over time as you engage. Creating an account makes the recommendations even sharper.',
+		icon: 'mdi:book-open-page-variant-outline',
+		prerendered: true
 	},
 	{
 		url: '/prompts',
 		id: 'prompts-title',
-		title: 'Prompts Page',
+		title: 'Prompts - Get Creative',
 		description:
-			'After all that knowledge, you might want to get creative! Answer questions and prompts to spark your imagination and share your ideas with the community.',
-		footer: 'Click Next to continue.'
+			'Daily creative prompts to spark your imagination. Share a short response, browse what others wrote, and discover new perspectives from the community.',
+		footer: 'Your answers can be public, friends-only, or private - your call.',
+		icon: 'mdi:lightbulb-on-outline',
+		prerendered: true
 	},
 	{
 		url: '/signup',
 		id: 'signup',
-		title: 'Sign Up',
+		title: 'Create Your Account',
 		description:
-			'Create an account to unlock personalized features and connect with the community on the Earth App.',
-		footer: 'Thank you for taking the tour! Click Finish to get started.',
-		anonymous: true
+			'Sign up to unlock personalized recommendations, earn badges and Impact Points, complete quests, and connect with friends across the Earth App.',
+		footer: "It's free and only takes a minute.",
+		anonymous: true,
+		icon: 'mdi:account-plus-outline',
+		dim: true,
+		prerendered: true,
+		cta: {
+			label: 'Sign Up Now',
+			icon: 'mdi:account-plus',
+			color: 'success',
+			advance: false,
+			closeOnSuccess: true,
+			handler: () => router.push('/signup')
+		}
 	},
 	{
 		url: '/profile',
 		id: 'activities',
 		title: 'Your Profile',
 		description:
-			'Your profile helps us recommend articles and activities that match your interests. Customize it to get the most out of the Earth App!',
-		footer: "You can add the activities you're interested in right here.",
-		anonymous: false
+			'Your profile is the heart of your Earth App experience. The activities you pick here power your recommendations across the entire app - articles, prompts, and events.',
+		footer: 'Pick at least 3 activities to get great recommendations from day one.',
+		anonymous: false,
+		icon: 'mdi:account-circle-outline',
+		prerendered: true,
+		waitFor: 'activities'
 	},
 	{
 		id: 'avatar',
 		title: 'Your Avatar',
 		description:
-			'Based on the activities you choose, you can get your own customized profile avatar! This avatar will represent you across the Earth App community, and will be displayed on your profile.',
-		footer:
-			'You can create or regenerate it by clicking on "Regenerate Avatar" below your current avatar. The default avatar is the site logo.',
-		anonymous: false
+			'Your avatar is generated from the activities you choose - no boring placeholder! Regenerate it any time, or unlock decorative cosmetics with Impact Points.',
+		footer: 'Click "Regenerate Avatar" below your current avatar to roll a new one.',
+		anonymous: false,
+		icon: 'mdi:face-man-shimmer-outline'
 	},
 	{
-		id: 'settings',
-		title: 'Your Settings',
+		id: 'cosmetics',
+		title: 'Avatar Cosmetics',
 		description:
-			"In your settings, you can control your account visibility and other preferences. Make sure to review them to tailor your experience on the Earth App. Be safe and make sure you don't share sensitive information!",
-		footer:
-			'You can change your email and add a variety of information here. Click on the fields for more information as well.',
-		anonymous: false
+			'Spend Impact Points on cosmetic frames, accents, and effects to make your avatar uniquely yours. New cosmetics rotate in regularly - keep an eye out.',
+		footer: 'Cosmetics are purely visual. They never affect what you can do on the app.',
+		anonymous: false,
+		icon: 'mdi:palette-outline'
+	},
+	{
+		id: 'bio',
+		title: 'Your Bio',
+		description:
+			"A great bio helps others discover what you're passionate about. Keep it short, honest, and a little fun - emojis are encouraged.",
+		footer: 'You can edit this any time. Click directly on the text to edit it inline.',
+		anonymous: false,
+		icon: 'mdi:account-edit-outline'
+	},
+	{
+		id: 'visibility',
+		title: 'Account Visibility',
+		description:
+			'Choose how visible your profile is: Private (only you & friends), Unlisted (hidden from search but accessible by link), or Public (everyone can see).\n\nYou can change this anytime, and individual fields have their own privacy controls.',
+		footer: 'Privacy is granular - even within a public profile, you can hide individual fields.',
+		anonymous: false,
+		icon: 'mdi:shield-account-outline'
 	},
 	{
 		id: 'notifications',
 		title: 'Notifications',
 		description:
-			'Stay updated with the latest news, updates, and interactions through your notifications. Click on the bell icon to view your notifications and stay connected with the community!',
-		footer:
-			'You can view your notifications through the bell icon in the navigation bar. Click Next to continue.',
-		anonymous: false
+			'The bell icon in the navigation bar shows new replies, friend activity, quest progress, and important account events. Click it to see the full list.',
+		footer: 'You can fine-tune which notifications you receive in your account settings.',
+		anonymous: false,
+		icon: 'mdi:bell-outline',
+		highlightPadding: 6
 	},
 	{
 		id: 'badges',
 		title: 'Badges',
 		description:
-			'Badges are a fun way to show off your achievements and interests on the Earth App. You can earn badges by engaging with content and participating in activities.',
-		footer: 'You can view your badges on your profile through this button. Click Next to continue.',
-		anonymous: false
+			'Badges celebrate your milestones - first article read, first quest completed, streaks, mastery achievements, and more. They show on your public profile.',
+		footer: 'Some badges have a "Mastery" path that goes way deeper if you commit.',
+		anonymous: false,
+		icon: 'mdi:shield-star-outline'
 	},
 	{
 		id: 'quests',
 		title: 'Quests',
 		description:
-			'Quests are a new feature on the Earth App that encourage you to explore and engage with content in a fun and interactive way. Completing quests can earn you rewards and help you discover new interests!',
-		footer: 'You can view your quests on your profile through this button. Click Next to continue.',
-		anonymous: false
+			'Quests are guided journeys that turn an activity into a structured adventure with steps, rewards, and a satisfying finish. Start with one tied to an activity you already love.',
+		footer: 'You can only have one active quest at a time - choose wisely!',
+		anonymous: false,
+		icon: 'mdi:map-marker-path'
 	},
 	{
 		url: `/profile/@${user.value?.username}`,
 		id: 'navbar',
 		title: 'Your Public Profile',
 		description:
-			'This is how people will see your profile. Make sure to keep it updated and engaging to connect with like-minded individuals on the Earth App!',
-		footer:
-			'You may be able to see fields that other users cannot based on your settings. The avatar is public!',
+			"This is what other Earth App users see when they visit your profile. Your activities, bio, badges, and shared content all live here.\n\nFields you've marked private won't show to the public.",
+		footer: 'Pro tip: a complete profile gets far more friend requests and replies.',
 		anonymous: false,
-		prerendered: true
+		icon: 'mdi:account-eye-outline',
+		prerendered: true,
+		waitFor: 'navbar'
 	},
 	{
 		id: 'points-history',
-		title: 'Points History',
+		title: 'Impact Points',
 		description:
-			'Engaging with The Earth App rewards you Impact Points! You can view your points history to see how you have earned points over time. Keep engaging with content and activities to earn more points and climb the leaderboard!',
-		footer:
-			'You can view your points history by clicking on the "Points History" button on your profile. Click Next to continue.',
-		anonymous: false
+			'Impact Points reward you for engaging with the Earth App and the world around you - reading, writing, completing quests, helping others. Spend them on cosmetics, or watch them climb the leaderboard.',
+		footer: 'Click "Points History" on your profile to see exactly how you earned them.',
+		anonymous: false,
+		icon: 'mdi:chart-line'
 	},
 	{
 		id: 'user-activities',
-		title: 'Your Activities',
+		title: 'Your Activities Showcase',
 		description:
-			"Your activities are the things you selected you're interested in. Your experience is tailored based on what you select here, so make sure to keep it updated! Your activities also show up on your profile, and are a fun way for other users to see what you're interested in at a glance.",
-		footer:
-			'Keep exploring to increase the streak. The more you engage, the more your activities grow!',
-		anonymous: false
+			"Your selected activities also appear right here on your profile, giving friends an at-a-glance look at what you're into.",
+		footer: 'Keep this list current - recommendations follow these choices closely.',
+		anonymous: false,
+		icon: 'mdi:format-list-bulleted-square'
 	},
 	{
 		id: 'user-friends',
 		title: 'Your Friends',
 		description:
-			'Your friends are the people you connect with on the Earth App. You can view their profiles, see their activities, and engage with their content. Building a network of friends can enhance your experience and help you discover new interests!',
-		footer: 'Connect with friends to see their activities and content. Click Next to continue.',
-		anonymous: false
+			'Add friends to follow their activities, react to their content, and unlock friends-only privacy settings. Building a network makes the Earth App way more fun.',
+		footer: 'Click any user avatar across the app to view their profile and add them.',
+		anonymous: false,
+		icon: 'mdi:account-multiple-outline'
 	},
 	{
 		id: 'user-journeys',
 		title: 'Your Journeys',
 		description:
-			"Your journeys showcase the content you have engaged with. It's like a streak that you have to keep up with.",
-		footer:
-			'Keep exploring to increase the streak. The more you engage, the more your journeys grow!',
-		anonymous: false
+			'Journeys are streaks of meaningful engagement. Keep them alive by exploring something new each day - it adds up fast.',
+		footer: 'Daily login alone is enough to keep most journeys going.',
+		anonymous: false,
+		icon: 'mdi:walk'
 	},
 	{
 		id: 'user-content',
 		title: 'Your Content',
 		description:
-			'All the articles and prompts you have created will be displayed here. Share your knowledge and creativity with the Earth App community!',
-		footer:
-			'The more content you create, the more you contribute to the community. Keep sharing your ideas, thoughts, stories!',
-		anonymous: false
+			"Every article and prompt response you publish lives here. It's your portfolio on the Earth App - and a great way for others to discover your perspective.",
+		footer: "You're all caught up! Press Finish to start exploring.",
+		anonymous: false,
+		icon: 'mdi:notebook-multiple'
 	}
 ]);
 </script>
