@@ -1,12 +1,12 @@
 <template>
-	<div class="flex flex-col w-full! select-none! touch-none!">
+	<div class="flex flex-col w-full! select-none!">
 		<div
 			class="relative w-full! bg-white! rounded-xl! overflow-hidden!"
 			style="aspect-ratio: 1/1"
 		>
 			<canvas
 				ref="canvasEl"
-				class="absolute inset-0 w-full! h-full! touch-none!"
+				class="absolute inset-0 w-full! h-full! pointer-coarse:touch-none!"
 				@pointerdown.prevent="onDown"
 				@pointermove.prevent="onMove"
 				@pointerup="onUp"

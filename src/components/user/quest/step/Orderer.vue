@@ -71,7 +71,7 @@
 					<button
 						v-for="tile in bank"
 						:key="tile"
-						class="px-3! py-2! rounded-xl! border-2! text-sm! font-medium! transition-all duration-150 cursor-grab active:cursor-grabbing! touch-none!"
+						class="px-3! py-2! rounded-xl! border-2! text-sm! font-medium! transition-all duration-150 cursor-grab active:cursor-grabbing! pointer-coarse:touch-none!"
 						:class="
 							selectedTile === tile || draggingTile === tile
 								? 'border-primary bg-primary/20 text-white scale-105'
@@ -96,7 +96,7 @@
 					v-for="(slot, i) in slots"
 					:key="i"
 					:data-slot-index="i"
-					class="flex items-center gap-2! min-h-12! rounded-xl! border-2! px-3! py-2! transition-all duration-150 touch-none!"
+					class="flex items-center gap-2! min-h-12! rounded-xl! border-2! px-3! py-2! transition-all duration-150 pointer-coarse:touch-none!"
 					:class="slotClass(slot, i)"
 					@click="onSlotClick(i)"
 				>

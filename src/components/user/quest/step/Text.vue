@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col w-full! gap-4! select-none! touch-none!">
+	<div class="flex flex-col w-full! gap-4! select-none!">
 		<textarea
 			v-model="text"
 			:disabled="props.disabled"

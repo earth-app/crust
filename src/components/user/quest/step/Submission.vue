@@ -86,7 +86,7 @@
 					name="mdi:cellphone-lock"
 					class="size-14 text-info"
 				/>
-				<span class="text-base! font-medium!">Mobile app only</span>
+				<span class="text-base! font-medium!">Mobile App Only</span>
 				<span class="text-sm! opacity-70 max-w-sm!">
 					This step can only be completed in The Earth App mobile app. Complete an alternative step
 					if one is available.
@@ -110,7 +110,7 @@
 						name="i-lucide-upload"
 						class="size-10 animate-bounce text-primary"
 					/>
-					<span class="text-sm opacity-70">Validating submission…</span>
+					<span class="text-sm opacity-70">{{ submittingMessage }}</span>
 				</div>
 
 				<div
@@ -140,7 +140,7 @@
 						name="i-lucide-upload"
 						class="size-10 animate-bounce text-primary"
 					/>
-					<span class="text-sm! opacity-70">Validating drawing…</span>
+					<span class="text-sm! opacity-70">{{ submittingMessage }}</span>
 				</div>
 				<div
 					v-else-if="succeeded"
@@ -169,7 +169,7 @@
 						name="i-lucide-upload"
 						class="size-10 animate-bounce text-primary!"
 					/>
-					<span class="text-sm! opacity-70">Validating recording…</span>
+					<span class="text-sm! opacity-70">{{ submittingMessage }}</span>
 				</div>
 				<div
 					v-else-if="succeeded"
@@ -258,6 +258,37 @@ const { lat, lng, fetchLocation } = useQuestGeolocation();
 const submitting = ref(false);
 const succeeded = ref(false);
 const submitError = ref('');
+
+const submittingMessages = [
+	'Submitting...',
+	'Validating your work...',
+	'Checking the map...',
+	'Consulting the rulebook...',
+	'Reviewing the details...',
+	'Counting the rewards...',
+	'Polishing the result...',
+	'Almost there...'
+];
+const submittingMessage = ref(submittingMessages[0]);
+let submittingInterval: ReturnType<typeof setInterval> | null = null;
+
+watch(submitting, (loading) => {
+	if (loading) {
+		let i = 0;
+		submittingMessage.value = submittingMessages[0];
+		submittingInterval = setInterval(() => {
+			i = (i + 1) % submittingMessages.length;
+			submittingMessage.value = submittingMessages[i];
+		}, 1800);
+	} else if (submittingInterval) {
+		clearInterval(submittingInterval);
+		submittingInterval = null;
+	}
+});
+
+onBeforeUnmount(() => {
+	if (submittingInterval) clearInterval(submittingInterval);
+});
 
 const stepMobileOnly = computed(
 	() => props.step.mobile_only === true || props.quest.mobile_only === true

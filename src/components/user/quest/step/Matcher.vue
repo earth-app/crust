@@ -62,7 +62,7 @@
 					:key="card.id"
 					:ref="(el) => setCardRef(card.id, el as HTMLElement | null)"
 					:data-card-id="card.id"
-					class="absolute!"
+					class="absolute! pointer-coarse:touch-none!"
 					:style="cardStyle(card)"
 					@pointerdown="onPointerDown(card, $event)"
 				>
@@ -75,7 +75,7 @@
 								: 'cursor-grab active:cursor-grabbing!'
 						]"
 					>
-						<span class="pointer-events-none break-words">{{ card.text }}</span>
+						<span class="pointer-events-none wrap-break-word">{{ card.text }}</span>
 					</div>
 				</div>
 			</div>
@@ -368,8 +368,7 @@ function cardStyle(card: Card): Record<string, string> {
 		width: 'min(160px, 42%)',
 		transform: `translate(${x}px, ${y}px) rotate(${rot}deg) scale(${scale})`,
 		transition: isMoving ? 'none' : 'transform 0.25s ease, opacity 0.4s ease',
-		zIndex: String(isPressed ? 999 : card.z),
-		touchAction: 'none'
+		zIndex: String(isPressed ? 999 : card.z)
 	};
 }
 
