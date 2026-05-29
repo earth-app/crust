@@ -11,6 +11,39 @@
 		/>
 		<h4 class="text-base">{{ completedBadges.length }} / {{ badges.length }} Completed</h4>
 
+		<template v-if="isOwnProfile && masteryList">
+			<h3 class="my-4 font-medium text-lg">Available Mastery Quests</h3>
+			<p class="text-sm opacity-80 -mt-2 mb-2 text-center max-w-xl">
+				{{ masteryList.active }} / {{ masteryList.cap }} mastery slots used.
+				<span
+					v-if="masteryList.active >= masteryList.cap"
+					class="text-error"
+				>
+					Complete or let one expire before generating another.
+				</span>
+				<span v-else> Each generated mastery expires {{ ttlDays }} days after creation. </span>
+			</p>
+			<div
+				v-if="masteryList.items.length"
+				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 justify-items-center items-center gap-4 my-4 mx-8"
+			>
+				<LazyUserQuestThumbnail
+					v-for="item in masteryList.items"
+					:key="item.quest.id"
+					:quest="item.quest"
+					:progress="masteryProgressFor(item.quest.id)"
+					:current="item.quest.id === quest?.questId"
+					:completed-at="item.mastered_at ?? undefined"
+				/>
+			</div>
+			<p
+				v-else
+				class="text-xs opacity-60 mb-4"
+			>
+				No mastery quests yet. Generate one from any completed badge below.
+			</p>
+		</template>
+
 		<h3 class="my-4 font-medium text-lg">Completed Badges</h3>
 		<div
 			v-if="completedBadges.length"
@@ -66,13 +99,54 @@
 
 <script setup lang="ts">
 const route = useRoute();
-const { user, fetchUser, badges, fetchBadges } = useUser(route.params.id as string);
+const { user, fetchUser, badges, fetchBadges, quest, fetchUserQuest } = useUser(
+	route.params.id as string
+);
 const { handle } = useDisplayName(user);
 const { setTitleSuffix } = useTitleSuffix();
+const { user: authUser } = useAuth();
+const userStore = useUserStore();
+
+// masteries are private state — only fetch when viewing your own profile (mantle2 enforces
+// 403 anyway, but a preflight check avoids a needless round trip + console error)
+const isOwnProfile = computed(() => {
+	if (!user.value || !authUser.value) return false;
+	return user.value.id === authUser.value.id;
+});
+
+const masteryList = computed(() => {
+	if (!isOwnProfile.value || !authUser.value) return null;
+	return userStore.masteryLists.get(authUser.value.id) ?? null;
+});
+
+const ttlDays = computed(() => {
+	if (!masteryList.value) return 90;
+	return Math.round(masteryList.value.ttl_seconds / 86400);
+});
+
+const masteryProgressFor = (questId: string) => {
+	const uid = authUser.value?.id;
+	if (!uid) return undefined;
+	const current = userStore.quest.get(uid);
+	if (current?.questId === questId) return current.progress;
+	const history = userStore.questHistory.get(uid);
+	return history?.get(questId)?.progress;
+};
 
 onMounted(() => {
 	fetchUser();
 	fetchBadges();
+	if (isOwnProfile.value && authUser.value) {
+		fetchUserQuest();
+		userStore.fetchMasteryList(authUser.value.id);
+	}
+});
+
+watch(isOwnProfile, (own) => {
+	if (own && authUser.value && !userStore.masteryLists.has(authUser.value.id)) {
+		fetchUserQuest();
+		userStore.fetchMasteryList(authUser.value.id);
+	}
 });
 
 const completedBadges = computed(() => badges.value.filter((b) => 'granted' in b && b.granted));
