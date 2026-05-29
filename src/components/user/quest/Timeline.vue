@@ -401,7 +401,17 @@ function isStepMobileOnly(step: { mobile_only?: boolean }) {
 }
 
 function selectStep(step: TimelineStep, index: number) {
-	if (step.delayedUntil > now.value) return;
+	if (step.delayedUntil > now.value) {
+		const secondsRemaining = Math.ceil((step.delayedUntil - now.value) / 1000);
+		toast.add({
+			title: 'Step locked',
+			description: `This step unlocks in ${formatTime(secondsRemaining)}.`,
+			icon: 'mdi:lock-clock',
+			color: 'info',
+			duration: 4000
+		});
+		return;
+	}
 	if (isFutureStep(index)) return;
 
 	if (isStepMobileOnly(step)) {
