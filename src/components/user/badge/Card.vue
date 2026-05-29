@@ -25,6 +25,7 @@
 	</div>
 	<UModal
 		v-model:open="showDetails"
+		:dismissible="!masteryLoading"
 		title="Badge Details"
 		:description="badge.description"
 	>
@@ -123,16 +124,37 @@
 						This badge mastery has been permanently locked and cannot be regenerated.
 					</span>
 					<span
+						v-else-if="masteryQuestReady && masteryExpiresInDays !== null"
+						class="text-xs opacity-70 text-center max-w-72"
+					>
+						Pick up where you left off — expires in
+						{{ masteryExpiresInDays }} day{{ masteryExpiresInDays === 1 ? '' : 's' }}. Resetting
+						will permanently lock this mastery.
+					</span>
+					<span
 						v-else-if="masteryQuestReady"
 						class="text-xs opacity-70 text-center max-w-72"
 					>
 						Pick up where you left off. Resetting will permanently lock this mastery.
 					</span>
 					<span
+						v-else-if="masteryCapReached"
+						class="text-xs opacity-70 text-error text-center max-w-72"
+					>
+						You have {{ masteryList?.active }} / {{ masteryList?.cap }} active mastery quests.
+						Complete or let one expire before generating another.
+					</span>
+					<span
 						v-else-if="!masteryStatusFetched"
 						class="text-xs opacity-60 text-center max-w-72"
 					>
 						Generate a personalised AI quest to deepen your mastery of this badge.
+					</span>
+					<span
+						v-if="masteryList && !masteryCapReached && !masteryQuestReady && !masteryLocked"
+						class="text-xs opacity-60 text-center"
+					>
+						{{ masteryList.active }} / {{ masteryList.cap }} active mastery slots used
 					</span>
 				</div>
 
@@ -152,7 +174,7 @@
 	<UModal
 		v-model:open="confirmOpen"
 		:dismissible="!masteryLoading"
-		title="Start Badge Mastery quest?"
+		title="Start Badge Mastery Quest?"
 	>
 		<template #body>
 			<div class="flex flex-col gap-3">
@@ -167,6 +189,19 @@
 					We'll generate a personalised quest just for this badge using your profile context. Steps
 					may include drawings, photos, audio, reading, and more.
 				</p>
+				<div
+					v-if="masteryLoading"
+					class="flex flex-col items-center gap-1 text-sm opacity-90"
+				>
+					<div class="flex items-center gap-2">
+						<UIcon
+							name="i-lucide-loader-circle"
+							class="size-4 animate-spin"
+						/>
+						<span>{{ generatingMessage }}</span>
+					</div>
+					<span class="text-xs opacity-70">this may take up to a minute</span>
+				</div>
 				<div class="flex justify-end gap-2">
 					<UButton
 						color="neutral"
@@ -229,6 +264,53 @@ const masteryLocked = ref(false);
 const masteryQuestReady = ref(false);
 const loadedQuest = ref<Quest | null>(null);
 
+// rotated while masteryLoading to signal the request is alive (gemma-4 inference can run 20-60s)
+const generatingMessages = [
+	'Loading...',
+	'Generating your quest...',
+	'Picking the perfect steps...',
+	'Consulting the badge archives...',
+	'Tuning difficulty to your profile...',
+	'Polishing the timeline...',
+	'Almost there...'
+];
+const generatingMessage = ref(generatingMessages[0]);
+let generatingInterval: ReturnType<typeof setInterval> | null = null;
+
+// beforeunload guard while generation is in-flight — abandoning the request loses the slot
+// without a stored quest, so warn before letting the tab close/navigate
+const beforeUnloadHandler = (event: BeforeUnloadEvent) => {
+	if (!masteryLoading.value) return;
+	event.preventDefault();
+	// the returnValue assignment is required for the browser to actually show the prompt;
+	// the string content is ignored on modern browsers (generic "leave site?" is rendered)
+	event.returnValue = 'A badge mastery quest is generating. Are you sure you want to leave?';
+	return event.returnValue;
+};
+
+watch(masteryLoading, (loading) => {
+	if (loading) {
+		let i = 0;
+		generatingMessage.value = generatingMessages[0];
+		generatingInterval = setInterval(() => {
+			i = (i + 1) % generatingMessages.length;
+			generatingMessage.value = generatingMessages[i];
+		}, 2500);
+		if (import.meta.client) window.addEventListener('beforeunload', beforeUnloadHandler);
+	} else {
+		if (generatingInterval) {
+			clearInterval(generatingInterval);
+			generatingInterval = null;
+		}
+		if (import.meta.client) window.removeEventListener('beforeunload', beforeUnloadHandler);
+	}
+});
+
+onBeforeUnmount(() => {
+	if (generatingInterval) clearInterval(generatingInterval);
+	if (import.meta.client) window.removeEventListener('beforeunload', beforeUnloadHandler);
+});
+
 const rarityColor = computed(() => {
 	switch (props.badge.rarity) {
 		case 'normal':
@@ -278,26 +360,62 @@ const canShowMastery = computed(() => {
 	return true;
 });
 
+// cap state pulled from the per-user mastery list cached in userStore. cap blocks NEW
+// generation only — a quest already generated (masteryQuestReady) is always startable
+const masteryList = computed(() => {
+	const uid = authUser.value?.id;
+	if (!uid) return null;
+	return userStore.masteryLists.get(uid) ?? null;
+});
+const masteryCapReached = computed(() => {
+	const list = masteryList.value;
+	if (!list) return false;
+	return list.active >= list.cap;
+});
+
+// 90-day expiry banner; only meaningful when a quest has been generated for THIS badge
+const masteryExpiresAt = computed(() => {
+	const item = masteryList.value?.items.find((i) => i.badge_id === props.badge.id);
+	if (!item) return null;
+	return DateTime.fromMillis(item.expires_at);
+});
+const masteryExpiresInDays = computed(() => {
+	const exp = masteryExpiresAt.value;
+	if (!exp) return null;
+	const diff = exp.diffNow('days').days;
+	return diff > 0 ? Math.ceil(diff) : 0;
+});
+
 const masteryDisabled = computed(
-	() => masteryLoading.value || masteryStatusLoading.value || masteryLocked.value
+	() =>
+		masteryLoading.value ||
+		masteryStatusLoading.value ||
+		masteryLocked.value ||
+		// only block generation at cap; once the quest is ready, the button means "Continue"
+		(masteryCapReached.value && !masteryQuestReady.value)
 );
 
 const masteryButtonLabel = computed(() => {
 	if (masteryLocked.value) return 'Mastery permanently locked';
-	if (masteryQuestReady.value) return 'Continue mastery quest';
+	if (masteryQuestReady.value) return 'Continue Mastery Quest';
+	if (masteryCapReached.value) return 'Mastery Cap Reached';
 	return 'Master This Badge';
 });
 const masteryButtonIcon = computed(() => {
 	if (masteryLocked.value) return 'mdi:lock';
 	if (masteryQuestReady.value) return 'mdi:play-circle-outline';
+	if (masteryCapReached.value) return 'mdi:alert-octagon-outline';
 	return 'mdi:medal-outline';
 });
 const masteryButtonColor = computed(() => {
 	if (masteryLocked.value) return 'neutral';
 	if (masteryQuestReady.value) return 'warning';
+	if (masteryCapReached.value) return 'neutral';
 	return 'primary';
 });
-const masteryButtonVariant = computed(() => (masteryLocked.value ? 'outline' : 'soft'));
+const masteryButtonVariant = computed(() =>
+	masteryLocked.value || masteryCapReached.value ? 'outline' : 'soft'
+);
 
 const masteryQuestId = computed(() => `badge_mastery_${props.badge.id}`);
 
@@ -322,6 +440,9 @@ const masteryCompletedAt = computed(() => {
 watch(showDetails, async (open) => {
 	if (!open) return;
 	if (!canShowMastery.value) return;
+	const uid = authUser.value?.id;
+	// best-effort cap snapshot; cached after first open so subsequent modal opens are instant
+	if (uid && !userStore.masteryLists.has(uid)) userStore.fetchMasteryList(uid);
 	if (masteryStatusFetched.value) return;
 	await loadMasteryStatus();
 });
@@ -448,6 +569,17 @@ async function confirmGenerate() {
 				// Refetch status — it may have changed underneath us
 				masteryStatusFetched.value = false;
 				await loadMasteryStatus();
+			} else if (e.code === 'cap_reached') {
+				confirmOpen.value = false;
+				toast.add({
+					title: 'Mastery cap reached',
+					description:
+						e.message ||
+						'Complete one of your active mastery quests (or let one expire) before generating another.',
+					icon: 'mdi:alert-octagon-outline',
+					color: 'warning',
+					duration: 6000
+				});
 			} else if (e.code === 'ai_failed') {
 				toast.add({
 					title: 'Generation failed',
