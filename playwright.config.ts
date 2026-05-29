@@ -5,7 +5,7 @@
  *   - Default (mocked): Mock backends boot via globalSetup; Playwright's
  *                       webServer starts the Nuxt dev server with mocked env.
  *                       Fast and CI-friendly. Used by build.yml's `test` job.
- *   - Integration:      MOCK_DISABLED=1 to skip the mock servers — tests assume
+ *   - Integration:      MOCK_DISABLED=1 to skip the mock servers - tests assume
  *                       real mantle2 (8787) + cloud (9898) are already running.
  *                       Used by e2e.yml.
  *

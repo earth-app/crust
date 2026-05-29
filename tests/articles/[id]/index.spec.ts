@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/articles/[id]/index.vue` — single article reader.
+ * E2E tests for `src/pages/articles/[id]/index.vue` - single article reader.
  */
 
 import { expect, skipIfIntegration, test } from '../../utils/fixtures';

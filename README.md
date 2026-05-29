@@ -556,8 +556,8 @@ Ensure a `GITHUB_TOKEN` is set to install from github packages
 ## 🔗 Backend Repositories
 
 - This frontend works closely with upstream backend repositories. Two commonly referenced backends are:
-  - `earth-app/mantle2` — core API and business logic (user, activities, prompts, articles)
-  - `earth-app/cloud` — Cloud/edge services and worker-side integrations used by NuxtHub/Cloudflare deployments
+  - `earth-app/mantle2` - core API and business logic (user, activities, prompts, articles)
+  - `earth-app/cloud` - Cloud/edge services and worker-side integrations used by NuxtHub/Cloudflare deployments
 
 When updating API surface (paths, response schemas), coordinate changes with the backend repos and update the local Zod schemas in `src/shared/utils/schemas.ts` and the TypeScript types if shared contracts change.
 

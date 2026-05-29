@@ -332,7 +332,7 @@ function onTilePointerDown(e: PointerEvent, tile: string, source: DragSource) {
 function onSlotClick(i: number) {
 	if (props.disabled || draggingTile.value) return;
 	// Click on a slot only places the currently-selected bank tile. Removing a placed tile
-	// is drag-only (to bank or outside any drop zone) — keeps drag and click consistent.
+	// is drag-only (to bank or outside any drop zone) - keeps drag and click consistent.
 	if (!selectedTile.value) return;
 	const current = slots.value[i];
 	if (current) bank.value.push(current);
@@ -399,7 +399,7 @@ const autoScroll = useRafFn(
 			top: SCROLL_SPEED * direction,
 			behavior: 'instant'
 		});
-		// Page moved under the pointer — refresh drop target.
+		// Page moved under the pointer - refresh drop target.
 		const dropTarget = findTargetUnderPointer(lastPointer.value.x, lastPointer.value.y);
 		dragOverSlot.value = dropTarget.slot;
 		dragOverBank.value = dropTarget.bank;
@@ -461,7 +461,7 @@ function commitDrop(
 		slots.value[source.index] = null;
 		return;
 	}
-	// Released outside any drop zone — for slot tiles, return to bank so they aren't stranded.
+	// Released outside any drop zone - for slot tiles, return to bank so they aren't stranded.
 	if (source.kind === 'slot') {
 		bank.value.push(tile);
 		slots.value[source.index] = null;

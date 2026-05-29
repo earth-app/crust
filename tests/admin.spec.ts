@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/admin.vue` — admin control panel.
+ * E2E tests for `src/pages/admin.vue` - admin control panel.
  *
  * Visible only when `user.is_admin === true`. Includes:
  *   - MOTD panel (set/clear MOTD)

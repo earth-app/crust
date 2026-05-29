@@ -5,7 +5,7 @@
 	>
 		<template v-if="!editing">
 			<span :class="['text-gray-800 dark:text-white', props.class]">
-				{{ props.modelValue || props.placeholder || '—' }}
+				{{ props.modelValue || props.placeholder || '-' }}
 			</span>
 			<UIcon
 				name="mdi:pencil-outline"

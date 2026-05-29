@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/index.vue` — the Earth App homepage.
+ * E2E tests for `src/pages/index.vue` - the Earth App homepage.
  *
  * The homepage uses ISR (`/` -> 1h ISR) so its initial markup is server-
  * rendered, then the `<ClientOnly>` block hydrates and conditionally shows the
@@ -7,7 +7,7 @@
  *
  * Scoping note: "Login" and "Sign Up" appear in multiple places on the logged-
  * in homepage:
- *   - the global NavBar / Discover command palette (chrome) — outside <main>
+ *   - the global NavBar / Discover command palette (chrome) - outside <main>
  *   - the hero CTA row (the auth-gated buttons we actually want to assert on)
  *   - event-card "Sign Up" RSVP buttons inside `Today's Content` recommendations
  *
@@ -93,7 +93,7 @@ test.describe('Homepage (logged-in user)', () => {
 	test('hides Login and Sign Up CTAs', async ({ asUser, page, gotoHydrated }) => {
 		await asUser();
 		await gotoHydrated('/');
-		// Only check the hero CTA row — event-card RSVP buttons inside the
+		// Only check the hero CTA row - event-card RSVP buttons inside the
 		// "Today's Content" recommendations section are also labeled "Sign Up"
 		// (e.g. EventCard.vue) and must NOT be confused with the page-level
 		// auth CTAs.

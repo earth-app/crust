@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/activities/index.vue` — paginated activity catalog.
+ * E2E tests for `src/pages/activities/index.vue` - paginated activity catalog.
  *
  * Route rule: ISR 4h. The page renders a list grid plus, for logged-in users,
  * a "Recommended for You" section sourced from `/v2/users/current/activities/recommend`.

@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/articles/new.vue` — create-article form.
+ * E2E tests for `src/pages/articles/new.vue` - create-article form.
  *
  * Permission gate: only WRITER, ORGANIZER, or ADMINISTRATOR can create.
  * FREE/PRO users are redirected to / with a toast.

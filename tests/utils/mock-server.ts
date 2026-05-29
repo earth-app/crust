@@ -13,7 +13,7 @@
  *
  *   - Tests can override responses per-request by POSTing a directive to the
  *     control plane on `/__mock__/` (same port, distinct path). The override is
- *     a (method, path, response) tuple held in a stack — first match wins, and
+ *     a (method, path, response) tuple held in a stack - first match wins, and
  *     overrides are consumed (one-shot) by default. This is exposed via the
  *     `mockApi` Playwright fixture as `mockApi.set(...)`.
  *
@@ -27,7 +27,7 @@
  *     workers don't bleed state.
  *
  * This file is dependency-free (just `node:http`) so it can be required from
- * any context — globalSetup, individual tests, or CLI invocation for
+ * any context - globalSetup, individual tests, or CLI invocation for
  * debugging (`bun tests/utils/mock-server.ts`).
  */
 
@@ -224,7 +224,7 @@ function findUser(idOrUsername: string): any | undefined {
 }
 
 // ---------------------------------------------------------------------------
-// Route table — mantle2 (/v2/*)
+// Route table - mantle2 (/v2/*)
 // ---------------------------------------------------------------------------
 
 const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
@@ -654,7 +654,7 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 ];
 
 // ---------------------------------------------------------------------------
-// Route table — cloud (/v1/*, /ws/*)
+// Route table - cloud (/v1/*, /ws/*)
 // ---------------------------------------------------------------------------
 
 const cloudRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
@@ -824,7 +824,7 @@ const cloudRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }> 
 ];
 
 // ---------------------------------------------------------------------------
-// Control plane — /__mock__/*
+// Control plane - /__mock__/*
 // ---------------------------------------------------------------------------
 
 const controlRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [

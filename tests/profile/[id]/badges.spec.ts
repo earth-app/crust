@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/profile/[id]/badges.vue` — badges grid for a user.
+ * E2E tests for `src/pages/profile/[id]/badges.vue` - badges grid for a user.
  */
 
 import { expect, skipIfIntegration, test } from '../../utils/fixtures';

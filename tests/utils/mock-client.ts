@@ -56,7 +56,7 @@ export class MockClient {
 	}
 
 	/**
-	 * Register multiple overrides at once. Order matters — first registered = first matched.
+	 * Register multiple overrides at once. Order matters - first registered = first matched.
 	 */
 	async setMany(specs: OverrideSpec[]): Promise<void> {
 		for (const spec of specs) await this.set(spec);

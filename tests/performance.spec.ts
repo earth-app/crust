@@ -8,7 +8,7 @@
  * Budgets are mode-dependent: in `PLAYWRIGHT_PROD=1` we run against the
  * pre-built bundle and use realistic numbers (1-2s for static pages, 3-4s for
  * ISR pages). In dev mode (Vite compile-on-demand) we 3x everything to avoid
- * false positives on cold compiles — these budgets still catch a 30s
+ * false positives on cold compiles - these budgets still catch a 30s
  * regression, but they don't penalize a 7s cold compile that has nothing to
  * do with the code being tested.
  */
@@ -18,7 +18,7 @@ import { expect, integrationMode, test } from './utils/fixtures';
 const PROD = process.env.PLAYWRIGHT_PROD === '1';
 // Real-backend integration mode adds 1-7s of mantle2 round-trips per page on
 // top of hydration cost (data-heavy pages like /articles can hit 10s on a
-// cold mantle2). 3x keeps the test meaningful — catches a 25s+ regression —
+// cold mantle2). 3x keeps the test meaningful - catches a 25s+ regression -
 // without chasing CI per-request flake.
 const scale = (ms: number): number => {
 	if (PROD) return integrationMode ? ms * 3 : ms;
@@ -50,7 +50,7 @@ test.describe('Page hydration performance budgets', () => {
 	}
 });
 
-test.describe('Performance metrics — DOMContentLoaded budget', () => {
+test.describe('Performance metrics - DOMContentLoaded budget', () => {
 	test('homepage DOMContentLoaded within budget', async ({ page, gotoHydrated, asAnonymous }) => {
 		await asAnonymous();
 		await gotoHydrated('/');

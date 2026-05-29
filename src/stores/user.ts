@@ -722,7 +722,7 @@ export const useUserStore = defineStore('user', () => {
 				quest
 			};
 			masteryStatuses.set(cacheKey, nextStatus);
-			// refresh the cap snapshot — fire-and-forget so the badges page sees the new slot
+			// refresh the cap snapshot - fire-and-forget so the badges page sees the new slot
 			fetchMasteryList(userId);
 
 			return quest;

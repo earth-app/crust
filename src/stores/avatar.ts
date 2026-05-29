@@ -103,7 +103,7 @@ export const useAvatarStore = defineStore('avatar', () => {
 					return result;
 				}
 
-				// All sizes failed — mark URL as failed so consumers can show fallback
+				// All sizes failed - mark URL as failed so consumers can show fallback
 				// without retrying repeatedly. Don't cache the fallback object
 				// (so future force-fetches still try the network).
 				failedUrls.add(url);

@@ -301,7 +301,7 @@ function init() {
 	const pairs = params[1];
 
 	// Size the board responsively based on number of cards.
-	// Generous height — the page can scroll (plus auto-scroll while dragging), so giving
+	// Generous height - the page can scroll (plus auto-scroll while dragging), so giving
 	// each card room to breathe avoids occlusion when a card sits partially under another.
 	const totalCards = pairs.length * 2;
 	boardHeight.value = Math.min(1200, Math.max(640, 100 + totalCards * 110));
@@ -527,16 +527,16 @@ function tryMatch(a: Card, b: Card) {
 	if (a.side !== b.side && norm(a.def) === norm(b.def)) {
 		const ida = a.id;
 		const idb = b.id;
-		// Phase 1 — green celebrate (visible).
+		// Phase 1 - green celebrate (visible).
 		cards.value = cards.value.map((c) =>
 			c.id === ida || c.id === idb ? { ...c, celebrate: true } : c
 		);
-		// Phase 2 — fade to transparent after the celebrate beat.
+		// Phase 2 - fade to transparent after the celebrate beat.
 		useTimeoutFn(() => {
 			cards.value = cards.value.map((c) =>
 				c.id === ida || c.id === idb ? { ...c, fading: true } : c
 			);
-			// Phase 3 — fully matched (removed from play).
+			// Phase 3 - fully matched (removed from play).
 			useTimeoutFn(() => {
 				cards.value = cards.value.map((c) =>
 					c.id === ida || c.id === idb

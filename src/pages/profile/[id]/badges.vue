@@ -107,7 +107,7 @@ const { setTitleSuffix } = useTitleSuffix();
 const { user: authUser } = useAuth();
 const userStore = useUserStore();
 
-// masteries are private state — only fetch when viewing your own profile (mantle2 enforces
+// masteries are private state - only fetch when viewing your own profile (mantle2 enforces
 // 403 anyway, but a preflight check avoids a needless round trip + console error)
 const isOwnProfile = computed(() => {
 	if (!user.value || !authUser.value) return false;

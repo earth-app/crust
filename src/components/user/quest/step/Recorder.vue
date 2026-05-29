@@ -76,7 +76,7 @@
 			<span
 				v-if="stage === 'recording' && !canStop"
 				class="-mt-4! text-[0.72rem]! text-neutral-500! tabular-nums!"
-				>Keep recording — {{ stopCountdown }}s until you can stop</span
+				>Keep recording - {{ stopCountdown }}s until you can stop</span
 			>
 
 			<button

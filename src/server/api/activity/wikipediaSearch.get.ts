@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
 
 		return { query: { search: safeResults } };
 	} catch {
-		// Return empty results rather than propagating a 500 —
+		// Return empty results rather than propagating a 500 -
 		// individual search failures should not block the rest of the page load
 		return { query: { search: [] as { title: string; snippet: string }[] } };
 	}

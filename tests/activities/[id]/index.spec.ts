@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/activities/[id]/index.vue` — single activity page.
+ * E2E tests for `src/pages/activities/[id]/index.vue` - single activity page.
  *
  * Route: SWR 4h. Renders details for an activity sourced from
  * /v2/activities/{id} plus cloud enrichment from /v1/activity/{id}.

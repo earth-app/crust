@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/events/[id]/index.vue` — single event page.
+ * E2E tests for `src/pages/events/[id]/index.vue` - single event page.
  */
 
 import { expect, skipIfIntegration, test } from '../../utils/fixtures';

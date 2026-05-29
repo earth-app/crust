@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/profile/quests/index.vue` — quest progress list.
+ * E2E tests for `src/pages/profile/quests/index.vue` - quest progress list.
  */
 
 import { expect, test } from '../../utils/fixtures';

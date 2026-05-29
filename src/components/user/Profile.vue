@@ -349,7 +349,7 @@ import { withSuffix } from 'utils';
 import { h } from 'vue';
 import ContentDrawer from '~/components/ContentDrawer.vue';
 
-const comma = (n: number | undefined) => (n !== undefined ? withSuffix(n) : '—');
+const comma = (n: number | undefined) => (n !== undefined ? withSuffix(n) : '-');
 
 const props = defineProps<{
 	user: User;

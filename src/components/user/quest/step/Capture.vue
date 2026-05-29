@@ -348,10 +348,10 @@ async function injectExif(dataUrl: string, width: number, height: number): Promi
 			[piexif.ExifIFD.DateTimeOriginal]: dateStr,
 			[piexif.ExifIFD.DateTimeDigitized]: dateStr,
 			// Note: OffsetTimeOriginal (0x9010) and OffsetTimeDigitized (0x9011) are
-			// EXIF 2.31 additions not supported by piexifjs — omit to avoid dump() throwing.
-			[piexif.ExifIFD.FNumber]: [28, 10], // F2.8 — typical web camera aperture
-			[piexif.ExifIFD.ExposureTime]: [1, 30], // 1/30 second — typical web camera exposure
-			[piexif.ExifIFD.FocalLength]: [50, 10], // 5.0mm — typical web camera focal length
+			// EXIF 2.31 additions not supported by piexifjs - omit to avoid dump() throwing.
+			[piexif.ExifIFD.FNumber]: [28, 10], // F2.8 - typical web camera aperture
+			[piexif.ExifIFD.ExposureTime]: [1, 30], // 1/30 second - typical web camera exposure
+			[piexif.ExifIFD.FocalLength]: [50, 10], // 5.0mm - typical web camera focal length
 			[piexif.ExifIFD.LensModel]: 'Virtual Lens',
 			[piexif.ExifIFD.PixelXDimension]: width,
 			[piexif.ExifIFD.PixelYDimension]: height,
@@ -361,7 +361,7 @@ async function injectExif(dataUrl: string, width: number, height: number): Promi
 		'1st': {}
 	};
 
-	// Attempt to attach GPS coordinates — silently skip if unavailable or denied
+	// Attempt to attach GPS coordinates - silently skip if unavailable or denied
 	try {
 		const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
 			navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -381,7 +381,7 @@ async function injectExif(dataUrl: string, width: number, height: number): Promi
 			exifObj.GPS[piexif.GPSIFD.GPSAltitude] = [Math.round(Math.abs(altitude) * 100), 100];
 		}
 	} catch {
-		// Geolocation unavailable or permission denied — proceed without GPS
+		// Geolocation unavailable or permission denied - proceed without GPS
 	}
 
 	const exifBytes = piexif.dump(exifObj);
@@ -401,7 +401,7 @@ async function takePhoto() {
 	canvas.getContext('2d')!.drawImage(video, 0, 0);
 
 	const rawDataUrl = canvas.toDataURL('image/jpeg', 0.92);
-	// Inject EXIF into the data URL before storing — canvas strips all metadata.
+	// Inject EXIF into the data URL before storing - canvas strips all metadata.
 	// Fall back to the raw data URL if piexif throws (e.g. unsupported tag).
 	try {
 		previewSrc.value = await injectExif(rawDataUrl, canvas.width, canvas.height);
@@ -438,7 +438,7 @@ onBeforeUnmount(stopStream);
 </script>
 
 <style scoped>
-/* Keyframe animations — cannot be expressed as inline Tailwind utility classes */
+/* Keyframe animations - cannot be expressed as inline Tailwind utility classes */
 @keyframes ring-pulse {
 	0%,
 	100% {

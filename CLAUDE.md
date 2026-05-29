@@ -42,8 +42,8 @@ Key goals when making changes:
 
 - The frontend proxies backend API requests (e.g. `/v2/*`) through server routes in `src/server/api/`.
 - Primary backend services to be aware of (other repos):
-  - `earth-app/mantle2` — core API & business logic services (user, activities, prompts, articles)
-  - `earth-app/cloud` — Cloud/edge services and any Cloudflare Worker–side integrations
+  - `earth-app/mantle2` - core API & business logic services (user, activities, prompts, articles)
+  - `earth-app/cloud` - Cloud/edge services and any Cloudflare Worker–side integrations
 
 When changing API paths or response shapes, update shared types in `@earth-app/ocean` (if applicable) and validate with Zod schemas in `src/shared/utils/schemas.ts`.
 
@@ -81,8 +81,8 @@ When asked to change code:
 
 ## Notes & Cautions
 
-- Do NOT commit secrets or env files—runtime secrets belong in CI/CD or Cloudflare environment variables.
-- `nuxt.config.library.ts` is copied over during `prepack` — be cautious editing `nuxt.config.ts` directly if preparing a package release.
+- Do NOT commit secrets or env files-runtime secrets belong in CI/CD or Cloudflare environment variables.
+- `nuxt.config.library.ts` is copied over during `prepack` - be cautious editing `nuxt.config.ts` directly if preparing a package release.
 - Avoid changing `routeRules` without considering caching and Cloudflare edge invalidation.
 
 ## Where to Find Things (quick pointers)

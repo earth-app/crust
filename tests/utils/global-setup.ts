@@ -30,7 +30,7 @@ const INTEGRATION_SESSION_FILE = resolve(PROJECT_ROOT, '.integration-session.jso
  * With 152 tests × 4 workers each calling `loginAsRealAdmin` per test, those
  * limits get blown immediately and every subsequent test fails with 409/429.
  * Logging in *once* in globalSetup and writing the token to a temp file lets
- * every fixture invocation reuse the same cookie — zero login traffic after
+ * every fixture invocation reuse the same cookie - zero login traffic after
  * setup. The file is git-ignored and lives for the duration of the run.
  */
 async function loginAndCacheAdminSession() {
@@ -70,7 +70,7 @@ export default async function globalSetup() {
 		mkdirSync(RAW_COVERAGE_DIR, { recursive: true });
 	}
 	// Remove any stale session from a prior run before deciding whether to mint
-	// a new one — keeps mock-mode runs from accidentally seeing the file.
+	// a new one - keeps mock-mode runs from accidentally seeing the file.
 	if (existsSync(INTEGRATION_SESSION_FILE)) {
 		rmSync(INTEGRATION_SESSION_FILE, { force: true });
 	}
@@ -102,7 +102,7 @@ export default async function globalSetup() {
 		await new Promise((r) => setTimeout(r, 1500));
 	}
 	if (!up) {
-		console.warn('[setup] server warmup timed out — tests may have slow first hits');
+		console.warn('[setup] server warmup timed out - tests may have slow first hits');
 		return;
 	}
 
@@ -140,7 +140,7 @@ export default async function globalSetup() {
 		'/terms-of-service',
 		'/privacy-policy'
 	];
-	// Warm routes sequentially — Vite's compiler is single-threaded so firing
+	// Warm routes sequentially - Vite's compiler is single-threaded so firing
 	// requests in parallel just creates head-of-line contention. A serial
 	// warm-up of 25 routes typically finishes in 15-20s and dramatically
 	// improves per-test navigation times since the chunks are now cached.

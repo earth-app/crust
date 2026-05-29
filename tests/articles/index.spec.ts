@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/articles/index.vue` — article hub with multiple sections.
+ * E2E tests for `src/pages/articles/index.vue` - article hub with multiple sections.
  */
 
 import { expect, skipIfIntegration, test } from '../utils/fixtures';

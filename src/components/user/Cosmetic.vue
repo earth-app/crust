@@ -71,7 +71,7 @@ const props = defineProps<{
 const avatarStore = useAvatarStore();
 
 // Read directly from the reactive store cache. Blob URLs are owned by the
-// store, so we must not revoke them here — multiple components may share
+// store, so we must not revoke them here - multiple components may share
 // the same cached URL, and revoking would break siblings.
 const url = computed(() => avatarStore.getPreview(props.cosmeticKey));
 

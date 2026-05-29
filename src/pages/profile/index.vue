@@ -35,7 +35,7 @@ onMounted(async () => {
 	if (typeof provider !== 'string') return;
 	if (!OAUTH_PROVIDERS.includes(provider as OAuthProvider)) return;
 
-	// Force a refetch — mantle2 may have auto-set `account.email` from the
+	// Force a refetch - mantle2 may have auto-set `account.email` from the
 	// provider when linking an account that had no email on file, so the cached
 	// user copy is stale.
 	await fetchUser(true);

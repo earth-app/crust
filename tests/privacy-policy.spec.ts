@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/privacy-policy.vue` — fully static prerendered page.
+ * E2E tests for `src/pages/privacy-policy.vue` - fully static prerendered page.
  */
 
 import { expect, test } from './utils/fixtures';

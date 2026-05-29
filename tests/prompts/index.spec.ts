@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/prompts/index.vue` — prompts list.
+ * E2E tests for `src/pages/prompts/index.vue` - prompts list.
  */
 
 import { expect, skipIfIntegration, test } from '../utils/fixtures';
@@ -19,7 +19,7 @@ test.describe('Prompts list (anonymous)', () => {
 		await asAnonymous();
 		await gotoHydrated('/prompts');
 		const btn = page.getByTitle('Create Prompt');
-		// Either disabled or visible — tooltip-driven
+		// Either disabled or visible - tooltip-driven
 		await expect(btn.first()).toBeVisible();
 	});
 

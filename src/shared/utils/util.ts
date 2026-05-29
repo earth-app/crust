@@ -347,7 +347,7 @@ export function toTitleCase(str: string): string {
 			const leadingMatch = word.match(/^[\s"'`«\[\(]*/);
 			const leading = leadingMatch ? leadingMatch[0] : '';
 
-			const trailingMatch = word.match(/[\s"'`»\]\).,;:!?—–-]*$/);
+			const trailingMatch = word.match(/[\s"'`»\]\).,;:!?-–-]*$/);
 			const trailing = trailingMatch ? trailingMatch[0] : '';
 
 			const core = word.slice(leading.length, word.length - trailing.length || word.length);

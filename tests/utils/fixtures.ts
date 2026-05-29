@@ -42,7 +42,7 @@ export const integrationMode = process.env.MOCK_DISABLED === '1';
  * re-issues). With 152 tests × 4 workers each calling this per-test, those
  * limits get blown immediately. Instead we log in ONCE in globalSetup and
  * cache `{session_token, user}` to a temp file; every fixture invocation
- * reads that file and stamps the same cookie on its browser context — zero
+ * reads that file and stamps the same cookie on its browser context - zero
  * additional login requests across the entire run.
  */
 let cachedSession: { session_token: string; user: Record<string, any> } | null = null;
@@ -54,7 +54,7 @@ function loadIntegrationSession() {
 		return cachedSession!;
 	} catch (err) {
 		throw new Error(
-			`[integration] cached session file not found at ${INTEGRATION_SESSION_FILE} — global-setup must run with MOCK_DISABLED=1 first. ${(err as Error).message}`
+			`[integration] cached session file not found at ${INTEGRATION_SESSION_FILE} - global-setup must run with MOCK_DISABLED=1 first. ${(err as Error).message}`
 		);
 	}
 }
@@ -119,7 +119,7 @@ export const test = baseTest.extend<TestFixtures>({
 			(route) => route.fulfill({ status: 204, body: '' })
 		);
 
-		// Coverage hooks — chromium only
+		// Coverage hooks - chromium only
 		if (browserName === 'chromium' && process.env.COVERAGE) {
 			await context.addInitScript(() => {
 				// noop: presence of script ensures consistent context
@@ -150,7 +150,7 @@ export const test = baseTest.extend<TestFixtures>({
 		const client = new MockClient(testId);
 		// Clear the Nitro server's in-memory apiCache (and request dedupe queue)
 		// so default mock data doesn't bleed across tests. Best-effort with a
-		// hard 3s timeout — under heavy CI load the dev server can pause for
+		// hard 3s timeout - under heavy CI load the dev server can pause for
 		// minutes on a single request, and we don't want the fixture setup to
 		// consume the whole test's 120s budget on this one call. The cache
 		// disable flag (`DISABLE_API_CACHE=1`) is the primary defense; this
@@ -167,7 +167,7 @@ export const test = baseTest.extend<TestFixtures>({
 			// dev server may not be up yet on first test; non-fatal
 		}
 		await use(client);
-		// Same timeout discipline on teardown — never let cleanup block the
+		// Same timeout discipline on teardown - never let cleanup block the
 		// next test if the dev server is wedged.
 		const ac = new AbortController();
 		const timer = setTimeout(() => ac.abort(), 3_000);
@@ -254,8 +254,8 @@ export const test = baseTest.extend<TestFixtures>({
 	 * For routes that have ISR/SWR cache rules in `nuxt.config.ts`
 	 * (`/events/**`, `/articles/**`, `/prompts/**`, `/activities/**`, `/`)
 	 * we append a per-test cache-bust query (`_t={testId}`) so that an
-	 * earlier test's SSR HTML — rendered before this test's mock overrides
-	 * were in place — doesn't leak across tests. URL assertions in those
+	 * earlier test's SSR HTML - rendered before this test's mock overrides
+	 * were in place - doesn't leak across tests. URL assertions in those
 	 * spec files use substring regexes that are tolerant of the trailing
 	 * query.
 	 */
@@ -269,7 +269,7 @@ export const test = baseTest.extend<TestFixtures>({
 				url = `${path}${sep}_t=${testId.slice(0, 12)}`;
 			}
 			await page.goto(url, { waitUntil: 'domcontentloaded' });
-			// Best-effort hydration wait — Nuxt sets `window.useNuxtApp` after
+			// Best-effort hydration wait - Nuxt sets `window.useNuxtApp` after
 			// hydration is complete. Bail out after 8s if the marker never
 			// appears (e.g. a hard error page).
 			await page

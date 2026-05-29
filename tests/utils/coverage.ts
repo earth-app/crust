@@ -11,7 +11,7 @@
  *   - coverage/coverage-final.json (full istanbul detail)
  *   - coverage/coverage-summary.json (CLI-friendly summary)
  *
- * Coverage only meaningfully covers browser-shipped JS — Nuxt SSR runs in a
+ * Coverage only meaningfully covers browser-shipped JS - Nuxt SSR runs in a
  * separate Node process which we do not instrument here. For SSR coverage,
  * the integration workflow (e2e.yml) collects c8 coverage of the Nitro server.
  */
@@ -39,7 +39,7 @@ const KEEP_PREFIXES = [
 ];
 
 // First-pass URL filter: drop only the things we KNOW are not app code.
-// We intentionally keep `/_nuxt/{hash}.js` chunks — these compile from src/
+// We intentionally keep `/_nuxt/{hash}.js` chunks - these compile from src/
 // and after sourcemap remap will surface as `src/pages/foo.vue` etc. The
 // post-merge KEEP_PREFIXES filter trims any vendor chunks that remap to
 // `node_modules/`.
@@ -50,7 +50,7 @@ function isCandidateUrl(url: string): boolean {
 	if (url.startsWith('chrome-extension:')) return false;
 	if (url.includes('hot-update')) return false;
 	if (url.includes('/_nuxt/builds/')) return false;
-	// Only chunks served from the dev/prod server matter — skip cross-origin
+	// Only chunks served from the dev/prod server matter - skip cross-origin
 	// scripts (which would have been blocked by our route handler anyway).
 	return url.startsWith('http://127.0.0.1:3000/') || url.includes('/_nuxt/');
 }
@@ -108,7 +108,7 @@ export async function mergeAndReport(): Promise<void> {
 				// the on-disk chunk path so v8-to-istanbul can read the
 				// adjacent `.js.map` and remap coverage onto `src/*` paths.
 				// SSR/HTML entries (no `/_nuxt/` segment) have no sourcemap
-				// to follow — convert them in source-only mode.
+				// to follow - convert them in source-only mode.
 				const chunkMatch = entry.url.match(/\/_nuxt\/([^/?#]+\.js)(?:[?#]|$)/);
 				const chunkName = chunkMatch?.[1];
 				const scriptPath = chunkName ? resolve(CHUNK_DIR, chunkName) : '';

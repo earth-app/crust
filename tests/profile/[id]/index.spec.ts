@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/profile/[id]/index.vue` — public profile by id/username.
+ * E2E tests for `src/pages/profile/[id]/index.vue` - public profile by id/username.
  */
 
 import { expect, test } from '../../utils/fixtures';

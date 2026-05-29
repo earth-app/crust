@@ -95,7 +95,7 @@ test.describe('Verify email (unverified user)', () => {
 		await gotoHydrated('/verify-email');
 		await page.locator('input').first().focus();
 		await page.keyboard.type('00000000');
-		// We don't assert specific toast wording — the failure may surface differently
+		// We don't assert specific toast wording - the failure may surface differently
 		// across UI versions. The key invariant is the user is NOT redirected.
 		await page.waitForTimeout(2000);
 		await expect(page).toHaveURL(/\/verify-email/);

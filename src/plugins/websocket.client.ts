@@ -127,7 +127,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 					}
 
 					if (connectedUserId && connectedUserId !== currentUser.id) {
-						// different user logged in — close the old connection first
+						// different user logged in - close the old connection first
 						disconnect();
 					}
 

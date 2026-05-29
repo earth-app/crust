@@ -177,7 +177,7 @@ export function useVerifyNewIPLogin() {
 					lower.includes('invalid') ||
 					lower.includes('missing'));
 
-			// "Invalid verification code" is the only retryable 400 — but our string
+			// "Invalid verification code" is the only retryable 400 - but our string
 			// match above would catch it. Narrow back: pure "invalid verification code"
 			// keeps the PIN input open.
 			const codeOnlyInvalid = statusCode === 400 && lower === 'invalid verification code';

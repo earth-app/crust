@@ -251,7 +251,7 @@ export function parseUserAgent(ua: string): {
 
 		let make = 'android';
 
-		// Samsung  — SM-*, SGH-*, GT-*, SCH-* prefixes or explicit "Samsung"
+		// Samsung  - SM-*, SGH-*, GT-*, SCH-* prefixes or explicit "Samsung"
 		if (/samsung/i.test(modelRaw) || /^(SM|SGH|GT|SCH)-/i.test(modelRaw)) {
 			make = 'samsung';
 		}

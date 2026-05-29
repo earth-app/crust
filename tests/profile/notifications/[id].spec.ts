@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/profile/notifications/[id].vue` — single notification.
+ * E2E tests for `src/pages/profile/notifications/[id].vue` - single notification.
  */
 
 import { expect, test } from '../../utils/fixtures';

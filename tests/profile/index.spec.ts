@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/profile/index.vue` — own profile editor.
+ * E2E tests for `src/pages/profile/index.vue` - own profile editor.
  *
  * Client-only page. Anonymous → "Please log in" message. Logged-in → editor.
  * Query params (?success=, ?error=) trigger OAuth-related toasts.
@@ -25,7 +25,7 @@ test.describe('Own profile (logged in)', () => {
 	test('renders profile editor for authenticated user', async ({ asUser, page, gotoHydrated }) => {
 		await asUser({ username: 'gregory' });
 		await gotoHydrated('/profile');
-		// Editor should be visible — the editor mounts when user is loaded
+		// Editor should be visible - the editor mounts when user is loaded
 		await expect(page).toHaveURL(/\/profile/);
 	});
 

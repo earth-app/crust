@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/events/index.vue` — event hub.
+ * E2E tests for `src/pages/events/index.vue` - event hub.
  */
 
 import { expect, test } from '../utils/fixtures';

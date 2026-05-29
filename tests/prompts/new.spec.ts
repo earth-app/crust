@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/prompts/new.vue` — prompt creation.
+ * E2E tests for `src/pages/prompts/new.vue` - prompt creation.
  *
  * Gate: users with PRIVATE profile are redirected to /profile with a toast.
  */

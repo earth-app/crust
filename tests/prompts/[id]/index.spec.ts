@@ -1,5 +1,5 @@
 /**
- * E2E tests for `src/pages/prompts/[id]/index.vue` — single prompt page.
+ * E2E tests for `src/pages/prompts/[id]/index.vue` - single prompt page.
  */
 
 import { expect, skipIfIntegration, test } from '../../utils/fixtures';

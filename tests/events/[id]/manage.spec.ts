@@ -1,11 +1,11 @@
 /**
- * E2E tests for `src/pages/events/[id]/manage.vue` — event host management UI.
+ * E2E tests for `src/pages/events/[id]/manage.vue` - event host management UI.
  *
  * Renders only when event + user are loaded AND the event's `can_edit` flag is
  * true (the page redirects away with an "Access Denied" toast otherwise). We
  * override the event endpoint in each test to set `can_edit: true`.
  *
- * Stability note: the page does NOT await its event fetch during setup — the
+ * Stability note: the page does NOT await its event fetch during setup - the
  * fetch fires async and the watcher only flips the UI on once the eventStore's
  * cache resolves. We therefore wait with a generous timeout (the dev server's
  * `/events/[id]/manage` route is one of the heavier first-compile hits) and
