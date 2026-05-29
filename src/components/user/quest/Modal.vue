@@ -112,16 +112,14 @@
 				</div>
 			</template>
 			<template #body>
-				<div class="overflow-y-auto overscroll-contain">
-					<LazyUserQuestStepSubmission
-						v-if="openStep"
-						:quest="quest"
-						:progress="progress"
-						:step="openStep"
-						@submitted="stepOpen = false"
-					/>
-					<Loading v-else-if="stepOpen" />
-				</div>
+				<LazyUserQuestStepSubmission
+					v-if="openStep"
+					:quest="quest"
+					:progress="progress"
+					:step="openStep"
+					@submitted="stepOpen = false"
+				/>
+				<Loading v-else-if="stepOpen" />
 			</template>
 		</UModal>
 
