@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { Event } from 'types/event';
-import { BadgeMasteryGenerationError, type BadgeMasteryStatus } from 'types/user';
+import { BadgeMasteryGenerationError, type BadgeMasteryStatus, type MasteryList } from 'types/user';
 import { computed, reactive, ref } from 'vue';
 import { useAuthStore } from './auth';
 import { useAvatarStore } from './avatar';
@@ -38,6 +38,10 @@ export const useUserStore = defineStore('user', () => {
 	const masteryStatuses = reactive(new Map<string, BadgeMasteryStatus>());
 	const masteryLoading = reactive(new Set<string>());
 	const lockedMasteries = reactive(new Set<string>());
+	// per-user mastery list (cap + items); populated by fetchMasteryList. badges page reads
+	// from here directly, card.vue uses it to disable the generate cta at the cap
+	const masteryLists = reactive(new Map<string, MasteryList>());
+	const masteryListLoading = reactive(new Set<string>());
 
 	const masteryKey = (userId: string, badgeId: string) => `${userId}:${badgeId}`;
 	const masteryQuestId = (badgeId: string) => `badge_mastery_${badgeId}`;
@@ -649,12 +653,46 @@ export const useUserStore = defineStore('user', () => {
 		}
 	};
 
+	const fetchMasteryList = async (userId: string): Promise<MasteryList | null> => {
+		if (!userId) return null;
+		const authStore = useAuthStore();
+		masteryListLoading.add(userId);
+		try {
+			const res = await makeAPIRequest<MasteryList>(
+				`user-${userId}-mastery-list`,
+				`/v2/users/${userId}/badges/masteries`,
+				authStore.sessionToken
+			);
+			if (valid(res)) {
+				masteryLists.set(userId, res.data);
+				// cache the quest objects so the badges page can open them without re-fetch
+				for (const item of res.data.items) {
+					questsCache.set(item.quest.id, item.quest);
+				}
+				return res.data;
+			}
+			return null;
+		} finally {
+			masteryListLoading.delete(userId);
+		}
+	};
+
 	const generateMastery = async (userId: string, badgeId: string): Promise<Quest> => {
 		if (!userId || !badgeId) {
 			throw new BadgeMasteryGenerationError('unknown', 'Invalid identifier');
 		}
 		if (lockedMasteries.has(badgeId)) {
 			throw new BadgeMasteryGenerationError('locked', 'Mastery permanently locked');
+		}
+		// preflight cap check using cached list when available; saves a round trip when the
+		// user clearly can't generate (server still rejects authoritatively as a backstop)
+		const cachedList = masteryLists.get(userId);
+		if (cachedList && cachedList.active >= cachedList.cap) {
+			throw new BadgeMasteryGenerationError(
+				'cap_reached',
+				`Active mastery cap reached (${cachedList.cap}). Complete or wait for one to expire.`,
+				400
+			);
 		}
 
 		const authStore = useAuthStore();
@@ -684,6 +722,8 @@ export const useUserStore = defineStore('user', () => {
 				quest
 			};
 			masteryStatuses.set(cacheKey, nextStatus);
+			// refresh the cap snapshot — fire-and-forget so the badges page sees the new slot
+			fetchMasteryList(userId);
 
 			return quest;
 		} catch (error: any) {
@@ -706,6 +746,14 @@ export const useUserStore = defineStore('user', () => {
 				throw new BadgeMasteryGenerationError('locked', message, 410);
 			}
 			if (status === 400) {
+				// mantle2 collapses two upstream reasons into a single 400: exempt badge OR
+				// active-mastery cap reached. discriminate on the message so the ui can show
+				// the right toast (and avoid wrongly marking the badge as exempt for cap hits)
+				if (/cap reached/i.test(message)) {
+					// refresh the cached list so the disabled state sticks even if preflight missed
+					fetchMasteryList(userId);
+					throw new BadgeMasteryGenerationError('cap_reached', message, 400);
+				}
 				const current = masteryStatuses.get(cacheKey);
 				masteryStatuses.set(cacheKey, {
 					generated: current?.generated ?? false,
@@ -794,6 +842,8 @@ export const useUserStore = defineStore('user', () => {
 			for (const key of [...masteryLoading]) {
 				if (key.startsWith(prefix)) masteryLoading.delete(key);
 			}
+			masteryLists.delete(identifier);
+			masteryListLoading.delete(identifier);
 		} else {
 			cache.clear();
 			loading.clear();
@@ -812,6 +862,8 @@ export const useUserStore = defineStore('user', () => {
 			questsList.value = null;
 			masteryStatuses.clear();
 			masteryLoading.clear();
+			masteryLists.clear();
+			masteryListLoading.clear();
 			lockedMasteries.clear();
 		}
 	};
@@ -851,9 +903,12 @@ export const useUserStore = defineStore('user', () => {
 		fetchQuest,
 		masteryStatuses,
 		masteryLoading,
+		masteryLists,
+		masteryListLoading,
 		lockedMasteries,
 		getMasteryStatus,
 		generateMastery,
+		fetchMasteryList,
 		getMasteryQuest,
 		setAccountType,
 		clear

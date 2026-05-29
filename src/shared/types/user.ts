@@ -131,7 +131,29 @@ export type BadgeMasteryStatus = {
 	quest: Quest | null;
 };
 
-export type BadgeMasteryError = 'locked' | 'conflict' | 'ai_failed' | 'exempt' | 'unknown';
+export type BadgeMasteryError =
+	| 'locked'
+	| 'conflict'
+	| 'ai_failed'
+	| 'exempt'
+	| 'cap_reached'
+	| 'unknown';
+
+export type MasteryListItem = {
+	badge_id: string;
+	quest: Quest;
+	generated_at: number;
+	expires_at: number;
+	mastered: boolean;
+	mastered_at: number | null;
+};
+
+export type MasteryList = {
+	cap: number;
+	active: number;
+	ttl_seconds: number;
+	items: MasteryListItem[];
+};
 
 export class BadgeMasteryGenerationError extends Error {
 	readonly code: BadgeMasteryError;
