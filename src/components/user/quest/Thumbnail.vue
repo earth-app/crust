@@ -27,13 +27,29 @@
 						<UIcon
 							v-if="quest.premium"
 							name="mdi:diamond-stone"
+							title="This quest requires Pro or higher to complete."
 							class="size-5 text-secondary"
 						/>
 
 						<UIcon
 							v-if="quest.mobile_only"
 							name="mdi:cellphone-remove"
+							title="This quest is only available on mobile."
 							class="size-5 text-error"
+						/>
+
+						<UIcon
+							v-if="quest.id.startsWith('badge_mastery_')"
+							name="mdi:medal"
+							title="This is a badge mastery quest."
+							class="size-5 text-warning"
+						/>
+
+						<UIcon
+							v-if="quest.id.startsWith('activity_quest_')"
+							name="mdi:map-marker-path"
+							title="This is an activity quest."
+							class="size-5 text-primary"
 						/>
 					</div>
 				</div>
@@ -59,6 +75,14 @@
 						v-if="completedAt"
 						class="text-sm opacity-80"
 						>Completed {{ completedAtRelative }}</span
+					>
+
+					<UBadge
+						v-if="current"
+						icon="mdi:sword"
+						color="success"
+						class="self-start"
+						>Current Quest</UBadge
 					>
 				</div>
 			</div>
