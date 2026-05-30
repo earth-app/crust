@@ -5,6 +5,13 @@ import { computed, reactive, ref } from 'vue';
 import { useAuthStore } from './auth';
 import { useAvatarStore } from './avatar';
 
+// reject anything that doesn't look like a real user at the store boundary
+export const isValidUser = (u: unknown): u is User => {
+	if (!u || typeof u !== 'object' || Array.isArray(u)) return false;
+	const usr = u as Partial<User>;
+	return typeof usr.id === 'string' && !!usr.id && typeof usr.username === 'string';
+};
+
 export const useUserStore = defineStore('user', () => {
 	const cache = reactive(new Map<string, User | null>());
 	const loading = reactive(new Set<string>());
@@ -216,14 +223,16 @@ export const useUserStore = defineStore('user', () => {
 					authStore.sessionToken
 				);
 
-				if (valid(res)) {
+				if (valid(res) && isValidUser(res.data)) {
 					cache.set(identifier, res.data);
 
 					const avatarStore = useAvatarStore();
 					avatarStore.preloadAvatar(res.data.account?.avatar_url);
 				} else {
 					cache.set(identifier, null);
-					if (res.message) {
+					if (valid(res)) {
+						console.warn(`Malformed user payload for ${identifier} — treating as not found`);
+					} else if (res.message) {
 						console.warn(`Failed to fetch user ${identifier}:`, res.message);
 					}
 				}

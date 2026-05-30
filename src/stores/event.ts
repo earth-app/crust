@@ -12,6 +12,17 @@ import { useAuthStore } from './auth';
 
 const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+const isValidEvent = (e: unknown): e is Event => {
+	if (!e || typeof e !== 'object' || Array.isArray(e)) return false;
+	const ev = e as Partial<Event>;
+
+	if (typeof ev.id !== 'string' || !ev.id) return false;
+	if (!ev.host || typeof ev.host !== 'object' || Array.isArray(ev.host)) return false;
+	if (typeof (ev.host as Partial<User>).id !== 'string') return false;
+
+	return true;
+};
+
 export const useEventStore = defineStore('event', () => {
 	const MAX_CACHE_SIZE = 100; // Limit cache to prevent memory leaks
 	const cache = reactive(new Map<string, Event | null>());
@@ -115,12 +126,19 @@ export const useEventStore = defineStore('event', () => {
 					authStore.sessionToken
 				);
 
-				if (valid(res)) {
+				if (valid(res) && isValidEvent(res.data)) {
 					evictOldestIfNeeded();
 					cache.set(id, res.data);
 				} else {
 					cache.set(id, null);
-					if (res.message) console.warn(`Failed to fetch event ${id}:`, res.message);
+					if (valid(res)) {
+						// API returned 200 with a payload, but the shape is bad (e.g. host: []
+						// from mantle's anon-stripped serializeUser). Treat as not-found so
+						// downstream components never see a half-built event.
+						console.warn(`Malformed event payload for ${id} — treating as not found`);
+					} else if (res.message) {
+						console.warn(`Failed to fetch event ${id}:`, res.message);
+					}
 				}
 			} catch (error) {
 				cache.set(id, null);

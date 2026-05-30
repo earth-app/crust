@@ -1,6 +1,7 @@
 import { defineStore, skipHydrate } from 'pinia';
 import type { User } from 'types/user';
 import { computed, ref } from 'vue';
+import { isValidUser } from './user';
 
 export const useAuthStore = defineStore('auth', () => {
 	const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
@@ -130,6 +131,12 @@ export const useAuthStore = defineStore('auth', () => {
 						Accept: 'application/json'
 					}
 				});
+
+				if (!isValidUser(response)) {
+					console.warn('Malformed /v2/users/current payload — leaving currentUser null');
+					currentUser.value = null;
+					return;
+				}
 
 				currentUser.value = response;
 				// Slide cookie expiration on successful auth reads.

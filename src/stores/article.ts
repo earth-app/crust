@@ -1,10 +1,22 @@
 import { defineStore } from 'pinia';
 import type { Article, ArticleQuizQuestion, ArticleQuizQuestionSubmission } from 'types/article';
+import type { User } from 'types/user';
 import { makeAPIRequest, makeClientAPIRequest } from 'utils';
 import { reactive } from 'vue';
 import { useAuthStore } from './auth';
 
 const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+const isValidArticle = (a: unknown): a is Article => {
+	if (!a || typeof a !== 'object' || Array.isArray(a)) return false;
+	const ar = a as Partial<Article>;
+
+	if (typeof ar.id !== 'string' || !ar.id) return false;
+	if (!ar.author || typeof ar.author !== 'object' || Array.isArray(ar.author)) return false;
+	if (typeof (ar.author as Partial<User>).id !== 'string') return false;
+
+	return true;
+};
 
 export const useArticleStore = defineStore('article', () => {
 	const MAX_CACHE_SIZE = 100; // Limit cache to prevent memory leaks
@@ -93,12 +105,16 @@ export const useArticleStore = defineStore('article', () => {
 					authStore.sessionToken
 				);
 
-				if (valid(res)) {
+				if (valid(res) && isValidArticle(res.data)) {
 					evictOldestIfNeeded();
 					cache.set(id, res.data);
 				} else {
 					cache.set(id, null);
-					if (res.message) console.warn(`Failed to fetch article ${id}:`, res.message);
+					if (valid(res)) {
+						console.warn(`Malformed article payload for ${id} — treating as not found`);
+					} else if (res.message) {
+						console.warn(`Failed to fetch article ${id}:`, res.message);
+					}
 				}
 			} catch (error) {
 				cache.set(id, null);

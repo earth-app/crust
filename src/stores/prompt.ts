@@ -1,10 +1,22 @@
 import { defineStore } from 'pinia';
 import type { Prompt, PromptResponse } from 'types/prompts';
+import type { User } from 'types/user';
 import { makeClientAPIRequest } from 'utils';
 import { reactive } from 'vue';
 import { useAuthStore } from './auth';
 
 const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+const isValidPrompt = (p: unknown): p is Prompt => {
+	if (!p || typeof p !== 'object' || Array.isArray(p)) return false;
+	const pr = p as Partial<Prompt>;
+
+	if (typeof pr.id !== 'string' || !pr.id) return false;
+	if (!pr.owner || typeof pr.owner !== 'object' || Array.isArray(pr.owner)) return false;
+	if (typeof (pr.owner as Partial<User>).id !== 'string') return false;
+
+	return true;
+};
 
 export const usePromptStore = defineStore('prompt', () => {
 	const MAX_CACHE_SIZE = 100; // Limit cache to prevent memory leaks
@@ -88,12 +100,16 @@ export const usePromptStore = defineStore('prompt', () => {
 			try {
 				const res = await makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`);
 
-				if (valid(res)) {
+				if (valid(res) && isValidPrompt(res.data)) {
 					evictOldestIfNeeded();
 					cache.set(id, res.data);
 				} else {
 					cache.set(id, null);
-					if (res.message) console.warn(`Failed to fetch prompt ${id}:`, res.message);
+					if (valid(res)) {
+						console.warn(`Malformed prompt payload for ${id} — treating as not found`);
+					} else if (res.message) {
+						console.warn(`Failed to fetch prompt ${id}:`, res.message);
+					}
 				}
 			} catch (error) {
 				cache.set(id, null);

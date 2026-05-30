@@ -3,7 +3,7 @@ import type { User } from 'types/user';
 import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from 'utils';
 import { reactive } from 'vue';
 import { useAuthStore } from './auth';
-import { useUserStore } from './user';
+import { isValidUser, useUserStore } from './user';
 
 export const useFriendsStore = defineStore('friends', () => {
 	const friendsCache = reactive(new Map<string, User[]>());
@@ -50,11 +50,13 @@ export const useFriendsStore = defineStore('friends', () => {
 				);
 
 				if (valid(res)) {
-					friendsCache.set(id, res.data);
+					const validFriends = res.data.filter(isValidUser);
+					friendsCache.set(id, validFriends);
 
-					// Preload friends into user cache
+					// Preload friends into user cache (skip malformed entries —
+					// mantle can ship `[]` for stripped users)
 					const userStore = useUserStore();
-					for (const friend of res.data) {
+					for (const friend of validFriends) {
 						userStore.cache.set(friend.id, friend);
 					}
 				} else {
@@ -103,7 +105,7 @@ export const useFriendsStore = defineStore('friends', () => {
 			{ method: 'PUT' }
 		);
 
-		if (valid(res)) {
+		if (valid(res) && isValidUser(res.data.friend)) {
 			const friendUser = res.data.friend;
 			const currentFriends = friendsCache.get(id) || [];
 			friendsCache.set(id, [...currentFriends, friendUser]);
@@ -169,11 +171,12 @@ export const useFriendsStore = defineStore('friends', () => {
 				);
 
 				if (valid(res)) {
-					circleCache.set(id, res.data);
+					const validCircle = res.data.filter(isValidUser);
+					circleCache.set(id, validCircle);
 
-					// Preload circle users into user cache
+					// Preload circle users into user cache (skip malformed entries)
 					const userStore = useUserStore();
-					for (const user of res.data) {
+					for (const user of validCircle) {
 						userStore.cache.set(user.id, user);
 					}
 				} else {
@@ -217,7 +220,7 @@ export const useFriendsStore = defineStore('friends', () => {
 			{ method: 'PUT' }
 		);
 
-		if (valid(res)) {
+		if (valid(res) && isValidUser(res.data.friend)) {
 			const friendUser = res.data.friend;
 			const currentCircle = circleCache.get(id) || [];
 			circleCache.set(id, [...currentCircle, friendUser]);
