@@ -234,7 +234,7 @@ async function submit(inputValue: string[]) {
 		});
 
 		if (!res.retryAllowed) {
-			// Ticket is dead - get the user back to login.
+			// Ticket is dead; get the user back to login.
 			clearPending();
 			setTimeout(() => router.replace('/login'), 1500);
 		}
