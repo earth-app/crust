@@ -19,10 +19,9 @@
 				<div
 					class="p-4 bg-gray-800 border-2 border-gray-200 light:border-gray-400 rounded-lg w-full max-w-3xl"
 				>
-					<p
-						class="text-gray-300 text-sm md:text-md lg:text-lg mb-4"
-						v-html="message"
-					></p>
+					<p class="text-gray-300 text-sm md:text-md lg:text-lg mb-4 whitespace-pre-line">
+						{{ message }}
+					</p>
 					<USeparator
 						v-if="notification.link"
 						class="my-4"
@@ -111,7 +110,7 @@ const relativeTime = computed(() => {
 const message = computed(() => {
 	if (!notification.value) return;
 
-	return notification.value.message.replace(/\n/g, '<br />').replace(/\t/g, '');
+	return notification.value.message.replace(/\t/g, '');
 });
 
 const userSource = computed(() => {

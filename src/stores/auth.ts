@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+import { defineStore, skipHydrate } from 'pinia';
 import type { User } from 'types/user';
 import { computed, ref } from 'vue';
 
@@ -170,7 +170,6 @@ export const useAuthStore = defineStore('auth', () => {
 		setSessionToken(null);
 	};
 
-	// initialize session token from cookie on client
 	if (import.meta.client) {
 		const sessionCookie = useCookie('session_token', {
 			maxAge: SESSION_COOKIE_MAX_AGE,
@@ -178,21 +177,11 @@ export const useAuthStore = defineStore('auth', () => {
 			sameSite: 'none'
 		});
 		sessionToken.value = normalizeSessionToken(sessionCookie.value);
-	} else {
-		// server-side; read from request headers
-		try {
-			const headers = useRequestHeaders(['cookie']);
-			const cookieHeader = headers.cookie || '';
-			const match = cookieHeader.match(/session_token=([^;]+)/);
-			sessionToken.value = normalizeSessionToken(match?.[1] || null);
-		} catch (e) {
-			sessionToken.value = null;
-		}
 	}
 
 	return {
-		currentUser,
-		sessionToken,
+		currentUser: skipHydrate(currentUser),
+		sessionToken: skipHydrate(sessionToken),
 		isLoading,
 		isAuthenticated,
 		isAdmin,

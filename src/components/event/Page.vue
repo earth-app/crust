@@ -59,7 +59,7 @@
 					>
 						<template #body>
 							<div class="prose max-w-none">
-								<p v-html="event.fields.info"></p>
+								<p class="whitespace-pre-line">{{ event.fields.info }}</p>
 							</div>
 						</template>
 					</UModal>

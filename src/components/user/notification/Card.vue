@@ -14,10 +14,10 @@
 				</NuxtLink>
 
 				<p
-					class="text-xs sm:text-sm md:text-md text-gray-300 light:text-gray-700"
+					class="text-xs sm:text-sm md:text-md text-gray-300 light:text-gray-700 whitespace-pre-line"
 					:style="{ fontWeight: notification.read ? 'normal' : 'bold' }"
 				>
-					<span v-html="trimString(notification.message, 50)"></span>
+					{{ trimString(notification.message, 50) }}
 				</p>
 				<p class="text-xs md:text-sm text-gray-400 light:text-gray-800">
 					{{ timestamp }} • {{ fullTimestamp }}
