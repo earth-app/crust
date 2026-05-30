@@ -321,10 +321,14 @@ function selectTile(tile: string) {
 function onTilePointerDown(e: PointerEvent, tile: string, source: DragSource) {
 	if (props.disabled) return;
 	if (phase.value !== 'playing') return;
+	// ignore secondary touches so a second finger can't start a parallel drag
+	if (draggingTile.value) return;
 	(e.target as Element).setPointerCapture?.(e.pointerId);
 	draggingTile.value = tile;
 	dragSource.value = source;
 	dragPos.value = { x: e.clientX, y: e.clientY };
+	lastPointer.value = { x: e.clientX, y: e.clientY };
+	scrollTarget.value = findScrollableAncestor(e.target as HTMLElement);
 	selectedTile.value = null;
 	e.preventDefault();
 }
@@ -356,22 +360,27 @@ function findTargetUnderPointer(clientX: number, clientY: number) {
 }
 
 const lastPointer = ref({ x: 0, y: 0 });
+const scrollTarget = ref<HTMLElement | Window | null>(null);
 
 const SCROLL_ZONE = 90;
-const SCROLL_SPEED = 14;
+const MIN_SCROLL_SPEED = 4;
+const MAX_SCROLL_SPEED = 22;
 
-function findScrollableUnder(x: number, y: number): HTMLElement | Window {
-	if (!import.meta.client) return window;
-	let el = document.elementFromPoint(x, y) as HTMLElement | null;
-	while (el && el !== document.body && el !== document.documentElement) {
-		const style = getComputedStyle(el);
+// cache the scroll container at drag start; elementFromPoint each frame is flaky
+// on mobile - it can return the teleported ghost or an overlay and walk up to
+// the wrong ancestor, which is why scrolling felt inconsistent before
+function findScrollableAncestor(el: HTMLElement | null): HTMLElement | Window {
+	if (!import.meta.client || !el) return window;
+	let cur: HTMLElement | null = el.parentElement;
+	while (cur && cur !== document.body && cur !== document.documentElement) {
+		const style = getComputedStyle(cur);
 		if (
 			(style.overflowY === 'auto' || style.overflowY === 'scroll') &&
-			el.scrollHeight > el.clientHeight
+			cur.scrollHeight > cur.clientHeight
 		) {
-			return el;
+			return cur;
 		}
-		el = el.parentElement;
+		cur = cur.parentElement;
 	}
 	return window;
 }
@@ -379,9 +388,10 @@ function findScrollableUnder(x: number, y: number): HTMLElement | Window {
 const autoScroll = useRafFn(
 	() => {
 		if (!draggingTile.value) return;
-		const target = findScrollableUnder(lastPointer.value.x, lastPointer.value.y);
-		// Compute top/bottom edges from the scrollable container so it works inside modals,
-		// where viewport-based edges would never trigger near the modal's bottom.
+		const target = scrollTarget.value;
+		if (!target) return;
+		// compute edges from the scrollable container so the trigger fires near the
+		// modal's bottom, not the viewport's
 		let topEdge: number;
 		let bottomEdge: number;
 		if (target === window) {
@@ -395,11 +405,15 @@ const autoScroll = useRafFn(
 		const y = lastPointer.value.y;
 		const direction = y < topEdge ? -1 : y > bottomEdge ? 1 : 0;
 		if (direction === 0) return;
+		// ease speed by distance into the edge zone so fingers near the boundary
+		// scroll faster - feels more responsive than a flat constant
+		const edgeDist = direction < 0 ? topEdge - y : y - bottomEdge;
+		const speed = Math.min(MAX_SCROLL_SPEED, Math.max(MIN_SCROLL_SPEED, edgeDist / 4));
 		(target as Window | HTMLElement).scrollBy({
-			top: SCROLL_SPEED * direction,
+			top: speed * direction,
 			behavior: 'instant'
 		});
-		// Page moved under the pointer - refresh drop target.
+		// page moved under the pointer - refresh drop target
 		const dropTarget = findTargetUnderPointer(lastPointer.value.x, lastPointer.value.y);
 		dragOverSlot.value = dropTarget.slot;
 		dragOverBank.value = dropTarget.bank;
@@ -430,6 +444,7 @@ useEventListener(['pointerup', 'pointercancel'], (e: PointerEvent) => {
 	dragOverSlot.value = null;
 	dragOverBank.value = false;
 	if (autoScroll.isActive.value) autoScroll.pause();
+	scrollTarget.value = null;
 	if (!source) return;
 	commitDrop(tile, source, target);
 });

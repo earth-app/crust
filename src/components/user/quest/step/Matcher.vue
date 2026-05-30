@@ -250,39 +250,47 @@ function rand(min: number, max: number) {
 }
 
 function scatterPositions(count: number, width: number, height: number) {
-	// Divide the board into vertical bands so cards spread top→bottom; allow each card
-	// a small vertical drift into neighbouring bands so adjacent cards can overlap a bit.
 	const cardW = Math.min(160, width * 0.42);
 	const cardH = 64;
 	const padX = 12;
 	const padY = 12;
+	const minGap = 10;
 	const positions: { x: number; y: number; rot: number }[] = [];
 	if (count === 0) return positions;
 
-	const usableH = Math.max(0, height - 2 * padY - cardH);
-	const bandH = usableH / count;
-	const overlap = 0.15; // fraction of bandH that may bleed into neighbouring bands
+	const cols = Math.max(1, Math.floor((width - 2 * padX + minGap) / (cardW + minGap)));
+	const rows = Math.ceil(count / cols);
+	const cellW = (width - 2 * padX) / cols;
+	const cellH = Math.max(cardH + minGap, (height - 2 * padY) / rows);
+	const jitterX = Math.max(0, (cellW - cardW) / 2 - 4);
+	const jitterY = Math.max(0, (cellH - cardH) / 2 - 4);
 
-	// Randomize which card lands in which band so DOM order doesn't determine vertical order.
-	const bandOrder = shuffle(Array.from({ length: count }, (_, i) => i));
+	// randomize cell -> card mapping so DOM order doesn't determine visual layout
+	const allCells = Array.from({ length: rows * cols }, (_, i) => i);
+	const cellOrder = shuffle(allCells).slice(0, count);
 
 	for (let i = 0; i < count; i++) {
-		const bandIdx = bandOrder[i] ?? i;
-		const bandTop = padY + bandIdx * bandH;
-		const bandBottom = padY + (bandIdx + 1) * bandH;
-		const yMin = Math.max(padY, bandTop - bandH * overlap);
-		const yMax = Math.min(padY + usableH, bandBottom + bandH * overlap);
-		const y = rand(yMin, yMax);
-		const x = rand(padX, Math.max(padX, width - cardW - padX));
-		positions.push({ x, y, rot: rand(-10, 10) });
+		const cellIdx = cellOrder[i] ?? i;
+		const row = Math.floor(cellIdx / cols);
+		const col = cellIdx % cols;
+		const cellLeft = padX + col * cellW;
+		const cellTop = padY + row * cellH;
+		const baseX = cellLeft + (cellW - cardW) / 2;
+		const baseY = cellTop + (cellH - cardH) / 2;
+		const x = baseX + rand(-jitterX, jitterX);
+		const y = baseY + rand(-jitterY, jitterY);
+		positions.push({ x, y, rot: rand(-7, 7) });
 	}
 	return positions;
 }
 
 function rescatter() {
-	if (!boardWidth.value || !boardElHeight.value) return;
+	const board = boardEl.value;
+	if (!board) return;
+	const rect = board.getBoundingClientRect();
+	if (!rect.width || !rect.height) return;
 	const active = cards.value.filter((c) => !c.matched);
-	const positions = scatterPositions(active.length, boardWidth.value, boardElHeight.value);
+	const positions = scatterPositions(active.length, rect.width, rect.height);
 	let pi = 0;
 	cards.value = cards.value.map((c) => {
 		if (c.matched) return c;
@@ -373,11 +381,13 @@ function cardStyle(card: Card): Record<string, string> {
 }
 
 function onPointerDown(card: Card, e: PointerEvent) {
+	// ignore secondary touches so a second finger can't start a parallel drag
+	if (dragId.value) return;
 	if (
 		card.matched ||
 		card.fading ||
 		card.celebrate ||
-		shaking.value?.includes(card.id) ||
+		shaking.value?.split(',').includes(card.id) ||
 		props.disabled
 	)
 		return;
@@ -394,7 +404,9 @@ function onPointerDown(card: Card, e: PointerEvent) {
 	};
 	dragPos.value = { x: card.x, y: card.y };
 	pointerStart.value = { x: e.clientX, y: e.clientY };
+	lastPointer.value = { x: e.clientX, y: e.clientY };
 	moved.value = false;
+	scrollTarget.value = findScrollableAncestor(board);
 
 	zCounter.value++;
 	const z = zCounter.value;
@@ -402,21 +414,23 @@ function onPointerDown(card: Card, e: PointerEvent) {
 }
 
 const lastPointer = ref({ x: 0, y: 0 });
+const scrollTarget = ref<HTMLElement | Window | null>(null);
 const SCROLL_ZONE = 90;
-const SCROLL_SPEED = 14;
+const MIN_SCROLL_SPEED = 4;
+const MAX_SCROLL_SPEED = 22;
 
-function findScrollableUnder(x: number, y: number): HTMLElement | Window {
-	if (!import.meta.client) return window;
-	let el = document.elementFromPoint(x, y) as HTMLElement | null;
-	while (el && el !== document.body && el !== document.documentElement) {
-		const style = getComputedStyle(el);
+function findScrollableAncestor(el: HTMLElement | null): HTMLElement | Window {
+	if (!import.meta.client || !el) return window;
+	let cur: HTMLElement | null = el.parentElement;
+	while (cur && cur !== document.body && cur !== document.documentElement) {
+		const style = getComputedStyle(cur);
 		if (
 			(style.overflowY === 'auto' || style.overflowY === 'scroll') &&
-			el.scrollHeight > el.clientHeight
+			cur.scrollHeight > cur.clientHeight
 		) {
-			return el;
+			return cur;
 		}
-		el = el.parentElement;
+		cur = cur.parentElement;
 	}
 	return window;
 }
@@ -424,7 +438,8 @@ function findScrollableUnder(x: number, y: number): HTMLElement | Window {
 const autoScroll = useRafFn(
 	() => {
 		if (!dragId.value || !moved.value) return;
-		const target = findScrollableUnder(lastPointer.value.x, lastPointer.value.y);
+		const target = scrollTarget.value;
+		if (!target) return;
 		let topEdge: number;
 		let bottomEdge: number;
 		if (target === window) {
@@ -435,13 +450,28 @@ const autoScroll = useRafFn(
 			topEdge = rect.top + SCROLL_ZONE;
 			bottomEdge = rect.bottom - SCROLL_ZONE;
 		}
-		const y = lastPointer.value.y;
-		const direction = y < topEdge ? -1 : y > bottomEdge ? 1 : 0;
+		const py = lastPointer.value.y;
+		const direction = py < topEdge ? -1 : py > bottomEdge ? 1 : 0;
 		if (direction === 0) return;
+
+		const edgeDist = direction < 0 ? topEdge - py : py - bottomEdge;
+		const speed = Math.min(MAX_SCROLL_SPEED, Math.max(MIN_SCROLL_SPEED, edgeDist / 4));
 		(target as Window | HTMLElement).scrollBy({
-			top: SCROLL_SPEED * direction,
+			top: speed * direction,
 			behavior: 'instant'
 		});
+
+		const board = boardEl.value;
+		if (!board) return;
+		const rect = board.getBoundingClientRect();
+		const cardW = Math.min(160, rect.width * 0.42);
+		const cardH = 64;
+		const nx = lastPointer.value.x - rect.left - dragOffset.value.x;
+		const ny = lastPointer.value.y - rect.top - dragOffset.value.y;
+		dragPos.value = {
+			x: Math.max(0, Math.min(rect.width - cardW, nx)),
+			y: Math.max(0, Math.min(rect.height - cardH, ny))
+		};
 	},
 	{ immediate: false }
 );
@@ -472,6 +502,7 @@ useEventListener(['pointerup', 'pointercancel'], (e: PointerEvent) => {
 	const draggedId = dragId.value;
 	if (!draggedId) return;
 	if (autoScroll.isActive.value) autoScroll.pause();
+	scrollTarget.value = null;
 
 	const src = cards.value.find((c) => c.id === draggedId);
 	if (!src) {
