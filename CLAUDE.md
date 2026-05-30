@@ -99,3 +99,35 @@ When asked to change code:
 2. Update any composable in `src/composables` that will call the route.
 3. Add unit/formatting checks and test locally.
 4. If route affects caching or ISR, update `routeRules` in `nuxt.config.ts` and document the change in README.
+
+## SSR safety on cacheable routes
+
+ISR/SWR routes (`/`, `/activities`, `/articles`, `/events`, `/prompts`, plus
+their `/**` detail pages) cache the entire SSR response — HTML + embedded
+Pinia payload — and serve it to every visitor. Any user-specific state baked
+in during SSR will leak across users.
+
+Rules:
+
+- **No user-specific data fetching during SSR on cacheable routes.** Don't
+  call `useFetch`/`useAsyncData` against auth-gated endpoints at page setup
+  time. Defer to `onMounted` or composable methods invoked client-side (the
+  existing pattern across the codebase).
+- **No cookies/request headers read during SSR inside Pinia stores.** The
+  auth store is the only one allowed to touch `session_token`, and even
+  there the read happens client-side only. If a new store needs
+  cookies/headers, gate the read on `import.meta.client`.
+- **Mark client-only reactive state with `skipHydrate`.** Any ref derived
+  from `useCookie`, `useLocalStorage`, `useSessionStorage`, or other
+  browser-only sources must be wrapped with `skipHydrate(...)` at return
+  time, or its client value will be silently overwritten by the cached SSR
+  payload during Pinia hydration. See [src/stores/auth.ts](src/stores/auth.ts)
+  for the pattern.
+- **Auth-gated UI on SWR pages must hydrate client-side.** Today
+  `currentUser` is never fetched on SSR, so this is moot. If that ever
+  changes, wrap auth-specific markup in `<ClientOnly>` on cacheable routes
+  to keep cached HTML auth-agnostic.
+- **Don't use `v-html` on user-supplied content.** Plain text +
+  `whitespace-pre-line` CSS handles line breaks without an XSS surface. The
+  session cookie is `httpOnly: false` (required for `useCookie`), so any
+  XSS sink becomes a session-theft sink.
