@@ -75,64 +75,71 @@
 				content-size="small"
 			/>
 		</InfoCardGroup>
-		<InfoCardGroup
-			title="Recent Articles"
-			description="Latest articles from the community"
-			icon="mdi:history"
-		>
-			<LazyArticleCard
-				v-for="article in recent.items"
-				:key="article.id"
-				:article="article"
-				class="motion-preset-fade-md"
-				hydrate-on-visible
-			/>
-			<InfoCardSkeleton
-				v-for="n in recent.remaining"
-				:key="`recent-skel-${n}`"
-				content-size="small"
-			/>
-		</InfoCardGroup>
-		<InfoCardGroup
-			title="Older Articles"
-			description="Explore the archives"
-			icon="mdi:archive"
-		>
-			<LazyArticleCard
-				v-for="article in older.items"
-				:key="article.id"
-				:article="article"
-				class="motion-preset-fade-md"
-				hydrate-on-visible
-			/>
-			<InfoCardSkeleton
-				v-for="n in older.remaining"
-				:key="`older-skel-${n}`"
-				content-size="small"
-			/>
-		</InfoCardGroup>
-		<InfoCardGroup
-			title="By Cloud"
-			description="Articles from the automaton himself"
-			icon="mdi:cloud"
-		>
-			<LazyArticleCard
-				v-for="article in byCloud.items"
-				:key="article.id"
-				:article="article"
-				class="motion-preset-fade-md"
-				hydrate-on-visible
-			/>
-			<InfoCardSkeleton
-				v-for="n in byCloud.remaining"
-				:key="`byCloud-skel-${n}`"
-				content-size="small"
-			/>
-		</InfoCardGroup>
-		<ArticleTagGroup
+		<div ref="recentSentinel">
+			<InfoCardGroup
+				title="Recent Articles"
+				description="Latest articles from the community"
+				icon="mdi:history"
+			>
+				<LazyArticleCard
+					v-for="article in recent.items"
+					:key="article.id"
+					:article="article"
+					class="motion-preset-fade-md"
+					hydrate-on-visible
+				/>
+				<InfoCardSkeleton
+					v-for="n in recent.remaining"
+					:key="`recent-skel-${n}`"
+					content-size="small"
+				/>
+			</InfoCardGroup>
+		</div>
+		<div ref="olderSentinel">
+			<InfoCardGroup
+				title="Older Articles"
+				description="Explore the archives"
+				icon="mdi:archive"
+			>
+				<LazyArticleCard
+					v-for="article in older.items"
+					:key="article.id"
+					:article="article"
+					class="motion-preset-fade-md"
+					hydrate-on-visible
+				/>
+				<InfoCardSkeleton
+					v-for="n in older.remaining"
+					:key="`older-skel-${n}`"
+					content-size="small"
+				/>
+			</InfoCardGroup>
+		</div>
+		<div ref="byCloudSentinel">
+			<InfoCardGroup
+				title="By Cloud"
+				description="Articles from the automaton himself"
+				icon="mdi:cloud"
+			>
+				<LazyArticleCard
+					v-for="article in byCloud.items"
+					:key="article.id"
+					:article="article"
+					class="motion-preset-fade-md"
+					hydrate-on-visible
+				/>
+				<InfoCardSkeleton
+					v-for="n in byCloud.remaining"
+					:key="`byCloud-skel-${n}`"
+					content-size="small"
+				/>
+			</InfoCardGroup>
+		</div>
+		<LazyArticleTagGroup
 			v-for="tag in tagOrder"
 			:key="tag"
 			:tag="tag"
+			hydrate-on-visible
 		/>
 	</div>
 
@@ -209,8 +216,52 @@ function reportError(label: string, message?: string) {
 	});
 }
 
+const recentSentinel = ref<HTMLElement | null>(null);
+const olderSentinel = ref<HTMLElement | null>(null);
+const byCloudSentinel = ref<HTMLElement | null>(null);
+
+const loadedRecent = ref(false);
+const loadedOlder = ref(false);
+const loadedByCloud = ref(false);
+
+function loadRecent() {
+	if (loadedRecent.value) return;
+	loadedRecent.value = true;
+	const { fetchRecent } = useArticles();
+	void recent.load(async () => {
+		const res = await fetchRecent(15);
+		if (valid(res)) return res.data.items;
+		reportError('recent articles', res.message);
+		return null;
+	});
+}
+
+function loadOlder() {
+	if (loadedOlder.value) return;
+	loadedOlder.value = true;
+	const { fetchOldest } = useArticles();
+	void older.load(async () => {
+		const res = await fetchOldest(15);
+		if (valid(res)) return res.data.items;
+		reportError('older articles', res.message);
+		return null;
+	});
+}
+
+function loadByCloud() {
+	if (loadedByCloud.value) return;
+	loadedByCloud.value = true;
+	const { fetchRandom } = useArticles();
+	void byCloud.load(async () => {
+		const res = await fetchRandom(15, '1');
+		if (valid(res)) return res.data;
+		reportError('By Cloud articles', res.message);
+		return null;
+	});
+}
+
 async function loadContent() {
-	const { fetchRandom, fetchRecent, fetchOldest } = useArticles();
+	const { fetchRandom } = useArticles();
 
 	recommended.reset(user.value ? 2 : 0);
 	random.reset(3);
@@ -218,33 +269,16 @@ async function loadContent() {
 	older.reset(2);
 	byCloud.reset(2);
 
+	loadedRecent.value = false;
+	loadedOlder.value = false;
+	loadedByCloud.value = false;
+
 	void loadRecommended();
 
 	void random.load(async () => {
 		const res = await fetchRandom(15);
 		if (valid(res)) return res.data;
 		reportError('random articles', res.message);
-		return null;
-	});
-
-	void recent.load(async () => {
-		const res = await fetchRecent(15);
-		if (valid(res)) return res.data.items;
-		reportError('recent articles', res.message);
-		return null;
-	});
-
-	void older.load(async () => {
-		const res = await fetchOldest(15);
-		if (valid(res)) return res.data.items;
-		reportError('older articles', res.message);
-		return null;
-	});
-
-	void byCloud.load(async () => {
-		const res = await fetchRandom(15, '1');
-		if (valid(res)) return res.data;
-		reportError('By Cloud articles', res.message);
 		return null;
 	});
 
@@ -256,6 +290,27 @@ async function loadContent() {
 onMounted(async () => {
 	await loadContent();
 });
+
+if (import.meta.client) {
+	const observe = (target: Ref<HTMLElement | null>, load: () => void) => {
+		const { stop } = useIntersectionObserver(
+			target,
+			(entries) => {
+				if (entries[0]?.isIntersecting) {
+					stop();
+					load();
+				}
+			},
+			{ rootMargin: '300px' }
+		);
+	};
+
+	onMounted(() => {
+		observe(recentSentinel, loadRecent);
+		observe(olderSentinel, loadOlder);
+		observe(byCloudSentinel, loadByCloud);
+	});
+}
 
 watch(
 	user,
