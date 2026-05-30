@@ -513,11 +513,11 @@ export function useUser(
 
 	const points = computed(() => {
 		const resolvedIdentifier = currentIdentifier();
-		return !resolvedIdentifier ? 0 : userStore.points.get(resolvedIdentifier);
+		return !resolvedIdentifier ? 0 : userStore.points.get(resolvedIdentifier) || 0;
 	});
 	const pointsHistory = computed(() => {
 		const resolvedIdentifier = currentIdentifier();
-		return !resolvedIdentifier ? [] : userStore.pointsHistory.get(resolvedIdentifier);
+		return !resolvedIdentifier ? [] : userStore.pointsHistory.get(resolvedIdentifier) || [];
 	});
 	const fetchPoints = async () => {
 		const resolvedIdentifier = currentIdentifier();
@@ -588,6 +588,15 @@ export function useUser(
 		return await userStore.setAccountType(resolvedIdentifier, type);
 	};
 
+	const masteryList = computed(() => {
+		const resolvedIdentifier = currentIdentifier();
+		return !resolvedIdentifier ? null : userStore.masteryLists.get(resolvedIdentifier) || null;
+	});
+	const fetchMasteryList = async () => {
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return null;
+		return await userStore.fetchMasteryList(resolvedIdentifier);
+	};
 	const getMasteryStatus = async (badgeId: string) => {
 		const resolvedIdentifier = currentIdentifier();
 		if (!resolvedIdentifier) return null;
@@ -642,6 +651,8 @@ export function useUser(
 		questHistory,
 		fetchQuestHistory,
 		setAccountType,
+		masteryList,
+		fetchMasteryList,
 		getMasteryStatus,
 		generateMastery,
 		getMasteryQuest,

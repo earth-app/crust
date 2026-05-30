@@ -200,7 +200,7 @@
 						/>
 						<span>{{ generatingMessage }}</span>
 					</div>
-					<span class="text-xs opacity-70">this may take up to a minute</span>
+					<span class="text-xs opacity-70">this may take up to two minutes</span>
 				</div>
 				<div class="flex justify-end gap-2">
 					<UButton
@@ -365,7 +365,8 @@ const canShowMastery = computed(() => {
 const masteryList = computed(() => {
 	const uid = authUser.value?.id;
 	if (!uid) return null;
-	return userStore.masteryLists.get(uid) ?? null;
+	const { masteryList } = useUser(uid);
+	return masteryList.value;
 });
 const masteryCapReached = computed(() => {
 	const list = masteryList.value;
@@ -442,7 +443,11 @@ watch(showDetails, async (open) => {
 	if (!canShowMastery.value) return;
 	const uid = authUser.value?.id;
 	// best-effort cap snapshot; cached after first open so subsequent modal opens are instant
-	if (uid && !userStore.masteryLists.has(uid)) userStore.fetchMasteryList(uid);
+	if (uid) {
+		const { masteryList, fetchMasteryList } = useUser(uid);
+		if (!masteryList.value) fetchMasteryList();
+	}
+
 	if (masteryStatusFetched.value) return;
 	await loadMasteryStatus();
 });

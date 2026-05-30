@@ -99,9 +99,16 @@
 
 <script setup lang="ts">
 const route = useRoute();
-const { user, fetchUser, badges, fetchBadges, quest, fetchUserQuest } = useUser(
-	route.params.id as string
-);
+const {
+	user,
+	fetchUser,
+	badges,
+	fetchBadges,
+	quest,
+	fetchUserQuest,
+	masteryList,
+	fetchMasteryList
+} = useUser(route.params.id as string);
 const { handle } = useDisplayName(user);
 const { setTitleSuffix } = useTitleSuffix();
 const { user: authUser } = useAuth();
@@ -112,11 +119,6 @@ const userStore = useUserStore();
 const isOwnProfile = computed(() => {
 	if (!user.value || !authUser.value) return false;
 	return user.value.id === authUser.value.id;
-});
-
-const masteryList = computed(() => {
-	if (!isOwnProfile.value || !authUser.value) return null;
-	return userStore.masteryLists.get(authUser.value.id) ?? null;
 });
 
 const ttlDays = computed(() => {
@@ -138,14 +140,14 @@ onMounted(() => {
 	fetchBadges();
 	if (isOwnProfile.value && authUser.value) {
 		fetchUserQuest();
-		userStore.fetchMasteryList(authUser.value.id);
+		fetchMasteryList();
 	}
 });
 
 watch(isOwnProfile, (own) => {
-	if (own && authUser.value && !userStore.masteryLists.has(authUser.value.id)) {
+	if (own && authUser.value) {
 		fetchUserQuest();
-		userStore.fetchMasteryList(authUser.value.id);
+		fetchMasteryList();
 	}
 });
 
