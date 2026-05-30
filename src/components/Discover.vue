@@ -40,12 +40,18 @@ const prompts = ref<CommandPaletteItem[]>([]);
 const promptsLoading = ref(false);
 const articles = ref<CommandPaletteItem[]>([]);
 const articlesLoading = ref(false);
+const events = ref<CommandPaletteItem[]>([]);
+const eventsLoading = ref(false);
 
 const isLabelVisible = computed(() => !viewport.isLessOrEquals('mobileMedium'));
 
 const loading = computed(
 	() =>
-		usersLoading.value || activitiesLoading.value || promptsLoading.value || articlesLoading.value
+		usersLoading.value ||
+		activitiesLoading.value ||
+		promptsLoading.value ||
+		articlesLoading.value ||
+		eventsLoading.value
 );
 const search = ref('');
 
@@ -256,6 +262,52 @@ function populate(searchTerm: string) {
 
 		articlesLoading.value = false;
 	});
+
+	// populate events
+	eventsLoading.value = true;
+	const { fetch: fetchEvents } = useEvents();
+	fetchEvents(1, empty ? 5 : 150, searchTerm, empty).then((res) => {
+		const items = res.items || [];
+		if (items.length > 0) {
+			events.value = items.map((event: any) => {
+				const host = event.host;
+				const type = host?.account?.account_type;
+				const isChipShown = host?.is_admin || type === 'ORGANIZER';
+				const dateLabel = event.date
+					? new Date(event.date).toLocaleDateString(undefined, {
+							month: 'short',
+							day: 'numeric',
+							year: 'numeric'
+						})
+					: '';
+
+				return {
+					id: `event-${event.id}`,
+					label: event.name,
+					description: host ? `${dateLabel} • hosted by ${getUserDisplayName(host)}` : dateLabel,
+					avatar: {
+						src: host?.account?.avatar_url ? `${host.account.avatar_url}?size=32` : undefined,
+						icon: 'mdi:calendar',
+						chip: {
+							color: host?.is_admin ? 'error' : 'warning',
+							ui: { root: isChipShown ? 'visible' : 'hidden' }
+						}
+					},
+					to: `/events/${event.id}`,
+					onSelect: close
+				};
+			}) as any;
+
+			const eventGroupIdx = (groups.value as any[]).findIndex((g) => g.id === 'events');
+			if (eventGroupIdx !== -1) {
+				(groups.value[eventGroupIdx] as any).items = events.value;
+			}
+		} else {
+			events.value = [];
+		}
+
+		eventsLoading.value = false;
+	});
 }
 
 const groups = ref<CommandPaletteGroup<CommandPaletteItem>[]>([
@@ -301,6 +353,10 @@ const groups = ref<CommandPaletteGroup<CommandPaletteItem>[]>([
 	{
 		id: 'articles',
 		label: 'Articles'
+	},
+	{
+		id: 'events',
+		label: 'Events'
 	}
 ]);
 
@@ -311,7 +367,7 @@ function close() {
 function randomize() {
 	close();
 
-	const choice = Math.floor(Math.random() * 3);
+	const choice = Math.floor(Math.random() * 4);
 	if (choice === 0) {
 		// Random Prompt
 		const { fetchRandom: fetchRandomPrompts } = usePrompts();
@@ -334,7 +390,7 @@ function randomize() {
 				}
 			}
 		});
-	} else {
+	} else if (choice === 2) {
 		// Random Activity
 		const { fetchRandom: fetchRandomActivities } = useActivities();
 		fetchRandomActivities(1).then((res) => {
@@ -342,6 +398,17 @@ function randomize() {
 				const activity = res.data[0];
 				if (activity) {
 					router.push(`/activities/${activity.id}`);
+				}
+			}
+		});
+	} else {
+		// Random Event
+		const { fetchRandom: fetchRandomEvents } = useEvents();
+		fetchRandomEvents(1).then((res) => {
+			if (valid(res)) {
+				const event = res.data[0];
+				if (event) {
+					router.push(`/events/${event.id}`);
 				}
 			}
 		});
