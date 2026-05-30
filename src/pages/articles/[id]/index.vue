@@ -49,6 +49,9 @@ const { user, tapCurrentJourney } = useAuth();
 const { setTitleSuffix } = useTitleSuffix();
 const { article, fetch } = useArticle(route.params.id as string);
 
+// SSR: await so SWR-cached HTML contains the resolved article (or null).
+if (import.meta.server) await fetch();
+
 const related = useIncrementalList<Article>({
 	staggerMs: 120,
 	initialExpectedCount: 3
@@ -59,7 +62,7 @@ const journeyTrackedArticleId = ref<string | null>(null);
 const journeyTrackingArticleId = ref<string | null>(null);
 
 onMounted(() => {
-	fetch();
+	if (!article.value) fetch();
 });
 
 watch(

@@ -8,7 +8,9 @@ const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export const useActivityStore = defineStore('activity', () => {
 	const MAX_CACHE_SIZE = 200; // Limit cache to prevent memory leaks
-	const cache = reactive(new Map<string, Activity>());
+	// null marks "fetched and confirmed not found / failed".
+	const cache = reactive(new Map<string, Activity | null>());
+	const loading = reactive(new Set<string>());
 	const fetchQueue = new Map<string, Promise<void>>();
 	const count = ref<number | undefined>(undefined);
 	const randomCache = reactive(new Map<string, { items: Activity[]; timestamp: number }>());
@@ -21,12 +23,19 @@ export const useActivityStore = defineStore('activity', () => {
 		}
 	};
 
-	const get = (id: string): Activity | undefined => {
+	const get = (id: string): Activity | null | undefined => {
+		if (!id) return undefined;
+		if (loading.has(id) && !cache.get(id)) return undefined;
 		return cache.get(id);
 	};
 
 	const has = (id: string): boolean => {
 		return cache.has(id);
+	};
+
+	const isLoading = (id: string | null | undefined): boolean => {
+		if (!id) return false;
+		return loading.has(id);
 	};
 
 	const getRandomCached = (count: number): Activity[] | null => {
@@ -54,6 +63,8 @@ export const useActivityStore = defineStore('activity', () => {
 			return cache.get(id) || null;
 		}
 
+		loading.add(id);
+
 		// create new fetch promise
 		const fetchPromise = (async () => {
 			try {
@@ -68,11 +79,14 @@ export const useActivityStore = defineStore('activity', () => {
 				if (valid(res)) {
 					cache.set(id, res.data);
 				} else {
-					console.warn(`Failed to fetch activity ${id}:`, res.message);
+					cache.set(id, null);
+					if (res.message) console.warn(`Failed to fetch activity ${id}:`, res.message);
 				}
 			} catch (error) {
+				cache.set(id, null);
 				console.warn(`Failed to fetch activity ${id}:`, error);
 			} finally {
+				loading.delete(id);
 				fetchQueue.delete(id);
 			}
 		})();
@@ -170,6 +184,7 @@ export const useActivityStore = defineStore('activity', () => {
 		count,
 		get,
 		has,
+		isLoading,
 		getRandomCached,
 		setRandomCached,
 		fetchActivity,

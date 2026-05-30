@@ -14,7 +14,8 @@ const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export const useEventStore = defineStore('event', () => {
 	const MAX_CACHE_SIZE = 100; // Limit cache to prevent memory leaks
-	const cache = reactive(new Map<string, Event>());
+	const cache = reactive(new Map<string, Event | null>());
+	const loading = reactive(new Set<string>());
 	const fetchQueue = new Map<string, Promise<void>>();
 
 	const attendeesCache = reactive(new Map<string, User[]>());
@@ -37,12 +38,21 @@ export const useEventStore = defineStore('event', () => {
 		}
 	};
 
-	const get = (id: string): Event | undefined => {
+	const get = (id: string): Event | null | undefined => {
+		if (!id) return undefined;
+		// While a fetch is in flight and nothing has landed yet, return undefined so
+		// consumers stay in the "loading" branch instead of flipping to "not found".
+		if (loading.has(id) && !cache.get(id)) return undefined;
 		return cache.get(id);
 	};
 
 	const has = (id: string): boolean => {
 		return cache.has(id);
+	};
+
+	const isLoading = (id: string | null | undefined): boolean => {
+		if (!id) return false;
+		return loading.has(id);
 	};
 
 	const getRandomCached = (count: number): Event[] | null => {
@@ -92,6 +102,8 @@ export const useEventStore = defineStore('event', () => {
 			await existingFetch;
 		}
 
+		loading.add(id);
+
 		// create new fetch promise
 		const fetchPromise = (async () => {
 			try {
@@ -107,11 +119,14 @@ export const useEventStore = defineStore('event', () => {
 					evictOldestIfNeeded();
 					cache.set(id, res.data);
 				} else {
-					console.warn(`Failed to fetch event ${id}:`, res.message);
+					cache.set(id, null);
+					if (res.message) console.warn(`Failed to fetch event ${id}:`, res.message);
 				}
 			} catch (error) {
+				cache.set(id, null);
 				console.warn(`Failed to fetch event ${id}:`, error);
 			} finally {
+				loading.delete(id);
 				fetchQueue.delete(id);
 			}
 		})();
@@ -490,6 +505,7 @@ export const useEventStore = defineStore('event', () => {
 		submissionsCache,
 		get,
 		has,
+		isLoading,
 		getRandomCached,
 		setRandomCached,
 		getAttendees,

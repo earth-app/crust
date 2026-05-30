@@ -8,7 +8,9 @@ const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export const useArticleStore = defineStore('article', () => {
 	const MAX_CACHE_SIZE = 100; // Limit cache to prevent memory leaks
-	const cache = reactive(new Map<string, Article>());
+	// null marks "fetched and confirmed not found / failed".
+	const cache = reactive(new Map<string, Article | null>());
+	const loading = reactive(new Set<string>());
 	const fetchQueue = new Map<string, Promise<void>>();
 
 	const quizCache = reactive(new Map<string, ArticleQuizQuestion[]>());
@@ -29,12 +31,19 @@ export const useArticleStore = defineStore('article', () => {
 		}
 	};
 
-	const get = (id: string): Article | undefined => {
+	const get = (id: string): Article | null | undefined => {
+		if (!id) return undefined;
+		if (loading.has(id) && !cache.get(id)) return undefined;
 		return cache.get(id);
 	};
 
 	const has = (id: string): boolean => {
 		return cache.has(id);
+	};
+
+	const isLoading = (id: string | null | undefined): boolean => {
+		if (!id) return false;
+		return loading.has(id);
 	};
 
 	const getRandomCached = (count: number): Article[] | null => {
@@ -72,6 +81,8 @@ export const useArticleStore = defineStore('article', () => {
 			return cache.get(id) || null;
 		}
 
+		loading.add(id);
+
 		const fetchPromise = (async () => {
 			try {
 				const authStore = useAuthStore();
@@ -86,11 +97,14 @@ export const useArticleStore = defineStore('article', () => {
 					evictOldestIfNeeded();
 					cache.set(id, res.data);
 				} else {
-					console.warn(`Failed to fetch article ${id}:`, res.message);
+					cache.set(id, null);
+					if (res.message) console.warn(`Failed to fetch article ${id}:`, res.message);
 				}
 			} catch (error) {
+				cache.set(id, null);
 				console.warn(`Failed to fetch article ${id}:`, error);
 			} finally {
+				loading.delete(id);
 				fetchQueue.delete(id);
 			}
 		})();
@@ -277,6 +291,7 @@ export const useArticleStore = defineStore('article', () => {
 		quizSummaryCache,
 		get,
 		has,
+		isLoading,
 		getRandomCached,
 		setRandomCached,
 		getQuiz,

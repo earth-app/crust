@@ -49,6 +49,11 @@ const { setTitleSuffix } = useTitleSuffix();
 const { user } = useAuth();
 const { event, fetch } = useEvent(route.params.id as string);
 
+// SSR: await so the SWR-cached HTML contains the resolved event (or null)
+// instead of a Loading skeleton. Client navs rely on the composable's
+// auto-fetch + reactive Loading state.
+if (import.meta.server) await fetch();
+
 const related = useIncrementalList<Event>({
 	staggerMs: 120,
 	initialExpectedCount: 3
@@ -57,7 +62,7 @@ const related = useIncrementalList<Event>({
 const similarLoadedFor = ref<string | null>(null);
 
 onMounted(() => {
-	fetch();
+	if (!event.value) fetch();
 });
 
 watch(

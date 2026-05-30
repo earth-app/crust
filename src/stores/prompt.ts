@@ -8,7 +8,9 @@ const RANDOM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export const usePromptStore = defineStore('prompt', () => {
 	const MAX_CACHE_SIZE = 100; // Limit cache to prevent memory leaks
-	const cache = reactive(new Map<string, Prompt>());
+	// null marks "fetched and confirmed not found / failed".
+	const cache = reactive(new Map<string, Prompt | null>());
+	const loading = reactive(new Set<string>());
 	const fetchQueue = new Map<string, Promise<void>>();
 
 	const responsesCache = reactive(new Map<string, PromptResponse[]>());
@@ -27,12 +29,19 @@ export const usePromptStore = defineStore('prompt', () => {
 		}
 	};
 
-	const get = (id: string): Prompt | undefined => {
+	const get = (id: string): Prompt | null | undefined => {
+		if (!id) return undefined;
+		if (loading.has(id) && !cache.get(id)) return undefined;
 		return cache.get(id);
 	};
 
 	const has = (id: string): boolean => {
 		return cache.has(id);
+	};
+
+	const isLoadingPrompt = (id: string | null | undefined): boolean => {
+		if (!id) return false;
+		return loading.has(id);
 	};
 
 	const getRandomCached = (count: number): Prompt[] | null => {
@@ -72,6 +81,8 @@ export const usePromptStore = defineStore('prompt', () => {
 			return cache.get(id) || null;
 		}
 
+		loading.add(id);
+
 		// create new fetch promise
 		const fetchPromise = (async () => {
 			try {
@@ -81,11 +92,14 @@ export const usePromptStore = defineStore('prompt', () => {
 					evictOldestIfNeeded();
 					cache.set(id, res.data);
 				} else {
-					console.warn(`Failed to fetch prompt ${id}:`, res.message);
+					cache.set(id, null);
+					if (res.message) console.warn(`Failed to fetch prompt ${id}:`, res.message);
 				}
 			} catch (error) {
+				cache.set(id, null);
 				console.warn(`Failed to fetch prompt ${id}:`, error);
 			} finally {
+				loading.delete(id);
 				fetchQueue.delete(id);
 			}
 		})();
@@ -280,6 +294,7 @@ export const usePromptStore = defineStore('prompt', () => {
 		responsesLoadingState,
 		get,
 		has,
+		isLoadingPrompt,
 		getRandomCached,
 		setRandomCached,
 		getResponses,

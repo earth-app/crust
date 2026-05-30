@@ -108,9 +108,11 @@ const { user } = useAuth();
 const { event, fetch, attendees, fetchAttendees, cancelEvent, uncancelEvent, deleteEvent } =
 	useEvent(route.params.id as string);
 
-// Force fetch on mount to ensure fresh data on page refresh
+if (import.meta.server) await fetch();
+
+// Refresh on client mount (skip if SSR already populated the event).
 onMounted(() => {
-	fetch();
+	if (!event.value) fetch();
 	fetchAttendees();
 });
 

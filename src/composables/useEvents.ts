@@ -168,7 +168,9 @@ export function useEvent(id: string, serverRequest: typeof makeServerRequest = m
 	const eventStore = useEventStore();
 	const authStore = useAuthStore();
 
-	const event = computed(() => eventStore.get(id) || null);
+	// Three-state: undefined = loading, null = confirmed not found, Event = loaded.
+	// Pages branch on `v-if="event"` / `v-else-if="event === null"` / `v-else` (Loading).
+	const event = computed(() => eventStore.get(id));
 
 	const fetch = async () => {
 		if (!id || id === '') {

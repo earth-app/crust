@@ -21,7 +21,8 @@ export function useArticle(
 	const articleStore = useArticleStore();
 	const authStore = useAuthStore();
 
-	const article = computed(() => articleStore.get(id) || null);
+	// Three-state: undefined = loading, null = confirmed not found, Article = loaded.
+	const article = computed(() => articleStore.get(id));
 
 	const fetch = async (force: boolean = false) => {
 		await articleStore.fetchArticle(id, force);

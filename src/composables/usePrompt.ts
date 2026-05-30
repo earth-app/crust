@@ -7,7 +7,8 @@ import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from 'utils
 
 export function usePrompt(id: string) {
 	const promptStore = usePromptStore();
-	const prompt = computed(() => promptStore.get(id) || null);
+	// Three-state: undefined = loading, null = confirmed not found, Prompt = loaded.
+	const prompt = computed(() => promptStore.get(id));
 
 	const fetch = async () => {
 		await promptStore.fetchPrompt(id);

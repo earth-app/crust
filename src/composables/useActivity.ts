@@ -167,7 +167,8 @@ export function useActivities(
 
 export function useActivity(id: string) {
 	const activityStore = useActivityStore();
-	const activity = computed(() => activityStore.get(id) || null);
+	// Three-state: undefined = loading, null = confirmed not found, Activity = loaded.
+	const activity = computed(() => activityStore.get(id));
 
 	const fetch = async () => {
 		await activityStore.fetchActivity(id);
