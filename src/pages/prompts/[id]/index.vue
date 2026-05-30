@@ -23,9 +23,6 @@ const { prompt, fetch } = usePrompt(route.params.id as string);
 const journeyTrackedPromptId = ref<string | null>(null);
 const journeyTrackingPromptId = ref<string | null>(null);
 
-// SSR: await so SWR-cached HTML contains the resolved prompt (or null).
-if (import.meta.server) await fetch();
-
 onMounted(async () => {
 	if (!prompt.value) await fetch();
 });
