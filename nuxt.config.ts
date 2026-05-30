@@ -122,6 +122,7 @@ export default defineNuxtConfig({
 	routeRules: {
 		// Static pages, assets (prerender at build time)
 		'/about': { prerender: true },
+		'/tos': { redirect: '/terms-of-service' },
 		'/terms-of-service': { prerender: true },
 		'/privacy-policy': { prerender: true },
 
@@ -134,18 +135,11 @@ export default defineNuxtConfig({
 		'/admin': { ssr: false },
 		'/oauth/complete': { ssr: false },
 
-		// Content listing pages (ISR); disabled in test builds
-		'/': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 3600 },
-		'/activities': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 14400 },
-		'/articles': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 3600 },
-		'/prompts': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 900 },
-		'/events': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 600 },
-
-		// Individual content pages (SWR); disabled in tests builds
-		'/activities/**': process.env.NUXT_TEST_BUILD === '1' ? {} : { swr: 14400 },
-		'/articles/**': process.env.NUXT_TEST_BUILD === '1' ? {} : { swr: 3600 },
-		'/prompts/**': process.env.NUXT_TEST_BUILD === '1' ? {} : { swr: 1800 },
-		'/events/**': process.env.NUXT_TEST_BUILD === '1' ? {} : { swr: 1800 },
+		'/': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 120 },
+		'/activities': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 300 },
+		'/articles': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 120 },
+		'/prompts': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 120 },
+		'/events': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 60 },
 
 		// API routes
 		'/api/**': { cors: false },
@@ -235,7 +229,9 @@ export default defineNuxtConfig({
 	},
 	experimental: {
 		renderJsonPayloads: true,
-		viewTransition: true
+		viewTransition: true,
+		appManifest: true,
+		checkOutdatedBuildInterval: 60_000
 	},
 	schemaOrg: {
 		identity: defineOrganization({
