@@ -118,7 +118,7 @@
 								<LazyUButton
 									v-if="step.cta"
 									:label="step.cta.label"
-									:color="step.cta.color || 'success'"
+									:color="(step.cta.color as any) || 'success'"
 									:icon="step.cta.icon || 'i-heroicons-bolt'"
 									size="sm"
 									:loading="ctaLoading"

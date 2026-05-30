@@ -19,7 +19,7 @@ export type SiteTourStepPlacement = 'top' | 'bottom' | 'left' | 'right' | 'cente
 export type SiteTourStepCTA = {
 	label: string;
 	icon?: string;
-	color?: 'primary' | 'info' | 'success' | 'warning' | 'error' | 'neutral' | 'secondary';
+	color?: string;
 	advance?: boolean;
 	closeOnSuccess?: boolean;
 	handler: () => unknown | Promise<unknown>;
