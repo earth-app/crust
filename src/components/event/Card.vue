@@ -81,7 +81,8 @@ const allAttendees = computed(() => {
 	const filteredAttendees = (attendees.value || []).filter(
 		(attendee) => attendee.id !== reactiveEvent.value.hostId
 	);
-	return [reactiveEvent.value.host, ...filteredAttendees];
+	const host = reactiveEvent.value.host;
+	return host ? [host, ...filteredAttendees] : filteredAttendees;
 });
 
 const attendeeAvatars = computed(() => {
@@ -344,7 +345,9 @@ const buttons = computed(() => {
 	return array;
 });
 
-const footer = computed(() => `Created by @${reactiveEvent.value.host.username} - ${time.value}`);
+const footer = computed(
+	() => `Created by @${reactiveEvent.value.host?.username ?? 'unknown'} - ${time.value}`
+);
 
 const banner = computed<{
 	text: string;
@@ -391,14 +394,15 @@ const banner = computed<{
 const avatarStore = useAvatarStore();
 const userStore = useUserStore();
 
-// Use embedded host data directly
-const authorAvatarUrl = computed(() => reactiveEvent.value.host.account?.avatar_url);
+const authorAvatarUrl = computed(() => reactiveEvent.value.host?.account?.avatar_url);
 const authorAvatar = computed(() => {
 	const url = authorAvatarUrl.value;
 	if (!url || !url.startsWith('http')) return '/favicon.png';
 	return avatarStore.get(url)?.avatar128 || '/favicon.png';
 });
-const authorAvatarChipColor = computed(() => userStore.getChipColor(reactiveEvent.value.host));
+const authorAvatarChipColor = computed(() =>
+	reactiveEvent.value.host ? userStore.getChipColor(reactiveEvent.value.host) : undefined
+);
 
 // Preload host avatar
 if (authorAvatarUrl.value) {

@@ -19,6 +19,7 @@
 					>Generate Thumbnail</UButton
 				>
 				<LazyUserCard
+					v-if="event.host"
 					id="event-host-card"
 					:user="event.host"
 					class="my-2"
