@@ -100,12 +100,42 @@ When asked to change code:
 3. Add unit/formatting checks and test locally.
 4. If route affects caching or ISR, update `routeRules` in `nuxt.config.ts` and document the change in README.
 
+## Route caching strategy
+
+Listing pages (`/`, `/activities`, `/articles`, `/events`, `/prompts`) use
+short ISR (60-300s). Detail pages (`/activities/**`, `/articles/**`,
+`/prompts/**`, `/events/**`) use **plain SSR with no cache**. Static pages
+(`/about`, `/terms-of-service`, `/privacy-policy`) are prerendered. Auth /
+user-specific pages (`/login`, `/profile/**`, `/admin`, etc.) are
+`ssr: false`.
+
+**Why no SWR on detail pages.** NuxtHub's cache lives in the `CACHE` KV
+binding ([wrangler.jsonc](wrangler.jsonc)) and survives deploys — but a
+new deploy replaces the worker bundle, so the `/_nuxt/<hash>.js` chunks
+referenced by old cached HTML are gone. With multi-times-per-day deploys,
+SWR cached HTML on detail pages frequently outlived its chunks, producing
+`/_nuxt/*` 404s and `Cannot read properties of null (reading 'ce')`-style
+hydration errors. Per-detail-page traffic is too thin for SWR to give a
+meaningful hit rate anyway, so removing it eliminates the failure mode at
+near-zero cost.
+
+**Listing pages keep short ISR.** Multi-fetch fan-out on these pages makes
+caching worthwhile, but TTLs are kept tight (60-300s) so the stale-chunk
+window is small. Pair this with `experimental.checkOutdatedBuildInterval`
+(60s) — the client polls the build manifest and triggers a hard reload on
+mismatch, recovering from any stale HTML that does slip through.
+
+**If a stale-chunk error surfaces again**, the long-term fix is a
+post-deploy cache flush. Add a step to the deploy workflow that calls a
+private Nitro route which runs `await useStorage('cache').clear()`, or
+clear the KV namespace via wrangler. Without that, the only defense is
+the short TTL + manifest-reload safety net.
+
 ## SSR safety on cacheable routes
 
-ISR/SWR routes (`/`, `/activities`, `/articles`, `/events`, `/prompts`, plus
-their `/**` detail pages) cache the entire SSR response — HTML + embedded
-Pinia payload — and serve it to every visitor. Any user-specific state baked
-in during SSR will leak across users.
+ISR routes still cache HTML and the embedded Pinia payload and serve it
+to every visitor. Any user-specific state baked in during SSR will leak
+across users.
 
 Rules:
 
