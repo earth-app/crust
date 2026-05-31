@@ -686,6 +686,23 @@ export const useUserStore = defineStore('user', () => {
 		}
 	};
 
+	const tryRecoverGeneratedMastery = async (
+		userId: string,
+		badgeId: string
+	): Promise<Quest | null> => {
+		try {
+			const status = await getMasteryStatus(userId, badgeId);
+			if (!status?.quest || status.locked || status.mastered) return null;
+			const quest = status.quest;
+			questsCache.set(quest.id, quest);
+			if (questsList.value) questsList.value.add(quest.id);
+			fetchMasteryList(userId);
+			return quest;
+		} catch {
+			return null;
+		}
+	};
+
 	const generateMastery = async (userId: string, badgeId: string): Promise<Quest> => {
 		if (!userId || !badgeId) {
 			throw new BadgeMasteryGenerationError('unknown', 'Invalid identifier');
@@ -775,11 +792,16 @@ export const useUserStore = defineStore('user', () => {
 				throw new BadgeMasteryGenerationError('exempt', message, 400);
 			}
 			if (status === 409) {
+				const recovered = await tryRecoverGeneratedMastery(userId, badgeId);
+				if (recovered) return recovered;
 				throw new BadgeMasteryGenerationError('conflict', message, 409);
 			}
 			if (status === 500) {
 				throw new BadgeMasteryGenerationError('ai_failed', message, 500);
 			}
+
+			const recovered = await tryRecoverGeneratedMastery(userId, badgeId);
+			if (recovered) return recovered;
 
 			throw new BadgeMasteryGenerationError('unknown', message, status);
 		} finally {
