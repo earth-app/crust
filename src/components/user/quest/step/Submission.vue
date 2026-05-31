@@ -185,8 +185,10 @@
 
 			<template v-else-if="category === 'describe_text'">
 				<UserQuestStepText
+					:step="step"
 					:disabled="!step.isCurrentQuest || !step.isCurrentStep"
-					@capture="emit('submitted')"
+					:server-request="props.serverRequest || makeServerRequest"
+					@submitted="emit('submitted')"
 				/>
 			</template>
 
