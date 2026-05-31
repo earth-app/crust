@@ -94,6 +94,13 @@
 					>Privacy Policy</UButton
 				>
 			</div>
+			<ClientOnly v-if="user">
+				<div class="w-11/12 max-w-2xl mt-4">
+					<OnboardingWelcomeChecklist @open-persona="personaOpen = true" />
+				</div>
+				<OnboardingPersonaPicker v-model="personaOpen" />
+			</ClientOnly>
+
 			<div
 				class="flex flex-col items-center justify-center w-full motion-opacity-in-0 motion-duration-1500"
 			>
@@ -103,6 +110,7 @@
 					description="Continue to explore your interests"
 					icon="mdi:star"
 					class="w-11/12"
+					special
 				>
 					<LazyActivityCard
 						v-for="activity in user.activities"
@@ -214,6 +222,7 @@ const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Home');
 
 const { user, avatar128 } = useAuth();
+const personaOpen = ref(false);
 
 const toast = useToast();
 const tours = useSiteTour();
