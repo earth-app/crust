@@ -226,27 +226,13 @@ defineExpose({
 	highlightBox
 });
 
-const visibleSteps = computed(() => {
-	return props.steps.filter((s) => {
-		if (s.anonymous === undefined) return true;
-		if (s.anonymous === true) return !isLoggedIn.value;
-		if (s.anonymous === false) return isLoggedIn.value;
-		return true;
-	});
-});
+const visibleSteps = computed(() => props.steps.filter((s) => !shouldSkipStep(s)));
 
 const visibleStepIndex = computed(() => {
 	let count = 0;
 	for (let i = 0; i < index.value && i < props.steps.length; i++) {
 		const s = props.steps[i];
-		if (!s) continue;
-		if (s.anonymous === undefined) {
-			count++;
-		} else if (s.anonymous === true && !isLoggedIn.value) {
-			count++;
-		} else if (s.anonymous === false && isLoggedIn.value) {
-			count++;
-		}
+		if (s && !shouldSkipStep(s)) count++;
 	}
 	return count;
 });
