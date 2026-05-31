@@ -33,14 +33,6 @@
 </template>
 
 <script setup lang="ts">
-import {
-	CONTENT_TTL_ICON,
-	type ContentKind,
-	ttlHeadline,
-	ttlHook,
-	ttlLabel
-} from '~/shared/utils/contentTtls';
-
 const props = withDefaults(
 	defineProps<{
 		kind: ContentKind;
