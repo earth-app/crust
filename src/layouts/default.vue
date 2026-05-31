@@ -76,7 +76,7 @@ const welcomeTour = computed<SiteTourStep[]>(() => [
 		id: 'navbar',
 		title: 'Articles - Read & Learn',
 		description:
-			'Bite-sized articles tailored to your interests. Read about science, culture, sustainability, and more - then take a quick quiz to lock in what you learned.',
+			'Bite-sized articles tailored to your interests. Read about science, culture, sustainability, and more - then take a quick quiz to lock in what you learned.\n\nWriters: articles stay live for 2 weeks before auto-archive - publish now while readers are looking.',
 		footer:
 			'Articles personalize over time as you engage. Creating an account makes the recommendations even sharper.',
 		icon: 'mdi:book-open-page-variant-outline',
@@ -87,7 +87,7 @@ const welcomeTour = computed<SiteTourStep[]>(() => [
 		id: 'prompts-title',
 		title: 'Prompts - Get Creative',
 		description:
-			'Daily creative prompts to spark your imagination. Share a short response, browse what others wrote, and discover new perspectives from the community.',
+			"Daily creative prompts to spark your imagination. Share a short response, browse what others wrote, and discover new perspectives from the community.\n\nHeads up: prompts vanish after 2 days - if you've got something to say, say it now.",
 		footer: 'Your answers can be public, friends-only, or private - your call.',
 		icon: 'mdi:lightbulb-on-outline',
 		prerendered: true

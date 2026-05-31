@@ -13,6 +13,11 @@
 		</template>
 
 		<div class="container max-w-100 px-6">
+			<ContentTTLNotice
+				kind="prompt"
+				variant="banner"
+				color="warning"
+			/>
 			<div class="container flex flex-col">
 				<UTextarea
 					autoresize

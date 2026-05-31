@@ -178,15 +178,21 @@ export const useSiteTour = () => {
 	};
 
 	const markCompleted = (tourId: string) => {
-		completedTours.value.add(tourId);
+		// reassign the Set so callers using watch(() => hasCompleted(id)) see it
+		// (plain .add on a ref's value doesn't notify subscribers)
+		const next = new Set(completedTours.value);
+		next.add(tourId);
+		completedTours.value = next;
 		persistCompletedTours();
 	};
 
 	const clearCompleted = (tourId?: string) => {
 		if (tourId) {
-			completedTours.value.delete(tourId);
+			const next = new Set(completedTours.value);
+			next.delete(tourId);
+			completedTours.value = next;
 		} else {
-			completedTours.value.clear();
+			completedTours.value = new Set();
 		}
 		persistCompletedTours();
 	};

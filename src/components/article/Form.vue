@@ -3,6 +3,12 @@
 		<h2 class="text-2xl font-bold mb-4">
 			{{ mode === 'create' ? 'Create New Article' : 'Edit Article' }}
 		</h2>
+		<ContentTTLNotice
+			v-if="mode === 'create'"
+			kind="article"
+			variant="banner"
+			color="info"
+		/>
 		<UForm
 			:state="state"
 			class="space-y-2"

@@ -499,3 +499,59 @@ export function valid<T>(
 
 	return false;
 }
+
+// content ttl data
+
+export type ContentKind = 'prompt' | 'article' | 'event' | 'prompt_response';
+
+export const CONTENT_TTL_DAYS = {
+	prompt: 2,
+	prompt_response: 2,
+	article: 14,
+	event: 30
+} as const;
+
+export const CONTENT_TTL_LABEL = {
+	prompt: '2 days',
+	prompt_response: '2 days',
+	article: '2 weeks',
+	event: '30 days after the end date'
+} as const;
+
+export const CONTENT_TTL_HEADLINE = {
+	prompt: 'Prompts vanish after 2 days',
+	prompt_response: 'Responses follow the prompt — 2 days to be seen',
+	article: 'Articles stay live for 2 weeks',
+	event: 'Events stick around for 30 days after they end'
+} as const;
+
+// short urgency-framed CTAs for buttons + banners
+export const CONTENT_TTL_HOOK = {
+	prompt: 'Post yours before the clock runs out',
+	prompt_response: 'Drop a reply now — the window closes fast',
+	article: 'Publish now — readers have two weeks to find it',
+	event: 'List it now so people can join before the date'
+} as const;
+
+export const CONTENT_TTL_ICON = {
+	prompt: 'mdi:timer-sand',
+	prompt_response: 'mdi:timer-sand',
+	article: 'mdi:newspaper-variant-outline',
+	event: 'mdi:calendar-clock'
+} as const;
+
+export function ttlLabel(kind: ContentKind): string {
+	return CONTENT_TTL_LABEL[kind];
+}
+
+export function ttlDays(kind: ContentKind): number {
+	return CONTENT_TTL_DAYS[kind];
+}
+
+export function ttlHeadline(kind: ContentKind): string {
+	return CONTENT_TTL_HEADLINE[kind];
+}
+
+export function ttlHook(kind: ContentKind): string {
+	return CONTENT_TTL_HOOK[kind];
+}

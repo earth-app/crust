@@ -4,6 +4,12 @@
 		class="space-y-4"
 		@submit="handleSubmit"
 	>
+		<ContentTTLNotice
+			v-if="props.mode === 'create'"
+			kind="event"
+			variant="banner"
+			color="info"
+		/>
 		<div
 			v-if="error"
 			class="p-4 bg-red-100 border border-red-400 text-red-700 rounded"
