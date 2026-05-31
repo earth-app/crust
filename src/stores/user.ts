@@ -298,28 +298,6 @@ export const useUserStore = defineStore('user', () => {
 		return cache.get(identifier) || null;
 	};
 
-	// proactively wipe any cached null for the auth user when they change.
-	// stops a pre-login anonymous fetch's null from haunting them after login
-	const invalidateSelf = () => {
-		const authStore = useAuthStore();
-		const u = authStore.currentUser;
-		if (!u) return;
-		for (const key of Array.from(cache.keys())) {
-			if (cache.get(key) === null && isSelfIdentifier(key, u)) {
-				cache.delete(key);
-				// matching LRU entry would also serve the poisoned body — drop it
-				invalidateAPICache(`user-${key}`);
-			}
-		}
-		// also blow away the canonical id + @username forms in case the cache
-		// never recorded them as null but the LRU still has a stale anon body
-		invalidateAPICache(`user-${u.id}`);
-		if (u.username) {
-			invalidateAPICache(`user-${u.username}`);
-			invalidateAPICache(`user-@${u.username}`);
-		}
-	};
-
 	const fetchAttendingEvents = async (identifier: string): Promise<Event[]> => {
 		if (!identifier) {
 			attendingEvents.set(identifier, []);
@@ -753,6 +731,71 @@ export const useUserStore = defineStore('user', () => {
 		} finally {
 			masteryListLoading.delete(userId);
 		}
+	};
+
+	// proactively wipe stale state for the auth user when they appear
+	const invalidateSelf = () => {
+		const authStore = useAuthStore();
+		const u = authStore.currentUser;
+		if (!u) return;
+
+		// collect every identifier form a caller might use to look up self
+		const ids = new Set<string>();
+		ids.add(u.id);
+		if (u.username) {
+			ids.add(u.username);
+			ids.add(`@${u.username}`);
+		}
+
+		// 1) wipe poisoned-null entries from the user cache (was set during anon SSR/CSR)
+		for (const key of Array.from(cache.keys())) {
+			if (cache.get(key) === null && isSelfIdentifier(key, u)) {
+				cache.delete(key);
+			}
+		}
+
+		// 2) wipe every per-user state map under every identifier form
+		for (const id of ids) {
+			attendingEvents.delete(id);
+			hostingEvents.delete(id);
+			badges.delete(id);
+			eventSubmissions.delete(id);
+			points.delete(id);
+			pointsHistory.delete(id);
+			quest.delete(id);
+			questHistory.delete(id);
+
+			invalidateAPICache(`user-${id}`);
+			invalidateAPICache(`user-${id}-badges`);
+			invalidateAPICache(`user-${id}-points`);
+			invalidateAPICache(`user-${id}-quest-history`);
+			invalidateAPICache(`user-${id}-mastery-list`);
+		}
+
+		// 3) mastery maps are keyed `userId:badgeId` — wipe by user prefix
+		for (const key of Array.from(masteryStatuses.keys())) {
+			if (key.startsWith(`${u.id}:`)) masteryStatuses.delete(key);
+		}
+		masteryLists.delete(u.id);
+
+		// 4) global quest catalog — reading anon may have stored an empty Set under
+		// `questsList.value`, causing /profile/quests to render "No quests available".
+		// reset the ref so consumers fall back into the loading branch and refetch.
+		questsList.value = null;
+		invalidateAPICache('quests');
+
+		// 5) refetch everything fresh. fire-and-forget so this stays non-blocking
+		// from the auth plugin watcher. Each fetch handles its own loading + errors.
+		void fetchUser(u.id, true);
+		void fetchBadges(u.id);
+		void fetchPoints(u.id);
+		void fetchAttendingEvents(u.id);
+		void fetchHostingEvents(u.id);
+		void fetchEventSubmissions(u.id);
+		void fetchUserQuest(u.id);
+		void fetchQuestHistory(u.id);
+		void fetchMasteryList(u.id);
+		void fetchQuestsList();
 	};
 
 	const tryRecoverGeneratedMastery = async (
