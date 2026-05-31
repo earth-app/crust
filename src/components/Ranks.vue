@@ -158,6 +158,10 @@ const pro: PricingPlanProps = {
 			icon: 'mdi:arrow-up-bold'
 		},
 		{
+			title: 'Complete quests 10% faster',
+			icon: 'mdi:lightning-bolt'
+		},
+		{
 			title: 'Foster your circle with up to 500 friends',
 			icon: 'mdi:account-multiple-plus'
 		},
@@ -194,6 +198,10 @@ const writer: PricingPlanProps = {
 		{
 			title: 'Create and publish articles',
 			icon: 'mdi:file-document-edit'
+		},
+		{
+			title: 'Complete quests 25% faster',
+			icon: 'mdi:lightning-bolt'
 		},
 		{
 			title: 'Priority event discoverability',
@@ -237,6 +245,10 @@ const organizer: PricingPlanProps = {
 		{
 			title: 'Create your own quests',
 			icon: 'mdi:hammer'
+		},
+		{
+			title: 'Complete quests 50% faster',
+			icon: 'mdi:lightning-bolt'
 		},
 		{
 			title: 'Quiz your users in your articles',

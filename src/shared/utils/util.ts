@@ -461,6 +461,29 @@ type ValidResponse<T = any> = {
 	message?: never;
 };
 
+export const QUEST_DELAY_REDUCTION_BY_RANK: Record<string, number> = {
+	FREE: 0,
+	PRO: 0.1,
+	WRITER: 0.25,
+	ORGANIZER: 0.5,
+	ADMINISTRATOR: 1
+};
+
+export function getQuestDelayReduction(accountType?: string | null): number {
+	if (!accountType) return 0;
+	return QUEST_DELAY_REDUCTION_BY_RANK[accountType.toUpperCase()] ?? 0;
+}
+
+export function getEffectiveQuestStepDelay(
+	delaySeconds: number,
+	accountType?: string | null
+): number {
+	if (!delaySeconds || delaySeconds <= 0) return 0;
+	const reduction = getQuestDelayReduction(accountType);
+	if (reduction >= 1) return 0;
+	return Math.round(delaySeconds * (1 - reduction));
+}
+
 export function valid<T>(
 	res?: {
 		success?: boolean;

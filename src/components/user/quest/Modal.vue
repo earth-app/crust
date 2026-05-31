@@ -25,6 +25,26 @@
 								size="sm"
 								>Badge Mastery</UBadge
 							>
+							<UPopover
+								v-if="delayReductionLabel && hasDelayedStep"
+								mode="hover"
+							>
+								<UBadge
+									color="warning"
+									variant="subtle"
+									icon="mdi:lightning-bolt"
+									size="sm"
+									>{{ delayReductionLabel }}</UBadge
+								>
+								<template #content>
+									<div class="flex flex-col p-4 max-w-72">
+										<span class="text-sm">Your rank shortens the wait between quest steps.</span>
+										<span class="text-xs opacity-80 mt-1"
+											>This bonus is automatically applied based on your account rank.</span
+										>
+									</div>
+								</template>
+							</UPopover>
 						</div>
 						<span class="font-medium opacity-90 text-base">{{ quest.description }}</span>
 						<span
@@ -180,6 +200,22 @@ const completedAtNormal = computed(() => {
 });
 
 const isMasteryQuest = computed(() => props.quest?.id?.startsWith('badge_mastery_') ?? false);
+
+const accountType = computed(() => user.value?.account.account_type);
+const delayReduction = computed(() => getQuestDelayReduction(accountType.value));
+const delayReductionLabel = computed(() => {
+	const r = delayReduction.value;
+	if (r <= 0) return null;
+	if (r >= 1) return 'Bypass';
+	return `${Math.round(r * 100)}% Faster`;
+});
+const hasDelayedStep = computed(() =>
+	(props.quest?.steps ?? []).some((step) =>
+		Array.isArray(step)
+			? step.some((alt) => alt.delay && alt.delay > 0)
+			: step.delay && step.delay > 0
+	)
+);
 
 const stepOpen = ref(false);
 const openStep = ref<

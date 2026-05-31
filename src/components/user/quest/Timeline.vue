@@ -163,7 +163,30 @@
 									v-if="altStep.delay"
 									class="text-xs opacity-70 mt-1"
 								>
-									Can be completed {{ formatTime(altStep.delay) }} after completing previous step
+									<template v-if="altStep.effectiveDelay === 0">
+										Available immediately
+										<UBadge
+											color="warning"
+											variant="subtle"
+											size="xs"
+											icon="mdi:lightning-bolt"
+											class="ml-1"
+											>{{ delayReductionLabel }}</UBadge
+										>
+									</template>
+									<template v-else>
+										Can be completed {{ formatTime(altStep.effectiveDelay) }} after completing
+										previous step
+										<UBadge
+											v-if="delayReductionLabel"
+											color="warning"
+											variant="subtle"
+											size="xs"
+											icon="mdi:lightning-bolt"
+											class="ml-1"
+											>{{ delayReductionLabel }}</UBadge
+										>
+									</template>
 								</p>
 								<p
 									v-if="altStep.completed"
@@ -250,7 +273,30 @@
 									v-if="item.delay"
 									class="text-xs opacity-70 mt-1"
 								>
-									Can be completed {{ formatTime(item.delay) }} after completing previous step
+									<template v-if="item.effectiveDelay === 0">
+										Available immediately
+										<UBadge
+											color="warning"
+											variant="subtle"
+											size="xs"
+											icon="mdi:lightning-bolt"
+											class="ml-1"
+											>{{ delayReductionLabel }}</UBadge
+										>
+									</template>
+									<template v-else>
+										Can be completed {{ formatTime(item.effectiveDelay) }} after completing previous
+										step
+										<UBadge
+											v-if="delayReductionLabel"
+											color="warning"
+											variant="subtle"
+											size="xs"
+											icon="mdi:lightning-bolt"
+											class="ml-1"
+											>{{ delayReductionLabel }}</UBadge
+										>
+									</template>
 								</p>
 								<p
 									v-if="item.completed"
@@ -354,6 +400,18 @@ const emit = defineEmits<{
 const { user } = useAuth();
 const userId = computed(() => user.value?.id);
 const { quest, questHistory, fetchUserQuest, startQuest, endQuest } = useUser(userId);
+
+const accountType = computed(() => user.value?.account.account_type);
+const delayReduction = computed(() => getQuestDelayReduction(accountType.value));
+const delayReductionLabel = computed(() => {
+	const r = delayReduction.value;
+	if (r <= 0) return null;
+	if (r >= 1) return 'Bypass';
+	return `${Math.round(r * 100)}% Faster`;
+});
+function effectiveDelay(rawDelay?: number) {
+	return getEffectiveQuestStepDelay(rawDelay ?? 0, accountType.value);
+}
 const { getStepIcon } = useQuests();
 const toast = useToast();
 
@@ -381,8 +439,7 @@ const completed = computed(() => {
 // true while the initial quest fetch hasn't resolved yet (quest is still undefined)
 const questLoading = computed(() => quest.value === undefined);
 const isCurrentQuest = computed(() => !!quest.value && quest.value.questId === props.quest.id);
-// Crust is the web frontend - mobile_only quests must be started from the
-// mobile app, even when a user is browsing here from a mobile browser.
+
 const mobileOnly = computed(() => props.quest.mobile_only === true);
 
 type TimelineStep = QuestStep & {
@@ -391,6 +448,7 @@ type TimelineStep = QuestStep & {
 	altIndex?: number;
 	completed: boolean;
 	completedAt: number;
+	effectiveDelay: number;
 	delayedUntil: number;
 };
 
@@ -667,6 +725,7 @@ const items = computed(() => {
 					? progSlot.find((p) => p.altIndex === altIndex)
 					: undefined;
 
+				const effSeconds = effectiveDelay(altStep.delay);
 				return {
 					...altStep,
 					icon: getStepIcon(altStep.type),
@@ -674,8 +733,8 @@ const items = computed(() => {
 					altIndex,
 					completed: !!entry,
 					completedAt: entry?.submittedAt || 0,
-					delayedUntil:
-						altStep.delay && prevCompletedAt ? prevCompletedAt + altStep.delay * 1000 : 0
+					effectiveDelay: effSeconds,
+					delayedUntil: effSeconds && prevCompletedAt ? prevCompletedAt + effSeconds * 1000 : 0
 				};
 			});
 		} else {
@@ -683,13 +742,15 @@ const items = computed(() => {
 			const progSlot = props.progress?.[index];
 			const entry = !Array.isArray(progSlot) ? progSlot : undefined;
 
+			const effSeconds = effectiveDelay(step.delay);
 			return {
 				...step,
 				icon: getStepIcon(step.type),
 				index,
 				completed: !!entry,
 				completedAt: entry?.submittedAt || 0,
-				delayedUntil: step.delay && prevCompletedAt ? prevCompletedAt + step.delay * 1000 : 0
+				effectiveDelay: effSeconds,
+				delayedUntil: effSeconds && prevCompletedAt ? prevCompletedAt + effSeconds * 1000 : 0
 			};
 		}
 	});
