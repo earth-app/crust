@@ -16,13 +16,20 @@
 import { expect, integrationMode, test } from './utils/fixtures';
 
 const PROD = process.env.PLAYWRIGHT_PROD === '1';
-// Real-backend integration mode adds 1-7s of mantle2 round-trips per page on
-// top of hydration cost (data-heavy pages like /articles can hit 10s on a
-// cold mantle2). 3x keeps the test meaningful - catches a 25s+ regression -
-// without chasing CI per-request flake.
+const COVERAGE = process.env.COVERAGE === '1';
+// Overhead factors stack: cold-compile, real-backend round-trips, and V8 JS
+// coverage instrumentation each add real per-page cost (often 50-100% on
+// top), and a CI run can hit more than one. Multiplying keeps the test
+// meaningful - catches a 25s+ regression - without chasing flake on a
+// shared 4-worker runner. Without the COVERAGE multiplier, prerendered
+// pages like /terms-of-service trip the 3s budget on instrumented runs
+// where the page itself takes ~1.5s.
 const scale = (ms: number): number => {
-	if (PROD) return integrationMode ? ms * 3 : ms;
-	return ms * 3;
+	let factor = 1;
+	if (!PROD) factor *= 3;
+	else if (integrationMode) factor *= 3;
+	if (COVERAGE) factor *= 2;
+	return ms * factor;
 };
 
 const PUBLIC_ROUTES: Array<{ path: string; budgetMs: number }> = [
