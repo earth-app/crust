@@ -15,6 +15,7 @@
 				icon="mdi:calendar-multiple"
 				class="w-full mt-8 px-4"
 				hydrate-on-visible
+				special
 			>
 				<LazyEventCard
 					v-for="similarEvent in related.items"

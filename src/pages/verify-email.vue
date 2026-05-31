@@ -29,10 +29,13 @@
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Verify Email');
 
-const { user, sendVerificationEmail } = useAuth();
+const { user, sendVerificationEmail, fetchUser } = useAuth();
 const router = useRouter();
 const toast = useToast();
 const { startTourIfNew } = useSiteTour();
+
+// suppress already verified toast
+const justVerified = ref(false);
 
 async function resendVerificationFromTour() {
 	const res = await sendVerificationEmail();
@@ -106,8 +109,8 @@ watch(
 				color: 'error',
 				duration: 3000
 			});
-		} else if (currentUser && currentUser.account.email_verified) {
-			// Email is already verified, redirect to home
+		} else if (currentUser && currentUser.account.email_verified && !justVerified.value) {
+			// already verified on initial load — skip the toast on the self-verify flow
 			router.push('/');
 			toast.add({
 				title: 'Email Already Verified',
@@ -121,12 +124,11 @@ watch(
 	{ immediate: true }
 );
 
-function onEmailVerified() {
+async function onEmailVerified() {
+	justVerified.value = true;
+	// refresh server-side state so other pages see the change after redirect
+	await fetchUser(true);
 	router.push('/');
-
-	if (user.value) {
-		user.value.account.email_verified = true;
-	}
 }
 
 onMounted(() => {

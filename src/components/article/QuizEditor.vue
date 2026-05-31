@@ -267,7 +267,7 @@ function insertQuestion() {
 		type: 'true_false',
 		question: '',
 		options: ['True', 'False'],
-		correct_answer: 'False'
+		correct_answer: 'True'
 	});
 	emit('add-question', questions[questions.length - 1]!);
 }

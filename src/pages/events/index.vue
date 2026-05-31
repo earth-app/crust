@@ -38,6 +38,7 @@
 			title="Recommended for You"
 			description="Based on your interests and activities"
 			icon="mdi:calendar-star"
+			special
 		>
 			<LazyEventCard
 				v-for="event in recommended.items"

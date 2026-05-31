@@ -105,6 +105,7 @@ const emit = defineEmits<{
 
 const toast = useToast();
 const { user, fetchUser } = useAuth();
+const emailGate = useEmailGate();
 const total = ref(0);
 const newDisabled = computed(() => {
 	switch (user.value?.account.account_type) {
@@ -144,6 +145,8 @@ async function newPrompt() {
 		});
 		return;
 	}
+
+	if (!emailGate.requireVerified('create a prompt')) return;
 
 	const text = prompt.value.trim();
 
@@ -189,6 +192,8 @@ async function newPrompt() {
 
 			emit('prompt-created', res.data);
 		} else {
+			loading.value = false;
+			if (emailGate.handleServerError(res, 'create a prompt')) return;
 			toast.add({
 				title: 'Error',
 				description: res.message || 'Failed to create prompt.',
@@ -198,6 +203,8 @@ async function newPrompt() {
 			});
 		}
 	} catch (error) {
+		loading.value = false;
+		if (emailGate.handleServerError(error, 'create a prompt')) return;
 		toast.add({
 			title: 'Error',
 			description: 'An error occurred while creating the prompt.',

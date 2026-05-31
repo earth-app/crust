@@ -5,6 +5,7 @@
 			title="Recommended for You"
 			description="Based on your interests and activities"
 			icon="mdi:star"
+			special
 		>
 			<InfoCardSkeleton
 				v-if="!recommendedLoaded"

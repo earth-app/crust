@@ -42,6 +42,7 @@
 			title="Recommended for You"
 			description="Based on your interests and activities"
 			icon="mdi:book-open-page-variant"
+			special
 		>
 			<LazyArticleCard
 				v-for="article in recommended.items"

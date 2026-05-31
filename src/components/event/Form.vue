@@ -441,7 +441,10 @@ function updateField(key: string, value: any) {
 	}
 }
 
+const emailGate = useEmailGate();
+
 async function handleSubmit(event: FormSubmitEvent<EventData>) {
+	if (props.mode === 'create' && !emailGate.requireVerified('create events')) return;
 	loading.value = true;
 	error.value = '';
 
@@ -498,6 +501,10 @@ async function handleSubmit(event: FormSubmitEvent<EventData>) {
 
 		emit('submitted');
 	} catch (err: any) {
+		if (emailGate.handleServerError(err, 'create events')) {
+			loading.value = false;
+			return;
+		}
 		error.value = err.message || 'An error occurred while saving settings';
 
 		toast.add({

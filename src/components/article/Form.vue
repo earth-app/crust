@@ -350,7 +350,10 @@ function validateQuizForCreate(questions: any[]) {
 	return true;
 }
 
+const emailGate = useEmailGate();
+
 async function handleSubmit() {
+	if (props.mode === 'create' && !emailGate.requireVerified('publish articles')) return;
 	loading.value = true;
 	if (props.mode === 'create') {
 		const articleStore = useArticleStore();
@@ -375,6 +378,8 @@ async function handleSubmit() {
 			if (canCreateQuiz.value) {
 				const resQuiz = await articleStore.changeQuiz(res.data.id, getSubmittedQuizQuestions());
 				if (!valid(resQuiz)) {
+					loading.value = false;
+					if (emailGate.handleServerError(resQuiz, 'create quizzes')) return;
 					toast.add({
 						title: 'Error Creating Quiz',
 						description:
@@ -383,7 +388,6 @@ async function handleSubmit() {
 						icon: 'mdi:alert-circle',
 						color: 'warning'
 					});
-					loading.value = false;
 					return;
 				}
 			}
@@ -398,6 +402,8 @@ async function handleSubmit() {
 
 			router.push(`/articles/${res.data.id}`);
 		} else {
+			loading.value = false;
+			if (emailGate.handleServerError(res, 'publish articles')) return;
 			toast.add({
 				title: 'Error',
 				description: res.message || 'Failed to create article.',
@@ -422,6 +428,8 @@ async function handleSubmit() {
 			if (canCreateQuiz.value) {
 				const resQuiz = await articleStore.changeQuiz(res.data.id, getSubmittedQuizQuestions());
 				if (!valid(resQuiz)) {
+					loading.value = false;
+					if (emailGate.handleServerError(resQuiz, 'update quizzes')) return;
 					toast.add({
 						title: 'Error Updating Quiz',
 						description:
@@ -430,7 +438,6 @@ async function handleSubmit() {
 						icon: 'mdi:alert-circle',
 						color: 'warning'
 					});
-					loading.value = false;
 					return;
 				}
 			}

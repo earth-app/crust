@@ -105,8 +105,11 @@ const props = defineProps<{
 const posting = ref(false);
 const newResponse = ref('');
 
+const emailGate = useEmailGate();
+
 async function postResponse() {
 	if (posting.value) return;
+	if (!emailGate.requireVerified('post a prompt response')) return;
 
 	posting.value = true;
 
@@ -115,6 +118,8 @@ async function postResponse() {
 	if (valid(res)) {
 		responses.value.unshift(res.data);
 		newResponse.value = '';
+	} else {
+		emailGate.handleServerError(res, 'post a prompt response');
 	}
 
 	posting.value = false;

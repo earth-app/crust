@@ -39,10 +39,10 @@
 					size="sm"
 					class="mt-2 p-2"
 					trailing-icon="mdi:email-arrow-right-outline"
-					:disabled="loading"
+					:disabled="loading || cooldown > 0"
 					@click="resendVerificationEmail"
 				>
-					Resend Code
+					{{ cooldown > 0 ? `Resend Code (${cooldown}s)` : 'Resend Code' }}
 				</UButton>
 				<div
 					v-if="loading"
@@ -97,38 +97,50 @@ const emit = defineEmits<{
 }>();
 
 const loading = ref(false);
+const cooldown = ref(0); // matches the 60s mantle2 resend-rate-limit window
+let cooldownTimer: ReturnType<typeof setInterval> | null = null;
+
+function startCooldown(seconds = 60) {
+	cooldown.value = seconds;
+	if (cooldownTimer) clearInterval(cooldownTimer);
+	cooldownTimer = setInterval(() => {
+		cooldown.value--;
+		if (cooldown.value <= 0 && cooldownTimer) {
+			clearInterval(cooldownTimer);
+			cooldownTimer = null;
+		}
+	}, 1000);
+}
+
+onBeforeUnmount(() => {
+	if (cooldownTimer) clearInterval(cooldownTimer);
+});
 
 async function resendVerificationEmail() {
+	if (cooldown.value > 0) return;
 	loading.value = true;
 	errorMessage.value = '';
 	const toast = useToast();
 
-	sendVerificationEmail()
-		.then((res) => {
-			if (res.success) {
-				toast.add({
-					title: 'Verification Email Sent',
-					description: 'A new verification code has been sent to your email address.',
-					color: 'success',
-					icon: 'mdi:email-check-outline',
-					duration: 5000
-				});
-			} else {
-				errorMessage.value =
-					res.message || 'Failed to resend verification email. Please try again later.';
-				toast.add({
-					title: 'Error',
-					description: errorMessage.value,
-					color: 'error',
-					icon: 'mdi:alert-circle-outline',
-					duration: 7000
-				});
+	try {
+		const res = await sendVerificationEmail();
+		if (res.success) {
+			startCooldown();
+			toast.add({
+				title: 'Verification Email Sent',
+				description: 'A new verification code has been sent to your email address.',
+				color: 'success',
+				icon: 'mdi:email-check-outline',
+				duration: 5000
+			});
+		} else {
+			// 429-style rate limit from mantle2 — short-circuit the cooldown so the user
+			// sees an accurate "wait X seconds" affordance instead of a generic error
+			if (/wait|rate|too many|429/i.test(res.message || '')) {
+				startCooldown(60);
 			}
-
-			loading.value = false;
-		})
-		.catch((error) => {
-			errorMessage.value = error.message || 'An unexpected error occurred. Please try again later.';
+			errorMessage.value =
+				res.message || 'Failed to resend verification email. Please try again later.';
 			toast.add({
 				title: 'Error',
 				description: errorMessage.value,
@@ -136,9 +148,19 @@ async function resendVerificationEmail() {
 				icon: 'mdi:alert-circle-outline',
 				duration: 7000
 			});
-
-			loading.value = false;
+		}
+	} catch (error: any) {
+		errorMessage.value = error?.message || 'An unexpected error occurred. Please try again later.';
+		toast.add({
+			title: 'Error',
+			description: errorMessage.value,
+			color: 'error',
+			icon: 'mdi:alert-circle-outline',
+			duration: 7000
 		});
+	} finally {
+		loading.value = false;
+	}
 }
 
 async function sendVerifyEmail(inputValue: string[]) {

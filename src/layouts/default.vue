@@ -12,6 +12,7 @@
 			tour-id="welcome"
 			:pulse="true"
 		/>
+		<UserEmailGate />
 	</ClientOnly>
 </template>
 
