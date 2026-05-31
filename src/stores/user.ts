@@ -194,11 +194,29 @@ export const useUserStore = defineStore('user', () => {
 		return loading.has(identifier);
 	};
 
+	// match identifiers against the auth user. handles both raw ids and @username
+	// forms, both case-insensitively for the username branch
+	const isSelfIdentifier = (identifier: string, authUser: User | null | undefined): boolean => {
+		if (!identifier || !authUser) return false;
+		const trimmed = identifier.startsWith('@') ? identifier.slice(1) : identifier;
+		if (trimmed === authUser.id) return true;
+		if (trimmed.toLowerCase() === authUser.username?.toLowerCase()) return true;
+		return false;
+	};
+
 	const fetchUser = async (identifier: string, force: boolean = false): Promise<User | null> => {
 		if (!identifier) return null;
 
-		if (cache.has(identifier) && !force && !fetchQueue.has(identifier)) {
-			return cache.get(identifier)!;
+		const authStore = useAuthStore();
+		const isSelf = isSelfIdentifier(identifier, authStore.currentUser);
+
+		// never trust a cached null for the authenticated user's own identifier —
+		// a prior anonymous fetch may have poisoned it with `[]` / not-found
+		const cachedValue = cache.has(identifier) ? cache.get(identifier) : undefined;
+		const cacheNullForSelf = isSelf && cache.has(identifier) && cachedValue === null;
+
+		if (cache.has(identifier) && !force && !fetchQueue.has(identifier) && !cacheNullForSelf) {
+			return cachedValue!;
 		}
 
 		const existingFetch = fetchQueue.get(identifier);
@@ -207,12 +225,16 @@ export const useUserStore = defineStore('user', () => {
 			return cache.get(identifier) || null;
 		}
 
+		// when refetching the self-identifier after a poisoned cache, blow away the
+		// shared LRU too — otherwise makeAPIRequest replays the cached `[]` body
+		if ((force || cacheNullForSelf) && import.meta.client) {
+			invalidateAPICache(`user-${identifier}`);
+		}
+
 		loading.add(identifier);
 
 		const fetchPromise = (async () => {
 			try {
-				const authStore = useAuthStore();
-
 				if (force && import.meta.client) {
 					await refreshNuxtData(`user-${identifier}`);
 				}
@@ -225,9 +247,28 @@ export const useUserStore = defineStore('user', () => {
 
 				if (valid(res) && isValidUser(res.data)) {
 					cache.set(identifier, res.data);
+					// the auth user can be referenced as both id and username — keep both keys
+					if (isValidUser(res.data) && res.data.id) {
+						if (res.data.id !== identifier) cache.set(res.data.id, res.data);
+						if (res.data.username && res.data.username !== identifier) {
+							cache.set(res.data.username, res.data);
+						}
+					}
 
 					const avatarStore = useAvatarStore();
 					avatarStore.preloadAvatar(res.data.account?.avatar_url);
+				} else if (isSelfIdentifier(identifier, authStore.currentUser)) {
+					// the auth user exists by definition; don't poison cache
+					if (authStore.currentUser && isValidUser(authStore.currentUser as any)) {
+						cache.set(identifier, authStore.currentUser);
+					} else {
+						cache.delete(identifier);
+					}
+					if (valid(res)) {
+						console.warn(
+							`Malformed self-payload for ${identifier} — falling back to auth store currentUser`
+						);
+					}
 				} else {
 					cache.set(identifier, null);
 					if (valid(res)) {
@@ -237,7 +278,13 @@ export const useUserStore = defineStore('user', () => {
 					}
 				}
 			} catch (error) {
-				cache.set(identifier, null);
+				// same self-protection rule for thrown errors
+				if (isSelfIdentifier(identifier, authStore.currentUser)) {
+					if (authStore.currentUser) cache.set(identifier, authStore.currentUser);
+					else cache.delete(identifier);
+				} else {
+					cache.set(identifier, null);
+				}
 				console.warn(`Failed to fetch user ${identifier}:`, error);
 			} finally {
 				loading.delete(identifier);
@@ -249,6 +296,28 @@ export const useUserStore = defineStore('user', () => {
 		await fetchPromise;
 
 		return cache.get(identifier) || null;
+	};
+
+	// proactively wipe any cached null for the auth user when they change.
+	// stops a pre-login anonymous fetch's null from haunting them after login
+	const invalidateSelf = () => {
+		const authStore = useAuthStore();
+		const u = authStore.currentUser;
+		if (!u) return;
+		for (const key of Array.from(cache.keys())) {
+			if (cache.get(key) === null && isSelfIdentifier(key, u)) {
+				cache.delete(key);
+				// matching LRU entry would also serve the poisoned body — drop it
+				invalidateAPICache(`user-${key}`);
+			}
+		}
+		// also blow away the canonical id + @username forms in case the cache
+		// never recorded them as null but the LRU still has a stale anon body
+		invalidateAPICache(`user-${u.id}`);
+		if (u.username) {
+			invalidateAPICache(`user-${u.username}`);
+			invalidateAPICache(`user-@${u.username}`);
+		}
 	};
 
 	const fetchAttendingEvents = async (identifier: string): Promise<Event[]> => {
@@ -919,6 +988,7 @@ export const useUserStore = defineStore('user', () => {
 		getChipColor,
 		getMaxEventAttendees,
 		fetchUser,
+		invalidateSelf,
 		fetchAttendingEvents,
 		fetchHostingEvents,
 		fetchBadges,
