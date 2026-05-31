@@ -17,7 +17,13 @@ export default defineEventHandler(async (event) => {
 				Authorization: `Bearer ${config.adminApiKey}`,
 				Accept: 'application/json'
 			},
-			body: { action, userId: user.id, field, metadata }
+			body: {
+				action,
+				userId: user.id,
+				field,
+				metadata,
+				rank: user.account?.account_type
+			}
 		});
 
 		return res;
