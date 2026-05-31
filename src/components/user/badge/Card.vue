@@ -249,7 +249,7 @@ const props = defineProps<{
 }>();
 
 const userStore = useUserStore();
-const { user: authUser } = useAuth();
+const { user } = useAuth();
 const toast = useToast();
 const { startTour } = useSiteTour();
 
@@ -349,7 +349,7 @@ const grantedTo = computed(() => {
 
 const isOwnBadge = computed(() => {
 	if (!('user_id' in props.badge)) return false;
-	return authUser.value?.id === props.badge.user_id;
+	return user.value?.id === props.badge.user_id;
 });
 
 const canShowMastery = computed(() => {
@@ -363,7 +363,7 @@ const canShowMastery = computed(() => {
 // cap state pulled from the per-user mastery list cached in userStore. cap blocks NEW
 // generation only - a quest already generated (masteryQuestReady) is always startable
 const masteryList = computed(() => {
-	const uid = authUser.value?.id;
+	const uid = user.value?.id;
 	if (!uid) return null;
 	const { masteryList } = useUser(uid);
 	return masteryList.value;
@@ -397,18 +397,21 @@ const masteryDisabled = computed(
 );
 
 const masteryButtonLabel = computed(() => {
-	if (masteryLocked.value) return 'Mastery permanently locked';
-	if (masteryQuestReady.value) return 'Continue Mastery Quest';
+	if (masteryLoading.value) return 'Loading...';
+	if (masteryLocked.value) return 'Mastery Permanently Locked';
+	if (masteryQuestReady.value) return 'Open Mastery Quest';
 	if (masteryCapReached.value) return 'Mastery Cap Reached';
 	return 'Master This Badge';
 });
 const masteryButtonIcon = computed(() => {
+	if (masteryLoading.value) return 'mdi:loading';
 	if (masteryLocked.value) return 'mdi:lock';
 	if (masteryQuestReady.value) return 'mdi:play-circle-outline';
 	if (masteryCapReached.value) return 'mdi:alert-octagon-outline';
 	return 'mdi:medal-outline';
 });
 const masteryButtonColor = computed(() => {
+	if (masteryLoading.value) return 'info';
 	if (masteryLocked.value) return 'neutral';
 	if (masteryQuestReady.value) return 'warning';
 	if (masteryCapReached.value) return 'neutral';
@@ -421,18 +424,22 @@ const masteryButtonVariant = computed(() =>
 const masteryQuestId = computed(() => `badge_mastery_${props.badge.id}`);
 
 const masteryProgress = computed(() => {
-	const userId = authUser.value?.id;
+	const userId = user.value?.id;
 	if (!userId) return undefined;
+
 	const current = userStore.quest.get(userId);
 	if (current?.questId === masteryQuestId.value) return current.progress;
+
 	const history = userStore.questHistory.get(userId);
 	const completed = history?.get(masteryQuestId.value);
+
 	return completed?.progress;
 });
 
 const masteryCompletedAt = computed(() => {
-	const userId = authUser.value?.id;
+	const userId = user.value?.id;
 	if (!userId) return undefined;
+
 	const history = userStore.questHistory.get(userId);
 	const completed = history?.get(masteryQuestId.value);
 	return completed?.completedAt;
@@ -441,7 +448,8 @@ const masteryCompletedAt = computed(() => {
 watch(showDetails, async (open) => {
 	if (!open) return;
 	if (!canShowMastery.value) return;
-	const uid = authUser.value?.id;
+	const uid = user.value?.id;
+
 	// best-effort cap snapshot; cached after first open so subsequent modal opens are instant
 	if (uid) {
 		const { masteryList, fetchMasteryList } = useUser(uid);
@@ -453,9 +461,10 @@ watch(showDetails, async (open) => {
 });
 
 async function loadMasteryStatus() {
-	const userId = authUser.value?.id;
+	const userId = user.value?.id;
 	if (!userId) return;
 	masteryStatusLoading.value = true;
+
 	try {
 		if (userStore.lockedMasteries.has(props.badge.id)) {
 			masteryLocked.value = true;
@@ -523,7 +532,7 @@ async function openExistingMasteryQuest() {
 }
 
 async function confirmGenerate() {
-	const userId = authUser.value?.id;
+	const userId = user.value?.id;
 	if (!userId) return;
 	masteryLoading.value = true;
 	try {

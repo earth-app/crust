@@ -155,7 +155,7 @@
 								</p>
 								<p
 									v-if="altStep.reward"
-									class="text-xs opacity-70"
+									class="text-xs opacity-70 mt-1"
 								>
 									+{{ altStep.reward }} Bonus Points
 								</p>
@@ -242,15 +242,15 @@
 								</p>
 								<p
 									v-if="item.reward"
-									class="text-xs opacity-70"
+									class="text-xs opacity-70 mt-1"
 								>
-									+{{ item.reward }} Impact Points
+									+{{ item.reward }} Bonus Points
 								</p>
 								<p
 									v-if="item.delay"
-									class="text-xs opacity-70"
+									class="text-xs opacity-70 mt-1"
 								>
-									Can be completed after {{ formatTime(item.delay) }} after completing previous step
+									Can be completed {{ formatTime(item.delay) }} after completing previous step
 								</p>
 								<p
 									v-if="item.completed"
