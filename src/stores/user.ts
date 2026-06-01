@@ -603,11 +603,7 @@ export const useUserStore = defineStore('user', () => {
 		identifier: string,
 		opts: { page?: number; limit?: number; search?: string; force?: boolean } = {}
 	): Promise<Map<string, QuestHistoryEntry>> => {
-		if (!identifier) {
-			const map = new Map();
-			questHistory.set(identifier, map);
-			return map;
-		}
+		if (!identifier) return new Map<string, QuestHistoryEntry>();
 
 		// list returns lean entries (quest + completedAt). progress is lazy-loaded per quest
 		// via fetchQuestHistoryEntry. cache lean entries; never overwrite an entry that has
@@ -654,13 +650,8 @@ export const useUserStore = defineStore('user', () => {
 			return questHistory.get(identifier) || existing;
 		}
 
-		const map = questHistory.get(identifier) || new Map();
-		if (getQuestSyncVersion(identifier) === requestVersion) {
-			questHistory.set(identifier, map);
-			return map;
-		}
-
-		return questHistory.get(identifier) || map;
+		// on failure, leave any prior cache alone
+		return questHistory.get(identifier) || new Map<string, QuestHistoryEntry>();
 	};
 
 	// fetch the full progress entry for one completed quest (lazy load — list endpoint
