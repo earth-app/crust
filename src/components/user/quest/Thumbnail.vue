@@ -90,7 +90,7 @@
 		<LazyUserQuestModal
 			v-model:open="open"
 			:quest="quest"
-			:progress="progress"
+			:progress="resolvedProgress"
 			:completed-at="completedAt"
 		/>
 	</template>
@@ -107,7 +107,22 @@ const props = defineProps<{
 	completedAt?: number;
 }>();
 
+const { user } = useAuth();
+const userStore = useUserStore();
+
 const open = ref(false);
+const lazyProgress = ref<(QuestProgressEntry | QuestProgressEntry[])[] | undefined>(undefined);
+const resolvedProgress = computed(() => props.progress ?? lazyProgress.value);
+
+watch(open, async (isOpen) => {
+	if (!isOpen) return;
+	if (props.progress || lazyProgress.value) return;
+	if (!props.completedAt) return;
+	const uid = user.value?.id;
+	if (!uid) return;
+	const entry = await userStore.fetchQuestHistoryEntry(uid, props.quest.id);
+	if (entry?.progress) lazyProgress.value = entry.progress;
+});
 
 const fullReward = computed(() => {
 	let base = props.quest.reward || 0;
