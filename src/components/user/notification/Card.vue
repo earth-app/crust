@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="min-w-60 border border-gray-700 rounded-lg p-4 mb-4 bg-gray-800 hover:bg-gray-700 transition-colors"
+		class="min-w-60 border border-gray-700 rounded-lg p-4 mb-4 transition-opacity bg-linear-to-tl via-gray-500/20 to-transparent hover:opacity-90"
 	>
 		<div class="flex justify-between items-start">
 			<div>
@@ -28,20 +28,20 @@
 			</div>
 			<div class="flex items-center">
 				<UIcon
-					v-if="notification.type === 'error'"
+					v-if="type === 'error'"
 					name="mdi:alert-circle-outline"
 					class="text-red-400 size-3 sm:size-6"
 					title="Error Notification"
 				/>
 				<UIcon
-					v-else-if="notification.type === 'warning'"
+					v-else-if="type === 'warning'"
 					name="mdi:alert-outline"
 					class="text-yellow-400 size-3 sm:size-6"
 					size="20"
 					title="Warning Notification"
 				/>
 				<UIcon
-					v-else-if="notification.type === 'success' && additional"
+					v-else-if="type === 'success' && additional"
 					name="mdi:check-circle-outline"
 					class="text-green-400 size-3 sm:size-6"
 					title="Success Notification"
@@ -77,6 +77,8 @@ const props = defineProps<{
 	notification: UserNotification;
 	additional?: boolean;
 }>();
+
+const type = computed(() => props.notification.type || 'info');
 
 const emit = defineEmits<{
 	(event: 'deleted', notification: UserNotification): void;
