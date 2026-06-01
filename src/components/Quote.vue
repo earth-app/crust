@@ -3,7 +3,7 @@
 		<UAvatar
 			:src="avatar || '/cloud.png'"
 			size="xl"
-			class="-mb-1"
+			class="mb-1"
 		/>
 		<p class="font-medium text-lg bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
 			"{{ text }}"

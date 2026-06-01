@@ -3,7 +3,7 @@
 		<UBadge
 			:color="color"
 			class="flex justify-center aspect-square! text-3xl font-bold rounded-full border-4 border-current/30"
-			>{{ letter }}<span class="text-lg self-start -ml-2">{{ symbol }}</span></UBadge
+			>{{ letter }}<span class="text-lg self-start -ml-1">{{ symbol }}</span></UBadge
 		>
 		<UBadge
 			variant="soft"
