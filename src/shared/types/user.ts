@@ -257,7 +257,7 @@ export type QuestHistoryEntry = {
 	quest: Quest;
 	questId: Quest['id'];
 	completedAt: number;
-	progress: (QuestProgressEntry | QuestProgressEntry[])[]; // you can do multiple alternative steps
+	progress?: (QuestProgressEntry | QuestProgressEntry[])[];
 };
 
 export type UserQuestProgress = {

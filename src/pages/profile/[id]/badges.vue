@@ -9,7 +9,6 @@
 			class="w-full max-w-2xl mb-4"
 			hydrate-on-idle
 		/>
-		<h4 class="text-base">{{ completedBadges.length }} / {{ badges.length }} Completed</h4>
 
 		<template v-if="isOwnProfile && masteryList">
 			<h3 class="my-4 font-medium text-lg">Available Mastery Quests</h3>
@@ -24,27 +23,53 @@
 				<span v-else> Each generated mastery expires {{ ttlDays }} days after creation. </span>
 			</p>
 			<div
-				v-if="masteryList.items.length"
+				v-if="activeMasteryItems.length"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 justify-items-center items-center gap-4 my-4 mx-8"
 			>
 				<LazyUserQuestThumbnail
-					v-for="item in masteryList.items"
+					v-for="item in activeMasteryItems"
 					:key="item.quest.id"
 					:quest="item.quest"
 					:progress="masteryProgressFor(item.quest.id)"
 					:current="item.quest.id === quest?.questId"
-					:completed-at="item.mastered_at ?? undefined"
 				/>
 			</div>
 			<p
 				v-else
 				class="text-xs opacity-60 mb-4"
 			>
-				No mastery quests yet. Generate one from any completed badge below.
+				No active mastery quests. Generate one from any completed badge below.
 			</p>
 		</template>
 
-		<h3 class="my-4 font-medium text-lg">Completed Badges</h3>
+		<h3 class="mt-4 font-medium text-lg">Mastered Badges</h3>
+		<h4 class="text-sm opacity-80 mb-4">
+			{{ masteredBadges.length }}/{{ nonMasteryExemptBadges }} Mastered
+		</h4>
+
+		<div
+			v-if="masteredBadges.length"
+			class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center items-center gap-4"
+		>
+			<LazyUserBadgeCard
+				v-for="badge in masteredBadges"
+				:key="badge.id"
+				:badge="badge"
+				hydrate-on-visible
+			/>
+		</div>
+		<div
+			v-else
+			class="flex items-center"
+		>
+			<Loading />
+		</div>
+
+		<h3 class="mt-4 font-medium text-lg">Completed Badges</h3>
+		<h4 class="text-sm opacity-80 mb-4">
+			{{ completedBadges.length }}/{{ badges.length }} Completed
+		</h4>
+
 		<div
 			v-if="completedBadges.length"
 			class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center items-center gap-4"
@@ -106,6 +131,8 @@ const {
 	fetchBadges,
 	quest,
 	fetchUserQuest,
+	questHistory,
+	fetchQuestHistory,
 	masteryList,
 	fetchMasteryList
 } = useUser(route.params.id as string);
@@ -140,6 +167,7 @@ onMounted(() => {
 	fetchBadges();
 	if (isOwnProfile.value && authUser.value) {
 		fetchUserQuest();
+		fetchQuestHistory();
 		fetchMasteryList();
 	}
 });
@@ -147,11 +175,21 @@ onMounted(() => {
 watch(isOwnProfile, (own) => {
 	if (own && authUser.value) {
 		fetchUserQuest();
+		fetchQuestHistory();
 		fetchMasteryList();
 	}
 });
 
-const completedBadges = computed(() => badges.value.filter((b) => 'granted' in b && b.granted));
+const completedBadges = computed(() => badges.value.filter((b) => b.granted));
+const masteredBadges = computed(() => badges.value.filter((b) => b.mastered));
+const nonMasteryExemptBadges = computed(() => badges.value.filter((b) => !b.mastery_exempt).length);
+
+// hide finished masteries from the active list — the dedicated "Mastered Badges" section
+// below already surfaces them, and showing them here misled users into thinking the slot
+// was still occupied even though `active` correctly excluded them
+const activeMasteryItems = computed(
+	() => masteryList.value?.items.filter((i) => !i.mastered) ?? []
+);
 
 watch(
 	() => user.value,

@@ -227,6 +227,11 @@ export default defineNuxtConfig({
 			attempts: 100
 		}
 	},
+	ui: {
+		theme: {
+			colors: ['primary', 'secondary', 'tertiary', 'info', 'success', 'warning', 'error']
+		}
+	},
 	experimental: {
 		renderJsonPayloads: true,
 		viewTransition: true,
