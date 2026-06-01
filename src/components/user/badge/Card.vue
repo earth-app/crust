@@ -2,21 +2,21 @@
 	<div
 		class="flex justify-center w-70 aspect-video gap-4 p-4 rounded-lg border-4 border-gray-700 bg-gray-600 light:bg-gray-200 hover:opacity-90 transition-opacity duration-300 cursor-pointer"
 		:class="[
-			'user_id' in badge && badge.granted ? 'border-yellow-500' : '',
-			badge.mastered ? 'ring-2 ring-purple-400/70' : ''
+			isGranted ? 'border-yellow-500' : '',
+			isMastered ? 'border-purple-400/70! bg-linear-to-tl via-purple-400/20 to-transparent' : ''
 		]"
 		@click="showDetails = true"
 	>
 		<UIcon
 			:name="badge.icon"
 			class="self-center min-h-8 min-w-8 sm:size-10 md:size-12 lg:size-16"
-			:class="'user_id' in badge && badge.granted ? 'text-yellow-400' : ''"
+			:class="[isGranted ? 'text-yellow-400' : '', isMastered ? 'text-purple-400!' : '']"
 		/>
 
 		<div class="flex flex-col items-center gap-2">
 			<UBadge
 				:color="rarityColor"
-				:trailing-icon="'user_id' in badge && badge.granted ? 'mdi:check' : ''"
+				:trailing-icon="isMastered ? 'mdi:star-circle' : isGranted ? 'mdi:check' : ''"
 				>{{ capitalizeFully(badge.rarity) }}</UBadge
 			>
 			<h3 class="font-semibold text-md md:text-lg">{{ badge.name }}</h3>
@@ -34,14 +34,14 @@
 				<UIcon
 					:name="badge.icon"
 					class="self-center min-h-12 min-w-12 sm:size-16 md:size-20 lg:size-24"
-					:class="'user_id' in badge && badge.granted ? 'text-yellow-400' : ''"
+					:class="isMastered ? 'text-purple-400' : isGranted ? 'text-yellow-400' : ''"
 				/>
 				<div class="flex space-x-2 items-center">
 					<h2 class="font-bold text-xl md:text-2xl">{{ badge.name }}</h2>
 					<UBadge
 						:color="rarityColor"
-						:trailing-icon="'user_id' in badge && badge.granted ? 'mdi:check-bold' : ''"
-						class="text-lg"
+						:trailing-icon="isMastered ? 'mdi:star-circle' : isGranted ? 'mdi:check' : ''"
+						class="text-base"
 						>{{ capitalizeFully(badge.rarity) }}</UBadge
 					>
 					<UTooltip
@@ -53,7 +53,7 @@
 						"
 					>
 						<UBadge
-							color="warning"
+							color="tertiary"
 							variant="soft"
 							icon="mdi:medal-outline"
 							size="lg"
@@ -92,6 +92,7 @@
 							:icon="masteryButtonIcon"
 							:loading="masteryLoading"
 							:disabled="masteryDisabled"
+							class="max-w-full whitespace-normal text-center"
 							@click="handleMasteryClick"
 						>
 							{{ masteryButtonLabel }}
@@ -116,6 +117,13 @@
 							class="size-3 animate-spin"
 						/>
 						Checking mastery status…
+					</span>
+					<span
+						v-else-if="isCompletedMastery"
+						class="text-xs opacity-70 text-center max-w-72"
+					>
+						<template v-if="masteredAtNormal">Mastered on {{ masteredAtNormal }}.</template>
+						Open the timeline to revisit your completed steps.
 					</span>
 					<span
 						v-else-if="masteryLocked"
@@ -151,7 +159,13 @@
 						Generate a personalised AI quest to deepen your mastery of this badge.
 					</span>
 					<span
-						v-if="masteryList && !masteryCapReached && !masteryQuestReady && !masteryLocked"
+						v-if="
+							masteryList &&
+							!masteryCapReached &&
+							!masteryQuestReady &&
+							!masteryLocked &&
+							!isCompletedMastery
+						"
 						class="text-xs opacity-60 text-center"
 					>
 						{{ masteryList.active }} / {{ masteryList.cap }} active mastery slots used
@@ -264,6 +278,13 @@ const masteryLocked = ref(false);
 const masteryQuestReady = ref(false);
 const loadedQuest = ref<Quest | null>(null);
 
+function isUserBadge(badge: Badge): badge is UserBadge {
+	return 'user_id' in badge;
+}
+
+const isGranted = computed(() => isUserBadge(props.badge) && props.badge.granted);
+const isMastered = computed(() => isGranted && props.badge.mastered);
+
 // rotated while masteryLoading to signal the request is alive (gemma-4 inference can run 20-60s)
 const generatingMessages = [
 	'Loading...',
@@ -337,7 +358,7 @@ const masteredAtNormal = computed(() => {
 });
 
 const grantedTo = computed(() => {
-	if (!('user_id' in props.badge)) return null;
+	if (!isUserBadge(props.badge)) return null;
 	const { user, fetchUser } = useUser(props.badge.user_id);
 	if (!user.value) {
 		fetchUser();
@@ -348,17 +369,19 @@ const grantedTo = computed(() => {
 });
 
 const isOwnBadge = computed(() => {
-	if (!('user_id' in props.badge)) return false;
+	if (!isUserBadge(props.badge)) return false;
 	return user.value?.id === props.badge.user_id;
 });
 
 const canShowMastery = computed(() => {
 	if (!isOwnBadge.value) return false;
 	if (!('granted' in props.badge) || !props.badge.granted) return false;
-	if (props.badge.mastered) return false;
 	if (props.badge.mastery_exempt) return false;
+	// mastered badges still surface the cta — clicking re-opens the completed timeline
 	return true;
 });
+
+const isCompletedMastery = computed(() => !!props.badge.mastered);
 
 // cap state pulled from the per-user mastery list cached in userStore. cap blocks NEW
 // generation only - a quest already generated (masteryQuestReady) is always startable
@@ -392,13 +415,14 @@ const masteryDisabled = computed(
 		masteryLoading.value ||
 		masteryStatusLoading.value ||
 		masteryLocked.value ||
-		// only block generation at cap; once the quest is ready, the button means "Continue"
-		(masteryCapReached.value && !masteryQuestReady.value)
+		// only block generation at cap; once the quest is ready (or completed), the button is "Open"
+		(masteryCapReached.value && !masteryQuestReady.value && !isCompletedMastery.value)
 );
 
 const masteryButtonLabel = computed(() => {
 	if (masteryLoading.value) return 'Loading...';
 	if (masteryLocked.value) return 'Mastery Permanently Locked';
+	if (isCompletedMastery.value) return 'View Completed Mastery';
 	if (masteryQuestReady.value) return 'Open Mastery Quest';
 	if (masteryCapReached.value) return 'Mastery Cap Reached';
 	return 'Master This Badge';
@@ -406,6 +430,7 @@ const masteryButtonLabel = computed(() => {
 const masteryButtonIcon = computed(() => {
 	if (masteryLoading.value) return 'mdi:loading';
 	if (masteryLocked.value) return 'mdi:lock';
+	if (isCompletedMastery.value) return 'mdi:star-circle';
 	if (masteryQuestReady.value) return 'mdi:play-circle-outline';
 	if (masteryCapReached.value) return 'mdi:alert-octagon-outline';
 	return 'mdi:medal-outline';
@@ -413,6 +438,7 @@ const masteryButtonIcon = computed(() => {
 const masteryButtonColor = computed(() => {
 	if (masteryLoading.value) return 'info';
 	if (masteryLocked.value) return 'neutral';
+	if (isCompletedMastery.value) return 'tertiary';
 	if (masteryQuestReady.value) return 'warning';
 	if (masteryCapReached.value) return 'neutral';
 	return 'primary';
@@ -442,7 +468,15 @@ const masteryCompletedAt = computed(() => {
 
 	const history = userStore.questHistory.get(userId);
 	const completed = history?.get(masteryQuestId.value);
-	return completed?.completedAt;
+	if (completed?.completedAt) return completed.completedAt;
+
+	// fallback for re-opening from a mastered badge: questHistory may not be loaded yet on
+	// this page, but the badge payload always carries mastered_at when mastered=true
+	if (props.badge.mastered && props.badge.mastered_at) {
+		const ms = DateTime.fromISO(String(props.badge.mastered_at)).toMillis();
+		return Number.isFinite(ms) ? ms : undefined;
+	}
+	return undefined;
 });
 
 watch(showDetails, async (open) => {
@@ -456,6 +490,14 @@ watch(showDetails, async (open) => {
 		if (!masteryList.value) fetchMasteryList();
 	}
 
+	// mastered badges short-circuit the status fetch — we already know the terminal state
+	// from props.badge.mastered, so the button can render "View Completed Mastery"
+	// immediately without flashing a "Loading…" state
+	if (isCompletedMastery.value) {
+		masteryStatusFetched.value = true;
+		return;
+	}
+
 	if (masteryStatusFetched.value) return;
 	await loadMasteryStatus();
 });
@@ -463,6 +505,11 @@ watch(showDetails, async (open) => {
 async function loadMasteryStatus() {
 	const userId = user.value?.id;
 	if (!userId) return;
+	// skip entirely for mastered — terminal state is already known from props.badge.mastered
+	if (isCompletedMastery.value) {
+		masteryStatusFetched.value = true;
+		return;
+	}
 	masteryStatusLoading.value = true;
 
 	try {
@@ -489,7 +536,7 @@ async function loadMasteryStatus() {
 
 async function handleMasteryClick() {
 	if (masteryDisabled.value) return;
-	if (masteryQuestReady.value) {
+	if (isCompletedMastery.value || masteryQuestReady.value) {
 		await openExistingMasteryQuest();
 		return;
 	}
@@ -497,16 +544,31 @@ async function handleMasteryClick() {
 }
 
 async function openExistingMasteryQuest() {
+	const uid = user.value?.id;
 	masteryLoading.value = true;
 	try {
-		let quest = loadedQuest.value;
-		if (!quest || quest.id !== masteryQuestId.value) {
-			quest = await userStore.getMasteryQuest(props.badge.id);
+		// completed masteries need progress for the timeline to render step completion; the
+		// list endpoint returns lean entries (no progress, no R2-inlined media), so lazy-fetch
+		// the full entry here. fetches quest + progress in parallel.
+		const tasks: Promise<unknown>[] = [];
+		if (!loadedQuest.value || loadedQuest.value.id !== masteryQuestId.value) {
+			tasks.push(
+				userStore.getMasteryQuest(props.badge.id).then((q) => {
+					if (q) loadedQuest.value = q;
+				})
+			);
 		}
-		if (!quest) {
+		if (uid && isCompletedMastery.value) {
+			tasks.push(userStore.fetchQuestHistoryEntry(uid, masteryQuestId.value));
+		}
+		await Promise.all(tasks);
+
+		if (!loadedQuest.value || loadedQuest.value.id !== masteryQuestId.value) {
 			toast.add({
 				title: 'Mastery quest not found',
-				description: 'Try generating it again.',
+				description: isCompletedMastery.value
+					? 'The quest timeline is no longer available (expired from history).'
+					: 'Try generating it again.',
 				icon: 'mdi:alert-circle',
 				color: 'warning',
 				duration: 4000
@@ -514,7 +576,6 @@ async function openExistingMasteryQuest() {
 			masteryQuestReady.value = false;
 			return;
 		}
-		loadedQuest.value = quest;
 		showDetails.value = false;
 		await nextTick();
 		questOpen.value = true;
@@ -664,7 +725,7 @@ const masteryTour = computed<SiteTourStep[]>(() => [
 ]);
 
 onMounted(() => {
-	if ('user_id' in props.badge) {
+	if (isUserBadge(props.badge)) {
 		userStore.fetchUser(props.badge.user_id);
 	}
 });
