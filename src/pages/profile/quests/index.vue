@@ -88,7 +88,7 @@
 		</div>
 
 		<div
-			v-if="quests && quests.length > 0"
+			v-if="byRarity.size > 0"
 			class="flex flex-col items-center mt-8"
 		>
 			<h2 class="text-xl">By Rarity</h2>
@@ -117,16 +117,16 @@
 
 		<h2 class="text-xl mt-8">All Quests</h2>
 		<span
-			v-if="quests && quests.length > 0"
+			v-if="allQuests.length > 0"
 			class="text-base opacity-80"
-			>{{ quests.length }} Total</span
+			>{{ allQuests.length }} Total</span
 		>
 		<div
-			v-if="quests && quests.length > 0"
+			v-if="allQuests.length > 0"
 			class="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-4"
 		>
 			<LazyUserQuestThumbnail
-				v-for="(q, i) in quests"
+				v-for="(q, i) in allQuests"
 				:id="`quest-${i}`"
 				:key="q.id"
 				:quest="q"
@@ -165,7 +165,7 @@
 
 		<Loading v-if="quests === null" />
 		<span
-			v-else-if="quests.length === 0"
+			v-else-if="allQuests.length === 0"
 			class="text-base opacity-60 mt-4"
 			>No quests available.</span
 		>
@@ -204,9 +204,18 @@ watch(
 	{ immediate: true }
 );
 
+const allQuests = computed<Quest[]>(() => {
+	const merged = new Map<string, Quest>();
+	for (const q of quests.value ?? []) merged.set(q.id, q);
+	for (const entry of questHistory.value.values()) {
+		if (entry.quest && !merged.has(entry.quest.id)) merged.set(entry.quest.id, entry.quest);
+	}
+	return Array.from(merged.values());
+});
+
 const byRarity = computed(() => {
 	const map = new Map<string, Quest[]>();
-	for (const quest of quests.value || []) {
+	for (const quest of allQuests.value) {
 		if (quest.mobile_only) continue;
 
 		const rarity = quest.rarity || 'normal';
@@ -218,13 +227,11 @@ const byRarity = computed(() => {
 	return map;
 });
 
-const premiumQuests = computed(
-	() => quests.value?.filter((q) => q.premium && !q.mobile_only) || []
-);
+const premiumQuests = computed(() => allQuests.value.filter((q) => q.premium && !q.mobile_only));
 
-const completedQuests = computed(() => {
-	return quests.value?.filter((q) => questHistory.value.get(q.id)?.completedAt) || [];
-});
+const completedQuests = computed(() =>
+	allQuests.value.filter((q) => questHistory.value.get(q.id)?.completedAt)
+);
 
 // quest tours
 const { startTour } = useSiteTour();
