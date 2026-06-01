@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import { useAuthStore } from 'stores/auth';
 import { useAvatarStore } from 'stores/avatar';
 import { useFriendsStore } from 'stores/friends';
@@ -1117,4 +1118,410 @@ export function useQuestGeolocation() {
 		error,
 		fetchLocation
 	};
+}
+
+// badge mastery
+
+export type MasteryButtonState =
+	| 'loading'
+	| 'locked'
+	| 'completed'
+	| 'ready'
+	| 'cap_reached'
+	| 'default';
+
+const MASTERY_BUTTON_ICONS: Record<MasteryButtonState, string> = {
+	loading: 'mdi:loading',
+	locked: 'mdi:lock',
+	completed: 'mdi:star-circle',
+	ready: 'mdi:play-circle-outline',
+	cap_reached: 'mdi:alert-octagon-outline',
+	default: 'mdi:medal-outline'
+};
+
+// state-derived context — sky's loading label flips between "Opening..." and
+// "Generating..." depending on whether a quest already exists, so label entries
+// can be functions of this context (color entries always resolve from state alone)
+export type MasteryLabelContext = { questReady: boolean };
+export type MasteryButtonLabel = string | ((ctx: MasteryLabelContext) => string);
+
+// generic on color string union so each platform's strict component prop type is preserved;
+// sky's IonButton colors (`'medium' | 'tertiary' | ...`) and crust's UButton colors
+// (`'neutral' | 'info' | ...`) flow through to the returned props without widening
+export type MasteryButtonTheme<C extends string = string> = {
+	labels: Record<MasteryButtonState, MasteryButtonLabel>;
+	colors: Record<MasteryButtonState, C>;
+};
+
+export const CRUST_MASTERY_BUTTON_THEME = {
+	labels: {
+		loading: 'Loading...',
+		locked: 'Mastery Permanently Locked',
+		completed: 'View Completed Mastery',
+		ready: 'Open Mastery Quest',
+		cap_reached: 'Mastery Cap Reached',
+		default: 'Master This Badge'
+	},
+	colors: {
+		loading: 'info',
+		locked: 'neutral',
+		completed: 'tertiary',
+		ready: 'warning',
+		cap_reached: 'neutral',
+		default: 'primary'
+	}
+} as const satisfies MasteryButtonTheme;
+
+export type MasteryButtonProps<C extends string = string> = {
+	state: MasteryButtonState;
+	label: string;
+	color: C;
+	icon: string;
+	loading: boolean;
+	disabled: boolean;
+	outlined: boolean;
+};
+
+export type BadgeRarityColor = 'neutral' | 'info' | 'warning' | 'success';
+
+export type BadgeHeaderProps = {
+	badge: Badge | UserBadge;
+	isGranted: boolean;
+	isMastered: boolean;
+	rarityColor: BadgeRarityColor | undefined;
+};
+
+// rotated while masteryLoading to signal the request is alive
+// (gemma-4 inference can run 20-60s; a silent spinner reads as a hang)
+const GENERATING_MESSAGES = [
+	'Loading...',
+	'Generating your quest...',
+	'Picking the perfect steps...',
+	'Consulting the badge archives...',
+	'Tuning difficulty to your profile...',
+	'Taking the perfect steps...',
+	'Triple-checking your preferences...',
+	'Applying the algorithm...',
+	'Adjusting the settings...',
+	'Checking the requirements...',
+	'Polishing the timeline...',
+	'Making the final touches...',
+	'Almost there...'
+];
+
+export function isUserBadge(badge: Badge | UserBadge): badge is UserBadge {
+	return 'user_id' in badge;
+}
+
+export function useBadgeMastery<T extends MasteryButtonTheme = typeof CRUST_MASTERY_BUTTON_THEME>(
+	badge: MaybeRefOrGetter<Badge | UserBadge>,
+	theme?: T
+) {
+	const resolvedTheme = (theme ?? CRUST_MASTERY_BUTTON_THEME) as unknown as T;
+	type Color = T['colors'][MasteryButtonState];
+	const badgeRef = computed<Badge | UserBadge>(() => toValue(badge));
+
+	const userStore = useUserStore();
+	const { user: authUser } = useAuth();
+
+	const masteryLoading = ref(false);
+	const masteryStatusLoading = ref(false);
+	const masteryStatusFetched = ref(false);
+	const masteryLocked = ref(false);
+	const masteryQuestReady = ref(false);
+	const loadedQuest = ref<Quest | null>(null);
+
+	const isGranted = computed(() => isUserBadge(badgeRef.value) && badgeRef.value.granted);
+	const isMastered = computed(() => isGranted.value && !!badgeRef.value.mastered);
+	const isCompletedMastery = computed(() => !!badgeRef.value.mastered);
+
+	const isOwnBadge = computed(() => {
+		if (!isUserBadge(badgeRef.value)) return false;
+		return authUser.value?.id === badgeRef.value.user_id;
+	});
+
+	// mastered badges still surface the cta — opening it re-opens the completed timeline
+	const canShowMastery = computed(() => {
+		if (!isOwnBadge.value) return false;
+		if (!('granted' in badgeRef.value) || !badgeRef.value.granted) return false;
+		if (badgeRef.value.mastery_exempt) return false;
+		return true;
+	});
+
+	const rarityColor = computed<BadgeRarityColor | undefined>(() => {
+		switch (badgeRef.value.rarity) {
+			case 'normal':
+				return 'neutral';
+			case 'rare':
+				return 'info';
+			case 'amazing':
+				return 'warning';
+			case 'green':
+				return 'success';
+		}
+	});
+
+	const grantedAt = computed(() =>
+		DateTime.fromISO(
+			'granted_at' in badgeRef.value && badgeRef.value.granted_at ? badgeRef.value.granted_at : ''
+		).toLocaleString(DateTime.DATETIME_MED)
+	);
+
+	const masteredAtFormatted = computed(() => {
+		if (!badgeRef.value.mastered_at) return null;
+		const dt = DateTime.fromISO(String(badgeRef.value.mastered_at));
+		return dt.isValid ? dt.toLocaleString(DateTime.DATETIME_MED) : null;
+	});
+
+	// per-user cap snapshot — blocks NEW generation only; once a quest is ready, "continue" is always allowed
+	const masteryList = computed(() => {
+		const uid = authUser.value?.id;
+		if (!uid) return null;
+		return userStore.masteryLists.get(uid) ?? null;
+	});
+	const masteryCapReached = computed(() => {
+		const list = masteryList.value;
+		if (!list) return false;
+		return list.active >= list.cap;
+	});
+	const masteryExpiresAt = computed(() => {
+		const item = masteryList.value?.items.find((i) => i.badge_id === badgeRef.value.id);
+		if (!item) return null;
+		return DateTime.fromMillis(item.expires_at);
+	});
+	const masteryExpiresInDays = computed(() => {
+		const exp = masteryExpiresAt.value;
+		if (!exp) return null;
+		const diff = exp.diffNow('days').days;
+		return diff > 0 ? Math.ceil(diff) : 0;
+	});
+
+	const masteryDisabled = computed(
+		() =>
+			masteryLoading.value ||
+			masteryStatusLoading.value ||
+			masteryLocked.value ||
+			// only block generation at cap; once the quest is ready (or completed), the button is "open"
+			(masteryCapReached.value && !masteryQuestReady.value && !isCompletedMastery.value)
+	);
+
+	const masteryButtonState = computed<MasteryButtonState>(() => {
+		if (masteryLoading.value) return 'loading';
+		if (masteryLocked.value) return 'locked';
+		if (isCompletedMastery.value) return 'completed';
+		if (masteryQuestReady.value) return 'ready';
+		if (masteryCapReached.value) return 'cap_reached';
+		return 'default';
+	});
+
+	const masteryButton = computed<MasteryButtonProps<Color>>(() => {
+		const state = masteryButtonState.value;
+		const labelEntry = resolvedTheme.labels[state];
+		return {
+			state,
+			label:
+				typeof labelEntry === 'function'
+					? labelEntry({ questReady: masteryQuestReady.value })
+					: labelEntry,
+			color: resolvedTheme.colors[state],
+			icon: MASTERY_BUTTON_ICONS[state],
+			loading: masteryLoading.value,
+			disabled: masteryDisabled.value,
+			outlined: masteryLocked.value || masteryCapReached.value
+		};
+	});
+
+	// bundle for <UserBadgeDetailsHeader v-bind="badgeHeaderProps">
+	const badgeHeaderProps = computed<BadgeHeaderProps>(() => ({
+		badge: badgeRef.value,
+		isGranted: isGranted.value,
+		isMastered: isMastered.value,
+		rarityColor: rarityColor.value
+	}));
+
+	// bundle for <UserBadgeMasteryStatusText v-bind="masteryStatusProps">
+	const masteryStatusProps = computed(() => ({
+		masteryStatusLoading: masteryStatusLoading.value,
+		masteryStatusFetched: masteryStatusFetched.value,
+		isCompletedMastery: isCompletedMastery.value,
+		masteryLocked: masteryLocked.value,
+		masteryQuestReady: masteryQuestReady.value,
+		masteryCapReached: masteryCapReached.value,
+		masteryExpiresInDays: masteryExpiresInDays.value,
+		masteredAtFormatted: masteredAtFormatted.value,
+		masteryList: masteryList.value
+	}));
+
+	const masteryQuestId = computed(() => `badge_mastery_${badgeRef.value.id}`);
+
+	const masteryProgress = computed(() => {
+		const userId = authUser.value?.id;
+		if (!userId) return undefined;
+		const current = userStore.quest.get(userId);
+		if (current?.questId === masteryQuestId.value) return current.progress;
+		const history = userStore.questHistory.get(userId);
+		const completed = history?.get(masteryQuestId.value);
+		return completed?.progress;
+	});
+
+	const masteryCompletedAt = computed<number | undefined>(() => {
+		const userId = authUser.value?.id;
+		if (!userId) return undefined;
+		const history = userStore.questHistory.get(userId);
+		const completed = history?.get(masteryQuestId.value);
+		if (completed?.completedAt) return completed.completedAt;
+
+		// fallback for re-opening from a mastered badge: questHistory may not be loaded yet on
+		// this page, but the badge payload always carries mastered_at when mastered=true
+		if (badgeRef.value.mastered && badgeRef.value.mastered_at) {
+			const ms = DateTime.fromISO(String(badgeRef.value.mastered_at)).toMillis();
+			return Number.isFinite(ms) ? ms : undefined;
+		}
+		return undefined;
+	});
+
+	async function loadMasteryStatus() {
+		const userId = authUser.value?.id;
+		if (!userId) return;
+		// skip entirely for mastered — terminal state is already known from badge.mastered
+		if (isCompletedMastery.value) {
+			masteryStatusFetched.value = true;
+			return;
+		}
+		masteryStatusLoading.value = true;
+		try {
+			if (userStore.lockedMasteries.has(badgeRef.value.id)) {
+				masteryLocked.value = true;
+			}
+			const status = await userStore.getMasteryStatus(userId, badgeRef.value.id);
+			masteryStatusFetched.value = true;
+			if (!status) {
+				masteryLocked.value = userStore.lockedMasteries.has(badgeRef.value.id);
+				return;
+			}
+			masteryLocked.value = status.locked;
+			masteryQuestReady.value = status.generated && !status.mastered && !status.locked;
+			if (status.quest) {
+				loadedQuest.value = status.quest;
+			}
+		} catch (e) {
+			console.warn('Failed to load badge mastery status', e);
+		} finally {
+			masteryStatusLoading.value = false;
+		}
+	}
+
+	// best-effort cap snapshot — cached after first call so subsequent calls are no-ops
+	function ensureMasteryListFetched() {
+		const uid = authUser.value?.id;
+		if (!uid) return;
+		if (userStore.masteryLists.has(uid)) return;
+		void userStore.fetchMasteryList(uid);
+	}
+
+	// rotating reassurance while ai inference runs
+	const generatingMessage = ref(GENERATING_MESSAGES[0]);
+	let generatingInterval: ReturnType<typeof setInterval> | null = null;
+	function startGeneratingTicker() {
+		let i = 0;
+		generatingMessage.value = GENERATING_MESSAGES[0];
+		generatingInterval = setInterval(() => {
+			i = (i + 1) % GENERATING_MESSAGES.length;
+			generatingMessage.value = GENERATING_MESSAGES[i];
+		}, 2500);
+	}
+	function stopGeneratingTicker() {
+		if (generatingInterval) {
+			clearInterval(generatingInterval);
+			generatingInterval = null;
+		}
+	}
+	watch(masteryLoading, (loading) => {
+		if (loading) startGeneratingTicker();
+		else stopGeneratingTicker();
+	});
+	onBeforeUnmount(stopGeneratingTicker);
+
+	return {
+		masteryLoading,
+		masteryStatusLoading,
+		masteryStatusFetched,
+		masteryLocked,
+		masteryQuestReady,
+		loadedQuest,
+		generatingMessage,
+
+		isGranted,
+		isMastered,
+		isCompletedMastery,
+		isOwnBadge,
+		canShowMastery,
+		rarityColor,
+		grantedAt,
+		masteredAtFormatted,
+		masteryList,
+		masteryCapReached,
+		masteryExpiresAt,
+		masteryExpiresInDays,
+		masteryDisabled,
+		masteryButtonState,
+		masteryButton,
+		badgeHeaderProps,
+		masteryStatusProps,
+		masteryQuestId,
+		masteryProgress,
+		masteryCompletedAt,
+
+		loadMasteryStatus,
+		ensureMasteryListFetched
+	};
+}
+
+export type BadgeMasteryTourOptions = {
+	masteryQuestReady: MaybeRefOrGetter<boolean>;
+	isInteractive: MaybeRefOrGetter<boolean>;
+	onMasteryCtaClick: () => unknown | Promise<unknown>;
+	ctaIds?: { cta?: string; help?: string };
+};
+
+export function buildBadgeMasteryTour(opts: BadgeMasteryTourOptions) {
+	const ctaId = opts.ctaIds?.cta ?? 'badge-mastery-cta';
+	const helpId = opts.ctaIds?.help ?? 'badge-mastery-help';
+	return computed<SiteTourStep[]>(() => [
+		{
+			id: ctaId,
+			title: 'Badge Mastery',
+			description:
+				"After earning a badge, you can deepen it with a personalised AI quest tailored to your profile and activities. It's an optional way to turn a badge into a long-form challenge — drawings, photos, audio, reflection.",
+			footer: 'Mastery is opt-in. Plenty of users skip it; plenty love the structure.',
+			icon: 'mdi:medal-outline',
+			highlightPadding: 8
+		},
+		{
+			id: ctaId,
+			title: 'One-shot Commitment',
+			description:
+				'Each Badge Mastery is a single attempt. Resetting it, or starting a different mastery before finishing, will permanently lock this one — you cannot regenerate it.\n\nThere is also a hard cap on active mastery quests at any given time.',
+			footer: "You'll see a clear confirmation prompt before generation starts.",
+			icon: 'mdi:alert-octagon-outline',
+			dim: true,
+			condition: () => !!toValue(opts.isInteractive),
+			cta: {
+				label: toValue(opts.masteryQuestReady) ? 'Continue Mastery' : 'Start Mastery',
+				icon: 'mdi:medal-outline',
+				color: 'warning',
+				advance: false,
+				closeOnSuccess: true,
+				handler: () => opts.onMasteryCtaClick()
+			}
+		},
+		{
+			id: helpId,
+			title: 'Need a refresher?',
+			description:
+				'Tap this help button any time to revisit this tour. Once you finish the mastery, a "Mastered" chip appears next to the badge — visible on your profile too.',
+			footer: 'Good luck — and have fun with it!',
+			icon: 'mdi:progress-question'
+		}
+	]);
 }
