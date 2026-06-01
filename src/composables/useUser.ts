@@ -575,10 +575,17 @@ export function useUser(
 			? new Map<string, QuestHistoryEntry>()
 			: userStore.questHistory.get(resolvedIdentifier) || new Map<string, QuestHistoryEntry>();
 	});
-	const fetchQuestHistory = async () => {
+	const fetchQuestHistory = async (
+		opts: { page?: number; limit?: number; search?: string; force?: boolean } = {}
+	) => {
 		const resolvedIdentifier = currentIdentifier();
 		if (!resolvedIdentifier) return new Map<string, QuestHistoryEntry>();
-		return await userStore.fetchQuestHistory(resolvedIdentifier);
+		return await userStore.fetchQuestHistory(resolvedIdentifier, opts);
+	};
+	const fetchQuestHistoryEntry = async (questId: string, opts: { force?: boolean } = {}) => {
+		const resolvedIdentifier = currentIdentifier();
+		if (!resolvedIdentifier) return null;
+		return await userStore.fetchQuestHistoryEntry(resolvedIdentifier, questId, opts);
 	};
 
 	const setAccountType = async (type: User['account']['account_type']) => {
@@ -650,6 +657,7 @@ export function useUser(
 		endQuest,
 		questHistory,
 		fetchQuestHistory,
+		fetchQuestHistoryEntry,
 		setAccountType,
 		masteryList,
 		fetchMasteryList,

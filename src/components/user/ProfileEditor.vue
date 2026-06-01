@@ -472,6 +472,11 @@
 				</div>
 			</div>
 		</div>
+		<UserApiKeysSection
+			v-if="isSelf"
+			:email-verified="!!user.account?.email_verified"
+		/>
+
 		<UserEmailVerificationModal
 			ref="emailVerificationModal"
 			@verified="handleEmailVerified"
@@ -513,6 +518,9 @@ const authStore = useAuthStore();
 const user = computed(() => componentProps.user);
 const { sendVerificationEmail, updateAccount, regenerateAvatar, setUserActivities } = useAuth();
 const changed = ref(false);
+
+// API key management is self-only — never expose another user's key surface.
+const isSelf = computed(() => authStore.currentUser?.id === user.value?.id);
 
 const createAccountProp = (key: string) =>
 	computed({

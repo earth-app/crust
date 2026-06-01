@@ -599,45 +599,96 @@ export const useUserStore = defineStore('user', () => {
 		return { message: res.data?.message || res.message || 'Failed to end quest' };
 	};
 
-	const fetchQuestHistory = async (identifier: string): Promise<Map<string, QuestHistoryEntry>> => {
+	const fetchQuestHistory = async (
+		identifier: string,
+		opts: { page?: number; limit?: number; search?: string; force?: boolean } = {}
+	): Promise<Map<string, QuestHistoryEntry>> => {
 		if (!identifier) {
 			const map = new Map();
 			questHistory.set(identifier, map);
 			return map;
 		}
 
-		if (questHistory.has(identifier)) {
+		// list returns lean entries (quest + completedAt). progress is lazy-loaded per quest
+		// via fetchQuestHistoryEntry. cache lean entries; never overwrite an entry that has
+		// progress already (lazy-loaded entries shouldn't be downgraded back to lean)
+		if (!opts.force && !opts.page && !opts.search && questHistory.has(identifier)) {
 			return questHistory.get(identifier) || new Map();
 		}
 
 		const authStore = useAuthStore();
 		const requestVersion = getQuestSyncVersion(identifier);
+		const params = new URLSearchParams();
+		if (opts.page) params.set('page', String(opts.page));
+		if (opts.limit) params.set('limit', String(opts.limit));
+		if (opts.search) params.set('search', opts.search);
+		const qs = params.toString();
 		const res = await makeAPIRequest<{
 			total: number;
+			page: number;
+			limit: number;
+			items: QuestHistoryEntry[];
 			history: { [questId: string]: QuestHistoryEntry };
 		}>(
-			`user-${identifier}-quest-history`,
-			`/v2/users/${identifier}/quest/history`,
+			`user-${identifier}-quest-history-${qs || 'all'}`,
+			`/v2/users/${identifier}/quest/history${qs ? `?${qs}` : ''}`,
 			authStore.sessionToken
 		);
 
 		if (valid(res)) {
-			const map = new Map(Object.entries(res.data.history));
+			const existing = questHistory.get(identifier) || new Map<string, QuestHistoryEntry>();
+			for (const [questId, entry] of Object.entries(res.data.history ?? {})) {
+				const prior = existing.get(questId);
+				// preserve previously-loaded progress when refreshing the lean list
+				if (prior?.progress && !entry.progress) {
+					existing.set(questId, { ...entry, progress: prior.progress });
+				} else {
+					existing.set(questId, entry);
+				}
+			}
 			if (getQuestSyncVersion(identifier) === requestVersion) {
-				questHistory.set(identifier, map);
-				return map;
+				questHistory.set(identifier, existing);
+				return existing;
 			}
 
-			return questHistory.get(identifier) || map;
+			return questHistory.get(identifier) || existing;
 		}
 
-		const map = new Map();
+		const map = questHistory.get(identifier) || new Map();
 		if (getQuestSyncVersion(identifier) === requestVersion) {
 			questHistory.set(identifier, map);
 			return map;
 		}
 
 		return questHistory.get(identifier) || map;
+	};
+
+	// fetch the full progress entry for one completed quest (lazy load — list endpoint
+	// returns lean entries to keep payload small). returns null when the entry doesn't exist
+	// or the request fails; merges into questHistory so subsequent reads are cached.
+	const fetchQuestHistoryEntry = async (
+		identifier: string,
+		questId: string,
+		opts: { force?: boolean } = {}
+	): Promise<QuestHistoryEntry | null> => {
+		if (!identifier || !questId) return null;
+
+		const existing = questHistory.get(identifier)?.get(questId);
+		if (!opts.force && existing?.progress) return existing;
+
+		const authStore = useAuthStore();
+		const res = await makeAPIRequest<QuestHistoryEntry>(
+			`user-${identifier}-quest-history-${questId}`,
+			`/v2/users/${identifier}/quest/history/${questId}`,
+			authStore.sessionToken
+		);
+
+		if (!valid(res)) return existing ?? null;
+
+		const map = questHistory.get(identifier) || new Map<string, QuestHistoryEntry>();
+		map.set(questId, res.data);
+		questHistory.set(identifier, map);
+		return res.data;
 	};
 
 	const fetchQuestsList = async (): Promise<Quest[]> => {
@@ -1043,6 +1094,7 @@ export const useUserStore = defineStore('user', () => {
 		updateQuest,
 		endQuest,
 		fetchQuestHistory,
+		fetchQuestHistoryEntry,
 		fetchQuestsList,
 		fetchQuest,
 		masteryStatuses,
