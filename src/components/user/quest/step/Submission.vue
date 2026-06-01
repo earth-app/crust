@@ -75,6 +75,8 @@
 				<Quote
 					v-if="progress?.prompt"
 					:text="progress.prompt"
+					:avatar="avatar128"
+					:username="user?.username"
 				/>
 			</div>
 
@@ -252,7 +254,7 @@ const emit = defineEmits<{
 	submitted: [];
 }>();
 
-const { user } = useAuth(props.serverRequest || makeServerRequest);
+const { user, avatar128 } = useAuth(props.serverRequest || makeServerRequest);
 const userId = computed(() => user.value?.id);
 const { updateQuest } = useUser(userId, props.serverRequest || makeServerRequest);
 const { lat, lng, fetchLocation } = useQuestGeolocation();
