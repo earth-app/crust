@@ -166,7 +166,10 @@ async function load() {
 			`/v2/admin/blacklist`,
 			authStore.sessionToken
 		);
-		if (valid(res)) entries.value = res.data.entries || [];
+		if (valid(res)) {
+			const list = (res.data as { entries?: unknown })?.entries;
+			entries.value = Array.isArray(list) ? (list as BlacklistEntry[]) : [];
+		}
 	} finally {
 		loading.value = false;
 	}
