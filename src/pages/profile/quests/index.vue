@@ -19,64 +19,37 @@
 			/>
 		</div>
 		<span class="text-base opacity-90">Track your progress and earn rewards!</span>
-		<div
-			v-if="quest?.quest"
-			class="flex flex-col items-center"
-		>
-			<h2 class="text-xl mt-8 mb-4">Current Quest</h2>
-			<LazyUserQuestThumbnail
-				id="current-quest"
-				:quest="quest.quest"
-				:progress="quest.progress"
-				:current="true"
+
+		<div class="flex gap-2 mt-6 w-full max-w-2xl">
+			<UInput
+				v-model="search"
+				placeholder="Search Quests..."
+				icon="mdi:magnify"
+				class="flex-1"
+				@keyup.enter="refresh"
 			/>
+			<UButton
+				color="primary"
+				icon="mdi:refresh"
+				:loading="isRefreshing"
+				@click="refresh"
+			>
+				Refresh
+			</UButton>
 		</div>
 
 		<div
-			v-if="premiumQuests && premiumQuests.length > 0"
-			class="flex flex-col items-center mt-8 p-4 bg-gray-900 light:bg-gray-200/20 border-2 border-warning-500 rounded-lg"
+			v-if="trimmedSearch"
+			class="flex flex-col items-center w-full mt-8"
 		>
-			<h2 class="text-xl">Premium Quests</h2>
-			<span class="text-base opacity-80">{{ premiumQuests.length }} Total</span>
-
-			<UModal
-				v-if="isFree"
-				:modal="true"
-				fullscreen
-				dismissible
+			<h2 class="text-xl">Search Results</h2>
+			<span class="text-base opacity-80">{{ searchResults.length }} matches</span>
+			<div
+				v-if="searchResults.length > 0"
+				class="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-4"
 			>
-				<UButton
-					v-if="isFree"
-					class="mt-2"
-					color="warning"
-					icon="mdi:star-circle"
-				>
-					Upgrade
-				</UButton>
-
-				<template #title>
-					<div class="flex">
-						<UIcon
-							name="mdi:diamond-stone"
-							class="size-6"
-						/>
-						<span class="ml-2">Upgrade to Access Premium Quests</span>
-					</div>
-				</template>
-				<template #body>
-					<div class="flex flex-col w-full items-center gap-4">
-						<UserCard
-							v-if="user"
-							:user="user"
-						/>
-						<Ranks highlighted="PRO" />
-					</div>
-				</template>
-			</UModal>
-
-			<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
 				<LazyUserQuestThumbnail
-					v-for="(q, i) in premiumQuests"
+					v-for="(q, i) in searchResults"
 					:id="`quest-${i}`"
 					:key="q.id"
 					:quest="q"
@@ -85,25 +58,73 @@
 					hydrate-on-visible
 				/>
 			</div>
+			<span
+				v-else
+				class="text-base opacity-60 mt-4"
+			>
+				No quests match "{{ trimmedSearch }}". Hit refresh to search your full history.
+			</span>
 		</div>
 
-		<div
-			v-if="byRarity.size > 0"
-			class="flex flex-col items-center mt-8"
-		>
-			<h2 class="text-xl">By Rarity</h2>
-
+		<template v-else-if="!trimmedSearch">
 			<div
-				v-for="[rarity, quests] of byRarity"
-				:key="rarity"
+				v-if="quest?.quest"
 				class="flex flex-col items-center"
 			>
-				<h3 class="text-lg font-semibold mt-4">{{ capitalizeFully(rarity) }}</h3>
-				<span class="text-base opacity-80">{{ quests.length }} Total</span>
+				<h2 class="text-xl mt-8 mb-4">Current Quest</h2>
+				<LazyUserQuestThumbnail
+					id="current-quest"
+					:quest="quest.quest"
+					:progress="quest.progress"
+					:current="true"
+				/>
+			</div>
+
+			<div
+				v-if="premiumQuests && premiumQuests.length > 0"
+				class="flex flex-col items-center mt-8 p-4 bg-gray-900 light:bg-gray-200/20 border-2 border-warning-500 rounded-lg"
+			>
+				<h2 class="text-xl">Premium Quests</h2>
+				<span class="text-base opacity-80">{{ premiumQuests.length }} Total</span>
+
+				<UModal
+					v-if="isFree"
+					:modal="true"
+					fullscreen
+					dismissible
+				>
+					<UButton
+						v-if="isFree"
+						class="mt-2"
+						color="warning"
+						icon="mdi:star-circle"
+					>
+						Upgrade
+					</UButton>
+
+					<template #title>
+						<div class="flex">
+							<UIcon
+								name="mdi:diamond-stone"
+								class="size-6"
+							/>
+							<span class="ml-2">Upgrade to Access Premium Quests</span>
+						</div>
+					</template>
+					<template #body>
+						<div class="flex flex-col w-full items-center gap-4">
+							<UserCard
+								v-if="user"
+								:user="user"
+							/>
+							<Ranks highlighted="PRO" />
+						</div>
+					</template>
+				</UModal>
 
 				<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
 					<LazyUserQuestThumbnail
-						v-for="(q, i) in quests"
+						v-for="(q, i) in premiumQuests"
 						:id="`quest-${i}`"
 						:key="q.id"
 						:quest="q"
@@ -113,40 +134,47 @@
 					/>
 				</div>
 			</div>
-		</div>
 
-		<h2 class="text-xl mt-8">All Quests</h2>
-		<span
-			v-if="allQuests.length > 0"
-			class="text-base opacity-80"
-			>{{ allQuests.length }} Total</span
-		>
-		<div
-			v-if="allQuests.length > 0"
-			class="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-4"
-		>
-			<LazyUserQuestThumbnail
-				v-for="(q, i) in allQuests"
-				:id="`quest-${i}`"
-				:key="q.id"
-				:quest="q"
-				:progress="questHistory.get(q.id)?.progress"
-				:completedAt="questHistory.get(q.id)?.completedAt"
-				hydrate-on-visible
-			/>
-		</div>
+			<div
+				v-if="byRarity.size > 0"
+				class="flex flex-col items-center mt-8"
+			>
+				<h2 class="text-xl">By Rarity</h2>
 
-		<h2 class="text-xl mt-8">Completed Quests</h2>
-		<span
-			v-if="completedQuests && completedQuests.length > 0"
-			class="text-base opacity-80"
-		>
-			{{ completedQuests.length }} Total
-		</span>
-		<div v-if="completedQuests && completedQuests.length > 0">
-			<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+				<div
+					v-for="[rarity, quests] of byRarity"
+					:key="rarity"
+					class="flex flex-col items-center"
+				>
+					<h3 class="text-lg font-semibold mt-4">{{ capitalizeFully(rarity) }}</h3>
+					<span class="text-base opacity-80">{{ quests.length }} Total</span>
+
+					<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+						<LazyUserQuestThumbnail
+							v-for="(q, i) in quests"
+							:id="`quest-${i}`"
+							:key="q.id"
+							:quest="q"
+							:progress="questHistory.get(q.id)?.progress"
+							:completedAt="questHistory.get(q.id)?.completedAt"
+							hydrate-on-visible
+						/>
+					</div>
+				</div>
+			</div>
+
+			<h2 class="text-xl mt-8">All Quests</h2>
+			<span
+				v-if="allQuests.length > 0"
+				class="text-base opacity-80"
+				>{{ allQuests.length }} Total</span
+			>
+			<div
+				v-if="allQuests.length > 0"
+				class="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-4"
+			>
 				<LazyUserQuestThumbnail
-					v-for="(q, i) in completedQuests"
+					v-for="(q, i) in allQuests"
 					:id="`quest-${i}`"
 					:key="q.id"
 					:quest="q"
@@ -155,20 +183,41 @@
 					hydrate-on-visible
 				/>
 			</div>
-		</div>
-		<div
-			v-else
-			class="text-center"
-		>
-			<span class="text-base opacity-60 mt-4"> No completed quests yet. Try one today!</span>
-		</div>
 
-		<Loading v-if="quests === null" />
-		<span
-			v-else-if="allQuests.length === 0"
-			class="text-base opacity-60 mt-4"
-			>No quests available.</span
-		>
+			<h2 class="text-xl mt-8">Completed Quests</h2>
+			<span
+				v-if="completedQuests && completedQuests.length > 0"
+				class="text-base opacity-80"
+			>
+				{{ completedQuests.length }} Total
+			</span>
+			<div v-if="completedQuests && completedQuests.length > 0">
+				<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+					<LazyUserQuestThumbnail
+						v-for="(q, i) in completedQuests"
+						:id="`quest-${i}`"
+						:key="q.id"
+						:quest="q"
+						:progress="questHistory.get(q.id)?.progress"
+						:completedAt="questHistory.get(q.id)?.completedAt"
+						hydrate-on-visible
+					/>
+				</div>
+			</div>
+			<div
+				v-else
+				class="text-center"
+			>
+				<span class="text-base opacity-60 mt-4"> No completed quests yet. Try one today!</span>
+			</div>
+
+			<Loading v-if="quests === null" />
+			<span
+				v-else-if="allQuests.length === 0"
+				class="text-base opacity-60 mt-4"
+				>No quests available.</span
+			>
+		</template>
 	</div>
 	<Loading v-else />
 
@@ -190,13 +239,39 @@ const { setTitleSuffix } = useTitleSuffix();
 
 const isFree = computed(() => user.value?.account.account_type === 'FREE');
 
+const search = ref('');
+const isRefreshing = ref(false);
+const trimmedSearch = computed(() => search.value.trim());
+
+// the cloud caps quest-history responses at 100 per page. server-side search lets users
+// look up completed quests beyond that window without an explicit pagination UI
+const HISTORY_PAGE_LIMIT = 100;
+
+async function refresh() {
+	if (!userId.value || isRefreshing.value) return;
+	isRefreshing.value = true;
+	try {
+		await Promise.all([
+			fetchUserQuest(true),
+			fetchQuestHistory({
+				force: true,
+				limit: HISTORY_PAGE_LIMIT,
+				...(trimmedSearch.value ? { search: trimmedSearch.value } : {})
+			})
+		]);
+	} finally {
+		isRefreshing.value = false;
+	}
+}
+
 watch(
 	() => user.value,
 	(newUser) => {
 		if (newUser) {
 			fetchQuests();
 			fetchUserQuest();
-			fetchQuestHistory();
+			// force + explicit limit so we override any 25-entry prefetch cache from elsewhere
+			fetchQuestHistory({ force: true, limit: HISTORY_PAGE_LIMIT });
 		} else if (newUser === null) {
 			navigateTo('/login');
 		}
@@ -232,6 +307,17 @@ const premiumQuests = computed(() => allQuests.value.filter((q) => q.premium && 
 const completedQuests = computed(() =>
 	allQuests.value.filter((q) => questHistory.value.get(q.id)?.completedAt)
 );
+
+const searchResults = computed<Quest[]>(() => {
+	const term = trimmedSearch.value.toLowerCase();
+	if (!term) return [];
+	return allQuests.value.filter(
+		(q) =>
+			q.id.toLowerCase().includes(term) ||
+			q.title.toLowerCase().includes(term) ||
+			q.description.toLowerCase().includes(term)
+	);
+});
 
 // quest tours
 const { startTour } = useSiteTour();
