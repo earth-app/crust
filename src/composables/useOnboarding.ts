@@ -23,17 +23,15 @@ export type OnboardingState = {
 	updated_at: number;
 };
 
-// every step in display order with the canonical surface metadata
 export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 	id: OnboardingStepId;
 	title: string;
 	description: string;
 	icon: string;
 	link?: string;
+	mLink?: string;
 	cta: string;
-	// when true, clicking the CTA marks the step done immediately (navigation steps
-	// where "going there" is the goal); otherwise the step waits for a real signal
-	// like first_activity / first_friend / quest progress.
+	// when true, clicking the CTA marks the step done immediately
 	completeOnClick?: boolean;
 }> = [
 	{
@@ -56,6 +54,7 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 		description: 'Discover a hobby — hiking, baking, whatever — and add it to your shelf.',
 		icon: 'mdi:notebook-multiple',
 		link: '/activities',
+		mLink: '/tabs/discover?tab=activity',
 		cta: 'Browse Activities'
 	},
 	{
@@ -64,6 +63,7 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 		description: 'Quests unify everything: short missions that earn points and badges.',
 		icon: 'mdi:flag-outline',
 		link: '/profile/quests',
+		mLink: '/tabs/quests',
 		cta: 'Open Quests'
 	},
 	{
@@ -73,6 +73,7 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 			'Share a thought on something you actually have an opinion about. Prompts vanish after 2 days — jump on a fresh one while the conversation is live.',
 		icon: 'mdi:comment-question-outline',
 		link: '/prompts',
+		mLink: '/tabs/discover?tab=prompt',
 		cta: 'Browse Prompts',
 		completeOnClick: true
 	},
@@ -83,6 +84,7 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 			'A short read curated to your interests. Articles only stay live for 2 weeks — the catalog refreshes constantly, so check back often.',
 		icon: 'mdi:newspaper-variant-outline',
 		link: '/articles',
+		mLink: '/tabs/discover?tab=article',
 		cta: 'Browse Articles',
 		completeOnClick: true
 	},
@@ -92,6 +94,7 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 		description: "The 'aha' moment - your rewards are one quest away.",
 		icon: 'mdi:trophy-outline',
 		link: '/profile/quests',
+		mLink: '/tabs/quests',
 		cta: 'Resume Quest'
 	},
 	{
@@ -107,6 +110,7 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 		description: 'Unlocks posting prompts, articles, and events.',
 		icon: 'mdi:email-check-outline',
 		link: '/verify-email',
+		mLink: '/verify-email',
 		cta: 'Verify Now'
 	}
 ];
