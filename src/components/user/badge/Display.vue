@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex justify-center w-75 aspect-video gap-4 p-4 rounded-lg border-4 border-gray-700 bg-gray-600 light:bg-gray-300 hover:opacity-90 transition-opacity duration-300 cursor-pointer"
+		class="flex justify-center! items-center w-75 aspect-video gap-4 p-4 rounded-lg border-4 border-gray-700 bg-gray-600 light:bg-gray-300 hover:opacity-90 transition-opacity duration-300 cursor-pointer"
 		:class="[
 			isGranted
 				? 'shadow-md shadow-white/40 light:shadow-gray-900 border-yellow-500 light:border-yellow-300 bg-linear-to-tl from-yellow-500/70 via-yellow-600/40 to-yellow-500/70 light:from-yellow-600/70 light:via-yellow-300/50 light:to-yellow-600/70'
@@ -13,7 +13,7 @@
 	>
 		<UIcon
 			:name="badge.icon"
-			class="self-center min-h-8 min-w-8 sm:size-10 md:size-12 lg:size-16"
+			class="min-h-16 min-w-16"
 			:class="[isGranted ? 'text-white' : '', isMastered ? 'text-purple-300!' : '']"
 		/>
 
