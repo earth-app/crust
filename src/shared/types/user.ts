@@ -236,6 +236,26 @@ export type QuestStep = {
 	mobile_only?: boolean;
 };
 
+export type QuestStepMigrationReason =
+	| 'type_changed'
+	| 'params_changed'
+	| 'step_removed'
+	| 'alt_removed'
+	| 'quest_deleted';
+
+export type QuestStepMigrationInfo = {
+	from: QuestStepType; // old step type at this position
+	at: number; // unix ms when the migration ran
+	reason: QuestStepMigrationReason;
+};
+
+export type QuestMigrationSignal = {
+	stepIndex: number;
+	altIndex?: number;
+	action: 'cancel_distance_tracking';
+	questId: string;
+};
+
 export type QuestProgressEntry = {
 	type: string;
 	index?: number; // which one was completed
@@ -251,6 +271,8 @@ export type QuestProgressEntry = {
 	eventId?: string; // for event attendance steps
 	timestamp?: number; // for event attendance steps (timestamp of attendance)
 	scoreKey?: string; // for activity quiz steps
+	// when present this entry is a migration placeholder; original submission data is gone
+	migrated?: QuestStepMigrationInfo;
 };
 
 export type QuestHistoryEntry = {
@@ -267,4 +289,6 @@ export type UserQuestProgress = {
 	currentStepIndex: number;
 	completed: boolean;
 	progress: (QuestProgressEntry | QuestProgressEntry[])[];
+	migrationSignals?: QuestMigrationSignal[];
+	migrated?: boolean;
 };

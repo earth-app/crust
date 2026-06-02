@@ -44,8 +44,21 @@
 					<span class="text-sm! opacity-90">{{ completedAt }}</span>
 				</div>
 
+				<!-- migrated stub: original submission data is gone because the quest definition changed.
+				     hide media/score/prompt rendering for migrated entries since none of those fields are reliable. -->
 				<div
-					v-if="progress"
+					v-if="progress?.migrated"
+					class="flex items-center gap-3 mt-3 mb-2 px-4 py-3 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 max-w-md"
+				>
+					<UIcon
+						name="i-lucide-info"
+						class="size-5 text-amber-600 shrink-0"
+					/>
+					<span class="text-xs! opacity-90">{{ migratedMessage }}</span>
+				</div>
+
+				<div
+					v-else-if="progress"
 					class="flex m-2 mb-6"
 				>
 					<img
@@ -69,11 +82,11 @@
 				</div>
 
 				<Score
-					v-if="progress?.score"
+					v-if="!progress?.migrated && progress?.score"
 					:score="progress.score"
 				/>
 				<Quote
-					v-if="progress?.prompt"
+					v-if="!progress?.migrated && progress?.prompt"
 					:text="progress.prompt"
 					:avatar="avatar128"
 					:username="user?.username"
@@ -391,6 +404,20 @@ const progress = computed(() => {
 const completedAt = computed(() => {
 	if (!props.step.completedAt) return null;
 	return DateTime.fromMillis(props.step.completedAt).toLocaleString(DateTime.DATETIME_SHORT);
+});
+
+const migratedMessage = computed(() => {
+	const m = progress.value?.migrated;
+	if (!m) return null;
+	const at = DateTime.fromMillis(m.at).toLocaleString(DateTime.DATE_MED);
+	const reasonText: Record<string, string> = {
+		type_changed: `This step's requirements changed on ${at}; the original submission is no longer available.`,
+		params_changed: `This step was adjusted on ${at}; the original submission is no longer available.`,
+		step_removed: `This step was removed from the quest on ${at}.`,
+		alt_removed: `This alternative was removed from the quest on ${at}.`,
+		quest_deleted: `This quest is no longer available.`
+	};
+	return reasonText[m.reason] ?? `This step was migrated on ${at}.`;
 });
 
 const stepArticle = computed(() => {
