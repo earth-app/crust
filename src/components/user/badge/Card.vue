@@ -1,11 +1,13 @@
 <template>
 	<UserBadgeDisplay
+		v-bind="$attrs"
 		:badge="badge"
 		:is-granted="isGranted"
 		:is-mastered="isMastered"
-		@clicked="showDetails = true"
+		@clicked="noModal || (showDetails = true)"
 	/>
 	<UModal
+		v-if="!noModal"
 		v-model:open="showDetails"
 		:dismissible="!masteryLoading"
 		title="Badge Details"
@@ -88,6 +90,7 @@
 	</UModal>
 
 	<UModal
+		v-if="!noModal"
 		v-model:open="confirmOpen"
 		:dismissible="!masteryLoading"
 		title="Start Badge Mastery Quest?"
@@ -147,20 +150,29 @@
 		:completed-at="masteryCompletedAt"
 	/>
 
-	<ClientOnly v-if="canShowMastery">
-		<SiteTour
-			:steps="masteryTour"
-			name="Badge Mastery Tour"
-			tour-id="badge-mastery"
-		/>
-	</ClientOnly>
+	<SiteTour
+		v-if="showDetails && canShowMastery"
+		:steps="masteryTour"
+		name="Badge Mastery Tour"
+		tour-id="badge-mastery"
+	/>
 </template>
 <script setup lang="ts">
 import { BadgeMasteryGenerationError } from 'types/user';
 
-const props = defineProps<{
-	badge: Badge | UserBadge;
-}>();
+defineOptions({
+	inheritAttrs: false
+});
+
+const props = withDefaults(
+	defineProps<{
+		badge: Badge | UserBadge;
+		noModal?: boolean;
+	}>(),
+	{
+		noModal: false
+	}
+);
 
 const userStore = useUserStore();
 const { user: authUser } = useAuth();

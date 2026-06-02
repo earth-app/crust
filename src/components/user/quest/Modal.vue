@@ -88,6 +88,18 @@
 						description="This quest can only be started and continued from The Earth App mobile app. You can preview the steps here, but you'll need the mobile app to complete it."
 						class="my-3"
 					/>
+
+					<div
+						v-if="isMasteryQuest && masteryBadge"
+						class="flex w-full justify-center"
+					>
+						<UserBadgeCard
+							:badge="masteryBadge"
+							no-modal
+							class="mb-4"
+						/>
+					</div>
+
 					<LazyUserQuestTimeline
 						:quest="quest"
 						:progress="progress"
@@ -188,6 +200,8 @@ const emit = defineEmits<{
 }>();
 
 const { user } = useAuth();
+const userId = computed(() => user.value?.id);
+const { badges, fetchBadges } = useUser(userId);
 
 const questOpen = computed({
 	get: () => props.open,
@@ -200,6 +214,13 @@ const completedAtNormal = computed(() => {
 });
 
 const isMasteryQuest = computed(() => props.quest?.id?.startsWith('badge_mastery_') ?? false);
+const masteryBadge = computed(() => {
+	if (!isMasteryQuest.value) return null;
+	if (!props.quest?.id) return null;
+
+	const badgeId = props.quest.id.substring(14, props.quest.id.length);
+	return badges.value.find((badge) => badge.id === badgeId) ?? null;
+});
 
 const accountType = computed(() => user.value?.account.account_type);
 const delayReduction = computed(() => getQuestDelayReduction(accountType.value));
@@ -235,6 +256,10 @@ const premiumOpen = ref(false);
 const canOpenPremium = computed(() => {
 	if (!props.quest.premium) return true;
 	return user.value?.account.account_type !== 'FREE';
+});
+
+onMounted(() => {
+	fetchBadges();
 });
 
 watch(
