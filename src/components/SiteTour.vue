@@ -567,9 +567,18 @@ const LAYER_CONTAINER_SELECTOR = [
 	'[data-reka-popper-content-wrapper]'
 ].join(', ');
 
+function isClippingContainer(element: HTMLElement): boolean {
+	if (!import.meta.client) return false;
+	const style = window.getComputedStyle(element);
+	const clips = (v: string) => v === 'hidden' || v === 'clip';
+	return clips(style.overflow) || clips(style.overflowX) || clips(style.overflowY);
+}
+
 function findLayerContainer(element?: HTMLElement | null): HTMLElement | null {
 	if (!element) return null;
-	return element.closest<HTMLElement>(LAYER_CONTAINER_SELECTOR);
+	const layer = element.closest<HTMLElement>(LAYER_CONTAINER_SELECTOR);
+	if (layer && isClippingContainer(layer)) return null;
+	return layer;
 }
 
 function updateOverlayTeleportTarget(targetElement?: HTMLElement | null) {
