@@ -182,7 +182,7 @@
 							class="motion-preset-fade-md"
 							hydrate-on-visible
 						/>
-						<InfoCardSkeleton
+						<LazyInfoCardSkeleton
 							v-for="n in activities.remaining"
 							:key="`home-activity-skel-${n}`"
 						/>
@@ -204,7 +204,7 @@
 							class="motion-preset-fade-md"
 							hydrate-on-visible
 						/>
-						<InfoCardSkeleton
+						<LazyInfoCardSkeleton
 							v-for="n in prompts.remaining"
 							:key="`home-prompt-skel-${n}`"
 						/>
@@ -226,7 +226,7 @@
 							class="motion-preset-fade-md"
 							hydrate-on-visible
 						/>
-						<InfoCardSkeleton
+						<LazyInfoCardSkeleton
 							v-for="n in articles.remaining"
 							:key="`home-article-skel-${n}`"
 						/>
@@ -248,7 +248,7 @@
 							class="motion-preset-fade-md"
 							hydrate-on-visible
 						/>
-						<InfoCardSkeleton
+						<LazyInfoCardSkeleton
 							v-for="n in events.remaining"
 							:key="`home-event-skel-${n}`"
 						/>
