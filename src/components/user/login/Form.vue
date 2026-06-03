@@ -57,6 +57,16 @@
 				icon="mdi:lock"
 				>Login</UButton
 			>
+			<div class="text-sm! mt-2">
+				<UButton
+					id="forgot-password-link"
+					variant="link"
+					color="neutral"
+					class="px-0!"
+					@click="forgotOpen = true"
+					>Forgot your Password?</UButton
+				>
+			</div>
 			<div
 				v-if="error"
 				class="text-red-500 mt-2"
@@ -70,11 +80,56 @@
 				{{ message }}
 			</div>
 		</UForm>
+
+		<UModal
+			v-model:open="forgotOpen"
+			title="Reset Your Password"
+			description="Enter the email tied to your account and we'll send you a reset link."
+		>
+			<template #body>
+				<UForm
+					:state="{ forgotEmail }"
+					:schema="z.object({ forgotEmail: forgotEmailSchema })"
+					class="space-y-4"
+					@submit="handleForgot"
+				>
+					<UFormField
+						label="Email"
+						name="forgotEmail"
+						:required="true"
+					>
+						<UInput
+							v-model="forgotEmail"
+							placeholder="you@example.com"
+							autocomplete="email"
+							type="email"
+							class="w-full"
+						/>
+					</UFormField>
+					<div class="flex justify-end gap-2">
+						<UButton
+							color="neutral"
+							variant="ghost"
+							:disabled="forgotLoading"
+							@click="forgotOpen = false"
+							>Cancel</UButton
+						>
+						<UButton
+							type="submit"
+							:loading="forgotLoading"
+							:disabled="forgotLoading"
+							icon="mdi:email-fast"
+							>Send Reset Link</UButton
+						>
+					</div>
+				</UForm>
+			</template>
+		</UModal>
 	</UCard>
 </template>
 
 <script setup lang="ts">
-import { passwordSchema } from 'schemas';
+import { emailSchema, passwordSchema } from 'schemas';
 import z from 'zod';
 
 const userOrEmail = ref('');
@@ -90,9 +145,15 @@ const userOrEmailSchema = z
 	.min(3, 'Must be at least 3 characters')
 	.max(100, 'Must be at most 100 characters');
 
+const forgotOpen = ref(false);
+const forgotEmail = ref('');
+const forgotLoading = ref(false);
+const forgotEmailSchema = emailSchema;
+
 const login = useLogin();
-const { user, fetchUser } = useAuth();
+const { user, fetchUser, sendResetPasswordEmail } = useAuth();
 const router = useRouter();
+const toast = useToast();
 const pendingLogin = useState<{
 	ticket: string;
 	email: string;
@@ -105,11 +166,39 @@ const emit = defineEmits<{
 	loginSuccess: [];
 }>();
 
+async function handleForgot() {
+	if (forgotLoading.value) return;
+	forgotLoading.value = true;
+	try {
+		const res = await sendResetPasswordEmail(forgotEmail.value.trim());
+		if (valid(res)) {
+			// always show the same message so we don't leak whether the email exists
+			toast.add({
+				title: 'Check Your Email',
+				description: `If an account exists for ${forgotEmail.value.trim()}, a reset link is on its way.`,
+				icon: 'mdi:email-fast',
+				color: 'success',
+				duration: 5000
+			});
+			forgotOpen.value = false;
+			forgotEmail.value = '';
+		} else {
+			toast.add({
+				title: "Couldn't Send Reset Link",
+				description: res.message || 'Please try again in a few moments.',
+				icon: 'mdi:alert-circle',
+				color: 'error',
+				duration: 5000
+			});
+		}
+	} finally {
+		forgotLoading.value = false;
+	}
+}
+
 async function handleLogin() {
 	loading.value = true;
 	error.value = '';
-
-	const toast = useToast();
 
 	const result = await login(userOrEmail.value, password.value);
 
