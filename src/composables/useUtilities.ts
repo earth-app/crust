@@ -503,16 +503,3 @@ export function useFormDraft<T extends object>(state: T, opts: UseFormDraftOptio
 		storageKey: readonly(storageKey)
 	};
 }
-
-// speech-to-text transport that hosts (e.g. sky) can pass into Text.vue's
-// nativeStt prop to override the default Web SpeechRecognition fallback
-export interface NativeSttTransport {
-	isAvailable: () => Promise<boolean>;
-	requestPermission: () => Promise<boolean>;
-	start: (opts: {
-		language: string;
-		onPartial: (text: string) => void;
-		onFinal: (text: string) => void;
-	}) => Promise<void>;
-	stop: () => Promise<void>;
-}
