@@ -131,6 +131,7 @@ export default defineNuxtConfig({
 		'/signup': { ssr: false },
 		'/verify-email': { ssr: false },
 		'/change-password': { ssr: false },
+		'/reset-password': { ssr: false },
 		'/profile/**': { ssr: false },
 		'/admin': { ssr: false },
 		'/oauth/complete': { ssr: false },
