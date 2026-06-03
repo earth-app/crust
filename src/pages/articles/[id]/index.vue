@@ -3,6 +3,13 @@
 		v-if="article && !('error' in article) && article.author"
 		class="flex flex-col items-center w-full h-full pt-12 sm:pt-0"
 	>
+		<ContentTTLNotice
+			v-if="articleExpiresAt"
+			kind="article"
+			variant="countdown"
+			:expires-at="articleExpiresAt"
+			class="w-full max-w-3xl px-4 mt-2"
+		/>
 		<ArticlePage :article="article" />
 		<USeparator
 			v-if="user"
@@ -43,6 +50,8 @@
 </template>
 
 <script setup lang="ts">
+import { computeContentExpiry } from 'utils';
+
 const toast = useToast();
 const route = useRoute();
 const { user, tapCurrentJourney } = useAuth();
@@ -57,6 +66,14 @@ const related = useIncrementalList<Article>({
 const similarLoadedFor = ref<string | null>(null);
 const journeyTrackedArticleId = ref<string | null>(null);
 const journeyTrackingArticleId = ref<string | null>(null);
+
+const articleExpiresAt = computed(() => {
+	const a = article.value;
+	if (!a || 'error' in (a as any) || !a.created_at) return null;
+	const createdSec = Math.floor(Date.parse(a.created_at) / 1000);
+	if (!Number.isFinite(createdSec)) return null;
+	return computeContentExpiry('article', createdSec);
+});
 
 onMounted(() => {
 	if (!article.value) fetch();

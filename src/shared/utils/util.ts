@@ -567,3 +567,45 @@ export function ttlHeadline(kind: ContentKind): string {
 export function ttlHook(kind: ContentKind): string {
 	return CONTENT_TTL_HOOK[kind];
 }
+
+// computes "humans-can-read this" remaining time for a piece of content given its
+// expiry timestamp (seconds since epoch). returns null when the content is already
+// expired so the caller can hide the banner cleanly.
+export function describeRemainingTtl(
+	expiresAtSec: number,
+	nowMs: number = Date.now()
+): {
+	remainingMs: number;
+	label: string;
+	urgency: 'low' | 'medium' | 'high';
+} | null {
+	const remainingMs = expiresAtSec * 1000 - nowMs;
+	if (remainingMs <= 0) return null;
+
+	const days = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+	const hours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+	const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+
+	let label: string;
+	if (days >= 2) label = `${days} days`;
+	else if (days >= 1) label = `${days} day, ${hours} hour${hours === 1 ? '' : 's'}`;
+	else if (hours >= 1) label = `${hours} hour${hours === 1 ? '' : 's'}`;
+	else label = `${Math.max(1, minutes)} minute${minutes === 1 ? '' : 's'}`;
+
+	// urgency thresholds tuned to feel right for short (2d prompt) and long (30d event) TTLs alike
+	const urgency: 'low' | 'medium' | 'high' = days >= 3 ? 'low' : days >= 1 ? 'medium' : 'high';
+
+	return { remainingMs, label, urgency };
+}
+
+// resolves the absolute expiry timestamp (seconds) for a piece of content. Events
+// expire 30 days after their end date; everything else expires from creation.
+export function computeContentExpiry(
+	kind: ContentKind,
+	createdAtSec: number,
+	eventEndSec?: number
+): number {
+	const days = ttlDays(kind);
+	const anchor = kind === 'event' && eventEndSec ? eventEndSec : createdAtSec;
+	return anchor + days * 24 * 60 * 60;
+}

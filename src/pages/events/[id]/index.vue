@@ -3,6 +3,13 @@
 		v-if="event"
 		class="flex flex-col items-center h-full w-full pt-24 sm:pt-0"
 	>
+		<ContentTTLNotice
+			v-if="eventExpiresAt"
+			kind="event"
+			variant="countdown"
+			:expires-at="eventExpiresAt"
+			class="w-full max-w-3xl px-4"
+		/>
 		<EventPage :event="event" />
 
 		<div
@@ -43,6 +50,7 @@
 
 <script setup lang="ts">
 import type { Event } from 'types/event';
+import { computeContentExpiry } from 'utils';
 
 const toast = useToast();
 const route = useRoute();
@@ -56,6 +64,16 @@ const related = useIncrementalList<Event>({
 });
 
 const similarLoadedFor = ref<string | null>(null);
+
+// only surface the auto-delete countdown after the event has actually ended; a
+// future event listing showing "expires in 60 days" would just be noise.
+const eventExpiresAt = computed(() => {
+	const e = event.value;
+	if (!e || !e.timing?.has_passed) return null;
+	const endMs = e.end_date ?? e.date;
+	if (!Number.isFinite(endMs)) return null;
+	return computeContentExpiry('event', Math.floor(endMs / 1000), Math.floor(endMs / 1000));
+});
 
 onMounted(() => {
 	if (!event.value) fetch();

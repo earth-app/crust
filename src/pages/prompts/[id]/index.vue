@@ -1,8 +1,15 @@
 <template>
 	<div
 		v-if="prompt"
-		class="flex flex-row items-center justify-between w-full pt-24 sm:pt-0"
+		class="flex flex-col items-center justify-between w-full pt-24 sm:pt-0"
 	>
+		<ContentTTLNotice
+			v-if="promptExpiresAt"
+			kind="prompt"
+			variant="countdown"
+			:expires-at="promptExpiresAt"
+			class="w-full max-w-3xl px-4"
+		/>
 		<PromptPage :prompt="prompt" />
 	</div>
 	<div
@@ -15,6 +22,8 @@
 </template>
 
 <script setup lang="ts">
+import { computeContentExpiry } from 'utils';
+
 const { setTitleSuffix } = useTitleSuffix();
 const route = useRoute();
 const toast = useToast();
@@ -22,6 +31,14 @@ const { user, tapCurrentJourney } = useAuth();
 const { prompt, fetch } = usePrompt(route.params.id as string);
 const journeyTrackedPromptId = ref<string | null>(null);
 const journeyTrackingPromptId = ref<string | null>(null);
+
+const promptExpiresAt = computed(() => {
+	const p = prompt.value;
+	if (!p || !p.created_at) return null;
+	const createdSec = Math.floor(Date.parse(p.created_at) / 1000);
+	if (!Number.isFinite(createdSec)) return null;
+	return computeContentExpiry('prompt', createdSec);
+});
 
 onMounted(async () => {
 	if (!prompt.value) await fetch();
