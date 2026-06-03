@@ -102,7 +102,12 @@ watch(
 	() => user.value,
 	(currentUser) => {
 		if (currentUser && !redirectingAfterSubmit.value) {
-			router.replace('/');
+			// honor the redirect query so already-logged-in users land where they intended
+			let target = '/';
+			if (redirect && typeof redirect === 'string' && redirect.startsWith('/')) {
+				target = redirect;
+			}
+			router.replace(target);
 
 			if (!error)
 				toast.add({
