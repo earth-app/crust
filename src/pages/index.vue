@@ -100,11 +100,6 @@
 				</div>
 				<OnboardingPersonaPicker v-model="personaOpen" />
 			</ClientOnly>
-
-			<!-- First-paint pitch: shown only to fully-anonymous visitors so we don't
-				ever waste real estate on returning users. Three explainer cards land
-				below the hero CTAs to answer the only question a new visitor cares
-				about: "what is this app actually for?" -->
 			<div
 				v-if="user === null"
 				class="w-full max-w-5xl px-4 mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4"
@@ -116,7 +111,7 @@
 						name="mdi:run"
 						class="size-7 text-info"
 					/>
-					<h2 class="text-lg font-semibold">Pick What you Love</h2>
+					<h2 class="text-lg font-semibold">Pick what you Love</h2>
 					<p class="text-sm text-muted">
 						Choose activities - running, gardening, photography, anything - and the rest of the app
 						tailors itself to you.
