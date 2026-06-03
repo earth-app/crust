@@ -12,7 +12,7 @@
 					format="webp"
 					width="48"
 					height="48"
-					class="min-w-8 w-8 h-auto xl:w-12 inline-block mr-2 shadow-lg shadow-black/50 rounded-full hover:scale-105 transition-transform duration-300"
+					class="min-w-8 w-8 h-auto xl:w-12 inline-block sm:mr-2 shadow-lg shadow-black/50 rounded-full hover:scale-105 transition-transform duration-300"
 					loading="eager"
 					decoding="async"
 				/>
@@ -20,25 +20,25 @@
 			<div class="flex sm:min-w-70 md:min-w-60 max-w-120">
 				<Discover class="mx-1 sm:ml-4 md:ml-8 lg:ml-12" />
 			</div>
-			<div class="hidden lg:flex items-center mr-12 justify-between">
+			<div class="hidden lg:flex items-center ml-2 mr-12 justify-between gap-2 xl:gap-8">
 				<NuxtLink
 					to="/activities"
-					class="text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
+					class="text-xl xl:text-2xl font-semibold hover:text-gray-300"
 					>Activities</NuxtLink
 				>
 				<NuxtLink
 					to="/prompts"
-					class="text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
+					class="text-xl xl:text-2xl font-semibold hover:text-gray-300"
 					>Prompts</NuxtLink
 				>
 				<NuxtLink
 					to="/articles"
-					class="text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
+					class="text-xl xl:text-2xl font-semibold hover:text-gray-300"
 					>Articles</NuxtLink
 				>
 				<NuxtLink
 					to="/events"
-					class="text-xl xl:text-2xl font-semibold hover:text-gray-300 md:mx-1 lg:mx-2 xl:mx-4"
+					class="text-xl xl:text-2xl font-semibold hover:text-gray-300"
 					>Events</NuxtLink
 				>
 			</div>
@@ -50,10 +50,10 @@
 			>
 				<div
 					v-if="user"
-					class="flex items-center space-x-4 sm:space-x-6"
+					class="flex items-center space-x-1 sm:space-x-4"
 				>
 					<div
-						class="flex items-center justify-center space-x-1 cursor-pointer hover:opacity-80 transition-opacity duration-250"
+						class="flex items-center justify-center space-x-1 md:space-x-2 cursor-pointer hover:opacity-80 transition-opacity duration-250"
 						@click="$router.push(`/profile/@${user.username}`)"
 					>
 						<UAvatar
@@ -65,7 +65,7 @@
 							user.username
 						}}</span>
 					</div>
-					<div class="flex space-x-2 items-center justify-center">
+					<div class="flex space-x-1 sm:space-x-2 items-center justify-center">
 						<NuxtLink
 							to="/profile/notifications"
 							class="size-6 lg:size-7 relative"
@@ -115,6 +115,7 @@
 								class="size-6 lg:size-7 text-warning cursor-pointer hover:scale-105 transition-transform duration-300"
 							/>
 						</NuxtLink>
+						<ThemeToggle />
 						<NuxtLink
 							class="md:ml-3 size-6 lg:size-7"
 							to="/"
@@ -135,7 +136,6 @@
 					<LazyUserLoginPopup hydrate-on-interaction />
 				</div>
 			</ClientOnly>
-			<ThemeToggle class="ml-2" />
 		</div>
 	</nav>
 	<ClientOnly>

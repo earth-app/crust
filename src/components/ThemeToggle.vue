@@ -3,8 +3,8 @@
 		<UButton
 			:icon="iconForMode"
 			color="neutral"
-			variant="ghost"
-			size="sm"
+			variant="subtle"
+			size="md"
 			:aria-label="ariaLabel"
 			:title="ariaLabel"
 			class="rounded-full"
