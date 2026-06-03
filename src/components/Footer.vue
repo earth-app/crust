@@ -1,13 +1,14 @@
 <template>
-	<div
-		class="flex items-center justify-between w-full mt-8 min-h-32 bg-gray-950 border-t-2 border-gray-800 text-gray-700 light:bg-gray-100 light:border-gray-300 text-left px-4 sm:px-8 md:px-12 text-xs sm:text-sm md:text-md"
+	<footer
+		role="contentinfo"
+		class="flex items-center justify-between w-full mt-8 min-h-32 bg-gray-950 border-t-2 border-gray-800 text-gray-300 light:bg-gray-100 light:border-gray-300 light:text-gray-700 text-left px-4 sm:px-8 md:px-12 text-xs sm:text-sm md:text-md"
 	>
 		<div class="flex flex-col items-start">
 			<span class="text-[10px] sm:text-xs"
 				>Copyright © 2026 The Earth App. All Rights Reserved.</span
 			>
 			<div
-				class="flex text-[10px] sm:text-xs space-x-1 sm:space-x-2 md:space-x-4 text-gray-500 *:hover:text-gray-300 *:transition-colors *:duration-200"
+				class="flex text-[10px] sm:text-xs space-x-1 sm:space-x-2 md:space-x-4 text-gray-400 light:text-gray-600 *:hover:text-gray-200 *:light:hover:text-gray-900 *:transition-colors *:duration-200"
 			>
 				<NuxtLink
 					to="https://earth-app.com"
@@ -74,7 +75,7 @@
 				<span v-else-if="user === null"> Not Logged In </span>
 			</div>
 		</ClientOnly>
-	</div>
+	</footer>
 </template>
 
 <script setup lang="ts">

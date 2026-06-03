@@ -1,6 +1,7 @@
 <template>
-	<div
+	<nav
 		id="navbar"
+		aria-label="Main navigation"
 		class="bg-secondary-800 border-b-primary-500 border-b-8 text-white p-4 flex items-center"
 	>
 		<div class="flex items-center w-2/3 max-w-40 sm:max-w-60">
@@ -135,7 +136,7 @@
 				</div>
 			</ClientOnly>
 		</div>
-	</div>
+	</nav>
 	<ClientOnly>
 		<LazyUBanner
 			v-if="user?.account.email && user?.account.email_verified === false"
@@ -186,7 +187,10 @@
 		:ui="{ root: 'flex items-center', title: 'font-semibold' }"
 		close
 	/>
-	<div class="flex gap-2 flex-wrap mt-2 ml-2 lg:hidden">
+	<nav
+		aria-label="Mobile section navigation"
+		class="flex gap-2 flex-wrap mt-2 ml-2 lg:hidden"
+	>
 		<NuxtLink to="/activities">
 			<UBadge
 				variant="subtle"
@@ -223,7 +227,7 @@
 				>Events</UBadge
 			>
 		</NuxtLink>
-	</div>
+	</nav>
 </template>
 
 <script setup lang="ts">
