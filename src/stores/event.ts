@@ -157,6 +157,7 @@ export const useEventStore = defineStore('event', () => {
 
 	const setEvents = (events: Event[]) => {
 		for (const event of events) {
+			if (!isValidEvent(event)) continue;
 			cache.set(event.id, event);
 		}
 	};

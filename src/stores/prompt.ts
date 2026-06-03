@@ -128,6 +128,7 @@ export const usePromptStore = defineStore('prompt', () => {
 
 	const setPrompts = (prompts: Prompt[]) => {
 		for (const prompt of prompts) {
+			if (!isValidPrompt(prompt)) continue;
 			cache.set(prompt.id, prompt);
 		}
 	};
