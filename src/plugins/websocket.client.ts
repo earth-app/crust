@@ -1,6 +1,7 @@
 import type { ButtonProps } from '@nuxt/ui';
 import { useAuthStore } from 'stores/auth';
 import { useNotificationStore } from 'stores/notification';
+import { useUserStore } from 'stores/user';
 import type { UserNotification } from 'types/user';
 
 export default defineNuxtPlugin((nuxtApp) => {
@@ -27,6 +28,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 		const setup = () => {
 			const { user } = useAuth();
 			const authStore = useAuthStore();
+			const userStore = useUserStore();
 
 			// reconnect bookkeeping
 			let connectedUserId: string | null = null;
@@ -136,6 +138,30 @@ export default defineNuxtPlugin((nuxtApp) => {
 								color: notification.type,
 								actions
 							});
+							break;
+						}
+						case 'quest_progress': {
+							// remote step submission (mobile or another tab) — refetch the active
+							// quest + history so any open Timeline reflects the change without a
+							// manual reload. fire-and-forget; the server already persisted the truth.
+							const userId = user.value?.id;
+							if (!userId) break;
+							const payload = (message.data as { questId?: string; completed?: boolean }) || {};
+							// drop stale caches first so a refetch is forced even though the
+							// fetcher early-returns on `cache.has()`. then re-pull.
+							userStore.quest.delete(userId);
+							userStore.questHistory.delete(userId);
+							void userStore.fetchUserQuest(userId, true);
+							void userStore.fetchQuestHistory(userId, { force: true });
+							if (payload.completed) {
+								toast.add({
+									title: 'Quest Synced',
+									description: 'A quest you were working on was completed on another device.',
+									icon: 'mdi:check-circle',
+									color: 'success',
+									duration: 4000
+								});
+							}
 							break;
 						}
 						default: {
