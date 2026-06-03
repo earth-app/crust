@@ -87,6 +87,17 @@
 						title="Mobile Only"
 						description="This quest can only be started and continued from The Earth App mobile app. You can preview the steps here, but you'll need the mobile app to complete it."
 						class="my-3"
+						:actions="[
+							{
+								label: 'Open in The Earth App',
+								icon: 'mdi:cellphone-arrow-down',
+								color: 'info',
+								variant: 'solid',
+								to: appConfig.mobile.getTheAppUrl,
+								target: '_blank',
+								rel: 'noopener'
+							}
+						]"
 					/>
 
 					<div
@@ -202,6 +213,7 @@ const emit = defineEmits<{
 const { user } = useAuth();
 const userId = computed(() => user.value?.id);
 const { badges, fetchBadges } = useUser(userId);
+const appConfig = useAppConfig();
 
 const questOpen = computed({
 	get: () => props.open,
