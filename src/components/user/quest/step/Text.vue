@@ -18,6 +18,36 @@
 		</p>
 
 		<div
+			v-if="dictationAvailable && !props.disabled"
+			class="flex items-center justify-between px-1!"
+		>
+			<button
+				type="button"
+				class="flex items-center gap-2 px-3! py-1.5! rounded-full! text-xs! font-medium! transition-colors duration-150"
+				:class="
+					listening
+						? 'bg-red-500 text-white animate-pulse'
+						: 'bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 active:bg-primary/30'
+				"
+				:aria-label="listening ? 'Stop dictation' : 'Dictate your answer'"
+				@click="toggleDictation"
+			>
+				<UIcon
+					:name="listening ? 'mdi:microphone-off' : 'mdi:microphone'"
+					class="size-4"
+				/>
+				<span>{{ listening ? 'Listening… tap to stop' : 'Speak your answer' }}</span>
+			</button>
+			<span
+				v-if="liveCaption"
+				class="text-xs! text-muted italic truncate max-w-[60%]"
+				aria-live="polite"
+			>
+				"{{ liveCaption }}"
+			</span>
+		</div>
+
+		<div
 			class="flex items-center justify-between text-xs! px-1!"
 			:class="charCountClass"
 		>
@@ -65,6 +95,8 @@ interface Props {
 	disabled?: boolean;
 	submit?: boolean;
 	serverRequest?: typeof makeServerRequest;
+	// host-supplied speech recognizer; falls back to Web SpeechRecognition
+	nativeStt?: NativeSttTransport;
 }
 
 const props = withDefaults(defineProps<Props>(), { submit: true });
@@ -147,6 +179,214 @@ const { user } = useAuth(props.serverRequest || makeServerRequest);
 const userId = computed(() => user.value?.id);
 const { updateQuest } = useUser(userId, props.serverRequest || makeServerRequest);
 const { lat, lng } = useQuestGeolocation();
+
+// goes through the v-model ref so length/submitError/resize all stay reactive
+function insertText(chunk: string) {
+	const next = (text.value + (chunk || '')).slice(0, maxLength.value);
+	if (next === text.value) return;
+	text.value = next;
+}
+
+function replaceText(value: string) {
+	text.value = (value || '').slice(0, maxLength.value);
+}
+
+function clearText() {
+	text.value = '';
+}
+
+defineExpose({ insertText, replaceText, clearText, focus: () => textareaEl.value?.focus() });
+
+// dictation: prop-supplied native transport wins, else fall back to Web SpeechRecognition
+type Transport = 'native' | 'web' | 'none';
+const transport = ref<Transport>('none');
+const dictationAvailable = ref(false);
+const listening = ref(false);
+const liveCaption = ref('');
+let sessionCommitted = '';
+
+interface WebRecognitionLike {
+	continuous: boolean;
+	interimResults: boolean;
+	lang: string;
+	start(): void;
+	stop(): void;
+	abort(): void;
+	onresult: ((e: any) => void) | null;
+	onerror: ((e: any) => void) | null;
+	onend: ((e: any) => void) | null;
+}
+let webRecognition: WebRecognitionLike | null = null;
+
+function getWebRecognitionCtor(): { new (): WebRecognitionLike } | null {
+	if (!import.meta.client) return null;
+	const w = window as unknown as {
+		SpeechRecognition?: { new (): WebRecognitionLike };
+		webkitSpeechRecognition?: { new (): WebRecognitionLike };
+	};
+	return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+}
+
+onMounted(async () => {
+	if (!import.meta.client) return;
+
+	if (props.nativeStt) {
+		try {
+			if (await props.nativeStt.isAvailable()) {
+				transport.value = 'native';
+				dictationAvailable.value = true;
+				return;
+			}
+		} catch {
+			// fall through to web
+		}
+	}
+
+	if (getWebRecognitionCtor()) {
+		transport.value = 'web';
+		dictationAvailable.value = true;
+	}
+});
+
+function commitChunk(rawChunk: string) {
+	if (!rawChunk) return;
+	const chunk =
+		sessionCommitted.length > 0 && !sessionCommitted.endsWith(' ')
+			? ` ${rawChunk.trimStart()}`
+			: rawChunk;
+	sessionCommitted += chunk;
+	insertText(chunk);
+}
+
+async function startNative() {
+	const nativeStt = props.nativeStt;
+	if (!nativeStt) return;
+
+	const granted = await nativeStt.requestPermission();
+	if (!granted) return; // host already surfaced the rejection
+
+	try {
+		await nativeStt.start({
+			language: navigator.language || 'en-US',
+			onPartial: (partial: string) => {
+				liveCaption.value = partial;
+			},
+			onFinal: (final: string) => {
+				const caption = (final || liveCaption.value).trim();
+				if (caption) commitChunk(caption);
+				liveCaption.value = '';
+				listening.value = false;
+			}
+		});
+		listening.value = true;
+		sessionCommitted = '';
+	} catch (err: any) {
+		listening.value = false;
+		toast.add({
+			title: 'Could not start dictation',
+			description: err?.message || 'Try again or use the keyboard.',
+			color: 'error',
+			duration: 4000
+		});
+	}
+}
+
+async function stopNative() {
+	try {
+		await props.nativeStt?.stop();
+	} catch {
+		// already stopped
+	}
+}
+
+function startWeb() {
+	const Ctor = getWebRecognitionCtor();
+	if (!Ctor) return;
+
+	const rec: WebRecognitionLike = new Ctor();
+	rec.continuous = true;
+	rec.interimResults = true;
+	rec.lang = navigator.language || 'en-US';
+
+	rec.onresult = (event: any) => {
+		let interim = '';
+		let newlyFinal = '';
+		for (let i = 0; i < event.results.length; i++) {
+			const result = event.results[i];
+			const transcript = result[0]?.transcript ?? '';
+			if (result.isFinal) {
+				if (!sessionCommitted.includes(transcript)) newlyFinal += transcript;
+			} else {
+				interim += transcript;
+			}
+		}
+		if (newlyFinal) commitChunk(newlyFinal);
+		liveCaption.value = interim.trim();
+	};
+
+	rec.onerror = (err: any) => {
+		const error = err?.error;
+		if (error && error !== 'no-speech' && error !== 'aborted') {
+			toast.add({
+				title: 'Dictation error',
+				description: String(error),
+				color: 'error',
+				duration: 4000
+			});
+		}
+		stopWeb();
+	};
+
+	rec.onend = () => {
+		listening.value = false;
+		liveCaption.value = '';
+	};
+
+	try {
+		rec.start();
+		webRecognition = rec;
+		listening.value = true;
+		sessionCommitted = '';
+	} catch (err: any) {
+		toast.add({
+			title: 'Could not start dictation',
+			description: err?.message || 'Try again or use the keyboard.',
+			color: 'error',
+			duration: 4000
+		});
+	}
+}
+
+function stopWeb() {
+	if (webRecognition) {
+		try {
+			webRecognition.stop();
+		} catch {
+			// already stopped
+		}
+		webRecognition = null;
+	}
+	listening.value = false;
+	liveCaption.value = '';
+}
+
+function toggleDictation() {
+	if (listening.value) {
+		if (transport.value === 'native') void stopNative();
+		else stopWeb();
+		return;
+	}
+	if (transport.value === 'native') void startNative();
+	else startWeb();
+}
+
+onBeforeUnmount(() => {
+	if (transport.value === 'native') {
+		void stopNative();
+	} else {
+		stopWeb();
+	}
+});
 
 async function onSubmit() {
 	if (!canSubmit.value) return;
