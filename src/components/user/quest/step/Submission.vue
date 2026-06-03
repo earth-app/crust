@@ -347,6 +347,8 @@ onMounted(() => {
 });
 
 async function submitPhoto(file: File) {
+	// guard against duplicate dispatch if the user double-clicks before we set submitting
+	if (submitting.value) return;
 	submitting.value = true;
 	submitError.value = '';
 

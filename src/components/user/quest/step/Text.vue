@@ -7,12 +7,15 @@
 			:maxlength="maxLength"
 			placeholder="Type your answer here..."
 			class="w-full! min-h-32! max-h-[60vh]! p-3! rounded-xl! border-2! text-sm! font-medium! transition-all duration-150 resize-none overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50!"
-			@paste.prevent
-			@copy.prevent
-			@cut.prevent
+			@paste.prevent="onClipboardBlocked('paste')"
+			@copy.prevent="onClipboardBlocked('copy')"
+			@cut.prevent="onClipboardBlocked('cut')"
 			@contextmenu.prevent
-			@drop.prevent
+			@drop.prevent="onClipboardBlocked('drop')"
 		/>
+		<p class="text-xs! text-muted px-1!">
+			Paste and copy are disabled for this step — please type your answer yourself.
+		</p>
 
 		<div
 			class="flex items-center justify-between text-xs! px-1!"
@@ -91,6 +94,30 @@ const maxLength = computed(() => {
 const text = ref('');
 const submitting = ref(false);
 const submitError = ref('');
+
+const toast = useToast();
+let lastClipboardToastAt = 0;
+function onClipboardBlocked(action: 'paste' | 'copy' | 'cut' | 'drop') {
+	// throttle to once every 1.5s so a stuck cmd-V doesn't spam toasts
+	const now = Date.now();
+	if (now - lastClipboardToastAt < 1500) return;
+	lastClipboardToastAt = now;
+	const verb =
+		action === 'paste'
+			? 'Pasting'
+			: action === 'copy'
+				? 'Copying'
+				: action === 'cut'
+					? 'Cutting'
+					: 'Dropping text';
+	toast.add({
+		title: `${verb} is Disabled`,
+		description: 'This step requires your own writing — please type your answer directly.',
+		icon: 'mdi:content-paste-off',
+		color: 'warning',
+		duration: 3000
+	});
+}
 
 const length = computed(() => text.value.trim().length);
 const inRange = computed(() => length.value >= minLength.value && length.value <= maxLength.value);
