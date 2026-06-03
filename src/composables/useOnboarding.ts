@@ -165,10 +165,15 @@ export function useOnboarding() {
 		}
 	};
 
-	const completeStep = async (step: OnboardingStepId) => {
-		if (!user.value) return;
+	// in-flight set guards against duplicate POSTs when watchers and a rapid click race
+	const inFlight = new Set<OnboardingStepId>();
+
+	const completeStep = async (step: OnboardingStepId): Promise<boolean> => {
+		if (!user.value) return false;
 		// fold a successful verify_email into the checklist as soon as the auth store sees it
-		if (state.value?.completed_steps.includes(step)) return;
+		if (state.value?.completed_steps.includes(step)) return true;
+		if (inFlight.has(step)) return false;
+		inFlight.add(step);
 		try {
 			const res = await makeClientAPIRequest<{ state: OnboardingState }>(
 				`/v2/users/current/onboarding/step`,
@@ -178,14 +183,21 @@ export function useOnboarding() {
 					body: { step }
 				}
 			);
-			if (valid(res)) state.value = res.data.state;
+			if (valid(res)) {
+				state.value = res.data.state;
+				return true;
+			}
+			return false;
 		} catch (e) {
 			console.warn(`Failed to record onboarding step ${step}:`, e);
+			return false;
+		} finally {
+			inFlight.delete(step);
 		}
 	};
 
-	const setPersona = async (persona: string, interests: string[]) => {
-		if (!user.value) return;
+	const setPersona = async (persona: string, interests: string[]): Promise<boolean> => {
+		if (!user.value) return false;
 		try {
 			const res = await makeClientAPIRequest<{ state: OnboardingState }>(
 				`/v2/users/current/onboarding/persona`,
@@ -195,9 +207,14 @@ export function useOnboarding() {
 					body: { persona, interests }
 				}
 			);
-			if (valid(res)) state.value = res.data.state;
+			if (valid(res)) {
+				state.value = res.data.state;
+				return true;
+			}
+			return false;
 		} catch (e) {
 			console.warn('Failed to set onboarding persona:', e);
+			return false;
 		}
 	};
 

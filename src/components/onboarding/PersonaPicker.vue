@@ -177,10 +177,20 @@ function onOpenChange(v: boolean) {
 }
 
 async function save() {
-	if (!persona.value || interests.value.length < 3) return;
+	if (!persona.value || interests.value.length < 3 || saving.value) return;
 	saving.value = true;
 	try {
-		await onboarding.setPersona(persona.value, interests.value);
+		const ok = await onboarding.setPersona(persona.value, interests.value);
+		if (!ok) {
+			toast.add({
+				title: "Couldn't Save Personalization",
+				description: 'Please try again in a moment — your selection wasn’t recorded.',
+				icon: 'mdi:alert-circle',
+				color: 'error',
+				duration: 5000
+			});
+			return;
+		}
 		toast.add({
 			title: 'Personalized',
 			description: "We'll use this to tailor what you see next.",
