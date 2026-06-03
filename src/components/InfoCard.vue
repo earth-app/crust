@@ -153,28 +153,31 @@
 						v-if="youtubeId"
 						hydrate-on-visible
 					>
-						<iframe
-							:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1&origin=${origin}`"
-							class="w-full min-h-64 object-cover rounded-lg mb-2"
-							allow="
-								accelerometer;
-								autoplay;
-								clipboard-write;
-								encrypted-media;
-								gyroscope;
-								picture-in-picture;
-							"
-							allowfullscreen
-							loading="lazy"
-							referrerpolicy="strict-origin-when-cross-origin"
-						></iframe>
+						<div class="w-full aspect-video rounded-lg overflow-hidden mb-2">
+							<iframe
+								:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1&origin=${origin}`"
+								:title="`YouTube video for ${title}`"
+								class="w-full h-full"
+								allow="
+									accelerometer;
+									autoplay;
+									clipboard-write;
+									encrypted-media;
+									gyroscope;
+									picture-in-picture;
+								"
+								allowfullscreen
+								loading="lazy"
+								referrerpolicy="strict-origin-when-cross-origin"
+							></iframe>
+						</div>
 					</LazyClientOnly>
 					<LazyClientOnly
 						v-if="video"
 						hydrate-on-visible
 					>
 						<video
-							class="w-full min-h-64 object-cover rounded-lg mb-2"
+							class="w-full aspect-video object-cover rounded-lg mb-2"
 							controls
 							loading="lazy"
 							preload="metadata"
