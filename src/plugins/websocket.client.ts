@@ -154,12 +154,17 @@ export default defineNuxtPlugin((nuxtApp) => {
 							void userStore.fetchUserQuest(userId, true);
 							void userStore.fetchQuestHistory(userId, { force: true });
 							if (payload.completed) {
-								toast.add({
-									title: 'Quest Synced',
-									description: 'A quest you were working on was completed on another device.',
-									icon: 'mdi:check-circle',
-									color: 'success',
-									duration: 4000
+								// trust the WS push: the same celebration fires whether the user
+								// finished the quest in this tab or somewhere else
+								const { triggerCelebration } = useQuestCelebration();
+								const completedPayload = message.data as {
+									questId?: string;
+									questReward?: number;
+								};
+								triggerCelebration({
+									questTitle: undefined,
+									points: completedPayload.questReward ?? 0,
+									badgeIcon: 'mdi:trophy-award'
 								});
 							}
 							break;
