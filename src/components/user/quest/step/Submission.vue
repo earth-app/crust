@@ -31,6 +31,17 @@
 		</h2>
 
 		<div class="flex flex-col items-center justify-center mt-6! w-full gap-4!">
+			<UAlert
+				v-if="tutorialHint && !step.completed && !stepMobileOnly && !hintDismissed"
+				color="primary"
+				variant="subtle"
+				icon="mdi:school-outline"
+				title="First-quest tip"
+				:description="tutorialHint"
+				:close="true"
+				class="mb-1 w-full"
+				@close="hintDismissed = true"
+			/>
 			<div
 				v-if="step.completed"
 				class="flex flex-col items-center py-8! w-full"
@@ -248,6 +259,8 @@
 <script setup lang="ts">
 import { DateTime } from 'luxon';
 
+const celebration = useQuestCelebration();
+
 const props = defineProps<{
 	quest: Quest;
 	progress?: (QuestProgressEntry | QuestProgressEntry[])[];
@@ -275,6 +288,14 @@ const { lat, lng, fetchLocation } = useQuestGeolocation();
 const submitting = ref(false);
 const succeeded = ref(false);
 const submitError = ref('');
+
+// quest-author-provided coaching string. trim/whitespace check so empty fields
+// from the editor never render an empty box.
+const tutorialHint = computed(() => {
+	const raw = (props.step as { tutorial_hint?: string }).tutorial_hint;
+	return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null;
+});
+const hintDismissed = ref(false);
 
 const submittingMessages = [
 	'Submitting...',
@@ -368,6 +389,13 @@ async function submitPhoto(file: File) {
 
 		if (res.validated) {
 			succeeded.value = true;
+			if (res.completed) {
+				celebration.triggerCelebration({
+					questTitle: props.quest.title,
+					points: props.quest.reward ?? 0,
+					badgeIcon: 'mdi:trophy-award'
+				});
+			}
 			await new Promise((r) => setTimeout(r, 900));
 			emit('submitted');
 		} else {
