@@ -135,6 +135,7 @@
 					<LazyUserLoginPopup hydrate-on-interaction />
 				</div>
 			</ClientOnly>
+			<ThemeToggle class="ml-2" />
 		</div>
 	</nav>
 	<ClientOnly>
