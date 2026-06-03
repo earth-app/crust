@@ -234,6 +234,9 @@ export type QuestStep = {
 	// whether this step is only available on mobile; alternatives are normally provided so
 	// desktop users can still progress. The submission interface is blocked here when true.
 	mobile_only?: boolean;
+	// optional short coaching hint surfaced for first-quest users. Cloud may also emit a
+	// generic auto-hint when this field is unset; client should treat empty/whitespace as missing.
+	tutorial_hint?: string;
 };
 
 export type QuestStepMigrationReason =
