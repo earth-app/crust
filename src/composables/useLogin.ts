@@ -1,6 +1,8 @@
 import { useAuthStore } from 'stores/auth';
 import type { LoginResponse, LoginVerificationRequired, User } from 'types/user';
 
+const AUTH_REQUEST_TIMEOUT_MS = 30_000;
+
 export type LoginResult =
 	| { success: true; verified: true; message: string }
 	| {
@@ -47,12 +49,13 @@ export function useSignup() {
 						Accept: 'application/json'
 					},
 					body: {
-						username,
+						username: username.trim().toLowerCase(),
 						password,
-						email,
+						email: email?.trim() || undefined,
 						first_name,
 						last_name
-					}
+					},
+					timeout: AUTH_REQUEST_TIMEOUT_MS
 				}
 			);
 
@@ -91,7 +94,8 @@ export function useLogin() {
 	const authStore = useAuthStore();
 
 	return async function login(userOrEmail: string, password: string): Promise<LoginResult> {
-		const auth = btoa(`${userOrEmail}:${password}`);
+		const identifier = userOrEmail.trim().toLowerCase();
+		const auth = btoa(`${identifier}:${password}`);
 
 		try {
 			const response = await $fetch<LoginResponse | LoginVerificationRequired>(
@@ -101,7 +105,8 @@ export function useLogin() {
 					headers: {
 						Authorization: `Basic ${auth}`,
 						Accept: 'application/json'
-					}
+					},
+					timeout: AUTH_REQUEST_TIMEOUT_MS
 				}
 			);
 
@@ -153,7 +158,8 @@ export function useVerifyNewIPLogin() {
 					method: 'POST',
 					headers: {
 						Accept: 'application/json'
-					}
+					},
+					timeout: AUTH_REQUEST_TIMEOUT_MS
 				}
 			);
 
