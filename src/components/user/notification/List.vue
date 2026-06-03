@@ -23,11 +23,37 @@
 					</h2>
 					<h2
 						class="text-sm sm:text-md mb-4 text-gray-400 hover:cursor-pointer"
-						@click="clearAll"
+						@click="confirmOpen = true"
 					>
 						Clear All
 					</h2>
 				</div>
+
+				<UModal
+					v-model:open="confirmOpen"
+					title="Clear All Notifications?"
+					description="This will permanently delete every notification on your account. This action cannot be undone."
+				>
+					<template #footer>
+						<div class="flex w-full justify-end gap-2">
+							<UButton
+								color="neutral"
+								variant="ghost"
+								:disabled="clearing"
+								@click="confirmOpen = false"
+								>Cancel</UButton
+							>
+							<UButton
+								color="error"
+								icon="mdi:trash-can"
+								:loading="clearing"
+								:disabled="clearing"
+								@click="confirmClearAll"
+								>Clear All</UButton
+							>
+						</div>
+					</template>
+				</UModal>
 			</div>
 			<UserNotificationCard
 				v-for="notification in displayed"
@@ -48,6 +74,9 @@ const props = defineProps<{
 const { notifications, markAllNotificationsRead, clearAllNotifications } = useNotifications();
 const toast = useToast();
 
+const confirmOpen = ref(false);
+const clearing = ref(false);
+
 async function markAllRead() {
 	const res = await markAllNotificationsRead();
 	if (!res.success) {
@@ -60,15 +89,23 @@ async function markAllRead() {
 	}
 }
 
-async function clearAll() {
-	const res = await clearAllNotifications();
-	if (!res.success) {
-		toast.add({
-			title: 'Error',
-			description: res.message || 'Failed to clear notifications.',
-			icon: 'mdi:alert-circle',
-			color: 'error'
-		});
+async function confirmClearAll() {
+	if (clearing.value) return;
+	clearing.value = true;
+	try {
+		const res = await clearAllNotifications();
+		if (!res.success) {
+			toast.add({
+				title: 'Error',
+				description: res.message || 'Failed to clear notifications.',
+				icon: 'mdi:alert-circle',
+				color: 'error'
+			});
+		} else {
+			confirmOpen.value = false;
+		}
+	} finally {
+		clearing.value = false;
 	}
 }
 

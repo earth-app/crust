@@ -62,10 +62,37 @@
 					name="mdi:delete"
 					class="size-4 sm:size-5 md:size-6 text-gray-500 hover:text-red-500 hover:cursor-pointer transition-colors duration-200"
 					title="Delete Notification"
-					@click="removeNotification"
+					@click="confirmDeleteOpen = true"
 				/>
 			</div>
 		</div>
+
+		<UModal
+			v-if="additional"
+			v-model:open="confirmDeleteOpen"
+			title="Delete Notification?"
+			description="This notification will be permanently removed."
+		>
+			<template #footer>
+				<div class="flex w-full justify-end gap-2">
+					<UButton
+						color="neutral"
+						variant="ghost"
+						:disabled="deleting"
+						@click="confirmDeleteOpen = false"
+						>Cancel</UButton
+					>
+					<UButton
+						color="error"
+						icon="mdi:trash-can"
+						:loading="deleting"
+						:disabled="deleting"
+						@click="confirmRemove"
+						>Delete</UButton
+					>
+				</div>
+			</template>
+		</UModal>
 	</div>
 </template>
 
@@ -112,28 +139,35 @@ async function markAsRead() {
 	}
 }
 
-async function removeNotification() {
-	const res = await deleteNotification(props.notification.id);
+const confirmDeleteOpen = ref(false);
+const deleting = ref(false);
+
+async function confirmRemove() {
+	if (deleting.value) return;
+	deleting.value = true;
 	const toast = useToast();
-
-	if (res.success) {
-		emit('deleted', props.notification);
-
-		toast.add({
-			title: 'Success',
-			description: 'Notification deleted successfully.',
-			icon: 'mdi:trash-can-outline',
-			color: 'success'
-		});
-	} else {
-		console.error('Failed to delete notification:', res.message);
-
-		toast.add({
-			title: 'Error',
-			description: res.message || 'Failed to delete notification.',
-			icon: 'mdi:delete-alert-outline',
-			color: 'error'
-		});
+	try {
+		const res = await deleteNotification(props.notification.id);
+		if (res.success) {
+			emit('deleted', props.notification);
+			confirmDeleteOpen.value = false;
+			toast.add({
+				title: 'Success',
+				description: 'Notification deleted successfully.',
+				icon: 'mdi:trash-can-outline',
+				color: 'success'
+			});
+		} else {
+			console.error('Failed to delete notification:', res.message);
+			toast.add({
+				title: 'Error',
+				description: res.message || 'Failed to delete notification.',
+				icon: 'mdi:delete-alert-outline',
+				color: 'error'
+			});
+		}
+	} finally {
+		deleting.value = false;
 	}
 }
 </script>

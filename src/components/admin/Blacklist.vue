@@ -114,12 +114,46 @@
 					color="error"
 					variant="ghost"
 					size="xs"
-					@click="remove(entry)"
+					:disabled="removingValue === entry.original_value"
+					@click="
+						pendingRemoval = entry;
+						confirmRemoveOpen = true;
+					"
 				>
 					Remove
 				</UButton>
 			</div>
 		</div>
+
+		<UModal
+			v-model:open="confirmRemoveOpen"
+			title="Remove from Blacklist?"
+			:description="
+				pendingRemoval
+					? `This will unblock ${pendingRemoval.kind}: ${pendingRemoval.original_value}.`
+					: 'Are you sure?'
+			"
+		>
+			<template #footer>
+				<div class="flex w-full justify-end gap-2">
+					<UButton
+						color="neutral"
+						variant="ghost"
+						:disabled="removingValue !== null"
+						@click="confirmRemoveOpen = false"
+						>Cancel</UButton
+					>
+					<UButton
+						color="error"
+						icon="mdi:shield-off"
+						:loading="removingValue !== null"
+						:disabled="removingValue !== null"
+						@click="confirmRemove"
+						>Remove</UButton
+					>
+				</div>
+			</template>
+		</UModal>
 	</div>
 </template>
 
@@ -206,6 +240,23 @@ async function add() {
 		addError.value = e?.message || 'Failed to add';
 	} finally {
 		adding.value = false;
+	}
+}
+
+const confirmRemoveOpen = ref(false);
+const pendingRemoval = ref<BlacklistEntry | null>(null);
+const removingValue = ref<string | null>(null);
+
+async function confirmRemove() {
+	const entry = pendingRemoval.value;
+	if (!entry || removingValue.value) return;
+	removingValue.value = entry.original_value;
+	try {
+		await remove(entry);
+		confirmRemoveOpen.value = false;
+		pendingRemoval.value = null;
+	} finally {
+		removingValue.value = null;
 	}
 }
 
