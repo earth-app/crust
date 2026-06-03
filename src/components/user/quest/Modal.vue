@@ -246,7 +246,7 @@ const openStep = ref<
 			index: number;
 			altIndex?: number;
 			isCurrentQuest: boolean;
-			isCurrentStep: boolean;
+			isUnlocked: boolean;
 			data?: string;
 	  })
 	| null

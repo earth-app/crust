@@ -391,7 +391,7 @@ const emit = defineEmits<{
 			index: number;
 			altIndex?: number;
 			isCurrentQuest: boolean;
-			isCurrentStep: boolean;
+			isUnlocked: boolean;
 			data?: string;
 		}
 	];
@@ -487,13 +487,20 @@ function selectStep(step: TimelineStep, index: number) {
 	emit('select-step', {
 		...step,
 		isCurrentQuest: isCurrentQuest.value,
-		isCurrentStep: isCurrentStep(index)
+		isUnlocked: isUnlocked(index)
 	});
 }
 
 function isCurrentStep(index: number) {
 	if (!quest.value) return false;
 	return currentIndex.value === index;
+}
+
+function isUnlocked(index: number) {
+	if (!quest.value) return false;
+	const ci = currentIndex.value;
+	if (ci < 0) return false;
+	return index <= ci;
 }
 
 // only the active quest's future tiles are locked; past alt-step groups stay

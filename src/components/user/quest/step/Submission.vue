@@ -24,7 +24,7 @@
 			Start this quest to unlock the step interface.
 		</h2>
 		<h2
-			v-else-if="!step.isCurrentStep && !step.completed"
+			v-else-if="!step.isUnlocked && !step.completed"
 			class="text-sm! text-neutral-500 mb-2!"
 		>
 			Complete previous steps to unlock this step.
@@ -111,7 +111,7 @@
 			<template v-else-if="category === 'photo'">
 				<UserQuestStepCapture
 					v-if="!submitting && !succeeded"
-					:disabled="!step.isCurrentQuest || !step.isCurrentStep"
+					:disabled="!step.isCurrentQuest || !step.isUnlocked"
 					@capture="submitPhoto"
 					@photo-taken="submitError = ''"
 					@photo-rejected="submitError = ''"
@@ -143,7 +143,7 @@
 			<template v-else-if="category === 'draw_picture'">
 				<UserQuestStepDrawing
 					v-if="!submitting && !succeeded"
-					:disabled="!step.isCurrentQuest || !step.isCurrentStep"
+					:disabled="!step.isCurrentQuest || !step.isUnlocked"
 					@capture="submitPhoto"
 					@close="emit('submitted')"
 				/>
@@ -172,7 +172,7 @@
 			<template v-else-if="category === 'audio'">
 				<UserQuestStepRecorder
 					v-if="!submitting && !succeeded"
-					:disabled="!step.isCurrentQuest || !step.isCurrentStep"
+					:disabled="!step.isCurrentQuest || !step.isUnlocked"
 					:min-length="audioMinLength"
 					@capture="submitPhoto"
 				/>
@@ -201,7 +201,7 @@
 			<template v-else-if="category === 'describe_text'">
 				<UserQuestStepText
 					:step="step"
-					:disabled="!step.isCurrentQuest || !step.isCurrentStep"
+					:disabled="!step.isCurrentQuest || !step.isUnlocked"
 					:server-request="props.serverRequest || makeServerRequest"
 					@submitted="emit('submitted')"
 				/>
@@ -210,7 +210,7 @@
 			<template v-else-if="category === 'match_terms'">
 				<UserQuestStepMatcher
 					:step="step"
-					:disabled="!step.isCurrentQuest || !step.isCurrentStep"
+					:disabled="!step.isCurrentQuest || !step.isUnlocked"
 					@submitted="emit('submitted')"
 				/>
 			</template>
@@ -218,7 +218,7 @@
 			<template v-else-if="category === 'order_items'">
 				<UserQuestStepOrderer
 					:step="step"
-					:disabled="!step.isCurrentQuest || !step.isCurrentStep"
+					:disabled="!step.isCurrentQuest || !step.isUnlocked"
 					@submitted="emit('submitted')"
 				/>
 			</template>
@@ -258,7 +258,7 @@ const props = defineProps<{
 		index: number;
 		altIndex?: number;
 		isCurrentQuest: boolean;
-		isCurrentStep: boolean;
+		isUnlocked: boolean;
 	};
 	serverRequest?: typeof makeServerRequest;
 }>();
