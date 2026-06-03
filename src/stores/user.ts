@@ -103,8 +103,14 @@ export const useUserStore = defineStore('user', () => {
 		return -1;
 	};
 
+	const normalizeQuestState = (state: UserQuestProgress | null): UserQuestProgress | null => {
+		if (!state) return null;
+		if (!state.questId || !state.quest) return null;
+		return state;
+	};
+
 	const setLoadedQuestState = (identifier: string, nextQuestState: UserQuestProgress | null) => {
-		quest.set(identifier, nextQuestState);
+		quest.set(identifier, normalizeQuestState(nextQuestState));
 	};
 
 	const getQuestSyncVersion = (identifier: string) => questSyncVersions.get(identifier) || 0;
@@ -459,10 +465,11 @@ export const useUserStore = defineStore('user', () => {
 		);
 
 		if (valid(res)) {
+			const normalized = normalizeQuestState(res.data);
 			if (getQuestSyncVersion(identifier) === requestVersion) {
-				quest.set(identifier, res.data);
+				quest.set(identifier, normalized);
 			}
-			return res.data;
+			return normalized;
 		}
 
 		if (getQuestSyncVersion(identifier) === requestVersion) {
