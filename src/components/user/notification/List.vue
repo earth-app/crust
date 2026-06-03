@@ -71,6 +71,8 @@ const props = defineProps<{
 	additional?: boolean;
 }>();
 
+import { runOrQueue } from '~/composables/useNetwork';
+
 const { notifications, markAllNotificationsRead, clearAllNotifications } = useNotifications();
 const toast = useToast();
 
@@ -78,11 +80,14 @@ const confirmOpen = ref(false);
 const clearing = ref(false);
 
 async function markAllRead() {
-	const res = await markAllNotificationsRead();
-	if (!res.success) {
+	const outcome = await runOrQueue('mark-all-read', undefined, async () => {
+		return await markAllNotificationsRead();
+	});
+	if (outcome.queued) return;
+	if (outcome.executed && outcome.result && !outcome.result.success) {
 		toast.add({
 			title: 'Error',
-			description: res.message || 'Failed to mark all notifications as read.',
+			description: outcome.result.message || 'Failed to mark all notifications as read.',
 			icon: 'mdi:alert-circle',
 			color: 'error'
 		});

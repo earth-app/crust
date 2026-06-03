@@ -99,6 +99,7 @@
 <script setup lang="ts">
 import { DateTime } from 'luxon';
 import { trimString } from 'utils';
+import { runOrQueue } from '~/composables/useNetwork';
 
 const props = defineProps<{
 	notification: UserNotification;
@@ -123,19 +124,24 @@ const fullTimestamp = computed(() => {
 });
 
 async function markAsRead() {
-	if (!props.notification.read) {
-		const res = await markNotificationRead(props.notification.id);
-		if (!res.success) {
-			console.error('Failed to mark notification as read:', res.message);
-
-			const toast = useToast();
-			toast.add({
-				title: 'Error',
-				description: res.message || 'Failed to mark notification as read.',
-				icon: 'mdi:alert-circle',
-				color: 'error'
-			});
-		}
+	if (props.notification.read) return;
+	// If offline (or the call fails with a network error), queue the mutation
+	// rather than surfacing an error. mark-as-read is idempotent so replay is safe.
+	const outcome = await runOrQueue(
+		'mark-read',
+		{ id: props.notification.id },
+		async () => await markNotificationRead(props.notification.id)
+	);
+	if (outcome.queued) return;
+	if (outcome.executed && outcome.result && !outcome.result.success) {
+		console.error('Failed to mark notification as read:', outcome.result.message);
+		const toast = useToast();
+		toast.add({
+			title: 'Error',
+			description: outcome.result.message || 'Failed to mark notification as read.',
+			icon: 'mdi:alert-circle',
+			color: 'error'
+		});
 	}
 }
 
