@@ -22,7 +22,7 @@
 				<UTextarea
 					autoresize
 					required
-					v-model="prompt"
+					v-model="state.prompt"
 					label="Your Prompt"
 					placeholder="What is the meaning of life?"
 					:rows="2"
@@ -32,7 +32,7 @@
 				/>
 
 				<USelect
-					v-model="visibility"
+					v-model="state.visibility"
 					label="Visibility"
 					:items="[
 						{ label: 'Public', value: com.earthapp.Visibility.PUBLIC.name },
@@ -75,8 +75,8 @@
 					disabled ||
 					loading ||
 					newDisabled ||
-					prompt.trim().length < 10 ||
-					prompt.trim().length > 256
+					state.prompt.trim().length < 10 ||
+					state.prompt.trim().length > 256
 				"
 				:loading="loading"
 				>Create</UButton
@@ -132,10 +132,22 @@ onMounted(async () => {
 
 const loading = ref(false);
 const disabled = ref(true);
-const prompt = ref<string>('');
-const visibility = ref<typeof com.earthapp.Visibility.prototype.name>(
-	com.earthapp.Visibility.PUBLIC.name
-);
+
+interface PromptDraft {
+	prompt: string;
+	visibility: typeof com.earthapp.Visibility.prototype.name;
+}
+const state = reactive<PromptDraft>({
+	prompt: '',
+	visibility: com.earthapp.Visibility.PUBLIC.name
+});
+
+const userIdForDraft = computed(() => user.value?.id ?? null);
+const draft = useFormDraft(state, {
+	kind: 'prompt',
+	userId: userIdForDraft,
+	scope: 'create'
+});
 
 const error = ref('');
 
@@ -153,7 +165,7 @@ async function newPrompt() {
 
 	if (!emailGate.requireVerified('create a prompt')) return;
 
-	const text = prompt.value.trim();
+	const text = state.prompt.trim();
 
 	if (!text) {
 		toast.add({
@@ -184,7 +196,7 @@ async function newPrompt() {
 		const res = await promptStore.createPrompt({
 			title: text,
 			description: text,
-			visibility: visibility.value
+			visibility: state.visibility
 		});
 		if (valid(res)) {
 			loading.value = false;
@@ -195,6 +207,8 @@ async function newPrompt() {
 				color: 'success'
 			});
 
+			draft.clear();
+			state.prompt = '';
 			emit('prompt-created', res.data);
 		} else {
 			loading.value = false;

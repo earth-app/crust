@@ -225,6 +225,15 @@ const state = reactive<
 	color_hex: props.article?.color_hex || '#ffffff'
 });
 
+const { user } = useAuth();
+const userId = computed(() => user.value?.id ?? null);
+// only autosave on create; editing existing articles uses the server copy as truth
+const draft = useFormDraft(state, {
+	kind: 'article',
+	userId,
+	scope: props.mode === 'create' ? 'create' : `edit:${props.article?.id ?? 'unknown'}`
+});
+
 onMounted(async () => {
 	if (props.mode === 'edit' && props.article) {
 		const { quiz, fetchQuiz } = useArticle(props.article.id);
@@ -406,6 +415,7 @@ async function handleSubmit() {
 				color: 'success'
 			});
 
+			draft.clear();
 			router.push(`/articles/${res.data.id}`);
 		} else {
 			loading.value = false;

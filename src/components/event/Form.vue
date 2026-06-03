@@ -338,6 +338,14 @@ const state = reactive<EventData>({
 	fields: props.event?.fields || {}
 });
 
+const userIdForDraft = computed(() => user.value?.id ?? null);
+// edits use the server copy as truth; only autosave the create flow
+const draft = useFormDraft(state, {
+	kind: 'event',
+	userId: userIdForDraft,
+	scope: props.mode === 'create' ? 'create' : `edit:${props.event?.id ?? 'unknown'}`
+});
+
 // Field validation
 const eventLink = ref(state.fields?.['link'] || '');
 const eventLinkValid = ref<boolean | null>(null);
@@ -505,6 +513,7 @@ async function handleSubmit(event: FormSubmitEvent<EventData>) {
 			color: 'info'
 		});
 
+		draft.clear();
 		emit('submitted');
 	} catch (err: any) {
 		if (emailGate.handleServerError(err, 'create events')) {

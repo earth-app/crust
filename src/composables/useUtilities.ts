@@ -375,3 +375,131 @@ export function useDragAutoScroll(opts: UseDragAutoScrollOptions): DragAutoScrol
 
 	return { start, stop, isActive: raf.isActive, findScrollableAncestor };
 }
+
+// form drafts
+
+const DEFAULT_DEBOUNCE_MS = 600;
+const STORAGE_PREFIX = 'earth-app:draft';
+
+export interface UseFormDraftOptions {
+	// kind of content being drafted (used in the storage key + restore toast copy)
+	kind: 'article' | 'prompt' | 'event';
+	// optional ID — when present, lets us key drafts per-user so a shared browser stays sane.
+	userId?: MaybeRefOrGetter<string | null | undefined>;
+	// extra suffix on the key when the same form is used for multiple entities (eg. edit page).
+	// Only emit drafts for create flows; edit drafts get confusing fast.
+	scope?: string;
+	// debounce delay between state change and storage write. ms.
+	debounceMs?: number;
+	// custom restoration toast title; default reads "Draft Restored".
+	restoreToastTitle?: string;
+}
+
+export function useFormDraft<T extends object>(state: T, opts: UseFormDraftOptions) {
+	const debounceMs = opts.debounceMs ?? DEFAULT_DEBOUNCE_MS;
+	const toast = useToast();
+	const restored = ref(false);
+
+	const storageKey = computed(() => {
+		const uid = opts.userId !== undefined ? toValue(opts.userId) : null;
+		const userSegment = uid ? `:user:${uid}` : '';
+		const scopeSegment = opts.scope ? `:${opts.scope}` : '';
+		return `${STORAGE_PREFIX}:${opts.kind}${userSegment}${scopeSegment}`;
+	});
+
+	const readStorage = (): Partial<T> | null => {
+		if (!import.meta.client) return null;
+		try {
+			const raw = window.localStorage.getItem(storageKey.value);
+			if (!raw) return null;
+			const parsed = JSON.parse(raw);
+			return parsed && typeof parsed === 'object' ? (parsed as Partial<T>) : null;
+		} catch {
+			return null;
+		}
+	};
+
+	const writeStorage = (payload: Partial<T>) => {
+		if (!import.meta.client) return;
+		try {
+			window.localStorage.setItem(storageKey.value, JSON.stringify(payload));
+		} catch {
+			// quota errors, private-mode safari, etc. — silently drop; autosave is best-effort
+		}
+	};
+
+	const clear = () => {
+		if (!import.meta.client) return;
+		try {
+			window.localStorage.removeItem(storageKey.value);
+		} catch {
+			// ignore
+		}
+	};
+
+	// restore on mount (client-only)
+	onMounted(() => {
+		const stored = readStorage();
+		if (!stored) return;
+		let restoredAny = false;
+		for (const k of Object.keys(stored) as (keyof T)[]) {
+			const v = stored[k];
+			if (v === undefined) continue;
+			// shallow assign — nested objects are replaced, which matches the typical state shape
+			(state as any)[k] = v;
+			restoredAny = true;
+		}
+		if (restoredAny && !restored.value) {
+			restored.value = true;
+			toast.add({
+				title: opts.restoreToastTitle ?? 'Draft Restored',
+				description: 'Your unfinished draft was picked up from where you left off.',
+				icon: 'mdi:content-save-outline',
+				color: 'info',
+				duration: 4000,
+				actions: [
+					{
+						label: 'Discard',
+						color: 'neutral',
+						variant: 'soft',
+						onClick: () => {
+							clear();
+							toast.add({
+								title: 'Draft Discarded',
+								description: 'The saved draft has been cleared.',
+								icon: 'mdi:delete-outline',
+								color: 'neutral',
+								duration: 2500
+							});
+						}
+					}
+				]
+			});
+		}
+	});
+
+	// debounced persistence on any state change
+	let writeTimer: ReturnType<typeof setTimeout> | null = null;
+	watch(
+		() => state,
+		() => {
+			if (!import.meta.client) return;
+			if (writeTimer) clearTimeout(writeTimer);
+			writeTimer = setTimeout(() => {
+				// toRaw to avoid leaking Vue reactivity proxies into storage
+				writeStorage(toRaw(state));
+			}, debounceMs);
+		},
+		{ deep: true }
+	);
+
+	onBeforeUnmount(() => {
+		if (writeTimer) clearTimeout(writeTimer);
+	});
+
+	return {
+		clear,
+		hasRestored: readonly(restored),
+		storageKey: readonly(storageKey)
+	};
+}
