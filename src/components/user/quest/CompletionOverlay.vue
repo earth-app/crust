@@ -80,14 +80,18 @@
 						/>
 						<span class="text-sm font-medium">Badge unlocked!</span>
 					</div>
-					<UButton
-						color="primary"
-						class="mt-2"
-						trailing-icon="mdi:arrow-right"
-						@click="close"
+					<div
+						class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 mt-2"
 					>
-						Keep Exploring
-					</UButton>
+						<slot name="actions" />
+						<UButton
+							color="primary"
+							trailing-icon="mdi:arrow-right"
+							@click="close"
+						>
+							Keep Exploring
+						</UButton>
+					</div>
 				</div>
 			</div>
 		</Transition>
