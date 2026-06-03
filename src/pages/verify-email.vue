@@ -31,6 +31,7 @@ setTitleSuffix('Verify Email');
 
 const { user, sendVerificationEmail, fetchUser } = useAuth();
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const { startTourIfNew } = useSiteTour();
 
@@ -101,7 +102,7 @@ watch(
 	(currentUser) => {
 		if (currentUser === null) {
 			// User is not logged in, redirect to login
-			router.push('/login');
+			router.push(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
 			toast.add({
 				title: 'Not Logged In',
 				description: 'You must be logged in to verify your email.',

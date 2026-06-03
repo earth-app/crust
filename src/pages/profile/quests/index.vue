@@ -273,7 +273,7 @@ watch(
 			// force + explicit limit so we override any 25-entry prefetch cache from elsewhere
 			fetchQuestHistory({ force: true, limit: HISTORY_PAGE_LIMIT });
 		} else if (newUser === null) {
-			navigateTo('/login');
+			navigateTo(`/login?redirect=${encodeURIComponent(useRoute().fullPath)}`);
 		}
 	},
 	{ immediate: true }

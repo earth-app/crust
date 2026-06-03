@@ -44,19 +44,23 @@
 		<h1 class="text-2xl">Access Denied</h1>
 		<p class="mt-2 text-muted">You do not have permission to access this page.</p>
 	</div>
-	<div
-		v-else-if="user === null"
-		class="container mx-auto my-8 px-4 py-8 rounded-lg border border-default"
-	>
-		<h1 class="text-2xl">Not Logged In</h1>
-		<p class="mt-2 text-muted">Please log in to access the admin panel.</p>
-	</div>
 </template>
 
 <script setup lang="ts">
 const { user } = useAuth();
+const route = useRoute();
 const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Admin Console');
+
+watch(
+	() => user.value,
+	(currentUser) => {
+		if (currentUser === null) {
+			navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
+		}
+	},
+	{ immediate: true }
+);
 
 const activeTab = ref('analytics');
 

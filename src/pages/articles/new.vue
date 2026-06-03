@@ -6,12 +6,17 @@
 
 <script setup lang="ts">
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const { user } = useAuth();
 
 watch(
 	() => user.value,
 	(currentUser) => {
+		if (currentUser === null) {
+			router.push(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
+			return;
+		}
 		if (!currentUser) return;
 
 		if (currentUser.account.visibility !== 'PUBLIC') {

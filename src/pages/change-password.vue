@@ -21,6 +21,7 @@ const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Change Password');
 
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const { user } = useAuth();
 
@@ -28,7 +29,7 @@ watch(
 	() => user.value,
 	(currentUser) => {
 		if (currentUser === null) {
-			router.push('/login');
+			router.push(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
 			toast.add({
 				title: 'Not Logged In',
 				description: 'You must be logged in to change your password.',
