@@ -5,14 +5,7 @@
 	>
 		<UserProfileEditor :user="user" />
 	</div>
-	<Loading v-else-if="user === undefined" />
-	<!-- Only show "Please log in" when user is explicitly null (not loading) -->
-	<div
-		v-else-if="user === null"
-		class="flex flex-col items-center justify-center h-screen"
-	>
-		<p class="text-gray-600">Please log in to view your profile.</p>
-	</div>
+	<Loading v-else />
 </template>
 
 <script setup lang="ts">
@@ -23,6 +16,16 @@ const { user, fetchUser } = useAuth();
 const toast = useToast();
 const route = useRoute();
 const { success, error, provider } = route.query;
+
+watch(
+	() => user.value,
+	(currentUser) => {
+		if (currentUser === null) {
+			navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
+		}
+	},
+	{ immediate: true }
+);
 
 // Optimistically reflect a freshly linked/unlinked OAuth provider in the local
 // user object so the UI flips immediately, without waiting for mantle2's cache

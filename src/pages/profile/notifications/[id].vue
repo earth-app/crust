@@ -53,14 +53,7 @@
 	>
 		<p class="text-gray-600">Notification doesn't exist. Maybe look at the URL again?</p>
 	</div>
-	<Loading v-else-if="user === undefined" />
-	<!-- Only show "Please log in" when user is explicitly null (not loading) -->
-	<div
-		v-else-if="user === null"
-		class="flex flex-col w-full h-full items-center justify-center"
-	>
-		<p class="text-center text-gray-600">Please log in to view your notifications.</p>
-	</div>
+	<Loading v-else />
 </template>
 <script setup lang="ts">
 import { DateTime } from 'luxon';
@@ -69,6 +62,16 @@ const { user } = useAuth();
 const { markNotificationRead } = useNotifications();
 const route = useRoute();
 const { setTitleSuffix } = useTitleSuffix();
+
+watch(
+	() => user.value,
+	(currentUser) => {
+		if (currentUser === null) {
+			navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
+		}
+	},
+	{ immediate: true }
+);
 
 const { notification, fetch } = useNotification(route.params.id as string);
 
