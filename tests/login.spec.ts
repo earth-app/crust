@@ -30,6 +30,15 @@ test.describe('Login page (anonymous)', () => {
 		await expect(page.getByRole('heading', { name: 'Login' })).toBeVisible();
 	});
 
+	test('Forgot password link opens the reset modal', async ({ page, gotoHydrated }) => {
+		await gotoHydrated('/login');
+		const forgot = page.getByRole('button', { name: /forgot your password/i }).first();
+		await expect(forgot).toBeVisible();
+		await forgot.click();
+		await expect(page.getByRole('dialog')).toBeVisible({ timeout: 4000 });
+		await expect(page.getByText(/Reset Your Password/i)).toBeVisible();
+	});
+
 	test('shows validation error for short identifier', async ({ page, gotoHydrated }) => {
 		await gotoHydrated('/login');
 		await page.getByPlaceholder('Username or email').fill('ab');

@@ -11,11 +11,14 @@ const SKIP_REASON =
 	'asUser({account_type, visibility}) overrides do not apply to the real admin session';
 
 test.describe('Article creation (anonymous)', () => {
-	test('does not crash for anonymous users', async ({ asAnonymous, page, gotoHydrated }) => {
+	test('redirects anonymous users to /login with return URL', async ({
+		asAnonymous,
+		page,
+		gotoHydrated
+	}) => {
 		await asAnonymous();
 		await gotoHydrated('/articles/new');
-		// Page may render but form is gated by client guard; main invariant is no error
-		await page.waitForTimeout(500);
+		await expect(page).toHaveURL(/\/login\?redirect=%2Farticles%2Fnew/, { timeout: 25_000 });
 	});
 });
 

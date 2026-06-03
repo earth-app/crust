@@ -18,13 +18,14 @@ async function openTab(page: Page, name: string) {
 }
 
 test.describe('Admin page (anonymous)', () => {
-	test('does not render admin tabs for anonymous user', async ({
+	test('redirects anonymous user to /login with return URL', async ({
 		asAnonymous,
 		page,
 		gotoHydrated
 	}) => {
 		await asAnonymous();
 		await gotoHydrated('/admin');
+		await expect(page).toHaveURL(/\/login\?redirect=%2Fadmin/, { timeout: 25_000 });
 		// the whole tab strip is gated on is_admin — none of the tab labels render
 		await expect(page.getByRole('tab', { name: /MOTD/i })).toHaveCount(0);
 	});

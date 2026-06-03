@@ -16,7 +16,7 @@ test.describe('Verify email (anonymous)', () => {
 	}) => {
 		await asAnonymous();
 		await gotoHydrated('/verify-email');
-		await page.waitForURL(/\/login$/, { timeout: 8000 });
+		await page.waitForURL(/\/login\?redirect=%2Fverify-email/, { timeout: 8000 });
 		await expect(page.getByText(/Not Logged In|must be logged in/i).first()).toBeVisible({
 			timeout: 6000
 		});

@@ -15,7 +15,7 @@ test.describe('Change password (anonymous)', () => {
 	}) => {
 		await asAnonymous();
 		await gotoHydrated('/change-password');
-		await page.waitForURL(/\/login$/, { timeout: 8000 });
+		await page.waitForURL(/\/login\?redirect=%2Fchange-password/, { timeout: 8000 });
 		await expect(page.getByText(/Not Logged In|must be logged in/i).first()).toBeVisible({
 			timeout: 6000
 		});

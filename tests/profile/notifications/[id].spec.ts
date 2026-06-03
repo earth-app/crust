@@ -6,15 +6,16 @@ import { expect, test } from '../../utils/fixtures';
 import { makeNotification } from '../../utils/mock-data';
 
 test.describe('Notification detail (anonymous)', () => {
-	test('does not render notification details for anonymous users', async ({
+	test('redirects anonymous users to /login with return URL', async ({
 		asAnonymous,
 		page,
 		gotoHydrated
 	}) => {
 		await asAnonymous();
 		await gotoHydrated('/profile/notifications/notif-1');
-		// Without auth, the notification body should not be rendered (Loading or empty state)
-		await expect(page).toHaveURL(/\/profile\/notifications\/notif-1/);
+		await expect(page).toHaveURL(/\/login\?redirect=%2Fprofile%2Fnotifications%2Fnotif-1/, {
+			timeout: 25_000
+		});
 	});
 });
 

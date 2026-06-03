@@ -1,23 +1,21 @@
 /**
  * E2E tests for `src/pages/profile/index.vue` - own profile editor.
  *
- * Client-only page. Anonymous → "Please log in" message. Logged-in → editor.
+ * Client-only page. Anonymous → redirected to /login?redirect=/profile.
  * Query params (?success=, ?error=) trigger OAuth-related toasts.
  */
 
 import { expect, test } from '../utils/fixtures';
 
 test.describe('Own profile (anonymous)', () => {
-	test('shows "Please log in" message for anonymous users', async ({
+	test('redirects anonymous users to /login with return URL', async ({
 		asAnonymous,
 		page,
 		gotoHydrated
 	}) => {
 		await asAnonymous();
 		await gotoHydrated('/profile');
-		await expect(page.getByText(/Please log in to view your profile/i).first()).toBeVisible({
-			timeout: 25_000
-		});
+		await expect(page).toHaveURL(/\/login\?redirect=%2Fprofile/, { timeout: 25_000 });
 	});
 });
 
