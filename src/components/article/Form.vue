@@ -190,6 +190,8 @@ const props = defineProps<{
 }>();
 
 const { user } = useAuth();
+const userId = computed(() => user.value?.id ?? null);
+
 const canCreateQuiz = computed(() => {
 	if (!user.value) return false;
 
@@ -225,8 +227,6 @@ const state = reactive<
 	color_hex: props.article?.color_hex || '#ffffff'
 });
 
-const { user } = useAuth();
-const userId = computed(() => user.value?.id ?? null);
 // only autosave on create; editing existing articles uses the server copy as truth
 const draft = useFormDraft(state, {
 	kind: 'article',

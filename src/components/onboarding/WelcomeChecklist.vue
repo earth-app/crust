@@ -122,7 +122,7 @@ watch(
 	{ immediate: true }
 );
 
-// activities, mutual friends — detect first achievement at the auth-store boundary
+// activities, mutual friends - detect first achievement at the auth-store boundary
 watch(
 	() => user.value?.activities?.length ?? 0,
 	(n) => {
@@ -191,7 +191,7 @@ watch(
 	},
 	(n) => {
 		if (!onboarding.state.value) return;
-		// any completed quest implies the started step too — backfill in case the
+		// any completed quest implies the started step too - backfill in case the
 		// user finished a quest before the started watcher had a chance to fire
 		if (n > 0) {
 			if (!onboarding.state.value.completed_steps.includes('first_quest_started')) {
@@ -225,7 +225,7 @@ function isDone(id: string) {
 
 function invoke(step: (typeof ONBOARDING_CHECKLIST)[number]) {
 	if (step.id === 'welcome') {
-		// don't mark complete here — the watcher catches genuine tour completion
+		// don't mark complete here - the watcher catches genuine tour completion
 		tours.startTour('welcome');
 		return;
 	}

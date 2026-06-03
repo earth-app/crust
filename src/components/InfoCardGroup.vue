@@ -46,7 +46,7 @@
 			<div
 				ref="scrollContainer"
 				role="region"
-				:aria-label="`${title} card carousel — use arrow keys to scroll`"
+				:aria-label="`${title} card carousel - use arrow keys to scroll`"
 				tabindex="0"
 				class="flex flex-col sm:flex-row items-stretch flex-nowrap sm:py-2 md:py-4 lg:py-6 px-4 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md *:mx-2 *:h-1/2 *:min-w-10 *:max-w-140 *:z-10 *:shrink-0"
 				@mousedown="startDrag"

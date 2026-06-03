@@ -26,7 +26,7 @@
 		v-else-if="masteryQuestReady && masteryExpiresInDays !== null"
 		class="text-xs opacity-70 text-center max-w-72"
 	>
-		Pick up where you left off — expires in
+		Pick up where you left off - expires in
 		{{ masteryExpiresInDays }} day{{ masteryExpiresInDays === 1 ? '' : 's' }}. Resetting will
 		permanently lock this mastery.
 	</span>

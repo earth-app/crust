@@ -219,7 +219,7 @@ const grantedTo = computed(() => {
 	return handle.value;
 });
 
-// beforeunload guard while generation is in-flight — abandoning the request loses the slot
+// beforeunload guard while generation is in-flight - abandoning the request loses the slot
 // without a stored quest, so warn before letting the tab close/navigate
 const beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 	if (!masteryLoading.value) return;
@@ -246,7 +246,7 @@ watch(showDetails, async (open) => {
 
 	ensureMasteryListFetched();
 
-	// mastered badges short-circuit the status fetch — terminal state is known from badge.mastered,
+	// mastered badges short-circuit the status fetch - terminal state is known from badge.mastered,
 	// so the button can render "View Completed Mastery" immediately without flashing a loading state
 	if (isCompletedMastery.value) {
 		masteryStatusFetched.value = true;

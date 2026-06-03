@@ -184,7 +184,7 @@ async function save() {
 		if (!ok) {
 			toast.add({
 				title: "Couldn't Save Personalization",
-				description: 'Please try again in a moment — your selection wasn’t recorded.',
+				description: 'Please try again in a moment - your selection wasn’t recorded.',
 				icon: 'mdi:alert-circle',
 				color: 'error',
 				duration: 5000

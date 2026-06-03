@@ -519,7 +519,7 @@ const user = computed(() => componentProps.user);
 const { sendVerificationEmail, updateAccount, regenerateAvatar, setUserActivities } = useAuth();
 const changed = ref(false);
 
-// API key management is self-only — never expose another user's key surface.
+// API key management is self-only - never expose another user's key surface.
 const isSelf = computed(() => authStore.currentUser?.id === user.value?.id);
 
 const createAccountProp = (key: string) =>

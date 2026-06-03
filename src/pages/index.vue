@@ -118,7 +118,7 @@
 					/>
 					<h2 class="text-lg font-semibold">Pick What you Love</h2>
 					<p class="text-sm text-muted">
-						Choose activities — running, gardening, photography, anything — and the rest of the app
+						Choose activities - running, gardening, photography, anything - and the rest of the app
 						tailors itself to you.
 					</p>
 				</div>

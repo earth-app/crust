@@ -50,7 +50,7 @@ const props = withDefaults(
 		variant?: 'banner' | 'inline' | 'badge' | 'countdown';
 		color?: 'warning' | 'info' | 'primary' | 'secondary';
 		// timestamp (seconds since epoch) when this specific content expires. Only
-		// used by the countdown variant — the static variants ignore it.
+		// used by the countdown variant - the static variants ignore it.
 		expiresAt?: number;
 	}>(),
 	{ variant: 'inline', color: 'warning' }
@@ -61,7 +61,7 @@ const headline = computed(() => ttlHeadline(props.kind));
 const hook = computed(() => ttlHook(props.kind));
 const label = computed(() => `Auto-deleted in ${ttlLabel(props.kind)}`);
 
-// countdown variant — recompute once a minute so the "X hours" label stays fresh
+// countdown variant - recompute once a minute so the "X hours" label stays fresh
 // without spamming reactivity
 const now = ref(Date.now());
 let tick: ReturnType<typeof setInterval> | null = null;
@@ -96,7 +96,7 @@ const countdownDescription = computed(() => {
 	if (props.kind === 'article') {
 		return countdown.value.urgency === 'high'
 			? 'This article is about to expire. Save it or share it now.'
-			: 'Articles stay live for 14 days from creation — then they auto-delete.';
+			: 'Articles stay live for 14 days from creation - then they auto-delete.';
 	}
 	return countdown.value.urgency === 'high'
 		? 'This prompt is closing soon. Reply before it vanishes.'

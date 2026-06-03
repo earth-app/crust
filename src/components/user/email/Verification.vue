@@ -126,7 +126,7 @@ const codeExpired = computed(
 
 const codeExpiryLabel = computed(() => {
 	if (codeExpiresAt.value === null) return '';
-	if (codeExpired.value) return 'Code expired — request a new one to continue.';
+	if (codeExpired.value) return 'Code expired - request a new one to continue.';
 	const remainingMs = codeExpiresAt.value - now.value;
 	const totalSec = Math.max(0, Math.floor(remainingMs / 1000));
 	const mm = Math.floor(totalSec / 60);
@@ -176,7 +176,7 @@ async function resendVerificationEmail() {
 				duration: 5000
 			});
 		} else {
-			// 429-style rate limit from mantle2 — short-circuit the cooldown so the user
+			// 429-style rate limit from mantle2 - short-circuit the cooldown so the user
 			// sees an accurate "wait X seconds" affordance instead of a generic error
 			if (/wait|rate|too many|429/i.test(res.message || '')) {
 				startCooldown(60);

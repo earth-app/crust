@@ -14,7 +14,7 @@
 			@drop.prevent="onClipboardBlocked('drop')"
 		/>
 		<p class="text-xs! text-muted px-1!">
-			Paste and copy are disabled for this step — please type your answer yourself.
+			Paste and copy are disabled for this step - please type your answer yourself.
 		</p>
 
 		<div
@@ -112,7 +112,7 @@ function onClipboardBlocked(action: 'paste' | 'copy' | 'cut' | 'drop') {
 					: 'Dropping text';
 	toast.add({
 		title: `${verb} is Disabled`,
-		description: 'This step requires your own writing — please type your answer directly.',
+		description: 'This step requires your own writing - please type your answer directly.',
 		icon: 'mdi:content-paste-off',
 		color: 'warning',
 		duration: 3000
@@ -186,7 +186,7 @@ async function onSubmit() {
 		if (res.validated) {
 			await new Promise((r) => setTimeout(r, 600));
 			emit('submitted');
-			// text stays in place — host unmounts the component on success
+			// text stays in place - host unmounts the component on success
 		} else {
 			submitError.value = res.message || 'We could not validate your response. Please try again.';
 		}

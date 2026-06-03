@@ -184,7 +184,7 @@ const completedBadges = computed(() => badges.value.filter((b) => b.granted));
 const masteredBadges = computed(() => badges.value.filter((b) => b.mastered));
 const nonMasteryExemptBadges = computed(() => badges.value.filter((b) => !b.mastery_exempt).length);
 
-// hide finished masteries from the active list — the dedicated "Mastered Badges" section
+// hide finished masteries from the active list - the dedicated "Mastered Badges" section
 // below already surfaces them, and showing them here misled users into thinking the slot
 // was still occupied even though `active` correctly excluded them
 const activeMasteryItems = computed(

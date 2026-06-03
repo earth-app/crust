@@ -64,7 +64,7 @@ const verifyEmailTour: SiteTourStep[] = [
 		id: 'verification-title',
 		title: 'Verify Your Email',
 		description:
-			"We've sent a verification email to the address on your account. Enter the 8-digit code below — or click the link inside the email — to confirm it's yours.",
+			"We've sent a verification email to the address on your account. Enter the 8-digit code below - or click the link inside the email - to confirm it's yours.",
 		footer: "Can't see it? Check your spam folder - it sometimes lands there on first sign-up.",
 		icon: 'mdi:email-check-outline',
 		placement: 'bottom',
@@ -75,7 +75,7 @@ const verifyEmailTour: SiteTourStep[] = [
 		id: 'verification-help',
 		title: 'Didn’t Get the Email?',
 		description:
-			"Request a fresh one with the button below. There's a small cooldown to keep things safe — wait a moment if the resend button isn't responding.",
+			"Request a fresh one with the button below. There's a small cooldown to keep things safe - wait a moment if the resend button isn't responding.",
 		footer:
 			'Verification codes expire after 24 hours. Use the latest code; older ones stop working.',
 		icon: 'mdi:email-sync-outline',
@@ -111,7 +111,7 @@ watch(
 				duration: 3000
 			});
 		} else if (currentUser && currentUser.account.email_verified && !justVerified.value) {
-			// already verified on initial load — skip the toast on the self-verify flow
+			// already verified on initial load - skip the toast on the self-verify flow
 			router.push('/');
 			toast.add({
 				title: 'Email Already Verified',

@@ -799,7 +799,7 @@ const timelineTour = computed<SiteTourStep[]>(() => [
 		id: 'quest-button',
 		title: 'Start This Quest',
 		description:
-			'Press the button above to begin. Only one quest can be active at a time — starting a new one replaces your current active quest.',
+			'Press the button above to begin. Only one quest can be active at a time - starting a new one replaces your current active quest.',
 		footer:
 			'Heads up: Badge Mastery quests are one-shot. The button color tells you which state you’re in.',
 		icon: 'mdi:sword-cross',
@@ -820,7 +820,7 @@ const timelineTour = computed<SiteTourStep[]>(() => [
 		description:
 			'This quest is currently active. Open any step below to submit progress, or press End Quest above to step away.',
 		footer:
-			'Ending a Badge Mastery quest is permanent — for regular quests you can pick another up later.',
+			'Ending a Badge Mastery quest is permanent - for regular quests you can pick another up later.',
 		icon: 'mdi:shield-sword',
 		placement: 'bottom',
 		highlightPadding: 6,
@@ -841,7 +841,7 @@ const timelineTour = computed<SiteTourStep[]>(() => [
 		id: 'tile-1:0',
 		title: 'Either/Or Steps',
 		description:
-			'This quest includes step groups — rows with multiple badges. Complete just one to advance; the rest become optional bonuses you can come back for.',
+			'This quest includes step groups - rows with multiple badges. Complete just one to advance; the rest become optional bonuses you can come back for.',
 		footer: 'Bonus alt-steps stay clickable even after the row finishes.',
 		icon: 'mdi:vector-difference',
 		condition: () => hasAltStepGroup.value

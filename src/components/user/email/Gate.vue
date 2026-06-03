@@ -97,7 +97,7 @@ const currentEmail = computed(() => user.value?.account?.email ?? '');
 const promptText = computed(() => {
 	const action = gate.action.value || 'continue';
 	if (hasEmail.value) {
-		return `You need a verified email before you can ${action}. We'll send a one-time code to your address — verifying takes about a minute.`;
+		return `You need a verified email before you can ${action}. We'll send a one-time code to your address - verifying takes about a minute.`;
 	}
 	return `You don't have an email on file yet. Add one in your profile to ${action} and unlock account recovery, login alerts, and notifications.`;
 });

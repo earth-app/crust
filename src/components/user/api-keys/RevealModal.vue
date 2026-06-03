@@ -15,7 +15,7 @@
 					<div class="text-sm">
 						<div class="font-semibold">This is the only time you'll see this token.</div>
 						<div class="opacity-80">
-							Copy it now and store it somewhere secure. The Earth App stores only a hash — we can't
+							Copy it now and store it somewhere secure. The Earth App stores only a hash - we can't
 							show it again, and we can't recover it.
 						</div>
 					</div>
@@ -113,7 +113,7 @@ async function copy() {
 		toast.add({
 			title: 'Copied to Clipboard',
 			description:
-				'Paste the token into your script or secret manager now — it will not be shown again.',
+				'Paste the token into your script or secret manager now - it will not be shown again.',
 			icon: 'mdi:content-copy',
 			color: 'success',
 			duration: 5000

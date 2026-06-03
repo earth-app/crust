@@ -112,7 +112,7 @@ const emit = defineEmits<{
 const titleId = useId();
 const descId = useId();
 
-// honor user-level reduced-motion preference — no confetti if they asked for less motion
+// honor user-level reduced-motion preference - no confetti if they asked for less motion
 const prefersReducedMotion = ref(false);
 onMounted(() => {
 	if (typeof window === 'undefined') return;
