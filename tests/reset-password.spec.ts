@@ -8,7 +8,7 @@
  *    success. Missing uid/token shows the dead-end UI.
  */
 
-import { expect, test } from './utils/fixtures';
+import { expect, skipIfIntegration, test } from './utils/fixtures';
 
 test.describe('Forgot-password request modal', () => {
 	test('login form exposes the Forgot password? trigger', async ({
@@ -140,6 +140,9 @@ test.describe('Reset-password landing page', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration(
+			'depends on a mock 400 against a synthetic uid; real mantle has no such user/token'
+		);
 		await asAnonymous();
 		await mockApi.set({
 			method: 'POST',
@@ -160,6 +163,9 @@ test.describe('Reset-password landing page', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration(
+			'depends on a mock 200 against a synthetic uid; real mantle has no such user/token'
+		);
 		await asAnonymous();
 		await mockApi.set({
 			method: 'POST',

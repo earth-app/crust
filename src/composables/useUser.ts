@@ -148,18 +148,40 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 		);
 	};
 
-	const resetPassword = async (id: string, token: string, newPassword: string) => {
-		return await makeAPIRequest<{ message: string }>(
-			`reset-password-${token}`,
-			`/v2/users/${id}/change_password?token=${encodeURIComponent(token)}`,
-			null,
-			{
+	const resetPassword = async (
+		id: string,
+		token: string,
+		newPassword: string
+	): Promise<{ success: boolean; message?: string; status?: number }> => {
+		// mantle2 returns `{ message: 'Password changed successfully' }` on 200 and
+		// `{ message: 'Invalid or expired token' }` on 400 — both carry a `message`
+		// field, which our generic makeRequest helper interprets as a failure
+		// regardless of HTTP status. Bypass it and use $fetch.raw directly so we
+		// can branch on the actual response code.
+		const config = useRuntimeConfig();
+		const url = `${config.public.apiBaseUrl}/v2/users/${id}/change_password?token=${encodeURIComponent(token)}`;
+		try {
+			const response = await $fetch.raw<{ message?: string }>(url, {
 				method: 'POST',
-				body: {
-					new_password: newPassword
-				}
+				body: { new_password: newPassword },
+				ignoreResponseError: true
+			});
+			const status = response.status;
+			const body = response._data ?? {};
+			if (status >= 200 && status < 300) {
+				return { success: true, message: body.message, status };
 			}
-		);
+			return {
+				success: false,
+				message: body.message || `Failed to reset password (${status})`,
+				status
+			};
+		} catch (e: any) {
+			return {
+				success: false,
+				message: e?.data?.message || e?.message || 'Network error during password reset'
+			};
+		}
 	};
 
 	const deleteAccount = async (password: string) => {
