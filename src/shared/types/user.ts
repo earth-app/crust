@@ -80,6 +80,7 @@ export type User = {
 export type LoginResponse = {
 	id: string;
 	username: string;
+	user?: User;
 	session_token: string;
 };
 

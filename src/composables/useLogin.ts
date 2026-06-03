@@ -122,7 +122,12 @@ export function useLogin() {
 			}
 
 			authStore.setSessionToken(response.session_token);
-			await authStore.fetchCurrentUser();
+
+			if (response.user) {
+				authStore.currentUser = response.user;
+			} else {
+				await authStore.fetchCurrentUser();
+			}
 
 			return { success: true, verified: true, message: 'Login successful' };
 		} catch (error: any) {
@@ -164,7 +169,12 @@ export function useVerifyNewIPLogin() {
 			);
 
 			authStore.setSessionToken(response.session_token);
-			await authStore.fetchCurrentUser();
+
+			if (response.user) {
+				authStore.currentUser = response.user;
+			} else {
+				await authStore.fetchCurrentUser();
+			}
 
 			return { success: true, message: 'Verification successful' };
 		} catch (error: any) {
@@ -174,8 +184,6 @@ export function useVerifyNewIPLogin() {
 				error?.data?.message || error?.message || 'Verification failed. Please try again.';
 			const lower = rawMessage.toLowerCase();
 
-			// 400s that kill the ticket: too many attempts, expired/invalid ticket,
-			// missing fields. Caller must restart from /login.
 			const ticketDead =
 				statusCode === 400 &&
 				(lower.includes('too many') ||
@@ -183,9 +191,6 @@ export function useVerifyNewIPLogin() {
 					lower.includes('invalid') ||
 					lower.includes('missing'));
 
-			// "Invalid verification code" is the only retryable 400 - but our string
-			// match above would catch it. Narrow back: pure "invalid verification code"
-			// keeps the PIN input open.
 			const codeOnlyInvalid = statusCode === 400 && lower === 'invalid verification code';
 
 			const retryAllowed = codeOnlyInvalid || (!ticketDead && statusCode !== 403);
