@@ -101,6 +101,55 @@
 				<OnboardingPersonaPicker v-model="personaOpen" />
 			</ClientOnly>
 
+			<!-- First-paint pitch: shown only to fully-anonymous visitors so we don't
+				ever waste real estate on returning users. Three explainer cards land
+				below the hero CTAs to answer the only question a new visitor cares
+				about: "what is this app actually for?" -->
+			<div
+				v-if="user === null"
+				class="w-full max-w-5xl px-4 mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4"
+			>
+				<div
+					class="rounded-xl p-5 bg-elevated border border-default flex flex-col items-start gap-2 motion-preset-fade-md"
+				>
+					<UIcon
+						name="mdi:run"
+						class="size-7 text-info"
+					/>
+					<h2 class="text-lg font-semibold">Pick What you Love</h2>
+					<p class="text-sm text-muted">
+						Choose activities — running, gardening, photography, anything — and the rest of the app
+						tailors itself to you.
+					</p>
+				</div>
+				<div
+					class="rounded-xl p-5 bg-elevated border border-default flex flex-col items-start gap-2 motion-preset-fade-md motion-delay-100"
+				>
+					<UIcon
+						name="mdi:map-marker-path"
+						class="size-7 text-warning"
+					/>
+					<h2 class="text-lg font-semibold">Go on a Quest</h2>
+					<p class="text-sm text-muted">
+						Each activity has structured quests with steps, rewards, and a satisfying finish. Earn
+						Impact Points along the way.
+					</p>
+				</div>
+				<div
+					class="rounded-xl p-5 bg-elevated border border-default flex flex-col items-start gap-2 motion-preset-fade-md motion-delay-200"
+				>
+					<UIcon
+						name="mdi:account-multiple-outline"
+						class="size-7 text-success"
+					/>
+					<h2 class="text-lg font-semibold">Meet Your People</h2>
+					<p class="text-sm text-muted">
+						Articles, prompts, and events bring you together with humans who care about the same
+						stuff you do.
+					</p>
+				</div>
+			</div>
+
 			<div
 				class="flex flex-col items-center justify-center w-full motion-opacity-in-0 motion-duration-1500"
 			>
