@@ -153,11 +153,6 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 		token: string,
 		newPassword: string
 	): Promise<{ success: boolean; message?: string; status?: number }> => {
-		// mantle2 returns `{ message: 'Password changed successfully' }` on 200 and
-		// `{ message: 'Invalid or expired token' }` on 400 — both carry a `message`
-		// field, which our generic makeRequest helper interprets as a failure
-		// regardless of HTTP status. Bypass it and use $fetch.raw directly so we
-		// can branch on the actual response code.
 		const config = useRuntimeConfig();
 		const url = `${config.public.apiBaseUrl}/v2/users/${id}/change_password?token=${encodeURIComponent(token)}`;
 		try {
