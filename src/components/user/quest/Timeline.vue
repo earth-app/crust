@@ -15,16 +15,18 @@
 
 			<UTooltip
 				v-else-if="mobileOnly && !completed"
-				text="This quest is only available on The Earth App mobile app."
+				text="This quest is only available in The Earth App mobile app. Tap to install or open."
 			>
 				<UButton
 					id="quest-button"
 					color="info"
 					variant="soft"
-					icon="mdi:cellphone-lock"
-					disabled
+					icon="mdi:cellphone-arrow-down"
+					:to="appConfig.mobile.getTheAppUrl"
+					target="_blank"
+					rel="noopener"
 					class="self-center"
-					>Mobile Only</UButton
+					>Open in The Earth App</UButton
 				>
 			</UTooltip>
 
@@ -400,6 +402,7 @@ const emit = defineEmits<{
 const { user } = useAuth();
 const userId = computed(() => user.value?.id);
 const { quest, questHistory, fetchUserQuest, startQuest, endQuest } = useUser(userId);
+const appConfig = useAppConfig();
 
 const accountType = computed(() => user.value?.account.account_type);
 const delayReduction = computed(() => getQuestDelayReduction(accountType.value));
@@ -479,7 +482,18 @@ function selectStep(step: TimelineStep, index: number) {
 				'This step can only be completed in The Earth App mobile app. Complete an alternative step if one is available.',
 			icon: 'mdi:cellphone-lock',
 			color: 'info',
-			duration: 4000
+			duration: 4000,
+			actions: [
+				{
+					label: 'Open in The Earth App',
+					icon: 'mdi:cellphone-arrow-down',
+					color: 'info',
+					variant: 'solid',
+					to: appConfig.mobile.getTheAppUrl,
+					target: '_blank',
+					rel: 'noopener'
+				}
+			]
 		});
 		return;
 	}
@@ -498,9 +512,8 @@ function isCurrentStep(index: number) {
 
 function isUnlocked(index: number) {
 	if (!quest.value) return false;
-	const ci = currentIndex.value;
-	if (ci < 0) return false;
-	return index <= ci;
+	if (currentIndex.value === -1) return true;
+	return index <= currentIndex.value;
 }
 
 // only the active quest's future tiles are locked; past alt-step groups stay
