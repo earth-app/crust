@@ -45,11 +45,15 @@
 		>
 			<div
 				ref="scrollContainer"
-				class="flex flex-col sm:flex-row items-stretch flex-nowrap sm:py-2 md:py-4 lg:py-6 px-4 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing *:mx-2 *:h-1/2 *:min-w-10 *:max-w-140 *:z-10 *:shrink-0"
+				role="region"
+				:aria-label="`${title} card carousel — use arrow keys to scroll`"
+				tabindex="0"
+				class="flex flex-col sm:flex-row items-stretch flex-nowrap sm:py-2 md:py-4 lg:py-6 px-4 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md *:mx-2 *:h-1/2 *:min-w-10 *:max-w-140 *:z-10 *:shrink-0"
 				@mousedown="startDrag"
 				@mousemove="onDrag"
 				@mouseup="endDrag"
 				@mouseleave="endDrag"
+				@keydown="onKeydown"
 			>
 				<slot />
 			</div>
@@ -115,6 +119,34 @@ useEventListener(
 onMounted(() => {
 	if (scrollContainer.value) updateProgress();
 });
+
+// keyboard scrolling: arrows nudge by ~80% of viewport width so keyboard users
+// don't lose context between pages. Home/End jump to the ends.
+const onKeydown = (e: KeyboardEvent) => {
+	const el = scrollContainer.value;
+	if (!el) return;
+	const step = Math.max(120, Math.floor(el.clientWidth * 0.8));
+	switch (e.key) {
+		case 'ArrowRight':
+		case 'PageDown':
+			e.preventDefault();
+			el.scrollBy({ left: step, behavior: 'smooth' });
+			break;
+		case 'ArrowLeft':
+		case 'PageUp':
+			e.preventDefault();
+			el.scrollBy({ left: -step, behavior: 'smooth' });
+			break;
+		case 'Home':
+			e.preventDefault();
+			el.scrollTo({ left: 0, behavior: 'smooth' });
+			break;
+		case 'End':
+			e.preventDefault();
+			el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
+			break;
+	}
+};
 
 const startDrag = (e: MouseEvent) => {
 	if (!scrollContainer.value) return;
