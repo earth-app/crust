@@ -139,7 +139,7 @@
 			/>
 		</div>
 		<div
-			class="min-w-130 max-w-4xl mt-4"
+			class="sm:min-w-80 md:min-w-130 max-w-4xl mt-4"
 			id="user-friends"
 		>
 			<LazyUserFriends

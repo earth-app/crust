@@ -23,7 +23,7 @@
 			:label="badgeLabel"
 			:class="badgeStyling"
 			:ui="{ base: 'justify-center' }"
-			class="px-1 sm:px-2 md:px-3 py-1 rounded-full text-white text-sm font-semibold"
+			class="px-2 md:px-3 py-1 rounded-full text-white text-sm font-semibold"
 		/>
 	</span>
 </template>

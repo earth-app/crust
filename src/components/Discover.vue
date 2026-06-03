@@ -6,6 +6,9 @@
 			icon="mdi:compass"
 			variant="outline"
 			class="w-full"
+			:ui="{
+				base: 'text-xs sm:text-sm md:text-base'
+			}"
 		/>
 
 		<template #content>
