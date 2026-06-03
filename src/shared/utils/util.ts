@@ -500,6 +500,18 @@ export function valid<T>(
 	return false;
 }
 
+// fisher-yates, non-mutating
+export function shuffle<T>(arr: readonly T[]): T[] {
+	const a = [...arr];
+	for (let i = a.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		const tmp = a[i] as T;
+		a[i] = a[j] as T;
+		a[j] = tmp;
+	}
+	return a;
+}
+
 // content ttl data
 
 export type ContentKind = 'prompt' | 'article' | 'event' | 'prompt_response';
