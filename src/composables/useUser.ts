@@ -1555,6 +1555,8 @@ export function useStepSubmission(
 	const submitError = ref('');
 
 	async function submit() {
+		// drop duplicate clicks while a submission is already in flight
+		if (submitting.value) return;
 		if (props.disabled || props.submit === false) {
 			emit('submitted');
 			return;
