@@ -7,6 +7,8 @@ import { useUserStore } from 'stores/user';
 import { BadgeMasteryGenerationError } from 'types/user';
 import type { MaybeRefOrGetter } from 'vue';
 
+// #region visited site
+
 export function useVisitedSite() {
 	const visitedSiteCookie = useCookie<boolean | string | null>('visited_site', {
 		sameSite: 'lax',
@@ -31,7 +33,7 @@ export function useVisitedSite() {
 	};
 }
 
-// Avatar and user caching is now handled by Pinia stores
+// #region avatar and user
 
 export function useDisplayName(
 	user: MaybeRefOrGetter<
@@ -669,6 +671,8 @@ export function useUser(
 	};
 }
 
+// #region quests
+
 export function useQuests() {
 	const userStore = useUserStore();
 	const quests = computed(() => {
@@ -734,7 +738,107 @@ export function useQuests() {
 	};
 }
 
-// User Notifications
+export interface QuestCelebrationPayload {
+	questTitle?: string;
+	points?: number;
+	badgeIcon?: string;
+}
+
+const open = ref(false);
+const payload = ref<QuestCelebrationPayload>({});
+
+export function useQuestCelebration() {
+	return {
+		open,
+		payload,
+		triggerCelebration(p: QuestCelebrationPayload) {
+			payload.value = p;
+			open.value = true;
+		},
+		closeCelebration() {
+			open.value = false;
+		}
+	};
+}
+
+interface SubmittableStep {
+	type: string;
+	index: number;
+	altIndex?: number;
+}
+
+export interface UseStepSubmissionProps {
+	step: SubmittableStep;
+	disabled?: boolean;
+	submit?: boolean;
+	serverRequest?: typeof makeServerRequest;
+}
+
+// shared submit/loading/error wiring for timed game step components
+export function useStepSubmission(
+	props: UseStepSubmissionProps,
+	emit: (event: 'submitted') => void
+) {
+	const { user } = useAuth(props.serverRequest || makeServerRequest);
+	const userId = computed(() => user.value?.id);
+	const { updateQuest } = useUser(userId, props.serverRequest || makeServerRequest);
+	const { lat, lng } = useQuestGeolocation();
+
+	const submitting = ref(false);
+	const submitError = ref('');
+
+	async function submit() {
+		// drop duplicate clicks while a submission is already in flight
+		if (submitting.value) return;
+		if (props.disabled || props.submit === false) {
+			emit('submitted');
+			return;
+		}
+		if (!userId.value) {
+			submitError.value = 'Your account is still loading…';
+			return;
+		}
+		submitError.value = '';
+		submitting.value = true;
+		try {
+			const res = await updateQuest(
+				{
+					type: props.step.type,
+					index: props.step.index,
+					...(props.step.altIndex !== undefined ? { altIndex: props.step.altIndex } : {})
+				},
+				lat.value,
+				lng.value
+			);
+			if (res.validated) {
+				if (res.completed) {
+					const { triggerCelebration } = useQuestCelebration();
+					triggerCelebration({
+						questTitle: undefined,
+						points: 0,
+						badgeIcon: 'mdi:trophy-award'
+					});
+				}
+				await new Promise((r) => setTimeout(r, 800));
+				emit('submitted');
+			} else {
+				submitError.value = res.message || 'Could not save your progress. Please try again.';
+			}
+		} catch (e: any) {
+			submitError.value =
+				e?.data?.message ||
+				e?.statusMessage ||
+				e?.message ||
+				'Submission failed. Please try again.';
+		} finally {
+			submitting.value = false;
+		}
+	}
+
+	return { submit, submitting, submitError, userId };
+}
+
+// #region notifications
 
 export function useNotifications() {
 	const notificationStore = useNotificationStore();
@@ -889,7 +993,7 @@ export function useJourneyLeaderboard(
 	};
 }
 
-// OAuth Utils
+// #region oauth
 
 const microsoftAuth = (state: string) => {
 	const config = useRuntimeConfig();
@@ -1018,7 +1122,7 @@ export function authLink(
 	}
 }
 
-// User Friends
+// #region user friends
 
 export function useFriends(id?: string) {
 	const friendsStore = useFriendsStore();
@@ -1120,7 +1224,7 @@ export function useQuestGeolocation() {
 	};
 }
 
-// badge mastery
+// #region badge mastery
 
 export type MasteryButtonState =
 	| 'loading'
@@ -1524,75 +1628,4 @@ export function buildBadgeMasteryTour(opts: BadgeMasteryTourOptions) {
 			icon: 'mdi:progress-question'
 		}
 	]);
-}
-
-// quest step submission
-
-interface SubmittableStep {
-	type: string;
-	index: number;
-	altIndex?: number;
-}
-
-export interface UseStepSubmissionProps {
-	step: SubmittableStep;
-	disabled?: boolean;
-	submit?: boolean;
-	serverRequest?: typeof makeServerRequest;
-}
-
-// shared submit/loading/error wiring for timed game step components
-export function useStepSubmission(
-	props: UseStepSubmissionProps,
-	emit: (event: 'submitted') => void
-) {
-	const { user } = useAuth(props.serverRequest || makeServerRequest);
-	const userId = computed(() => user.value?.id);
-	const { updateQuest } = useUser(userId, props.serverRequest || makeServerRequest);
-	const { lat, lng } = useQuestGeolocation();
-
-	const submitting = ref(false);
-	const submitError = ref('');
-
-	async function submit() {
-		// drop duplicate clicks while a submission is already in flight
-		if (submitting.value) return;
-		if (props.disabled || props.submit === false) {
-			emit('submitted');
-			return;
-		}
-		if (!userId.value) {
-			submitError.value = 'Your account is still loading…';
-			return;
-		}
-		submitError.value = '';
-		submitting.value = true;
-		try {
-			const res = await updateQuest(
-				{
-					type: props.step.type,
-					index: props.step.index,
-					...(props.step.altIndex !== undefined ? { altIndex: props.step.altIndex } : {})
-				},
-				lat.value,
-				lng.value
-			);
-			if (res.validated) {
-				await new Promise((r) => setTimeout(r, 800));
-				emit('submitted');
-			} else {
-				submitError.value = res.message || 'Could not save your progress. Please try again.';
-			}
-		} catch (e: any) {
-			submitError.value =
-				e?.data?.message ||
-				e?.statusMessage ||
-				e?.message ||
-				'Submission failed. Please try again.';
-		} finally {
-			submitting.value = false;
-		}
-	}
-
-	return { submit, submitting, submitError, userId };
 }
