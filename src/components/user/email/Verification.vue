@@ -34,6 +34,18 @@
 					Enter all 8 digits of the verification code. The code will be automatically submitted when
 					complete.
 				</p>
+				<p
+					v-if="codeExpiryLabel"
+					class="text-sm mt-1"
+					:class="codeExpired ? 'text-error font-medium' : 'text-muted'"
+					aria-live="polite"
+				>
+					<UIcon
+						:name="codeExpired ? 'mdi:timer-off-outline' : 'mdi:timer-sand'"
+						class="size-3.5 align-text-bottom"
+					/>
+					{{ codeExpiryLabel }}
+				</p>
 				<UButton
 					variant="outline"
 					size="sm"
@@ -100,6 +112,34 @@ const loading = ref(false);
 const cooldown = ref(0); // matches the 60s mantle2 resend-rate-limit window
 let cooldownTimer: ReturnType<typeof setInterval> | null = null;
 
+// mantle2 stores the code in Redis with a 15-minute TTL. we only know the
+// issuance time when we observe a successful send/resend from this page; before
+// that we render no countdown rather than guess.
+const CODE_TTL_MS = 15 * 60 * 1000;
+const codeExpiresAt = ref<number | null>(null);
+const now = ref(Date.now());
+let nowTimer: ReturnType<typeof setInterval> | null = null;
+
+const codeExpired = computed(
+	() => codeExpiresAt.value !== null && now.value >= codeExpiresAt.value
+);
+
+const codeExpiryLabel = computed(() => {
+	if (codeExpiresAt.value === null) return '';
+	if (codeExpired.value) return 'Code expired — request a new one to continue.';
+	const remainingMs = codeExpiresAt.value - now.value;
+	const totalSec = Math.max(0, Math.floor(remainingMs / 1000));
+	const mm = Math.floor(totalSec / 60);
+	const ss = totalSec % 60;
+	return `Code expires in ${mm}:${ss.toString().padStart(2, '0')}.`;
+});
+
+onMounted(() => {
+	nowTimer = setInterval(() => {
+		now.value = Date.now();
+	}, 1000);
+});
+
 function startCooldown(seconds = 60) {
 	cooldown.value = seconds;
 	if (cooldownTimer) clearInterval(cooldownTimer);
@@ -114,6 +154,7 @@ function startCooldown(seconds = 60) {
 
 onBeforeUnmount(() => {
 	if (cooldownTimer) clearInterval(cooldownTimer);
+	if (nowTimer) clearInterval(nowTimer);
 });
 
 async function resendVerificationEmail() {
@@ -126,6 +167,7 @@ async function resendVerificationEmail() {
 		const res = await sendVerificationEmail();
 		if (res.success) {
 			startCooldown();
+			codeExpiresAt.value = Date.now() + CODE_TTL_MS;
 			toast.add({
 				title: 'Verification Email Sent',
 				description: 'A new verification code has been sent to your email address.',
