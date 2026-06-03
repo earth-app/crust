@@ -50,6 +50,7 @@
 </template>
 
 <script setup lang="ts">
+import { defineArticle } from 'nuxt-schema-org/schema';
 import { computeContentExpiry } from 'utils';
 
 const toast = useToast();
@@ -153,6 +154,22 @@ watch(
 useSeoMeta({
 	ogTitle: article.value ? article.value.title : 'Article',
 	ogDescription: article.value ? article.value.description : 'Article'
+});
+
+// JSON-LD Article schema for richer search-engine previews
+useSchemaOrg(() => {
+	const a = article.value;
+	if (!a || 'error' in (a as any)) return [];
+	return [
+		defineArticle({
+			'@type': 'Article',
+			headline: a.title,
+			description: a.description,
+			datePublished: a.created_at,
+			...(a.updated_at ? { dateModified: a.updated_at } : {}),
+			...(a.author?.username ? { author: { '@type': 'Person', name: a.author.username } } : {})
+		})
+	];
 });
 
 async function loadSimilar(article?: Article) {

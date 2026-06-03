@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts">
+import { defineEvent } from 'nuxt-schema-org/schema';
 import type { Event } from 'types/event';
 import { computeContentExpiry } from 'utils';
 
@@ -102,6 +103,20 @@ watch([() => event.value, () => user.value] as const, ([e, u]) => {
 useSeoMeta({
 	ogTitle: event.value ? event.value.name : 'Event',
 	ogDescription: event.value ? event.value.description : 'Event'
+});
+
+useSchemaOrg(() => {
+	const e = event.value;
+	if (!e) return [];
+	return [
+		defineEvent({
+			'@type': 'Event',
+			name: e.name,
+			description: e.description,
+			startDate: new Date(e.date).toISOString(),
+			...(e.end_date ? { endDate: new Date(e.end_date).toISOString() } : {})
+		})
+	];
 });
 
 async function loadSimilar(event?: Event) {
