@@ -1,6 +1,16 @@
 <template>
+	<a
+		href="#main-content"
+		class="sr-only focus:not-sr-only focus:absolute focus:z-60 focus:top-2 focus:left-2 focus:px-3 focus:py-2 focus:bg-primary focus:text-white focus:rounded-md focus:shadow-lg"
+		>Skip to main content</a
+	>
+	<OfflineBanner />
 	<NavBar />
-	<main class="min-h-[90vh] w-full">
+	<main
+		id="main-content"
+		tabindex="-1"
+		class="min-h-[90vh] w-full focus:outline-none"
+	>
 		<slot />
 	</main>
 	<LazyFooter hydrate-on-visible />
@@ -13,6 +23,13 @@
 			:pulse="true"
 		/>
 		<UserEmailGate />
+		<LazyCommandPalette />
+		<UserQuestCompletionOverlay
+			v-model:open="celebration.open.value"
+			:quest-title="celebration.payload.value.questTitle"
+			:points="celebration.payload.value.points"
+			:badge-icon="celebration.payload.value.badgeIcon"
+		/>
 	</ClientOnly>
 </template>
 
@@ -20,6 +37,7 @@
 const route = useRoute();
 const router = useRouter();
 const { user, fetchUser } = useAuth();
+const celebration = useQuestCelebration();
 
 onMounted(async () => {
 	if (route.query.force_refresh) {
