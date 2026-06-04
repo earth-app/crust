@@ -88,6 +88,7 @@
 			</div>
 		</UCard>
 		<LazyUserQuestModal
+			v-if="modalEverOpened"
 			v-model:open="open"
 			:quest="quest"
 			:progress="resolvedProgress"
@@ -111,6 +112,14 @@ const { user } = useAuth();
 const userStore = useUserStore();
 
 const open = ref(false);
+// 20+ thumbnails on the quests page each used to mount a heavy modal eagerly. defer until
+// the user actually opens this thumbnail's modal; once mounted, keep it mounted so close
+// transitions and reopens don't pay the lazy-import cost again.
+const modalEverOpened = ref(false);
+watch(open, (isOpen) => {
+	if (isOpen) modalEverOpened.value = true;
+});
+
 const lazyProgress = ref<(QuestProgressEntry | QuestProgressEntry[])[] | undefined>(undefined);
 const resolvedProgress = computed(() => props.progress ?? lazyProgress.value);
 
