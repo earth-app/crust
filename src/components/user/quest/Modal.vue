@@ -242,6 +242,9 @@ const masteryBadge = computed(() => {
 	return badges.value.find((badge) => badge.id === badgeId) ?? null;
 });
 
+// dev-only timing markers so the daily-quest chip path can be profiled end-to-end
+const mountedAt = ref<number | null>(null);
+
 const accountType = computed(() => user.value?.account.account_type);
 const delayReduction = computed(() => getQuestDelayReduction(accountType.value));
 const delayReductionLabel = computed(() => {
@@ -289,7 +292,44 @@ const canOpenPremium = computed(() => {
 });
 
 onMounted(() => {
-	fetchBadges();
+	mountedAt.value = performance.now();
+	if (import.meta.dev) {
+		// eslint-disable-next-line no-console
+		console.log('[quest-modal] mounted', {
+			questId: props.quest?.id,
+			open: props.open,
+			t: Math.round(mountedAt.value)
+		});
+	}
+
+	// badges only matter for mastery quests; defer that fetch off the critical
+	// path so the daily-quest chip can paint the modal instantly. For non-mastery
+	// quests we skip the fetch entirely.
+	if (!isMasteryQuest.value) return;
+
+	const run = () => {
+		void fetchBadges();
+	};
+	if (typeof window !== 'undefined') {
+		const ric = (window as any).requestIdleCallback as
+			| ((cb: IdleRequestCallback, opts?: IdleRequestOptions) => number)
+			| undefined;
+		if (ric) ric(() => run(), { timeout: 1_500 });
+		else setTimeout(run, 0);
+	} else {
+		run();
+	}
+});
+
+onUnmounted(() => {
+	if (import.meta.dev) {
+		const opened = mountedAt.value ?? 0;
+		// eslint-disable-next-line no-console
+		console.log('[quest-modal] unmounted', {
+			questId: props.quest?.id,
+			openMs: opened ? Math.round(performance.now() - opened) : null
+		});
+	}
 });
 
 watch(

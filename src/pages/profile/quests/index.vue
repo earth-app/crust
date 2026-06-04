@@ -239,6 +239,14 @@
 </template>
 
 <script setup lang="ts">
+// the daily-quest chip pushes to this route with ?open=<id>, and view transitions
+// on a heavy SPA mount were timing out (Skipped ViewTransition due to timeout) —
+// hold the transition off for this page so the modal opens immediately.
+definePageMeta({
+	pageTransition: false,
+	layoutTransition: false
+});
+
 const { user } = useAuth();
 const { quests, fetchQuests } = useQuests();
 const userId = computed(() => user.value?.id);
@@ -272,14 +280,36 @@ async function refresh() {
 	}
 }
 
+// defer non-critical fetches off the hydration / route-transition critical path
+// so the modal (when opened via ?open=<id>) can paint immediately. The auth
+// plugin's invalidateSelf already kicks off quest/history fetches on login.
+function deferIdle(run: () => void, timeout = 1_500) {
+	if (typeof window === 'undefined') {
+		run();
+		return;
+	}
+	const ric = (window as any).requestIdleCallback as
+		| ((cb: IdleRequestCallback, opts?: IdleRequestOptions) => number)
+		| undefined;
+	if (ric) ric(() => run(), { timeout });
+	else setTimeout(run, 0);
+}
+
 watch(
 	() => user.value,
 	(newUser) => {
 		if (newUser) {
-			fetchQuests();
-			fetchUserQuest();
-			// force + explicit limit so we override any 25-entry prefetch cache from elsewhere
-			fetchQuestHistory({ force: true, limit: HISTORY_PAGE_LIMIT });
+			// fetchQuests is needed to resolve `?open=<id>` into a Quest, so kick it
+			// immediately (the store short-circuits if already populated by NavBar's
+			// daily-quest composable). Heavier per-user history / active-quest fetches
+			// can wait for idle.
+			void fetchQuests();
+			deferIdle(() => {
+				void fetchUserQuest();
+				// limit only — the store short-circuits when already cached, so we
+				// rely on `refresh` for explicit force-refresh.
+				void fetchQuestHistory({ limit: HISTORY_PAGE_LIMIT });
+			});
 		} else if (newUser === null) {
 			navigateTo(`/login?redirect=${encodeURIComponent(useRoute().fullPath)}`);
 		}
@@ -380,6 +410,25 @@ const autoOpenQuest = computed<Quest | null>(() => {
 	return allQuests.value.find((q) => q.id === id) ?? null;
 });
 
+// prefetch the modal chunk eagerly when ?open=<id> is present so the lazy
+// import isn't a serial step on the daily-quest tap path
+const wantsAutoOpen = computed(() => typeof route.query.open === 'string');
+if (import.meta.client) {
+	watch(
+		wantsAutoOpen,
+		(wants) => {
+			if (!wants) return;
+			try {
+				// note: prefetchComponents takes the non-Lazy name even when used with LazyXxx
+				void prefetchComponents(['UserQuestModal', 'UserQuestTimeline']);
+			} catch {
+				// prefetchComponents is best-effort; ignore failures
+			}
+		},
+		{ immediate: true }
+	);
+}
+
 watch(
 	autoOpenQuest,
 	(q) => {
@@ -389,10 +438,12 @@ watch(
 );
 
 // strip the ?open= query when the modal closes so re-tapping the chip re-triggers the watcher
+// defer the replace so the modal close paints first — without this, the router
+// nav fires synchronously during the close click and the user perceives a hang.
 watch(autoOpen, (open) => {
 	if (open) return;
 	if (typeof route.query.open !== 'string') return;
 	const { open: _omit, ...rest } = route.query;
-	router2.replace({ query: rest });
+	deferIdle(() => router2.replace({ query: rest }), 500);
 });
 </script>
