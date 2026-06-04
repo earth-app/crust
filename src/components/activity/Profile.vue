@@ -80,6 +80,18 @@
 		>
 			{{ activity.description }}
 		</h3>
+		<UAlert
+			v-if="showNoveltyHint"
+			id="activity-novelty-hint"
+			color="info"
+			variant="subtle"
+			icon="mdi:lightbulb-on-outline"
+			:close="{ color: 'info', variant: 'link' }"
+			title="A note on what you'll see here"
+			:description="`Some cards may drift away from ${activity.name}, that's intentional. The Earth App is built around novelty, and those tangents are how you bump into something new.`"
+			class="min-w-75 w-3/5 mt-4"
+			@update:open="dismissNoveltyHint"
+		/>
 		<!-- Icon Islands -->
 		<UIcon
 			v-for="island in islands"
@@ -169,6 +181,29 @@ const { user } = useAuth();
 const { widgetForIndex } = useFeedWidgets();
 const { islands, loadIslandsForActivity } = useActivityIslands();
 const { cards, loadCardsForActivity, loadMore, hasMore, isLoadingMore } = useActivityCards();
+
+const NOVELTY_HINT_STORAGE_KEY = 'crust:activity-novelty-hint-dismissed';
+const noveltyHintDismissed = ref(true);
+const showNoveltyHint = computed(() => !noveltyHintDismissed.value);
+
+onMounted(() => {
+	if (typeof window === 'undefined') return;
+	try {
+		noveltyHintDismissed.value = window.localStorage.getItem(NOVELTY_HINT_STORAGE_KEY) === '1';
+	} catch {
+		noveltyHintDismissed.value = false;
+	}
+});
+
+function dismissNoveltyHint() {
+	noveltyHintDismissed.value = true;
+	if (typeof window === 'undefined') return;
+	try {
+		window.localStorage.setItem(NOVELTY_HINT_STORAGE_KEY, '1');
+	} catch {
+		// best-effort
+	}
+}
 
 // interleave a widget after every 6 InfoCards (positions 5, 11, 17, ...) so they ride
 // alongside the infinite-scroll stream rather than sitting below the loading sentinel.
