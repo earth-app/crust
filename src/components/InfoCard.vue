@@ -147,7 +147,7 @@
 							height="400"
 							loading="lazy"
 							decoding="async"
-							class="w-full h-48 object-cover rounded-lg mb-2 will-change-transform"
+							class="ken-burns w-full h-48 object-cover rounded-lg mb-2 will-change-transform"
 							:style="parallaxStyle"
 						/>
 					</NuxtLink>
@@ -161,7 +161,7 @@
 						height="400"
 						loading="lazy"
 						decoding="async"
-						class="w-full h-48 object-cover rounded-lg mb-2 will-change-transform"
+						class="ken-burns w-full h-48 object-cover rounded-lg mb-2 will-change-transform"
 						:style="parallaxStyle"
 					/>
 					<LazyClientOnly
@@ -610,6 +610,33 @@ function appendUTMParameters(link: string) {
 	}
 	50% {
 		height: 100%;
+	}
+}
+
+/* ken-burns uses individual scale/translate so it composes with parallax's transform */
+@keyframes ken-burns {
+	0% {
+		scale: 1;
+		translate: 0 0;
+	}
+	100% {
+		scale: 1.06;
+		translate: 2px -1px;
+	}
+}
+
+/* hover-only, fine pointer — skip touch + reduced motion */
+@media (hover: hover) and (pointer: fine) {
+	.ken-burns {
+		transition: scale 0.4s ease-out;
+	}
+	.ken-burns:hover {
+		animation: ken-burns 4s ease-out 0.4s forwards;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.ken-burns:hover {
+			animation: none;
+		}
 	}
 }
 </style>
