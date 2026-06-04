@@ -148,6 +148,15 @@
 			/>
 		</div>
 		<div
+			class="min-w-80 w-11/12 max-w-3xl mt-4"
+			id="user-journey-hero"
+		>
+			<LazyUserJourneyHero
+				:user="props.user"
+				hydrate-on-visible
+			/>
+		</div>
+		<div
 			class="min-w-80 max-w-3xl mt-4"
 			id="user-journeys"
 		>
