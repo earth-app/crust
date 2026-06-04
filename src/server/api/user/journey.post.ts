@@ -1,6 +1,6 @@
 import { ensureLoggedIn, ensureValidActivity } from '~/server/utils';
 
-const validJournies = ['activity', 'prompt', 'article'];
+const validJournies = ['activity', 'prompt', 'article', 'event'];
 
 export default defineEventHandler(async (event) => {
 	const { type, activity } = getQuery(event);
