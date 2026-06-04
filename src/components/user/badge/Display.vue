@@ -33,7 +33,7 @@
 				>{{ capitalizeFully(badge.rarity) }}</UBadge
 			>
 			<h3
-				class="font-semibold! text-center leading-tight line-clamp-2"
+				class="font-semibold! text-center leading-tight line-clamp-2 m-0!"
 				:class="[sizeClasses.name, isMastered ? 'text-purple-50!' : '']"
 			>
 				{{ badge.name }}
