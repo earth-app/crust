@@ -4,15 +4,30 @@
 		:badge="badge"
 		:is-granted="isGranted"
 		:is-mastered="isMastered"
+		:size="size"
 		@clicked="noModal || (showDetails = true)"
 	/>
 	<UModal
 		v-if="!noModal"
 		v-model:open="showDetails"
 		:dismissible="!masteryLoading"
-		title="Badge Details"
-		:description="badge.description"
 	>
+		<template #header>
+			<div class="flex w-full space-x-8 justify-between">
+				<div class="flex flex-col">
+					<h2 class="font-bold">Badge Details</h2>
+					<p class="mt-1 text-sm text-muted text-wrap">{{ badge.description }}</p>
+				</div>
+
+				<UserBadgeDisplay
+					:badge="badge"
+					:is-granted="isGranted"
+					:is-mastered="isMastered"
+					size="small"
+				/>
+			</div>
+		</template>
+
 		<template #body>
 			<div class="flex flex-col items-center gap-4">
 				<UserBadgeDetailsHeader v-bind="badgeHeaderProps">
@@ -167,10 +182,12 @@ defineOptions({
 const props = withDefaults(
 	defineProps<{
 		badge: Badge | UserBadge;
+		size?: 'small' | 'medium' | 'full';
 		noModal?: boolean;
 	}>(),
 	{
-		noModal: false
+		noModal: false,
+		size: 'full'
 	}
 );
 

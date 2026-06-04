@@ -107,7 +107,8 @@
 						<UserBadgeCard
 							:badge="masteryBadge"
 							no-modal
-							class="mb-4"
+							size="medium"
+							class="my-4"
 						/>
 					</div>
 

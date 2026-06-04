@@ -42,9 +42,19 @@
 			</p>
 		</template>
 
+		<LazyUInput
+			v-model="search"
+			type="search"
+			placeholder="Search..."
+			class="mt-4 w-1/2 min-w-60"
+			icon="mdi:magnify"
+			hydrate-on-interaction
+		/>
+
 		<h3 class="mt-4 font-medium text-lg">Mastered Badges</h3>
 		<h4 class="text-sm opacity-80 mb-4">
 			{{ masteredBadges.length }}/{{ nonMasteryExemptBadges }} Mastered
+			{{ search ? `(for "${search}")` : '' }}
 		</h4>
 
 		<div
@@ -55,19 +65,24 @@
 				v-for="badge in masteredBadges"
 				:key="badge.id"
 				:badge="badge"
+				:size="badgeSize"
 				hydrate-on-visible
 			/>
 		</div>
 		<div
-			v-else
+			v-else-if="!badges"
 			class="flex items-center"
 		>
 			<Loading />
 		</div>
+		<div v-else>
+			<span class="opacity-80">No badges found.</span>
+		</div>
 
 		<h3 class="mt-4 font-medium text-lg">Completed Badges</h3>
 		<h4 class="text-sm opacity-80 mb-4">
-			{{ completedBadges.length }}/{{ badges.length }} Completed
+			{{ completedBadges.length }}/{{ shownBadges.length }} Completed
+			{{ search ? `(for "${search}")` : '' }}
 		</h4>
 
 		<div
@@ -78,33 +93,41 @@
 				v-for="badge in completedBadges"
 				:key="badge.id"
 				:badge="badge"
+				:size="badgeSize"
 				hydrate-on-visible
 			/>
 		</div>
 		<div
-			v-else
+			v-else-if="!badges"
 			class="flex items-center"
 		>
 			<Loading />
+		</div>
+		<div v-else>
+			<span class="opacity-80">No completed badges found.</span>
 		</div>
 
 		<h3 class="my-4 font-medium text-lg">All Badges</h3>
 		<div
-			v-if="badges.length > 0"
+			v-if="shownBadges.length > 0"
 			class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center items-center gap-4"
 		>
 			<LazyUserBadgeCard
-				v-for="badge in badges"
+				v-for="badge in shownBadges"
 				:key="badge.id"
 				:badge="badge"
+				:size="badgeSize"
 				hydrate-on-visible
 			/>
 		</div>
 		<div
-			v-else
+			v-else-if="!badges"
 			class="flex items-center"
 		>
 			<Loading />
+		</div>
+		<div v-else>
+			<span class="opacity-80">No badges found.</span>
 		</div>
 	</div>
 	<div
@@ -131,8 +154,6 @@ const {
 	fetchBadges,
 	quest,
 	fetchUserQuest,
-	questHistory,
-	fetchQuestHistory,
 	masteryList,
 	fetchMasteryList
 } = useUser(route.params.id as string);
@@ -140,6 +161,12 @@ const { handle } = useDisplayName(user);
 const { setTitleSuffix } = useTitleSuffix();
 const { user: authUser } = useAuth();
 const userStore = useUserStore();
+
+const viewport = useViewport();
+const badgeSize = computed(() => {
+	if (viewport.isLessOrEquals('mobileMedium')) return 'medium';
+	return 'full';
+});
 
 // masteries are private state - only fetch when viewing your own profile (mantle2 enforces
 // 403 anyway, but a preflight check avoids a needless round trip + console error)
@@ -167,7 +194,6 @@ onMounted(() => {
 	fetchBadges();
 	if (isOwnProfile.value && authUser.value) {
 		fetchUserQuest();
-		fetchQuestHistory();
 		fetchMasteryList();
 	}
 });
@@ -175,14 +201,33 @@ onMounted(() => {
 watch(isOwnProfile, (own) => {
 	if (own && authUser.value) {
 		fetchUserQuest();
-		fetchQuestHistory();
 		fetchMasteryList();
 	}
 });
 
-const completedBadges = computed(() => badges.value.filter((b) => b.granted));
-const masteredBadges = computed(() => badges.value.filter((b) => b.mastered));
-const nonMasteryExemptBadges = computed(() => badges.value.filter((b) => !b.mastery_exempt).length);
+const search = ref('');
+const shownBadges = computed(() => {
+	return badges.value.filter((b) => {
+		if (search.value) {
+			return (
+				b.name.toLowerCase().includes(search.value.toLowerCase()) ||
+				b.description.toLowerCase().includes(search.value.toLowerCase()) ||
+				b.tracker_id?.toLowerCase().includes(search.value.toLowerCase())
+			);
+		}
+		return true;
+	});
+});
+
+const completedBadges = computed(() =>
+	badges.value.filter((b) => b.granted).filter((b) => shownBadges.value.includes(b))
+);
+const masteredBadges = computed(() =>
+	badges.value.filter((b) => b.mastered).filter((b) => shownBadges.value.includes(b))
+);
+const nonMasteryExemptBadges = computed(
+	() => badges.value.filter((b) => !b.mastery_exempt && shownBadges.value.includes(b)).length
+);
 
 // hide finished masteries from the active list - the dedicated "Mastered Badges" section
 // below already surfaces them, and showing them here misled users into thinking the slot
