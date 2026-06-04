@@ -99,30 +99,39 @@
 				:key="`skeleton-${n}`"
 			/>
 
-			<!-- Card Data Entries -->
-			<LazyInfoCard
+			<!-- Card Data Entries (with widgets interleaved every 6 cards) -->
+			<template
 				v-for="(card, index) in cards"
 				:key="card.key || `card-${index}`"
-				:id="`card-${index}`"
-				class="z-20 contain-[layout_paint_style]"
-				style="content-visibility: auto; contain-intrinsic-size: 520px"
-				:icon="card.icon"
-				:external="true"
-				:title="card.title"
-				:description="card.description"
-				:content="card.content"
-				:link="card.link"
-				:description-link="card.descriptionLink"
-				:image="card.image"
-				:image-link="card.imageLink"
-				:object="{ url: card.object, type: card.objectType }"
-				:youtube-id="card.youtubeId"
-				:video="card.video"
-				:footer="card.footer"
-				:secondary-footer="card.secondaryFooter"
-				:color="card.color || 0xffffff"
-				hydrate-on-visible
-			/>
+			>
+				<LazyInfoCard
+					:id="`card-${index}`"
+					class="z-20 contain-[layout_paint_style]"
+					style="content-visibility: auto; contain-intrinsic-size: 520px"
+					:icon="card.icon"
+					:external="true"
+					:title="card.title"
+					:description="card.description"
+					:content="card.content"
+					:link="card.link"
+					:description-link="card.descriptionLink"
+					:image="card.image"
+					:image-link="card.imageLink"
+					:object="{ url: card.object, type: card.objectType }"
+					:youtube-id="card.youtubeId"
+					:video="card.video"
+					:footer="card.footer"
+					:secondary-footer="card.secondaryFooter"
+					:color="card.color || 0xffffff"
+					hydrate-on-visible
+				/>
+				<LazyActivityWidgetSlot
+					v-if="cardWidgetKind(index)"
+					:kind="cardWidgetKind(index)!"
+					:activity="{ id: activity.id, name: activity.name }"
+					hydrate-on-visible
+				/>
+			</template>
 		</div>
 		<LazyClientOnly>
 			<div
@@ -157,8 +166,24 @@ const props = defineProps<{
 }>();
 
 const { user } = useAuth();
+const { widgetForIndex } = useFeedWidgets();
 const { islands, loadIslandsForActivity } = useActivityIslands();
 const { cards, loadCardsForActivity, loadMore, hasMore, isLoadingMore } = useActivityCards();
+
+// interleave a widget after every 6 InfoCards (positions 5, 11, 17, ...) so they ride
+// alongside the infinite-scroll stream rather than sitting below the loading sentinel.
+// shifted by an activity-id hash so different activities don't all show the same widget
+// at the same position.
+const activityIdHash = computed(() =>
+	(props.activity?.id ?? '').split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7)
+);
+function cardWidgetKind(index: number): FeedWidgetKind | null {
+	// position widget on every 6th card (5, 11, 17, ...) so each row has a clean rhythm
+	if ((index + 1) % 6 !== 0) return null;
+	// shift the index by activity hash so the picked widget kind varies between activities
+	const shifted = 7 + (Math.floor((index + 1) / 6) - 1 + (activityIdHash.value % 8)) * 8;
+	return widgetForIndex(shifted);
+}
 
 const editing = ref(false);
 const loadMoreRef = ref<HTMLElement | null>(null);
