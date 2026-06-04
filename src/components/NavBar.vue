@@ -69,26 +69,20 @@
 						>
 					</div>
 					<div class="flex gap-1 sm:gap-2 items-center justify-center">
-						<UiPulseRing
+						<UButton
 							v-if="dailyQuest"
-							:active="!dailyQuestTapped"
+							id="daily-quest-chip"
+							size="sm"
 							color="primary"
+							variant="soft"
+							icon="mdi:compass-rose"
+							:title="`Today's Quest: ${dailyQuest.title}`"
+							:aria-label="`Today's Quest: ${dailyQuest.title}`"
 							class="rounded-full"
+							@click="openDailyQuest"
 						>
-							<UButton
-								id="daily-quest-chip"
-								size="sm"
-								color="primary"
-								variant="soft"
-								icon="mdi:compass-rose"
-								:title="`Today's Quest: ${dailyQuest.title}`"
-								:aria-label="`Today's Quest: ${dailyQuest.title}`"
-								class="rounded-full"
-								@click="openDailyQuest"
-							>
-								<span class="hidden xl:inline">Today's Quest</span>
-							</UButton>
-						</UiPulseRing>
+							<span class="hidden xl:inline">Today's Quest</span>
+						</UButton>
 						<NuxtLink
 							to="/profile/notifications"
 							class="size-6 lg:size-7 relative"
