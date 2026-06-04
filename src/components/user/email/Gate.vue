@@ -22,30 +22,33 @@
 					</div>
 				</div>
 
-				<UAlert
+				<LazyUAlert
 					v-if="hasEmail && currentEmail"
 					color="info"
 					variant="subtle"
 					icon="mdi:email-outline"
 					:title="currentEmail"
 					description="A 6-8 digit code will be sent to this address."
+					hydrate-on-visible
 				/>
 
-				<UAlert
+				<LazyUAlert
 					v-if="error"
 					color="error"
 					variant="subtle"
 					icon="mdi:alert-circle"
 					:title="error"
+					hydrate-on-visible
 				/>
 
-				<UAlert
+				<LazyUAlert
 					v-if="sentMessage"
 					color="success"
 					variant="subtle"
 					icon="mdi:check-circle"
 					:title="sentMessage"
 					description="Check your inbox (and spam folder) for the code, then enter it on the verification page."
+					hydrate-on-visible
 				/>
 
 				<div class="flex gap-2 flex-wrap mt-2">

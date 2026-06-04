@@ -18,14 +18,17 @@
 				</p>
 			</div>
 
-			<UDropdownMenu :items="menuItems">
+			<LazyUDropdownMenu
+				:items="menuItems"
+				hydrate-on-interaction="click"
+			>
 				<UButton
 					icon="mdi:dots-horizontal"
 					variant="ghost"
 					color="neutral"
 					size="sm"
 				/>
-			</UDropdownMenu>
+			</LazyUDropdownMenu>
 		</div>
 
 		<div class="mb-3">
