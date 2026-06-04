@@ -1,7 +1,7 @@
 <template>
 	<div
 		:class="[
-			'ml-2 sm:ml-4 md:ml-6 lg:ml-8 mt-6 min-w-70 max-w-11/12 relative rounded-lg',
+			'ml-2 sm:ml-4 md:ml-6 lg:ml-8 my-3 min-w-70 max-w-11/12 relative rounded-lg',
 			special && !prefersReducedMotion ? 'gradient-border-host' : ''
 		]"
 	>
