@@ -22,7 +22,10 @@
 			]"
 		/>
 
-		<div class="flex flex-col items-center gap-2 px-1 min-w-0">
+		<div
+			class="flex flex-col items-center px-1 min-w-0"
+			:class="size === 'full' ? 'gap-2' : size === 'medium' ? 'gap-1' : ''"
+		>
 			<UBadge
 				:color="rarityColor"
 				:size="badgeSize"
@@ -65,7 +68,7 @@ const sizeClasses = computed(() => {
 	switch (props.size) {
 		case 'small':
 			return {
-				container: 'w-25 gap-1.5 p-2',
+				container: 'w-35 gap-1.5 p-2',
 				icon: 'min-h-7 min-w-7',
 				name: 'text-xs!',
 				desc: ''
@@ -74,7 +77,7 @@ const sizeClasses = computed(() => {
 			return {
 				container: 'w-50 gap-3 p-3',
 				icon: 'min-h-12 min-w-12',
-				name: 'text-sm! md:text-base!',
+				name: 'text-xs! md:text-sm!',
 				desc: 'text-xs!'
 			};
 		default:
