@@ -392,8 +392,7 @@ async function submitPhoto(file: File) {
 			if (res.completed) {
 				celebration.triggerCelebration({
 					questTitle: props.quest.title,
-					points: props.quest.reward ?? 0,
-					badgeIcon: 'mdi:trophy-award'
+					points: props.quest.reward ?? 0
 				});
 			}
 			await new Promise((r) => setTimeout(r, 900));

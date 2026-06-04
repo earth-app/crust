@@ -163,8 +163,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 								};
 								triggerCelebration({
 									questTitle: undefined,
-									points: completedPayload.questReward ?? 0,
-									badgeIcon: 'mdi:trophy-award'
+									points: completedPayload.questReward ?? 0
 								});
 							}
 							break;

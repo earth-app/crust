@@ -28,8 +28,17 @@
 			v-model:open="celebration.open.value"
 			:quest-title="celebration.payload.value.questTitle"
 			:points="celebration.payload.value.points"
-			:badge-icon="celebration.payload.value.badgeIcon"
-		/>
+		>
+			<template #actions="{ close }">
+				<UButton
+					color="primary"
+					trailing-icon="mdi:arrow-right"
+					@click="close"
+				>
+					Keep Exploring
+				</UButton>
+			</template>
+		</UserQuestCompletionOverlay>
 	</ClientOnly>
 </template>
 

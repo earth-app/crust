@@ -25,15 +25,6 @@
 					aria-hidden="true"
 				/>
 				<div class="relative max-w-md w-full bg-elevated rounded-2xl shadow-2xl p-6 text-center">
-					<UButton
-						color="neutral"
-						variant="ghost"
-						size="sm"
-						icon="mdi:close"
-						class="absolute top-2 right-2"
-						aria-label="Dismiss celebration"
-						@click="close"
-					/>
 					<div
 						class="mx-auto mb-3 size-16 rounded-full bg-success/10 flex items-center justify-center"
 					>
@@ -71,26 +62,12 @@
 						<span class="text-sm text-muted">Impact Points</span>
 					</div>
 					<div
-						v-if="badgeIcon"
-						class="flex items-center justify-center gap-2 my-3"
-					>
-						<UIcon
-							:name="badgeIcon"
-							class="size-8 text-warning motion-preset-pop"
-						/>
-						<span class="text-sm font-medium">Badge unlocked!</span>
-					</div>
-					<div
 						class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 mt-2"
 					>
-						<slot name="actions" />
-						<UButton
-							color="primary"
-							trailing-icon="mdi:arrow-right"
-							@click="close"
-						>
-							Keep Exploring
-						</UButton>
+						<slot
+							name="actions"
+							:close="close"
+						/>
 					</div>
 				</div>
 			</div>
@@ -104,7 +81,6 @@ const props = withDefaults(
 		open: boolean;
 		questTitle?: string;
 		points?: number;
-		badgeIcon?: string;
 	}>(),
 	{ points: 0 }
 );

@@ -758,7 +758,6 @@ export function useQuests() {
 export interface QuestCelebrationPayload {
 	questTitle?: string;
 	points?: number;
-	badgeIcon?: string;
 }
 
 const open = ref(false);
@@ -832,8 +831,7 @@ export function useStepSubmission(
 					const { triggerCelebration } = useQuestCelebration();
 					triggerCelebration({
 						questTitle: undefined,
-						points: 0,
-						badgeIcon: 'mdi:trophy-award'
+						points: 0
 					});
 				}
 				await new Promise((r) => setTimeout(r, 800));
