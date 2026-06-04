@@ -23,6 +23,12 @@
 			/>
 		</InfoCardGroup>
 	</div>
+	<div class="flex justify-center w-full px-4 mt-8">
+		<div class="w-full max-w-2xl">
+			<LazyActivityWidgetsWordOfTheDay hydrate-on-visible />
+		</div>
+	</div>
+
 	<div class="flex w-full justify-center items-center my-4 gap-2">
 		<h2
 			id="activities"
