@@ -494,6 +494,7 @@
 
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
+import { extractServerMessage } from 'errors';
 import { OAUTH_PROVIDERS, type User } from 'types/user';
 import { capitalizeFully } from 'utils';
 import type { InputTypeHTMLAttribute } from 'vue';
@@ -734,53 +735,66 @@ async function regenerateProfilePhoto() {
 
 	avatarLoading.value = true;
 
-	const res = await regenerateAvatar();
-	if (valid(res) && res.data instanceof Blob) {
-		if (avatarOverride.value && avatarOverride.value.startsWith('blob:')) {
-			URL.revokeObjectURL(avatarOverride.value);
+	try {
+		const res = await regenerateAvatar();
+		if (valid(res) && res.data instanceof Blob) {
+			if (avatarOverride.value && avatarOverride.value.startsWith('blob:')) {
+				URL.revokeObjectURL(avatarOverride.value);
+			}
+
+			// clear cached blob URLs to force refetch
+			const cachedBlobUrls = useState<{
+				avatar: string | null;
+				avatar32: string | null;
+				avatar128: string | null;
+			} | null>(`user-avatar-blobs-${user.value.id}`, () => null);
+
+			if (cachedBlobUrls.value) {
+				const avatar = cachedBlobUrls.value.avatar;
+				const avatar32 = cachedBlobUrls.value.avatar32;
+				const avatar128 = cachedBlobUrls.value.avatar128;
+
+				if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
+				if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
+				if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
+
+				cachedBlobUrls.value = null;
+			}
+
+			avatarOverride.value = URL.createObjectURL(res.data);
+			await refetchUser();
+
+			// cache-bust the remote url in case the user's avatar_url is unchanged but bytes differ
+			const remoteUrl = user.value?.account?.avatar_url;
+			if (remoteUrl && isRemoteUrl(remoteUrl)) {
+				avatarStore.clear(remoteUrl);
+				avatarStore.preloadAvatar(
+					`${remoteUrl}${remoteUrl.includes('?') ? '&' : '?'}v=${Date.now()}`
+				);
+			}
+
+			toast.add({
+				title: 'Avatar Regenerated',
+				description: 'Your profile photo has been successfully regenerated.',
+				color: 'success',
+				icon: 'mdi:image-refresh',
+				duration: 5000
+			});
+		} else {
+			const message = res.message || 'Avatar generation failed - please try again.';
+			console.error(message);
+
+			toast.add({
+				title: 'Avatar Regeneration Failed',
+				description: message,
+				icon: 'mdi:alert-circle',
+				color: 'error',
+				duration: 7000
+			});
 		}
-
-		// clear cached blob URLs to force refetch
-		const cachedBlobUrls = useState<{
-			avatar: string | null;
-			avatar32: string | null;
-			avatar128: string | null;
-		} | null>(`user-avatar-blobs-${user.value.id}`, () => null);
-
-		if (cachedBlobUrls.value) {
-			const avatar = cachedBlobUrls.value.avatar;
-			const avatar32 = cachedBlobUrls.value.avatar32;
-			const avatar128 = cachedBlobUrls.value.avatar128;
-
-			if (avatar?.startsWith('blob:')) URL.revokeObjectURL(avatar);
-			if (avatar32?.startsWith('blob:')) URL.revokeObjectURL(avatar32);
-			if (avatar128?.startsWith('blob:')) URL.revokeObjectURL(avatar128);
-
-			cachedBlobUrls.value = null;
-		}
-
-		avatarOverride.value = URL.createObjectURL(res.data);
-		refetchUser();
-
+	} finally {
+		// belt-and-suspenders: always clear loading even if user navigates away
 		avatarLoading.value = false;
-		toast.add({
-			title: 'Avatar Regenerated',
-			description: 'Your profile photo has been successfully regenerated.',
-			color: 'success',
-			icon: 'mdi:account-box-plus-outline',
-			duration: 3000
-		});
-	} else {
-		avatarLoading.value = false;
-		console.error(res.message || 'Failed to regenerate profile photo.');
-
-		toast.add({
-			title: 'Error',
-			description: res.message || 'Failed to regenerate profile photo.',
-			icon: 'mdi:alert-circle',
-			color: 'error',
-			duration: 5000
-		});
 	}
 }
 
@@ -892,7 +906,7 @@ async function resetCosmetic() {
 		console.error('Failed to reset cosmetic:', error);
 		toast.add({
 			title: 'Error',
-			description: error.statusMessage || error.message || 'Failed to reset cosmetic.',
+			description: extractServerMessage(error, 'Failed to reset cosmetic.'),
 			icon: 'mdi:alert-circle',
 			color: 'error',
 			duration: 5000
@@ -942,7 +956,7 @@ async function handlePurchaseClick(cosmeticKey: AvatarCosmetic['key']) {
 	} catch (error: any) {
 		toast.add({
 			title: 'Error',
-			description: error.statusMessage || error.message || 'Failed to purchase cosmetic.',
+			description: extractServerMessage(error, 'Failed to purchase cosmetic.'),
 			icon: 'mdi:cart-off',
 			color: 'error',
 			duration: 5000

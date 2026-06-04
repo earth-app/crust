@@ -1,3 +1,5 @@
+import { extractServerMessage } from 'errors';
+
 export function useIncrementalList<T>(options?: {
 	staggerMs?: number;
 	initialExpectedCount?: number;
@@ -54,7 +56,8 @@ export function useIncrementalList<T>(options?: {
 			}
 		} catch (err: any) {
 			if (token !== currentToken) return;
-			errorRef.value = err?.message || 'Failed to load items';
+			console.error('useIncrementalList load failed:', err);
+			errorRef.value = extractServerMessage(err, 'Failed to load more items.');
 			expectedCountRef.value = itemsRef.value.length;
 		} finally {
 			if (token === currentToken) {

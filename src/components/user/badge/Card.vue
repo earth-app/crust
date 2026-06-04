@@ -173,6 +173,7 @@
 	/>
 </template>
 <script setup lang="ts">
+import { extractServerMessage } from 'errors';
 import { BadgeMasteryGenerationError } from 'types/user';
 
 defineOptions({
@@ -406,7 +407,7 @@ async function confirmGenerate() {
 			} else {
 				toast.add({
 					title: 'Something went wrong',
-					description: e.message,
+					description: extractServerMessage(e, 'Unexpected error'),
 					icon: 'mdi:alert-circle',
 					color: 'error',
 					duration: 4000
@@ -415,7 +416,7 @@ async function confirmGenerate() {
 		} else {
 			toast.add({
 				title: 'Generation failed',
-				description: (e as Error)?.message || 'Unexpected error',
+				description: extractServerMessage(e, 'Unexpected error'),
 				icon: 'mdi:alert-circle',
 				color: 'error',
 				duration: 4000

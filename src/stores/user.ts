@@ -1,3 +1,4 @@
+import { extractServerMessage } from 'errors';
 import { defineStore } from 'pinia';
 import type { Event } from 'types/event';
 import { BadgeMasteryGenerationError, type BadgeMasteryStatus, type MasteryList } from 'types/user';
@@ -916,8 +917,7 @@ export const useUserStore = defineStore('user', () => {
 		} catch (error: any) {
 			const status =
 				error?.status ?? error?.statusCode ?? error?.response?.status ?? error?.data?.code;
-			const message =
-				error?.data?.message || error?.message || 'Failed to generate badge mastery quest.';
+			const message = extractServerMessage(error, 'Failed to generate badge mastery quest.');
 
 			if (status === 410) {
 				lockedMasteries.add(badgeId);

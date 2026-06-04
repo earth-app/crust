@@ -95,7 +95,7 @@
 							color="error"
 							variant="ghost"
 							icon="mdi:account-remove"
-							@click="confirmDelete(u)"
+							@click="openDeleteModal(u)"
 							>Delete</UButton
 						>
 					</div>
@@ -149,6 +149,57 @@
 				</div>
 			</template>
 		</UModal>
+
+		<UModal
+			:open="deleteTarget !== null"
+			:dismissible="!deleteBusy"
+			title="Permanently Delete User"
+			description="This irreversibly removes the user and all of their data."
+			@update:open="(v) => !v && closeDeleteModal()"
+		>
+			<template #content>
+				<div
+					v-if="deleteTarget"
+					class="p-6 flex flex-col gap-3 max-w-md"
+				>
+					<p class="text-sm">
+						You are about to permanently delete
+						<span class="font-mono">@{{ deleteTarget.username }}</span>
+						. Their account, content, points, and history will all be removed. This cannot be
+						undone.
+					</p>
+					<p class="text-xs text-muted">
+						Type
+						<span class="font-mono font-semibold">{{ deleteTarget.username }}</span>
+						below to confirm.
+					</p>
+					<UInput
+						v-model="deleteConfirmText"
+						:placeholder="deleteTarget.username"
+						autocomplete="off"
+						spellcheck="false"
+						:disabled="deleteBusy"
+					/>
+					<div class="flex gap-2 justify-end">
+						<UButton
+							variant="ghost"
+							color="neutral"
+							:disabled="deleteBusy"
+							@click="closeDeleteModal"
+							>Cancel</UButton
+						>
+						<UButton
+							color="error"
+							icon="mdi:account-remove"
+							:loading="deleteBusy"
+							:disabled="!canConfirmDelete"
+							@click="performDelete"
+							>Delete User</UButton
+						>
+					</div>
+				</div>
+			</template>
+		</UModal>
 	</div>
 </template>
 
@@ -166,6 +217,24 @@ const pointsTarget = ref<User | null>(null);
 const pointsDelta = ref<number | null>(null);
 const pointsReason = ref('');
 const pointsBusy = ref(false);
+
+const deleteTarget = ref<User | null>(null);
+const deleteConfirmText = ref('');
+const deleteBusy = ref(false);
+const canConfirmDelete = computed(
+	() => !!deleteTarget.value && deleteConfirmText.value.trim() === deleteTarget.value.username
+);
+
+function openDeleteModal(u: User) {
+	deleteTarget.value = u;
+	deleteConfirmText.value = '';
+}
+
+function closeDeleteModal() {
+	if (deleteBusy.value) return;
+	deleteTarget.value = null;
+	deleteConfirmText.value = '';
+}
 
 async function load() {
 	loading.value = true;
@@ -276,33 +345,47 @@ async function toggleDisabled(u: User) {
 	}
 }
 
-async function confirmDelete(u: User) {
-	if (!confirm(`Permanently delete @${u.username}? This cannot be undone.`)) return;
-	busy[u.id] = 'delete';
+async function performDelete() {
+	const target = deleteTarget.value;
+	if (!target || !canConfirmDelete.value) return;
+
+	deleteBusy.value = true;
+	busy[target.id] = 'delete';
 	try {
-		const res = await makeClientAPIRequest<void>(`/v2/users/${u.id}`, authStore.sessionToken, {
+		const res = await makeClientAPIRequest<void>(`/v2/users/${target.id}`, authStore.sessionToken, {
 			method: 'DELETE'
 		});
 		if (res.success) {
-			users.value = users.value.filter((x) => x.id !== u.id);
+			users.value = users.value.filter((x) => x.id !== target.id);
 			toast.add({
-				title: 'Deleted',
-				description: `@${u.username}`,
+				title: 'User Deleted',
+				description: `@${target.username} has been permanently removed.`,
 				color: 'success',
 				icon: 'mdi:account-remove',
-				duration: 3000
+				duration: 5000
 			});
+			deleteTarget.value = null;
+			deleteConfirmText.value = '';
 		} else {
 			toast.add({
-				title: 'Failed',
-				description: res.message,
+				title: 'Could Not Delete User',
+				description: res.message || `Failed to delete @${target.username}.`,
 				color: 'error',
-				icon: 'mdi:alert-circle',
-				duration: 4000
+				icon: 'mdi:account-alert',
+				duration: 6000
 			});
 		}
+	} catch (e: any) {
+		toast.add({
+			title: 'Network Error',
+			description: e?.message || 'Could not reach the server.',
+			color: 'error',
+			icon: 'mdi:wifi-alert',
+			duration: 6000
+		});
 	} finally {
-		busy[u.id] = null;
+		deleteBusy.value = false;
+		busy[target.id] = null;
 	}
 }
 </script>

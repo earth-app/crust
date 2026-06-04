@@ -1,3 +1,4 @@
+import { extractServerMessage } from 'errors';
 import { useAuthStore } from 'stores/auth';
 import type { LoginResponse, LoginVerificationRequired, User } from 'types/user';
 
@@ -78,7 +79,7 @@ export function useSignup() {
 			return { success: true, message: 'Signup successful', user: response.user };
 		} catch (error: any) {
 			const statusCode = error?.response?.status || error?.statusCode || error?.status;
-			const message = error?.data?.message || error?.message || 'Signup failed. Please try again.';
+			const message = extractServerMessage(error, 'Signup failed. Please try again.');
 
 			if (statusCode) {
 				return { success: false, message: `${statusCode}: ${message}` };
@@ -133,8 +134,7 @@ export function useLogin() {
 		} catch (error: any) {
 			console.error('Login failed:', error);
 			const statusCode = error?.response?.status || error?.statusCode || error?.status;
-			const message =
-				error?.data?.message || error?.message || 'Login failed. Please check your credentials.';
+			const message = extractServerMessage(error, 'Login failed. Please check your credentials.');
 			const retryAfter =
 				typeof error?.data?.retry_after === 'number' ? error.data.retry_after : undefined;
 
@@ -180,8 +180,7 @@ export function useVerifyNewIPLogin() {
 		} catch (error: any) {
 			console.error('Login verification failed:', error);
 			const statusCode = error?.response?.status || error?.statusCode || error?.status;
-			const rawMessage: string =
-				error?.data?.message || error?.message || 'Verification failed. Please try again.';
+			const rawMessage = extractServerMessage(error, 'Verification failed. Please try again.');
 			const lower = rawMessage.toLowerCase();
 
 			const ticketDead =

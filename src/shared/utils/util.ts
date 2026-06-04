@@ -2,6 +2,7 @@ import { DateTime } from 'luxon';
 import type { SortingOption } from '../types/global';
 import type { User } from '../types/user';
 import { DEFAULT_FULL_NAME } from '../types/user';
+import { extractServerMessage } from './errors';
 
 const requestQueue = new Map<string, Promise<any>>();
 
@@ -258,8 +259,7 @@ export async function makeServerRequest<T>(
 
 		return {
 			success: false,
-			message:
-				error.data?.message || error.message || 'An error occurred while fetching server data.'
+			message: extractServerMessage(error, 'An error occurred while fetching server data.')
 		};
 	}
 }

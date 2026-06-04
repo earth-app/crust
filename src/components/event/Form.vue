@@ -266,6 +266,7 @@
 
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui';
+import { extractServerMessage } from 'errors';
 import type { Event } from 'types/event';
 
 const props = defineProps<{
@@ -520,7 +521,7 @@ async function handleSubmit(event: FormSubmitEvent<EventData>) {
 			loading.value = false;
 			return;
 		}
-		error.value = err.message || 'An error occurred while saving settings';
+		error.value = extractServerMessage(err, 'An error occurred while saving settings');
 
 		toast.add({
 			title: 'Error',

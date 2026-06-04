@@ -4,7 +4,7 @@ import { useAvatarStore } from 'stores/avatar';
 import { useFriendsStore } from 'stores/friends';
 import { useNotificationStore } from 'stores/notification';
 import { useUserStore } from 'stores/user';
-import { BadgeMasteryGenerationError } from 'types/user';
+import { BadgeMasteryGenerationError, type OAuthProvider } from 'types/user';
 import type { MaybeRefOrGetter } from 'vue';
 
 // #region visited site
@@ -179,12 +179,53 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 		}
 	};
 
-	const deleteAccount = async (password: string) => {
+	const deleteAccount = async (password?: string | null) => {
+		const body = password ? { password } : {};
 		return await makeClientAPIRequest<void>(`/v2/users/current`, authStore.sessionToken, {
 			method: 'DELETE',
-			body: {
-				password
-			}
+			body
+		});
+	};
+
+	const getReauthState = async () => {
+		return await makeClientAPIRequest<{
+			recently_authenticated: boolean;
+			expires_at: number | null;
+			window_seconds: number;
+		}>(`/v2/users/current/reauth_state`, authStore.sessionToken, {
+			method: 'GET'
+		});
+	};
+
+	const canDeleteWithoutReauth = async () => {
+		const res = await getReauthState();
+		if (!valid(res)) return false;
+		return Boolean(res.data.recently_authenticated);
+	};
+
+	const reauthWithPassword = async (password: string) => {
+		return await makeClientAPIRequest<{
+			recently_authenticated: boolean;
+			expires_at: number;
+			window_seconds: number;
+		}>(`/v2/users/current/reauth/password`, authStore.sessionToken, {
+			method: 'POST',
+			body: { password }
+		});
+	};
+
+	const reauthWithOAuth = async (
+		provider: OAuthProvider,
+		tokens: { id_token?: string; access_token?: string }
+	) => {
+		return await makeClientAPIRequest<{
+			recently_authenticated: boolean;
+			expires_at: number;
+			window_seconds: number;
+			provider: string;
+		}>(`/v2/users/current/reauth/oauth`, authStore.sessionToken, {
+			method: 'POST',
+			body: { provider, ...tokens }
 		});
 	};
 
@@ -262,23 +303,56 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 		);
 	};
 
-	const regenerateAvatar = async () => {
-		const res = await makeClientAPIRequest<Blob>(
-			'/v2/users/current/profile_photo',
-			authStore.sessionToken,
-			{
-				method: 'PUT',
-				responseType: 'blob'
+	const regenerateAvatar = async (): Promise<{
+		success: boolean;
+		data?: Blob;
+		message?: string;
+	}> => {
+		// direct $fetch (not makeClientAPIRequest) so we can read FetchError.data on 500;
+		// 60s ceiling so the ui never hangs on a stalled sdxl call
+		const config = useRuntimeConfig();
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
+		try {
+			const headers: Record<string, string> = {};
+			if (authStore.sessionToken) {
+				headers['Authorization'] = `Bearer ${authStore.sessionToken}`;
 			}
-		);
 
-		// Clear avatar cache to force refetch
-		const currentAvatarUrl = authStore.currentUser?.account?.avatar_url || avatarUrl.value;
-		if (currentAvatarUrl) {
-			avatarStore.clear(currentAvatarUrl);
+			const blob = await $fetch<Blob>(
+				`${config.public.apiBaseUrl}/v2/users/current/profile_photo`,
+				{
+					method: 'PUT',
+					responseType: 'blob',
+					headers,
+					signal: controller.signal
+				}
+			);
+
+			// clear avatar cache to force refetch
+			const currentAvatarUrl = authStore.currentUser?.account?.avatar_url || avatarUrl.value;
+			if (currentAvatarUrl) {
+				avatarStore.clear(currentAvatarUrl);
+			}
+
+			return { success: true, data: blob };
+		} catch (err: any) {
+			const aborted = err?.name === 'AbortError' || controller.signal.aborted;
+			const fallback = aborted
+				? 'Avatar generation timed out - please try again in a moment.'
+				: 'Avatar generation failed';
+			const message =
+				(err?.data && typeof err.data === 'object' && typeof err.data.message === 'string'
+					? err.data.message
+					: null) ||
+				(typeof err?.statusMessage === 'string' ? err.statusMessage : null) ||
+				fallback;
+
+			return { success: false, message };
+		} finally {
+			clearTimeout(timeoutId);
 		}
-
-		return res;
 	};
 
 	const setUserActivities = async (activities: string[]) => {
@@ -323,6 +397,10 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 		sendResetPasswordEmail,
 		resetPassword,
 		deleteAccount,
+		getReauthState,
+		canDeleteWithoutReauth,
+		reauthWithPassword,
+		reauthWithOAuth,
 		fetchCurrentJourney,
 		tapCurrentJourney,
 		clearCurrentJourney,

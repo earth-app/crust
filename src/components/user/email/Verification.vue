@@ -99,6 +99,8 @@
 </template>
 
 <script setup lang="ts">
+import { extractServerMessage } from 'errors';
+
 const { user, sendVerificationEmail, verifyEmail } = useAuth();
 
 const value = ref<string[]>([]);
@@ -192,7 +194,10 @@ async function resendVerificationEmail() {
 			});
 		}
 	} catch (error: any) {
-		errorMessage.value = error?.message || 'An unexpected error occurred. Please try again later.';
+		errorMessage.value = extractServerMessage(
+			error,
+			'An unexpected error occurred. Please try again later.'
+		);
 		toast.add({
 			title: 'Error',
 			description: errorMessage.value,

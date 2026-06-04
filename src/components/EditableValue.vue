@@ -31,6 +31,7 @@
 
 <script setup lang="ts">
 import { UInput } from '#components';
+import { extractServerMessage } from 'errors';
 import { ref, watch, type InputTypeHTMLAttribute } from 'vue';
 
 const props = withDefaults(
@@ -106,7 +107,7 @@ async function finishEditing() {
 			const toast = useToast();
 			toast.add({
 				title: 'Error',
-				description: err instanceof Error ? err.message : 'An unexpected error occurred.',
+				description: extractServerMessage(err, 'An unexpected error occurred.'),
 				color: 'error',
 				icon: 'mdi:alert-circle',
 				duration: 3000

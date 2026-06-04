@@ -9,13 +9,42 @@
 				Deleting your account is irreversible. Please make sure that this is something you want to
 				do before you proceed.
 			</p>
-			<p class="text-xs sm:text-sm md:text-md">
+			<p
+				v-if="checkingReauth"
+				class="text-xs sm:text-sm md:text-md mt-2 text-muted"
+			>
+				Checking your sign-in status...
+			</p>
+			<p
+				v-else-if="recentlyAuthenticated"
+				class="text-xs sm:text-sm md:text-md mt-2"
+			>
+				You're recently signed in. Confirm below to permanently delete your account.
+			</p>
+			<p
+				v-else-if="hasPassword"
+				class="text-xs sm:text-sm md:text-md mt-2"
+			>
 				To delete your account, please enter your password and confirm your choice.
+			</p>
+			<p
+				v-else-if="hasOAuth"
+				class="text-xs sm:text-sm md:text-md mt-2"
+			>
+				For security, please reauthenticate with one of your linked providers before deleting.
+			</p>
+			<p
+				v-else
+				class="text-xs sm:text-sm md:text-md mt-2"
+			>
+				No reauthentication method is available on your account. Contact support to delete your
+				account.
 			</p>
 		</div>
 
-		<div class="flex flex-col min-w-50 w-1/2">
+		<div class="flex flex-col min-w-50 w-1/2 gap-3">
 			<UInput
+				v-if="!recentlyAuthenticated && hasPassword"
 				v-model="password"
 				type="password"
 				:disabled="loading"
@@ -28,19 +57,36 @@
 				</label>
 			</UInput>
 
+			<div
+				v-if="!recentlyAuthenticated && !hasPassword && hasOAuth"
+				class="flex flex-col gap-2"
+			>
+				<UButton
+					v-for="provider in linkedProviders"
+					:key="provider"
+					:icon="providerIcon(provider)"
+					color="primary"
+					variant="outline"
+					:disabled="loading || disabled"
+					@click="reauthWith(provider)"
+				>
+					Reauthenticate With {{ capitalize(provider) }}
+				</UButton>
+			</div>
+
 			<UButton
 				color="error"
-				class="mt-4 w-full"
+				class="w-full"
 				variant="solid"
 				icon="mdi:account-cancel"
 				:loading="loading"
-				:disabled="!password || loading || disabled"
+				:disabled="!canDelete"
 				@click="confirmDelete"
 				>Delete Account</UButton
 			>
 
 			<TurnstileWidget
-				class="mt-4"
+				class="mt-2"
 				@received-token="loading = true"
 				@error="
 					loading = false;
@@ -75,12 +121,17 @@
 </template>
 
 <script setup lang="ts">
-const { user, deleteAccount } = useAuth();
+import type { OAuthProvider } from 'types/user';
+
+const { user, deleteAccount, getReauthState } = useAuth();
 const toast = useToast();
+const route = useRoute();
 
 const loading = ref(false);
 const disabled = ref(true);
 const password = ref('');
+const checkingReauth = ref(true);
+const recentlyAuthenticated = ref(false);
 
 const error = ref('');
 
@@ -88,26 +139,152 @@ const emit = defineEmits<{
 	(event: 'deleted'): void;
 }>();
 
-async function confirmDelete() {
-	if (!user.value) return;
-	if (!password.value) return;
-	loading.value = true;
+const hasPassword = computed(() => Boolean(user.value?.account?.has_password));
+const linkedProviders = computed<OAuthProvider[]>(
+	() => (user.value?.account?.linked_providers as OAuthProvider[] | undefined) ?? []
+);
+const hasOAuth = computed(() => linkedProviders.value.length > 0);
 
-	const res = await deleteAccount(password.value);
-	if (res.success) {
-		emit('deleted');
-	} else if (!valid(res)) {
+const canDelete = computed(() => {
+	if (loading.value || disabled.value) return false;
+	if (recentlyAuthenticated.value) return true;
+	if (hasPassword.value) return password.value.length > 0;
+	// oauth-only users must reauth via redirect first
+	return false;
+});
+
+function providerIcon(provider: OAuthProvider) {
+	switch (provider) {
+		case 'google':
+			return 'mdi:google';
+		case 'microsoft':
+			return 'mdi:microsoft';
+		case 'discord':
+			return 'mdi:discord';
+		case 'github':
+			return 'mdi:github';
+		case 'facebook':
+			return 'mdi:facebook';
+		case 'apple':
+			return 'mdi:apple';
+		default:
+			return 'mdi:login-variant';
+	}
+}
+
+function capitalize(s: string) {
+	return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+async function refreshReauthState() {
+	checkingReauth.value = true;
+	try {
+		const res = await getReauthState();
+		if (valid(res)) {
+			recentlyAuthenticated.value = Boolean(res.data.recently_authenticated);
+		}
+	} catch (e) {
+		console.warn('Failed to fetch reauth state', e);
+	} finally {
+		checkingReauth.value = false;
+	}
+}
+
+onMounted(async () => {
+	await refreshReauthState();
+
+	// surface inbound success/error from a redirect reauth flow
+	if (route.query.success === 'reauth_completed') {
 		toast.add({
-			title: 'Error',
-			description: res.message,
-			color: 'error',
-			icon: 'mdi:account-alert',
+			title: 'Reauthenticated',
+			description: 'You may now permanently delete your account within the next few minutes.',
+			color: 'success',
+			icon: 'mdi:shield-check',
 			duration: 5000
 		});
-
-		console.error(res.message || 'Failed to delete account.');
+	} else if (route.query.error === 'reauth_failed') {
+		toast.add({
+			title: 'Reauthentication Failed',
+			description:
+				'We could not verify your provider identity. Please try again or contact support.',
+			color: 'error',
+			icon: 'mdi:shield-alert',
+			duration: 6000
+		});
 	}
+});
 
-	loading.value = false;
+function reauthWith(provider: OAuthProvider) {
+	try {
+		const url = authLink(provider, 'reauth', 'web');
+		toast.add({
+			title: 'Redirecting To Provider',
+			description: `Opening ${capitalize(provider)} to verify your identity.`,
+			color: 'info',
+			icon: providerIcon(provider),
+			duration: 5000
+		});
+		navigateTo(url, { external: true });
+	} catch (e: any) {
+		toast.add({
+			title: 'Could Not Start Reauth',
+			description: e?.message || 'Failed to start the OAuth flow.',
+			color: 'error',
+			icon: 'mdi:account-alert',
+			duration: 6000
+		});
+	}
+}
+
+async function confirmDelete() {
+	if (!user.value) return;
+	if (!canDelete.value) return;
+
+	loading.value = true;
+	try {
+		const res = await deleteAccount(recentlyAuthenticated.value ? null : password.value || null);
+		if (res.success) {
+			toast.add({
+				title: 'Account Deleted',
+				description: 'Your account and data have been permanently removed.',
+				color: 'success',
+				icon: 'mdi:account-check',
+				duration: 6000
+			});
+			emit('deleted');
+			return;
+		}
+
+		// 403 REAUTH_REQUIRED from mantle means the window expired between checks
+		const message = res.message || 'Failed to delete account.';
+		const isReauthRequired = (res as any).reason === 'REAUTH_REQUIRED' || /reauth/i.test(message);
+
+		toast.add({
+			title: isReauthRequired ? 'Reauthentication Required' : 'Could Not Delete Account',
+			description: isReauthRequired
+				? 'Your sign-in window has expired. Please reauthenticate and try again.'
+				: message,
+			color: 'error',
+			icon: 'mdi:account-alert',
+			duration: 6000
+		});
+
+		if (isReauthRequired) {
+			recentlyAuthenticated.value = false;
+			await refreshReauthState();
+		}
+
+		console.error(message);
+	} catch (e: any) {
+		toast.add({
+			title: 'Network Error',
+			description: e?.message || 'Could not reach the server. Please try again.',
+			color: 'error',
+			icon: 'mdi:wifi-alert',
+			duration: 6000
+		});
+	} finally {
+		loading.value = false;
+	}
 }
 </script>

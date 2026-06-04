@@ -1,11 +1,18 @@
 <template>
 	<UCard
+		ref="cardRef"
 		:variant="variant || 'outline'"
 		:class="[
-			'relative min-w-80! lg:min-w-100 xl:min-w-120 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl transition-[box-shadow,opacity,transform] duration-300',
+			'relative min-w-80! lg:min-w-100 xl:min-w-120 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl hover:scale-[1.01] transition-[box-shadow,opacity,transform] duration-300',
 			isVisible
 				? 'opacity-100 translate-y-0'
-				: 'opacity-0 translate-y-2 will-change-[opacity,transform]'
+				: 'opacity-0 translate-y-2 will-change-[opacity,transform]',
+			banner?.color === 'error' && !prefersReducedMotion.value
+				? 'motion-preset-shake motion-duration-500'
+				: '',
+			banner?.color === 'success' && !prefersReducedMotion.value
+				? 'motion-preset-pop motion-duration-500'
+				: ''
 		]"
 	>
 		<LazyUBanner
@@ -22,6 +29,12 @@
 			v-if="banner"
 			class="h-6"
 		></div>
+		<UIcon
+			v-if="banner?.color === 'success' && !prefersReducedMotion"
+			name="mdi:star-four-points"
+			class="absolute top-1 right-2 size-3 text-warning motion-preset-pulse z-50"
+			aria-hidden="true"
+		/>
 		<div class="flex flex-row h-full justify-between">
 			<div class="flex items-center space-x-4 h-full">
 				<div class="flex flex-col">
@@ -134,7 +147,8 @@
 							height="400"
 							loading="lazy"
 							decoding="async"
-							class="w-full h-48 object-cover rounded-lg mb-2"
+							class="w-full h-48 object-cover rounded-lg mb-2 will-change-transform"
+							:style="parallaxStyle"
 						/>
 					</NuxtLink>
 					<LazyNuxtImg
@@ -147,13 +161,24 @@
 						height="400"
 						loading="lazy"
 						decoding="async"
-						class="w-full h-48 object-cover rounded-lg mb-2"
+						class="w-full h-48 object-cover rounded-lg mb-2 will-change-transform"
+						:style="parallaxStyle"
 					/>
 					<LazyClientOnly
 						v-if="youtubeId"
 						hydrate-on-visible
 					>
-						<div class="w-full aspect-video rounded-lg overflow-hidden mb-2">
+						<div class="relative w-full aspect-video rounded-lg overflow-hidden mb-2 group">
+							<div
+								v-if="!prefersReducedMotion"
+								class="pointer-events-none absolute inset-0 flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+								aria-hidden="true"
+							>
+								<UIcon
+									name="mdi:play-circle"
+									class="size-14 text-white drop-shadow-lg motion-preset-pulse"
+								/>
+							</div>
 							<iframe
 								:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1&origin=${origin}`"
 								:title="`YouTube video for ${title}`"
@@ -176,23 +201,38 @@
 						v-if="video"
 						hydrate-on-visible
 					>
-						<video
-							class="w-full aspect-video object-cover rounded-lg mb-2"
-							controls
-							loading="lazy"
-							preload="metadata"
-						>
-							<source
-								v-if="video.endsWith('.mp4')"
-								:src="video"
-								type="video/mp4"
-							/>
-							<source
-								v-if="video.endsWith('.webm')"
-								:src="video"
-								type="video/webm"
-							/>
-						</video>
+						<div class="relative w-full aspect-video mb-2 group">
+							<div
+								v-if="!prefersReducedMotion && !videoPlaying"
+								class="pointer-events-none absolute inset-0 flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+								aria-hidden="true"
+							>
+								<UIcon
+									name="mdi:play-circle"
+									class="size-14 text-white drop-shadow-lg motion-preset-pulse"
+								/>
+							</div>
+							<video
+								class="w-full aspect-video object-cover rounded-lg"
+								controls
+								loading="lazy"
+								preload="metadata"
+								@play="videoPlaying = true"
+								@pause="videoPlaying = false"
+								@ended="videoPlaying = false"
+							>
+								<source
+									v-if="video.endsWith('.mp4')"
+									:src="video"
+									type="video/mp4"
+								/>
+								<source
+									v-if="video.endsWith('.webm')"
+									:src="video"
+									type="video/webm"
+								/>
+							</video>
+						</div>
 					</LazyClientOnly>
 					<LazyClientOnly
 						v-if="object?.url"
@@ -206,13 +246,36 @@
 							class="w-full min-h-64 object-cover rounded-lg mb-2"
 						></video>
 
-						<audio
+						<div
 							v-else-if="object?.type?.startsWith('audio/')"
-							:src="object.url"
-							controls
-							preload="metadata"
-							class="w-full object-cover rounded-lg mb-2"
-						></audio>
+							class="w-full mb-2"
+						>
+							<audio
+								ref="audioRef"
+								:src="object.url"
+								controls
+								preload="metadata"
+								class="w-full object-cover rounded-lg"
+								@play="audioPlaying = true"
+								@pause="audioPlaying = false"
+								@ended="audioPlaying = false"
+							></audio>
+							<div
+								v-if="audioPlaying && !prefersReducedMotion"
+								class="flex items-end gap-1 h-4 mt-1 px-1"
+								aria-hidden="true"
+							>
+								<span
+									v-for="i in 4"
+									:key="`eq-${i}`"
+									class="block w-1 bg-primary rounded-sm"
+									:style="{
+										animation: `eq-bar 0.9s ease-in-out ${i * 0.12}s infinite`,
+										height: '40%'
+									}"
+								/>
+							</div>
+						</div>
 
 						<object
 							v-else
@@ -466,11 +529,55 @@ const rgb = computed<[number, number, number]>(() => {
 const isVisible = ref(false);
 const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
+const cardRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null);
+const audioRef = ref<HTMLAudioElement | null>(null);
+const audioPlaying = ref(false);
+const videoPlaying = ref(false);
+const parallaxOffset = ref(0);
+
+const parallaxStyle = computed(() =>
+	prefersReducedMotion.value || !props.image
+		? undefined
+		: { transform: `translate3d(0, ${parallaxOffset.value.toFixed(2)}px, 0)` }
+);
+
+let parallaxScrollHandler: (() => void) | null = null;
+
 onMounted(async () => {
 	await nextTick();
 	requestAnimationFrame(() => {
 		isVisible.value = !prefersReducedMotion.value;
 	});
+
+	if (!import.meta.client || prefersReducedMotion.value || !props.image) return;
+	const el =
+		(cardRef.value && '$el' in (cardRef.value as object)
+			? (cardRef.value as { $el: HTMLElement }).$el
+			: (cardRef.value as HTMLElement)) || null;
+	if (!el) return;
+
+	// shift image up to ~5px based on card's position in viewport
+	let ticking = false;
+	parallaxScrollHandler = () => {
+		if (ticking) return;
+		ticking = true;
+		requestAnimationFrame(() => {
+			const rect = el.getBoundingClientRect();
+			const vh = window.innerHeight || 1;
+			const progress = Math.max(0, Math.min(1, (vh - rect.top) / (vh + rect.height)));
+			parallaxOffset.value = (progress - 0.5) * -10;
+			ticking = false;
+		});
+	};
+	window.addEventListener('scroll', parallaxScrollHandler, { passive: true });
+	parallaxScrollHandler();
+});
+
+onBeforeUnmount(() => {
+	if (parallaxScrollHandler && import.meta.client) {
+		window.removeEventListener('scroll', parallaxScrollHandler);
+		parallaxScrollHandler = null;
+	}
 });
 
 const origin = computed(() => {
@@ -494,3 +601,15 @@ function appendUTMParameters(link: string) {
 	}
 }
 </script>
+
+<style scoped>
+@keyframes eq-bar {
+	0%,
+	100% {
+		height: 25%;
+	}
+	50% {
+		height: 100%;
+	}
+}
+</style>

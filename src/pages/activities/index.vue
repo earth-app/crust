@@ -14,9 +14,11 @@
 				content-size="small"
 			/>
 			<LazyActivityCard
-				v-for="activity in recommendedActivities"
+				v-for="(activity, i) in recommendedActivities"
 				:key="activity.id"
 				:activity="activity"
+				class="motion-preset-fade-md"
+				:style="`--motion-delay: ${Math.min(i, 8) * 50}ms`"
 				hydrate-on-visible
 			/>
 		</InfoCardGroup>
@@ -47,9 +49,11 @@
 				content-size="small"
 			/>
 			<LazyActivityCard
-				v-for="activity in allActivities"
+				v-for="(activity, i) in allActivities"
 				:key="activity.id"
 				:activity="activity"
+				class="motion-preset-fade-md"
+				:style="`--motion-delay: ${Math.min(i % 12, 8) * 40}ms`"
 				hydrate-on-visible
 			/>
 		</div>

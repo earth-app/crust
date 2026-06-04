@@ -12,7 +12,10 @@ function parseState(state: string): {
 		: null;
 	const source: OAuthSource = sourcePart === 'mobile' ? 'mobile' : 'web';
 	const context =
-		contextPart === 'login' || contextPart === 'signup' || contextPart === 'link'
+		contextPart === 'login' ||
+		contextPart === 'signup' ||
+		contextPart === 'link' ||
+		contextPart === 'reauth'
 			? contextPart
 			: null;
 	// Mobile clients (e.g. sky) can't rely on cookies inside SFSafariViewController,
@@ -177,6 +180,52 @@ export default defineEventHandler(async (event) => {
 		// not an OAuth2 access token), and falls back to `access_token`.
 		const tokenField =
 			provider === 'apple' || provider === 'microsoft' ? 'id_token' : 'access_token';
+
+		// reauth path - verify token against linked sub without re-issuing session
+		if (stateContext === 'reauth') {
+			if (!sessionToken) {
+				safeHeader(event, 'X-Error-Type', 'reauth_no_session');
+				if (source === 'mobile' && provider) {
+					return mobileRedirect({
+						error: 'reauth_no_session',
+						provider,
+						context: 'reauth'
+					});
+				}
+				return sendRedirect(event, `/profile?error=reauth_no_session`);
+			}
+
+			try {
+				await $fetch(`https://api.earth-app.com/v2/users/current/reauth/oauth`, {
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${sessionToken}`
+					},
+					body: { provider, [tokenField]: token }
+				});
+			} catch (reauthErr: any) {
+				safeHeader(event, 'X-Error-Type', 'reauth_failed');
+				safeHeader(event, 'X-Error-Detail', reauthErr?.data?.message || 'Reauth failed');
+				if (source === 'mobile') {
+					return mobileRedirect({
+						error: 'reauth_failed',
+						provider,
+						context: 'reauth'
+					});
+				}
+				return sendRedirect(event, `/profile?error=reauth_failed&provider=${provider}`);
+			}
+
+			if (source === 'mobile') {
+				return mobileRedirect({
+					session_token: sessionToken,
+					context: 'reauth',
+					provider
+				});
+			}
+			return sendRedirect(event, `/profile?success=reauth_completed&provider=${provider}`);
+		}
+
 		const response = await $fetch<{ session_token: string; user: any }>(
 			`https://api.earth-app.com/v2/users/oauth/${provider}?is_linking=${isLoggedIn}`,
 			{

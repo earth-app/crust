@@ -1,8 +1,8 @@
 <template>
 	<UModal
 		v-model="open"
-		title="Delete Account"
-		description="Are you sure you want to delete your account? This action is irreversible."
+		title="Delete Your Account"
+		description="This action is permanent. You may be asked to reauthenticate before we proceed."
 	>
 		<template #body>
 			<div class="flex w-full h-full items-center justify-center mb-4 p-4">

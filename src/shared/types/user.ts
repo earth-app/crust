@@ -5,7 +5,7 @@ export const DEFAULT_FULL_NAME = 'John Doe';
 
 export type OAuthProvider = 'google' | 'github' | 'microsoft' | 'discord' | 'facebook' | 'apple';
 export type OAuthSource = 'web' | 'mobile';
-export type OAuthContext = 'login' | 'signup' | 'link';
+export type OAuthContext = 'login' | 'signup' | 'link' | 'reauth';
 
 export const OAUTH_PROVIDERS: OAuthProvider[] = [
 	'google',
