@@ -90,7 +90,7 @@
 		/>
 		<div
 			id="activity-cards"
-			class="grid grid-cols-1 xl:grid-cols-2 justify-items-center items-start w-2/3 min-w-100 xl:min-w-260 mt-6 sm:px-4 gap-y-8"
+			class="grid grid-cols-1 xl:grid-cols-2 justify-items-center items-stretch w-2/3 min-w-100 xl:min-w-260 mt-6 sm:px-4 gap-y-8"
 		>
 			<!-- Skeleton Loading Cards -->
 			<InfoCardSkeleton
