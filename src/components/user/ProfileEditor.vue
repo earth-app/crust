@@ -715,12 +715,7 @@ watch(
 	{ immediate: true }
 );
 
-// compute avatar from store
-const storeAvatar = computed(() => {
-	const url = avatarUrl.value;
-	if (!url || !isRemoteUrl(url)) return '/earth-app.png';
-	return avatarStore.get(url)?.avatar || '/earth-app.png';
-});
+const storeAvatar = computed(() => avatarStore.safeUrl(avatarUrl.value, 'avatar'));
 
 const avatar = computed(() => avatarOverride.value || storeAvatar.value);
 

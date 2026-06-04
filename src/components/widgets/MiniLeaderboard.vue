@@ -104,9 +104,7 @@ const typeLabel = computed(() => {
 const rows = computed(() =>
 	leaderboard.value.slice(0, 3).map((entry, i) => {
 		const url = entry.user.account?.avatar_url;
-		const cached = url ? avatarStore.get(url)?.avatar128 : undefined;
-		const avatarSrc =
-			cached || (url ? `${url}${url.includes('?') ? '&' : '?'}size=128` : undefined);
+		const avatarSrc = avatarStore.safeUrl(url, 'avatar128');
 		return {
 			id: entry.id,
 			rank: i + 1,

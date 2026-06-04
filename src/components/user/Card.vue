@@ -82,15 +82,8 @@ const avatarStore = useAvatarStore();
 
 const userAvatar = computed(() => {
 	const avatarUrl = props.user.account?.avatar_url;
-	if (!avatarUrl) {
-		return undefined;
-	}
-
-	const cached = avatarStore.get(avatarUrl)?.avatar128;
-	const src = cached || `${avatarUrl}${avatarUrl.includes('?') ? '&' : '?'}size=128`;
-
 	return {
-		src,
+		src: avatarStore.safeUrl(avatarUrl, 'avatar128'),
 		loading: 'lazy' as const,
 		alt: props.user.username
 	};

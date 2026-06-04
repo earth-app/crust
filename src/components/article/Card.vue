@@ -41,11 +41,7 @@ const userStore = useUserStore();
 
 // Use embedded author data directly
 const authorAvatarUrl = computed(() => props.article.author.account?.avatar_url);
-const authorAvatar = computed(() => {
-	const url = authorAvatarUrl.value;
-	if (!url || !url.startsWith('http')) return '/favicon.png';
-	return avatarStore.get(url)?.avatar128 || '/favicon.png';
-});
+const authorAvatar = computed(() => avatarStore.safeUrl(authorAvatarUrl.value, 'avatar128'));
 const authorAvatarChipColor = computed(() => userStore.getChipColor(props.article.author));
 
 // Preload author avatar

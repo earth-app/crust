@@ -85,11 +85,7 @@ watch(
 
 const avatarStore = useAvatarStore();
 const ownerAvatarUrl = computed(() => props.prompt.owner?.account?.avatar_url);
-const authorAvatar = computed(() => {
-	const url = ownerAvatarUrl.value;
-	if (!url || !url.startsWith('http')) return '/favicon.png';
-	return avatarStore.get(url)?.avatar128 || '/favicon.png';
-});
+const authorAvatar = computed(() => avatarStore.safeUrl(ownerAvatarUrl.value, 'avatar128'));
 
 // Preload owner avatar
 if (ownerAvatarUrl.value) {

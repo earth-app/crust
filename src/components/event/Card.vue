@@ -88,17 +88,7 @@ const allAttendees = computed(() => {
 const attendeeAvatars = computed(() => {
 	return allAttendees.value.map((attendee) => {
 		const url = attendee.account?.avatar_url;
-
-		// Preload avatar
-		if (url && url.startsWith('http')) {
-			avatarStore.preloadAvatar(url);
-		}
-
-		// Get avatar from store
-		const avatar =
-			url && url.startsWith('http')
-				? avatarStore.get(url)?.avatar128 || '/favicon.png'
-				: '/favicon.png';
+		const avatar = avatarStore.safeUrl(url, 'avatar128');
 		const chipColor = userStore.getChipColor(attendee);
 
 		return {
@@ -395,11 +385,7 @@ const avatarStore = useAvatarStore();
 const userStore = useUserStore();
 
 const authorAvatarUrl = computed(() => reactiveEvent.value.host?.account?.avatar_url);
-const authorAvatar = computed(() => {
-	const url = authorAvatarUrl.value;
-	if (!url || !url.startsWith('http')) return '/favicon.png';
-	return avatarStore.get(url)?.avatar128 || '/favicon.png';
-});
+const authorAvatar = computed(() => avatarStore.safeUrl(authorAvatarUrl.value, 'avatar128'));
 const authorAvatarChipColor = computed(() =>
 	reactiveEvent.value.host ? userStore.getChipColor(reactiveEvent.value.host) : undefined
 );

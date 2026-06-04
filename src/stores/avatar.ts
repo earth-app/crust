@@ -17,6 +17,21 @@ const FALLBACK_AVATAR: AvatarSizes = Object.freeze({
 const isBlobUrl = (url: string | undefined | null): boolean =>
 	typeof url === 'string' && url.startsWith('blob:');
 
+// reject anything that isn't a real remote URL. matters because mantle's partial-serialization
+// can hand us [] or undefined for avatar_url on anon SSR / stripped users — those must not
+// poison the cache or get appended ?size= queries
+const isValidAvatarUrl = (url: unknown): url is string => {
+	if (typeof url !== 'string') return false;
+	if (url.length === 0) return false;
+	return url.startsWith('http://') || url.startsWith('https://');
+};
+
+const appendSize = (url: string, size: keyof AvatarSizes): string => {
+	if (size === 'avatar') return url;
+	const param = size === 'avatar32' ? '32' : '128';
+	return `${url}${url.includes('?') ? '&' : '?'}size=${param}`;
+};
+
 export const useAvatarStore = defineStore('avatar', () => {
 	const authStore = useAuthStore();
 
@@ -59,6 +74,12 @@ export const useAvatarStore = defineStore('avatar', () => {
 	};
 
 	const fetchAvatarBlobs = async (url: string): Promise<AvatarSizes> => {
+		// shape-validate before doing anything else — `[]` / undefined from partial serialization
+		// would otherwise get appended ?size= and dispatched as a doomed network request
+		if (!isValidAvatarUrl(url)) {
+			return { ...FALLBACK_AVATAR };
+		}
+
 		const cached = cache.get(url);
 		if (cached) {
 			return cached;
@@ -84,7 +105,10 @@ export const useAvatarStore = defineStore('avatar', () => {
 
 				const fetchAndUpdate = async (size: keyof AvatarSizes, sizeParam?: string) => {
 					try {
-						const fetchUrl = sizeParam ? `${url}?size=${sizeParam}` : url;
+						// safe ?/& separator — naked ?size= breaks urls that already carry a query
+						const fetchUrl = sizeParam
+							? `${url}${url.includes('?') ? '&' : '?'}size=${sizeParam}`
+							: url;
 						const response = await fetch(fetchUrl, { headers });
 						if (response.ok) {
 							const blob = await response.blob();
@@ -129,9 +153,33 @@ export const useAvatarStore = defineStore('avatar', () => {
 	};
 
 	const preloadAvatar = (url: string | undefined | null) => {
-		if (!url || !url.startsWith('http')) return;
+		if (!isValidAvatarUrl(url)) return;
 		if (cache.has(url) || fetchQueue.has(url)) return;
 		void fetchAvatarBlobs(url);
+	};
+
+	// canonical "give me a renderable avatar string, no matter what" resolver.
+	// resolution order: cached blob → ?size=N remote → static fallback.
+	// never returns undefined; never returns the unparameterized url for a sized request
+	// (avoids accidentally rendering the full-size source where a thumbnail was wanted).
+	// also kicks off a preload so the next call promotes to a cached blob.
+	const safeUrl = (
+		url: string | undefined | null,
+		size: keyof AvatarSizes = 'avatar128'
+	): string => {
+		if (!isValidAvatarUrl(url)) return FALLBACK_AVATAR[size];
+		const cached = cache.get(url);
+		if (cached) {
+			const candidate = cached[size];
+			// guard: if a previous fetch left a fallback in cached[size], don't serve it as
+			// "real" — fall through to the remote so the browser can try the network
+			if (candidate && !candidate.startsWith('/')) return candidate;
+		}
+		if (failedUrls.has(url)) return FALLBACK_AVATAR[size];
+		if (!cache.has(url) && !fetchQueue.has(url)) {
+			void fetchAvatarBlobs(url);
+		}
+		return appendSize(url, size);
 	};
 
 	const clear = (url?: string) => {
@@ -400,6 +448,7 @@ export const useAvatarStore = defineStore('avatar', () => {
 		hasFailed,
 		fetchAvatarBlobs,
 		preloadAvatar,
+		safeUrl,
 		clear,
 		allCosmetics,
 		userCosmetics,

@@ -101,16 +101,7 @@ if (import.meta.client) {
 }
 
 function getAvatar32Url(url: string | undefined) {
-	if (!url) {
-		return undefined;
-	}
-
-	const cached = avatarStore.get(url)?.avatar32;
-	if (cached) {
-		return cached;
-	}
-
-	return `${url}${url.includes('?') ? '&' : '?'}size=32`;
+	return avatarStore.safeUrl(url, 'avatar32');
 }
 
 function populate(searchTerm: string) {

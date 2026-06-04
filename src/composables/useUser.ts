@@ -67,26 +67,9 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 	};
 
 	// While the blob fetch is in flight, return the remote URL with a size
-	// hint so the browser can render the avatar immediately instead of
-	// flashing the static fallback. Only fall back to the local asset when
-	// no avatar URL exists or when the fetch has definitively failed.
-	const resolveAvatar = (size: 'avatar' | 'avatar32' | 'avatar128'): string => {
-		const url = avatarUrl.value;
-		const fallback = size === 'avatar' ? '/earth-app.png' : '/favicon.png';
-		if (!url || !isRemoteUrl(url)) return fallback;
-
-		const cached = avatarStore.get(url);
-		if (cached) return cached[size];
-
-		if (avatarStore.hasFailed(url)) return fallback;
-
-		const sizeParam = size === 'avatar' ? undefined : size === 'avatar32' ? '32' : '128';
-		return sizeParam ? `${url}${url.includes('?') ? '&' : '?'}size=${sizeParam}` : url;
-	};
-
-	const avatar = computed(() => resolveAvatar('avatar'));
-	const avatar32 = computed(() => resolveAvatar('avatar32'));
-	const avatar128 = computed(() => resolveAvatar('avatar128'));
+	const avatar = computed(() => avatarStore.safeUrl(avatarUrl.value, 'avatar'));
+	const avatar32 = computed(() => avatarStore.safeUrl(avatarUrl.value, 'avatar32'));
+	const avatar128 = computed(() => avatarStore.safeUrl(avatarUrl.value, 'avatar128'));
 	const isAvatarLoading = computed(() => avatarStore.isLoading(avatarUrl.value));
 
 	if (import.meta.client) {
@@ -520,23 +503,9 @@ export function useUser(
 		);
 	}
 
-	const resolveAvatar = (size: 'avatar' | 'avatar32' | 'avatar128'): string => {
-		const url = avatarUrl.value;
-		const fallback = size === 'avatar' ? '/earth-app.png' : '/favicon.png';
-		if (!url || !isRemoteUrl(url)) return fallback;
-
-		const cached = avatarStore.get(url);
-		if (cached) return cached[size];
-
-		if (avatarStore.hasFailed(url)) return fallback;
-
-		const sizeParam = size === 'avatar' ? undefined : size === 'avatar32' ? '32' : '128';
-		return sizeParam ? `${url}${url.includes('?') ? '&' : '?'}size=${sizeParam}` : url;
-	};
-
-	const avatar = computed(() => resolveAvatar('avatar'));
-	const avatar32 = computed(() => resolveAvatar('avatar32'));
-	const avatar128 = computed(() => resolveAvatar('avatar128'));
+	const avatar = computed(() => avatarStore.safeUrl(avatarUrl.value, 'avatar'));
+	const avatar32 = computed(() => avatarStore.safeUrl(avatarUrl.value, 'avatar32'));
+	const avatar128 = computed(() => avatarStore.safeUrl(avatarUrl.value, 'avatar128'));
 	const isAvatarLoading = computed(() => avatarStore.isLoading(avatarUrl.value));
 
 	const fetchAvatar = async (force: boolean = false) => {
