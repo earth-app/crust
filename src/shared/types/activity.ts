@@ -1,10 +1,12 @@
 import type { com } from '@earth-app/ocean';
 
+export type ActivityType = typeof com.earthapp.activity.ActivityType.prototype.name;
+
 export type Activity = {
 	id: string;
 	name: string;
 	description: string;
-	types: (typeof com.earthapp.activity.ActivityType.prototype.name)[];
+	types: ActivityType[];
 	aliases: string[];
 	created_at?: string;
 	updated_at?: string;

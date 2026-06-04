@@ -205,21 +205,11 @@ async function checkActivityName(newName: string) {
 
 const activityId = computed(() => activityName.value.trim().toLowerCase().replace(/\s+/g, '_'));
 const activityDescription = ref<string>(props.activity?.description || '');
-const activityType1 = ref<typeof com.earthapp.activity.ActivityType.prototype.name | undefined>(
-	props.activity?.types?.at(0)
-);
-const activityType2 = ref<typeof com.earthapp.activity.ActivityType.prototype.name | undefined>(
-	props.activity?.types?.at(1)
-);
-const activityType3 = ref<typeof com.earthapp.activity.ActivityType.prototype.name | undefined>(
-	props.activity?.types?.at(2)
-);
-const activityType4 = ref<typeof com.earthapp.activity.ActivityType.prototype.name | undefined>(
-	props.activity?.types?.at(3)
-);
-const activityType5 = ref<typeof com.earthapp.activity.ActivityType.prototype.name | undefined>(
-	props.activity?.types?.at(4)
-);
+const activityType1 = ref<ActivityType | undefined>(props.activity?.types?.at(0));
+const activityType2 = ref<ActivityType | undefined>(props.activity?.types?.at(1));
+const activityType3 = ref<ActivityType | undefined>(props.activity?.types?.at(2));
+const activityType4 = ref<ActivityType | undefined>(props.activity?.types?.at(3));
+const activityType5 = ref<ActivityType | undefined>(props.activity?.types?.at(4));
 const activityAliases = ref<string>(props.activity?.aliases?.join(',') || '');
 
 const activityFields = ref<Record<string, string>>(props.activity?.fields || {});
@@ -412,7 +402,7 @@ async function createActivity() {
 			activityType3.value,
 			activityType4.value,
 			activityType5.value
-		].filter(Boolean) as (typeof com.earthapp.activity.ActivityType.prototype.name)[],
+		].filter(Boolean) as ActivityType[],
 		aliases: activityAliases.value
 			.split(',')
 			.map((alias) => alias.trim().replace(/\s+/g, '_'))
@@ -474,7 +464,7 @@ async function updateActivity() {
 			activityType3.value || activity.value.types?.[2],
 			activityType4.value || activity.value.types?.[3],
 			activityType5.value || activity.value.types?.[4]
-		].filter(Boolean) as (typeof com.earthapp.activity.ActivityType.prototype.name)[],
+		].filter(Boolean) as ActivityType[],
 		aliases:
 			activityAliases.value
 				.split(',')

@@ -2028,7 +2028,7 @@ export function useMood(initialTopic: MaybeRefOrGetter<string> = 'today') {
 	const fetchSnapshot = async (topic?: string, date?: string) => {
 		const t = (topic ?? currentTopic.value).trim().toLowerCase();
 		const d = date ?? moodTodayUtc();
-		if (!/^[a-z0-9-]{1,64}$/.test(t)) return;
+		if (!/^[a-z0-9_-]{1,64}$/.test(t)) return;
 		currentTopic.value = t;
 		currentDate.value = d;
 		isLoading.value = true;
@@ -2058,7 +2058,7 @@ export function useMood(initialTopic: MaybeRefOrGetter<string> = 'today') {
 	): Promise<{ success: boolean; snapshot?: MoodSnapshot; error?: string }> => {
 		const t = topic.trim().toLowerCase();
 		const d = moodTodayUtc();
-		if (!/^[a-z0-9-]{1,64}$/.test(t)) {
+		if (!/^[a-z0-9_-]{1,64}$/.test(t)) {
 			return { success: false, error: 'Invalid topic' };
 		}
 		if (!(MOOD_EMOJIS_RUNTIME as readonly string[]).includes(emoji)) {

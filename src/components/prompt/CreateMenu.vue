@@ -135,7 +135,7 @@ const disabled = ref(true);
 
 interface PromptDraft {
 	prompt: string;
-	visibility: typeof com.earthapp.Visibility.prototype.name;
+	visibility: Visibility;
 }
 const state = reactive<PromptDraft>({
 	prompt: '',

@@ -1,4 +1,3 @@
-import type { com } from '@earth-app/ocean';
 import { useAuthStore } from 'stores/auth';
 import { usePromptStore } from 'stores/prompt';
 import type { SortingOption } from 'types/global';
@@ -91,10 +90,7 @@ export function usePrompts(
 		return res;
 	};
 
-	const create = async (
-		promptText: string,
-		visibility?: typeof com.earthapp.Visibility.prototype.name
-	) => {
+	const create = async (promptText: string, visibility?: Visibility) => {
 		return await promptStore.createPrompt({
 			title: promptText,
 			description: promptText,

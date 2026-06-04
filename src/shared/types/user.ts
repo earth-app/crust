@@ -18,6 +18,10 @@ export const OAUTH_PROVIDERS: OAuthProvider[] = [
 
 export type Rarity = 'normal' | 'rare' | 'amazing' | 'green';
 
+export type AccountType = typeof com.earthapp.account.AccountType.prototype.name;
+export type Visibility = typeof com.earthapp.Visibility.prototype.name;
+export type Privacy = typeof com.earthapp.account.Privacy.prototype.name;
+
 export type User = {
 	id: string;
 	username: string;
@@ -27,7 +31,7 @@ export type User = {
 	last_login?: string;
 	is_admin: boolean;
 	account: {
-		account_type: typeof com.earthapp.account.AccountType.prototype.name;
+		account_type: AccountType;
 		id: string;
 		avatar_url: string;
 		first_name?: string;
@@ -42,21 +46,21 @@ export type User = {
 		address?: string;
 		country?: string;
 		phone_number?: number;
-		visibility: typeof com.earthapp.Visibility.prototype.name;
+		visibility: Visibility;
 		field_privacy: {
-			name: typeof com.earthapp.account.Privacy.prototype.name;
-			bio: typeof com.earthapp.account.Privacy.prototype.name;
-			phone_number: typeof com.earthapp.account.Privacy.prototype.name;
-			country: typeof com.earthapp.account.Privacy.prototype.name;
-			email: typeof com.earthapp.account.Privacy.prototype.name;
-			address: typeof com.earthapp.account.Privacy.prototype.name;
-			activities: typeof com.earthapp.account.Privacy.prototype.name;
-			events: typeof com.earthapp.account.Privacy.prototype.name;
-			friends: typeof com.earthapp.account.Privacy.prototype.name;
-			last_login: typeof com.earthapp.account.Privacy.prototype.name;
-			account_type: typeof com.earthapp.account.Privacy.prototype.name;
-			impact_points: typeof com.earthapp.account.Privacy.prototype.name;
-			badges: typeof com.earthapp.account.Privacy.prototype.name;
+			name: Privacy;
+			bio: Privacy;
+			phone_number: Privacy;
+			country: Privacy;
+			email: Privacy;
+			address: Privacy;
+			activities: Privacy;
+			events: Privacy;
+			friends: Privacy;
+			last_login: Privacy;
+			account_type: Privacy;
+			impact_points: Privacy;
+			badges: Privacy;
 		};
 	};
 	disabled: boolean;

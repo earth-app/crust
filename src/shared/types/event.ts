@@ -1,4 +1,3 @@
-import type { com } from '@earth-app/ocean';
 import type { Activity } from './activity';
 import type { User } from './user';
 
@@ -7,7 +6,7 @@ export type EventType = 'IN_PERSON' | 'HYBRID' | 'ONLINE';
 export type EventActivity =
 	| {
 			type: 'activity_type';
-			value: typeof com.earthapp.activity.ActivityType.prototype.name;
+			value: ActivityType;
 	  }
 	| ({
 			type: 'activity';
@@ -29,7 +28,7 @@ export type Event = {
 	date_f: string; // ISO 8601 timestamp (received only, formatted by backend)
 	end_date?: number; // Unix timestamp in milliseconds (sent/received by API)
 	end_date_f?: string; // ISO 8601 timestamp (received only, formatted by backend)
-	visibility: typeof com.earthapp.Visibility.prototype.name;
+	visibility: Visibility;
 	attendee_count: number;
 	is_attending: boolean;
 	can_edit: boolean;
@@ -67,7 +66,7 @@ export type EventData = Omit<
 	| 'timing'
 	| 'date_f'
 	| 'end_date_f'
-> & { activities: (string | typeof com.earthapp.activity.ActivityType.prototype.name)[] };
+> & { activities: (string | ActivityType)[] };
 
 export type RawEventAutocompleteSuggestion = {
 	place?: string;
