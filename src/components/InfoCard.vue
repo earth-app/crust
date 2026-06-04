@@ -3,14 +3,15 @@
 		ref="cardRef"
 		:variant="variant || 'outline'"
 		:class="[
-			'relative min-w-80! lg:min-w-100 xl:min-w-120 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl hover:scale-[1.01] transition-[box-shadow,opacity,transform] duration-300',
+			'relative min-w-80! lg:min-w-100 xl:min-w-120 w-11/12 min-h-40 h-full p-4 shadow-lg rounded-lg hover:shadow-xl transition-[box-shadow,opacity,transform] duration-300',
 			isVisible
 				? 'opacity-100 translate-y-0'
 				: 'opacity-0 translate-y-2 will-change-[opacity,transform]',
-			banner?.color === 'error' && !prefersReducedMotion.value
+			hasMedia ? '' : 'hover:scale-[1.01]',
+			shouldShowBannerMotion && banner?.color === 'error'
 				? 'motion-preset-shake motion-duration-500'
 				: '',
-			banner?.color === 'success' && !prefersReducedMotion.value
+			shouldShowBannerMotion && banner?.color === 'success'
 				? 'motion-preset-pop motion-duration-500'
 				: ''
 		]"
@@ -45,28 +46,25 @@
 							:size="iconSize || 'calc(2vw + 2vh)'"
 							class="mr-2 min-w-8 min-h-8"
 						/>
-						<LazyUChip
+						<UChip
 							v-if="avatar?.chip"
 							inset
 							:color="avatar.chip.color || 'primary'"
 							:size="avatar.chip.size || 'md'"
 							class="mr-2"
-							hydrate-on-visible
 						>
-							<LazyUAvatar
+							<UAvatar
 								v-if="avatar?.src"
 								:src="avatar.src"
 								:size="avatar.size || 'md'"
 								class="mr-2 min-w-8 min-h-8"
-								hydrate-on-visible
 							/>
-						</LazyUChip>
-						<LazyUAvatar
+						</UChip>
+						<UAvatar
 							v-else-if="avatar?.src"
 							:src="avatar.src"
 							:size="avatar.size || 'md'"
 							class="mr-2 min-w-8 min-h-8"
-							hydrate-on-visible
 						/>
 						<NuxtLink
 							v-if="link && external"
@@ -168,17 +166,7 @@
 						v-if="youtubeId"
 						hydrate-on-visible
 					>
-						<div class="relative w-full aspect-video rounded-lg overflow-hidden mb-2 group">
-							<div
-								v-if="!prefersReducedMotion"
-								class="pointer-events-none absolute inset-0 flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-								aria-hidden="true"
-							>
-								<UIcon
-									name="mdi:play-circle"
-									class="size-14 text-white drop-shadow-lg motion-preset-pulse"
-								/>
-							</div>
+						<div class="relative w-full aspect-video rounded-lg overflow-hidden mb-2">
 							<iframe
 								:src="`https://www.youtube.com/embed/${youtubeId}?autoplay=0&mute=1&controls=1&rel=0&modestbranding=1&origin=${origin}`"
 								:title="`YouTube video for ${title}`"
@@ -201,25 +189,12 @@
 						v-if="video"
 						hydrate-on-visible
 					>
-						<div class="relative w-full aspect-video mb-2 group">
-							<div
-								v-if="!prefersReducedMotion && !videoPlaying"
-								class="pointer-events-none absolute inset-0 flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-								aria-hidden="true"
-							>
-								<UIcon
-									name="mdi:play-circle"
-									class="size-14 text-white drop-shadow-lg motion-preset-pulse"
-								/>
-							</div>
+						<div class="relative w-full aspect-video mb-2">
 							<video
 								class="w-full aspect-video object-cover rounded-lg"
 								controls
 								loading="lazy"
 								preload="metadata"
-								@play="videoPlaying = true"
-								@pause="videoPlaying = false"
-								@ended="videoPlaying = false"
 							>
 								<source
 									v-if="video.endsWith('.mp4')"
@@ -311,7 +286,7 @@
 							:color="badge.color || 'primary'"
 							:size="badge.size || 'md'"
 							:ui="{ label: 'text-sm' }"
-							class="max-w-100 mr-2 mb-2 hover:scale-105 transition-all duration-300"
+							class="max-w-100 mr-2 mb-2 hover:opacity-85 transition-opacity duration-300"
 							:class="badge.link ? 'hover:cursor-pointer' : 'hover:cursor-text'"
 							:icon="badge.icon || undefined"
 							:variant="badge.variant || 'solid'"
@@ -532,8 +507,18 @@ const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 const cardRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null);
 const audioRef = ref<HTMLAudioElement | null>(null);
 const audioPlaying = ref(false);
-const videoPlaying = ref(false);
 const parallaxOffset = ref(0);
+
+// any media block owns its own hover affordance — suppress card-root scale to avoid double-hover fight
+const hasMedia = computed(
+	() => !!(props.image || props.youtubeId || props.video || props.object?.url)
+);
+
+// banner shake/pop should fire once on entry, not on every prop-driven rerender
+const bannerMotionActive = ref(false);
+const shouldShowBannerMotion = computed(
+	() => bannerMotionActive.value && !prefersReducedMotion.value
+);
 
 const parallaxStyle = computed(() =>
 	prefersReducedMotion.value || !props.image
@@ -548,6 +533,14 @@ onMounted(async () => {
 	requestAnimationFrame(() => {
 		isVisible.value = !prefersReducedMotion.value;
 	});
+
+	// fire banner shake/pop once on mount, then remove the class so prop changes don't replay it
+	if (props.banner && !prefersReducedMotion.value) {
+		bannerMotionActive.value = true;
+		setTimeout(() => {
+			bannerMotionActive.value = false;
+		}, 600);
+	}
 
 	if (!import.meta.client || prefersReducedMotion.value || !props.image) return;
 	const el =
@@ -619,6 +612,10 @@ function appendUTMParameters(link: string) {
 		scale: 1;
 		translate: 0 0;
 	}
+	50% {
+		scale: 1.035;
+		translate: 1px 0;
+	}
 	100% {
 		scale: 1.06;
 		translate: 2px -1px;
@@ -628,10 +625,14 @@ function appendUTMParameters(link: string) {
 /* hover-only, fine pointer — skip touch + reduced motion */
 @media (hover: hover) and (pointer: fine) {
 	.ken-burns {
-		transition: scale 0.4s ease-out;
+		transform-origin: center;
+		transition:
+			scale 0.5s ease-in-out,
+			translate 0.5s ease-in-out;
 	}
 	.ken-burns:hover {
-		animation: ken-burns 4s ease-out 0.4s forwards;
+		/* no delay — animation starts immediately to avoid an abrupt snap after a pause */
+		animation: ken-burns 6s ease-in-out forwards;
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.ken-burns:hover {
