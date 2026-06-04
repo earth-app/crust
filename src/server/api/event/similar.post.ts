@@ -11,22 +11,23 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
-	if (!body.event || !body.pool || !Array.isArray(body.pool) || body.pool.length === 0) {
-		throw createError({
-			statusCode: 400,
-			statusMessage: 'Invalid request body. Must include "event" and non-empty "pool" array.'
-		});
-	}
+	const count = typeof body.count === 'number' && body.count > 0 ? body.count : 5;
+	const pool = Array.isArray(body?.pool) ? body.pool : [];
 
-	if (!body.count || typeof body.count !== 'number' || body.count <= 0) {
-		throw createError({
-			statusCode: 400,
-			statusMessage: 'Invalid "count" parameter. Must be a positive number.'
-		});
+	const seedId = body?.event?.id;
+	const fallback = (): Event[] => {
+		const filtered = seedId ? pool.filter((e) => e?.id !== seedId) : pool;
+		if (filtered.length === 0) return [];
+		const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+		return shuffled.slice(0, count);
+	};
+
+	if (!body.event || pool.length === 0) {
+		return fallback();
 	}
 
 	try {
-		const response = await $fetch(
+		const response = await $fetch<Event[]>(
 			`${config.public.cloudBaseUrl}/v1/events/recommend_similar_events`,
 			{
 				headers: {
@@ -35,23 +36,25 @@ export default defineEventHandler(async (event) => {
 					'Content-Type': 'application/json'
 				},
 				body: {
-					pool: body.pool,
+					pool,
 					event: body.event,
-					limit: body.count
+					limit: count
 				},
 				method: 'POST',
 				timeout: 10000
 			}
 		);
 
+		if (!Array.isArray(response) || response.length === 0) {
+			return fallback();
+		}
+
 		return response;
 	} catch (error) {
-		throw createError({
-			statusCode: 500,
-			statusMessage: `Failed to recommend similar events: ${
-				error instanceof Error ? error.message : 'Unknown error'
-			}`,
-			cause: error
-		});
+		console.warn(
+			'similar events upstream failed, returning pool fallback:',
+			error instanceof Error ? error.message : error
+		);
+		return fallback();
 	}
 });

@@ -247,9 +247,21 @@ export const usePromptStore = defineStore('prompt', () => {
 		);
 
 		if (valid(res)) {
-			const cacheKey = `${promptId}-1`;
-			const existingResponses = responsesCache.get(cacheKey) || [];
-			responsesCache.set(cacheKey, [res.data, ...existingResponses]);
+			// cache keys are `${id}-${page}-${limit}`; prepend the new response onto every page-1
+			// cache for this prompt so any active reader (regardless of its limit) sees it live
+			const page1Prefix = `${promptId}-1-`;
+			let updatedAny = false;
+			for (const [key, responses] of responsesCache.entries()) {
+				if (key.startsWith(page1Prefix)) {
+					responsesCache.set(key, [res.data, ...responses]);
+					updatedAny = true;
+				}
+			}
+
+			// no page-1 reader yet — seed the default-limit cache so the next render picks it up
+			if (!updatedAny) {
+				responsesCache.set(`${promptId}-1-25`, [res.data]);
+			}
 		}
 
 		return res;

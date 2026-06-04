@@ -138,13 +138,19 @@ export function useArticle(
 
 		const randomRes = await fetchRandom(Math.min(count * 3, 15));
 		if (!valid(randomRes)) {
-			throw new Error(`Failed to fetch random articles: ${randomRes.message || 'Unknown error'}`);
+			return { success: true as const, data: [] as Article[], message: '' };
 		}
 
 		const pool = randomRes.data;
 		if (!pool || pool.length === 0) {
-			return { success: true, data: [] };
+			return { success: true as const, data: [] as Article[], message: '' };
 		}
+
+		// keep pool slice as a guaranteed fallback so we never blank the UI
+		const poolFallback = [...pool]
+			.filter((a) => a.id !== article.value!.id)
+			.sort(() => Math.random() - 0.5)
+			.slice(0, count);
 
 		const res = await serverRequest<Article[]>(
 			`article-${article.value.id}-similar_articles`,
@@ -157,11 +163,14 @@ export function useArticle(
 		);
 
 		if (valid(res)) {
-			// load similar articles into store
-			articleStore.setArticles(res.data);
+			const data = res.data && res.data.length > 0 ? res.data : poolFallback;
+			articleStore.setArticles(data);
+			return { ...res, data };
 		}
 
-		return res;
+		// upstream failed — still hand back random pool slice
+		articleStore.setArticles(poolFallback);
+		return { success: true as const, data: poolFallback, message: '' };
 	};
 
 	const changeQuiz = async (quiz: ArticleQuizQuestionSubmission[]) => {
@@ -333,13 +342,15 @@ export function useArticles(
 		const randomRes = await fetchRandom(Math.min(count * 3, 15));
 
 		if (!valid(randomRes)) {
-			throw new Error(`Failed to fetch random articles: ${randomRes.message || 'Unknown error'}`);
+			return { success: true as const, data: [] as Article[], message: '' };
 		}
 
 		const pool = randomRes.data;
 		if (!pool || pool.length === 0) {
-			return { success: true, data: [] };
+			return { success: true as const, data: [] as Article[], message: '' };
 		}
+
+		const poolFallback = [...pool].sort(() => Math.random() - 0.5).slice(0, count);
 
 		const res = await serverRequest<Article[]>(
 			`user-${user.value.id}-article_recommendations`,
@@ -352,11 +363,13 @@ export function useArticles(
 		);
 
 		if (valid(res)) {
-			// load recommended articles into store
-			articleStore.setArticles(res.data);
+			const data = res.data && res.data.length > 0 ? res.data : poolFallback;
+			articleStore.setArticles(data);
+			return { ...res, data };
 		}
 
-		return res;
+		articleStore.setArticles(poolFallback);
+		return { success: true as const, data: poolFallback, message: '' };
 	};
 
 	const create = async (

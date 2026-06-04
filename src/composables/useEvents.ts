@@ -127,13 +127,15 @@ export function useEvents(serverRequest: typeof makeServerRequest = makeServerRe
 		const randomRes = await fetchRandom(Math.min(count * 3, 15));
 
 		if (!valid(randomRes)) {
-			throw new Error(`Failed to fetch random events: ${randomRes.message || 'Unknown error'}`);
+			return { success: true as const, data: [] as Event[], message: '' };
 		}
 
 		const pool = randomRes.data;
 		if (!pool || pool.length === 0) {
-			return { success: true, data: [] };
+			return { success: true as const, data: [] as Event[], message: '' };
 		}
+
+		const poolFallback = [...pool].sort(() => Math.random() - 0.5).slice(0, count);
 
 		const res = await serverRequest<Event[]>(
 			`user-${user.value.id}-event_recommendations`,
@@ -146,11 +148,13 @@ export function useEvents(serverRequest: typeof makeServerRequest = makeServerRe
 		);
 
 		if (valid(res)) {
-			// load recommended events into store
-			eventStore.setEvents(res.data);
+			const data = res.data && res.data.length > 0 ? res.data : poolFallback;
+			eventStore.setEvents(data);
+			return { ...res, data };
 		}
 
-		return res;
+		eventStore.setEvents(poolFallback);
+		return { success: true as const, data: poolFallback, message: '' };
 	};
 
 	const fetchUpcoming = async (count: number = 5) => {
@@ -360,13 +364,18 @@ export function useEvent(id: string, serverRequest: typeof makeServerRequest = m
 		const randomRes = await fetchRandom(Math.min(count * 3, 15));
 
 		if (!valid(randomRes)) {
-			throw new Error(`Failed to fetch random events: ${randomRes.message || 'Unknown error'}`);
+			return { success: true as const, data: [] as Event[], message: '' };
 		}
 
 		const pool = randomRes.data;
 		if (!pool || pool.length === 0) {
-			return { success: true, data: [] };
+			return { success: true as const, data: [] as Event[], message: '' };
 		}
+
+		const poolFallback = [...pool]
+			.filter((e) => e.id !== event.value!.id)
+			.sort(() => Math.random() - 0.5)
+			.slice(0, count);
 
 		const res = await serverRequest<Event[]>(
 			`event-${event.value.id}-similar_events`,
@@ -379,11 +388,13 @@ export function useEvent(id: string, serverRequest: typeof makeServerRequest = m
 		);
 
 		if (valid(res)) {
-			// load similar events into store
-			eventStore.setEvents(res.data);
+			const data = res.data && res.data.length > 0 ? res.data : poolFallback;
+			eventStore.setEvents(data);
+			return { ...res, data };
 		}
 
-		return res;
+		eventStore.setEvents(poolFallback);
+		return { success: true as const, data: poolFallback, message: '' };
 	};
 
 	return {

@@ -7,48 +7,50 @@ export default defineEventHandler(async (event) => {
 	const config = useRuntimeConfig();
 	const body = await readBody<{ count: number; pool: Article[] }>(event);
 
+	const count = typeof body?.count === 'number' && body.count > 0 ? body.count : 3;
+	const pool = Array.isArray(body?.pool) ? body.pool : [];
 	const activities = user.activities?.map((a) => a.name) || [];
-	if (activities.length === 0) {
-		// If the user has no activities, return random articles
-		return body.pool.slice(0, body.count);
-	}
 
-	if (!body.pool || !Array.isArray(body.pool) || body.pool.length === 0) {
-		throw createError({
-			statusCode: 400,
-			statusMessage: 'Invalid request body. Must include non-empty "pool" array.'
-		});
-	}
+	const fallback = (): Article[] => {
+		if (pool.length === 0) return [];
+		const shuffled = [...pool].sort(() => Math.random() - 0.5);
+		return shuffled.slice(0, count);
+	};
 
-	if (!body.count || typeof body.count !== 'number' || body.count <= 0) {
-		throw createError({
-			statusCode: 400,
-			statusMessage: 'Invalid "count" parameter. Must be a positive number.'
-		});
+	// no activities → just return random pool slice; no point pinging the recommender
+	if (activities.length === 0 || pool.length === 0) {
+		return fallback();
 	}
 
 	try {
-		const response = await $fetch(`${config.public.cloudBaseUrl}/v1/users/recommend_articles`, {
-			headers: {
-				Authorization: `Bearer ${config.adminApiKey}`,
-				Accept: 'application/json',
-				'Content-Type': 'application/json'
-			},
-			body: {
-				pool: body.pool,
-				activities,
-				limit: body.count
-			},
-			method: 'POST',
-			timeout: 10000
-		});
+		const response = await $fetch<Article[]>(
+			`${config.public.cloudBaseUrl}/v1/users/recommend_articles`,
+			{
+				headers: {
+					Authorization: `Bearer ${config.adminApiKey}`,
+					Accept: 'application/json',
+					'Content-Type': 'application/json'
+				},
+				body: {
+					pool,
+					activities,
+					limit: count
+				},
+				method: 'POST',
+				timeout: 10000
+			}
+		);
+
+		if (!Array.isArray(response) || response.length === 0) {
+			return fallback();
+		}
 
 		return response;
 	} catch (error) {
-		throw createError({
-			statusCode: 500,
-			statusMessage: `Failed to recommend articles: ${error instanceof Error ? error.message : 'Unknown error'}`,
-			cause: error
-		});
+		console.warn(
+			'recommend articles upstream failed, returning pool fallback:',
+			error instanceof Error ? error.message : error
+		);
+		return fallback();
 	}
 });
