@@ -48,14 +48,23 @@
 				:key="n"
 				content-size="small"
 			/>
-			<LazyActivityCard
+			<template
 				v-for="(activity, i) in allActivities"
 				:key="activity.id"
-				:activity="activity"
-				class="motion-preset-fade-md"
-				:style="`--motion-delay: ${Math.min(i % 12, 8) * 40}ms`"
-				hydrate-on-visible
-			/>
+			>
+				<LazyActivityCard
+					:activity="activity"
+					class="motion-preset-fade-md"
+					:style="`--motion-delay: ${Math.min(i % 12, 8) * 40}ms`"
+					hydrate-on-visible
+				/>
+				<LazyActivityWidgetSlot
+					v-if="widgetForIndex(i)"
+					:kind="widgetForIndex(i)!"
+					topic="activities"
+					hydrate-on-visible
+				/>
+			</template>
 		</div>
 	</div>
 
@@ -84,6 +93,7 @@ const { setTitleSuffix } = useTitleSuffix();
 setTitleSuffix('Activities');
 
 const { user, fetchRecommendedActivities } = useAuth();
+const { widgetForIndex } = useFeedWidgets();
 const toast = useToast();
 
 const recommendedLoaded = ref(false);

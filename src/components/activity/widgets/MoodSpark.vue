@@ -1,0 +1,152 @@
+<template>
+	<UCard
+		variant="soft"
+		class="relative min-w-72 max-w-md p-4 shadow-md rounded-xl bg-linear-to-br from-info/10 via-primary/5 to-transparent overflow-hidden"
+	>
+		<div class="flex items-center gap-2 mb-2">
+			<UIcon
+				name="mdi:heart-pulse"
+				class="size-5 text-info"
+			/>
+			<h3 class="text-sm font-semibold uppercase tracking-wide text-muted">Mood Spark</h3>
+		</div>
+		<p class="text-base font-medium mb-3">{{ question }}</p>
+
+		<div
+			v-if="!hasVoted"
+			class="grid grid-cols-6 gap-1.5"
+		>
+			<UButton
+				v-for="emoji in EMOJIS"
+				:key="emoji"
+				variant="ghost"
+				color="neutral"
+				:disabled="loading"
+				class="text-2xl! aspect-square flex items-center justify-center hover:scale-110 transition-transform"
+				@click="onVote(emoji)"
+				>{{ emoji }}</UButton
+			>
+		</div>
+
+		<div
+			v-else
+			class="flex flex-col gap-2"
+		>
+			<div
+				v-for="emoji in EMOJIS"
+				:key="`bar-${emoji}`"
+				class="flex items-center gap-2"
+			>
+				<span class="text-xl shrink-0 w-8 text-center">{{ emoji }}</span>
+				<div class="flex-1">
+					<UProgress
+						:model-value="percentages[emoji]"
+						:color="myVote === emoji ? 'info' : 'neutral'"
+						size="sm"
+					/>
+				</div>
+				<span
+					class="text-xs text-muted tabular-nums w-10 text-right"
+					:class="{ 'text-info font-semibold': myVote === emoji }"
+					>{{ percentages[emoji] }}%</span
+				>
+			</div>
+			<p
+				v-if="snapshot && snapshot.total > 0"
+				class="text-xs text-muted mt-1"
+			>
+				{{ snapshot.total }} {{ snapshot.total === 1 ? 'voice' : 'voices' }} today
+			</p>
+		</div>
+
+		<p
+			v-if="errorMessage"
+			class="text-xs text-error mt-2"
+		>
+			{{ errorMessage }}
+		</p>
+
+		<UiSparkleBurst
+			:trigger="sparkleTrigger"
+			color="info"
+		/>
+	</UCard>
+</template>
+
+<script setup lang="ts">
+const props = withDefaults(
+	defineProps<{
+		topic?: string;
+		question?: string;
+	}>(),
+	{
+		topic: 'today',
+		question: 'How are you feeling about today?'
+	}
+);
+
+const emit = defineEmits<{
+	(event: 'complete', payload: { emoji: MoodEmoji }): void;
+}>();
+
+const { snapshot, hasVoted, vote, fetchSnapshot, EMOJIS } = useMood(() => props.topic);
+const toast = useToast();
+
+const myVote = ref<MoodEmoji | null>(null);
+const loading = ref(false);
+const sparkleTrigger = ref(0);
+const errorMessage = ref<string | null>(null);
+
+const percentages = computed<Record<MoodEmoji, number>>(() => {
+	const counts = snapshot.value?.counts;
+	const total = snapshot.value?.total ?? 0;
+	const out = {} as Record<MoodEmoji, number>;
+	for (const e of EMOJIS) {
+		const v = counts?.[e] ?? 0;
+		out[e] = total > 0 ? Math.round((v / total) * 100) : 0;
+	}
+	return out;
+});
+
+async function onVote(emoji: MoodEmoji) {
+	if (loading.value || hasVoted.value) return;
+	loading.value = true;
+	errorMessage.value = null;
+
+	const res = await vote(props.topic, emoji);
+	loading.value = false;
+
+	if (res.success) {
+		myVote.value = emoji;
+		sparkleTrigger.value++;
+		emit('complete', { emoji });
+		toast.add({
+			title: 'Mood Recorded',
+			description: 'Thanks for sharing — your spark joins the others today.',
+			icon: 'mdi:heart-pulse',
+			color: 'info',
+			duration: 4500
+		});
+	} else {
+		errorMessage.value = res.error ?? 'Could not record your mood.';
+		// "already voted from this device" is informational, not a toast-worthy error
+		if (!res.error?.toLowerCase().includes('already')) {
+			toast.add({
+				title: 'Could Not Record Mood',
+				description: errorMessage.value,
+				icon: 'mdi:alert-circle',
+				color: 'error',
+				duration: 6000
+			});
+		}
+	}
+}
+
+onMounted(async () => {
+	if (import.meta.client && hasVoted.value) {
+		// no stored emoji from the prior session, so we just leave myVote null
+		// and let the bars highlight without a per-user winner
+	}
+	await fetchSnapshot();
+});
+</script>
