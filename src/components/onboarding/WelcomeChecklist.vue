@@ -214,6 +214,7 @@ const percent = computed(() =>
 
 const show = computed(() => {
 	if (!user.value) return false;
+	if (!onboarding.fetched.value) return false;
 	if (onboarding.isDismissed.value) return false;
 	if (onboarding.isComplete.value) return false;
 	return true;

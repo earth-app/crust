@@ -235,6 +235,7 @@ export function useOnboarding() {
 	return {
 		state,
 		loading,
+		fetched,
 		fetchState,
 		completeStep,
 		setPersona,
