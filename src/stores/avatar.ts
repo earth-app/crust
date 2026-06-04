@@ -35,6 +35,12 @@ export const useAvatarStore = defineStore('avatar', () => {
 	const previewLoading = reactive(new Set<string>());
 	const previewQueue = new Map<string, Promise<string | undefined>>();
 
+	// separate cache keyspace for self-previews so the placeholder preview and
+	// the "your photo + this cosmetic" preview don't trample each other
+	const selfPreviewCache = reactive(new Map<string, string>());
+	const selfPreviewLoading = reactive(new Set<string>());
+	const selfPreviewQueue = new Map<string, Promise<string | undefined>>();
+
 	const get = (url: string): AvatarSizes | undefined => {
 		if (!cache.has(url)) return undefined;
 		return cache.get(url);
@@ -197,6 +203,25 @@ export const useAvatarStore = defineStore('avatar', () => {
 		return res;
 	};
 
+	// fire-and-forget mantle2 cache flush after avatar mutations
+	// belt-and-suspenders alongside the local cache-bust on the avatar url
+	const clearUserPhotoCache = async (userId: string): Promise<void> => {
+		try {
+			const res = await makeAPIRequest<{ success: boolean }>(
+				`clear-photo-cache-${userId}`,
+				`/v2/users/${userId}/profile_photo/cache`,
+				authStore.sessionToken,
+				{ method: 'DELETE' }
+			);
+
+			if (!res.success) {
+				console.warn(`Failed to clear photo cache for user ${userId}:`, res.message);
+			}
+		} catch (error) {
+			console.warn(`Failed to clear photo cache for user ${userId}:`, error);
+		}
+	};
+
 	const setCosmeticForUser = async (userId: string, cosmeticKey: AvatarCosmetic['key'] | null) => {
 		const res = await makeAPIRequest<void>(
 			`set-user-cosmetic-${userId}`,
@@ -210,6 +235,8 @@ export const useAvatarStore = defineStore('avatar', () => {
 
 		if (res.success) {
 			await fetchCosmeticsForUser(userId);
+			// flush mantle2-side cosmetic cache so the next avatar fetch is fresh
+			await clearUserPhotoCache(userId);
 		} else {
 			console.warn(`Failed to set cosmetic for user ${userId}:`, res.message);
 		}
@@ -234,6 +261,13 @@ export const useAvatarStore = defineStore('avatar', () => {
 		}
 
 		return res;
+	};
+
+	// returns a cache-busting query string suffix for an avatar url; safe to append
+	// even if the url already has a query string. used after cosmetic changes.
+	const buildAvatarCacheBust = (url: string): string => {
+		if (!url) return url;
+		return `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
 	};
 
 	const getPreview = (cosmeticKey: AvatarCosmetic['key']): string | undefined =>
@@ -287,12 +321,73 @@ export const useAvatarStore = defineStore('avatar', () => {
 			const url = previewCache.get(cosmeticKey);
 			if (isBlobUrl(url)) URL.revokeObjectURL(url!);
 			previewCache.delete(cosmeticKey);
+
+			const selfUrl = selfPreviewCache.get(cosmeticKey);
+			if (isBlobUrl(selfUrl)) URL.revokeObjectURL(selfUrl!);
+			selfPreviewCache.delete(cosmeticKey);
 		} else {
 			for (const url of previewCache.values()) {
 				if (isBlobUrl(url)) URL.revokeObjectURL(url);
 			}
 			previewCache.clear();
+
+			for (const url of selfPreviewCache.values()) {
+				if (isBlobUrl(url)) URL.revokeObjectURL(url);
+			}
+			selfPreviewCache.clear();
 		}
+	};
+
+	// preview the cosmetic applied to the *authenticated user's* own profile photo
+	// (server falls back to the placeholder if the user can't be resolved, so this
+	// is safe to call from any caller; the returned blob just won't be personalized)
+	const getSelfPreview = (cosmeticKey: AvatarCosmetic['key']): string | undefined =>
+		selfPreviewCache.get(cosmeticKey);
+
+	const isSelfPreviewLoading = (cosmeticKey: AvatarCosmetic['key']): boolean =>
+		selfPreviewLoading.has(cosmeticKey);
+
+	const previewCosmeticWithSelf = async (
+		cosmeticKey: AvatarCosmetic['key']
+	): Promise<string | undefined> => {
+		const cached = selfPreviewCache.get(cosmeticKey);
+		if (cached) return cached;
+
+		const inFlight = selfPreviewQueue.get(cosmeticKey);
+		if (inFlight) return inFlight;
+
+		selfPreviewLoading.add(cosmeticKey);
+
+		const promise = (async () => {
+			try {
+				const res = await makeAPIRequest<Blob>(
+					`cosmetic-preview-self-${cosmeticKey}`,
+					`/v2/users/cosmetics/preview?cosmetic=${cosmeticKey}&withSelf=true`,
+					authStore.sessionToken,
+					{ responseType: 'blob' }
+				);
+
+				if (valid(res) && res.data instanceof Blob && res.data.size > 0) {
+					const objectUrl = URL.createObjectURL(res.data);
+					selfPreviewCache.set(cosmeticKey, objectUrl);
+					return objectUrl;
+				}
+
+				if (!res.success) {
+					console.warn(`Failed to fetch self preview for cosmetic ${cosmeticKey}:`, res.message);
+				}
+				return undefined;
+			} catch (error) {
+				console.warn(`Failed to fetch self preview for cosmetic ${cosmeticKey}:`, error);
+				return undefined;
+			} finally {
+				selfPreviewLoading.delete(cosmeticKey);
+				selfPreviewQueue.delete(cosmeticKey);
+			}
+		})();
+
+		selfPreviewQueue.set(cosmeticKey, promise);
+		return promise;
 	};
 
 	return {
@@ -312,11 +407,18 @@ export const useAvatarStore = defineStore('avatar', () => {
 		fetchCosmeticsForUser,
 		setCosmeticForUser,
 		purchaseCosmetic,
+		clearUserPhotoCache,
+		buildAvatarCacheBust,
 		previewCache,
 		previewLoading,
 		getPreview,
 		isPreviewLoading,
 		previewCosmetic,
+		selfPreviewCache,
+		selfPreviewLoading,
+		getSelfPreview,
+		isSelfPreviewLoading,
+		previewCosmeticWithSelf,
 		clearPreview
 	};
 });

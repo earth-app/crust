@@ -186,6 +186,7 @@ export type AvatarCosmetic = {
 	full_price: number; // original price before discount
 	discount?: number; // percentage discount (e.g. 0.2 for 20% off)
 	rarity: Rarity;
+	animated?: boolean; // when true, clients apply a slow CSS rotation overlay
 };
 
 export type QuestPermission = 'camera' | 'location' | 'record';

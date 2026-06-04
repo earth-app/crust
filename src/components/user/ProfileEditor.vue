@@ -158,6 +158,8 @@
 							:state="cosmetic.state"
 							:rarity="cosmetic.rarity"
 							:price="cosmetic.price"
+							:animated="cosmetic.animated"
+							:celebrate-tick="celebrateTicks.get(cosmetic.key) || 0"
 							hydrate-on-visible
 						/>
 					</div>
@@ -201,12 +203,21 @@
 						v-if="selectedCosmeticForPurchase"
 						class="flex flex-col items-center gap-4"
 					>
-						<LazyUserCosmetic
-							:cosmetic-key="selectedCosmeticForPurchase.key"
-							state="available"
-							:rarity="selectedCosmeticForPurchase.rarity"
-							:price="selectedCosmeticForPurchase.price"
-						/>
+						<div class="relative w-full flex justify-center">
+							<USkeleton
+								v-if="modalPreviewLoading"
+								class="size-48 rounded-full absolute inset-0 m-auto"
+							/>
+							<LazyUserCosmetic
+								:cosmetic-key="selectedCosmeticForPurchase.key"
+								state="available"
+								:rarity="selectedCosmeticForPurchase.rarity"
+								:price="selectedCosmeticForPurchase.price"
+								:animated="selectedCosmeticForPurchase.animated"
+								:with-self="hasOwnAvatar"
+								:celebrate-tick="celebrateTicks.get(selectedCosmeticForPurchase.key) || 0"
+							/>
+						</div>
 
 						<div class="flex gap-1 items-center">
 							<p
@@ -438,28 +449,26 @@
 							class="py-1 px-2 border rounded-md border-blue-500"
 							:ui="{ label: 'font-semibold text-blue-400', base: 'hover:cursor-pointer' }"
 						/>
-						<LazyUButton
+						<UButton
 							id="password-change"
 							color="warning"
 							variant="outline"
 							trailing-icon="mdi:shield-lock"
 							class="font-semibold hover:cursor-pointer"
 							@click="passwordChangeModal?.open()"
-							hydrate-on-visible
 						>
 							Change Password
-						</LazyUButton>
-						<LazyUButton
+						</UButton>
+						<UButton
 							id="account-deletion"
 							color="error"
 							variant="outline"
 							trailing-icon="mdi:account-cancel"
 							class="font-semibold hover:cursor-pointer"
 							@click="deleteAccountModal?.open()"
-							hydrate-on-visible
 						>
 							Delete Account
-						</LazyUButton>
+						</UButton>
 						<UserPasswordChangeModal
 							ref="passwordChangeModal"
 							@changed="handlePasswordChange"
@@ -860,6 +869,42 @@ const purchaseLoadingStates = reactive(new Map<string, boolean>());
 const selectLoadingStates = reactive(new Map<string, boolean>());
 const resettingCosmetic = ref(false);
 
+// per-cosmetic tick increments to fire SparkleBurst on the matching cosmetic
+// card and the modal preview when the user equips or purchases that cosmetic
+const celebrateTicks = reactive(new Map<string, number>());
+function bumpCelebrate(cosmeticKey: string) {
+	const current = celebrateTicks.get(cosmeticKey) || 0;
+	celebrateTicks.set(cosmeticKey, current + 1);
+}
+
+// the modal renders a "your photo + this cosmetic" preview when the user has
+// their own remote avatar to combine against; otherwise we fall back to the
+// generic placeholder preview the cosmetic card already shows
+const hasOwnAvatar = computed(() => {
+	const url = user.value?.account?.avatar_url;
+	return !!url && (url.startsWith('http://') || url.startsWith('https://'));
+});
+
+// loading skeleton shown over the modal preview while the self-preview fetches
+const modalPreviewLoading = computed(() => {
+	const key = selectedCosmeticForPurchase.value?.key;
+	if (!key) return false;
+	if (!hasOwnAvatar.value) return false;
+	if (avatarStore.getSelfPreview(key)) return false;
+	return avatarStore.isSelfPreviewLoading(key) || !avatarStore.getPreview(key);
+});
+
+// kick off the self-preview fetch when the modal opens for a new cosmetic
+watch(
+	[() => selectedCosmeticForPurchase.value?.key, hasOwnAvatar],
+	([key, withSelf]) => {
+		if (!key || !withSelf) return;
+		if (avatarStore.getSelfPreview(key)) return;
+		void avatarStore.previewCosmeticWithSelf(key);
+	},
+	{ immediate: true }
+);
+
 function handleCosmeticClick(cosmetic: CosmeticWithState) {
 	if (cosmetic.state === 'selected') {
 		return;
@@ -935,12 +980,14 @@ async function handlePurchaseClick(cosmeticKey: AvatarCosmetic['key']) {
 				selectedCosmeticForPurchase.value = freshCosmetic;
 			}
 
+			bumpCelebrate(cosmeticKey);
+
 			toast.add({
-				title: 'Purchase Successful',
-				description: `You have successfully purchased the ${capitalizeFully(cosmeticKey.replace('_', ' '))} cosmetic!`,
+				title: 'Cosmetic Purchased',
+				description: `You unlocked ${capitalizeFully(cosmeticKey.replaceAll('_', ' '))}.`,
 				color: 'success',
-				icon: 'mdi:check-circle',
-				duration: 3000
+				icon: 'mdi:cart-check',
+				duration: 5000
 			});
 
 			showCosmeticModal.value = false;
@@ -987,19 +1034,23 @@ async function handleSelectClick(cosmeticKey: AvatarCosmetic['key']) {
 				selectedCosmeticForPurchase.value = freshCosmetic;
 			}
 
-			// Clear avatar cache and refetch to show cosmetic changes
+			// Clear avatar cache (local + mantle2 redis is flushed by the store)
+			// and force a cache-bust preload so the next render skips any stale bytes
 			const avatarUrl = user.value?.account?.avatar_url;
 			if (avatarUrl && avatarUrl.startsWith('http')) {
 				avatarStore.clear(avatarUrl);
+				avatarStore.preloadAvatar(avatarStore.buildAvatarCacheBust(avatarUrl));
 				await refetchUser();
 			}
 
+			bumpCelebrate(cosmeticKey);
+
 			toast.add({
-				title: 'Cosmetic Updated',
-				description: 'Your profile cosmetic has been successfully updated.',
+				title: 'Cosmetic Equipped',
+				description: `${capitalizeFully(cosmeticKey.replaceAll('_', ' '))} is now applied to your avatar.`,
 				color: 'success',
-				icon: 'mdi:check-circle',
-				duration: 3000
+				icon: 'mdi:palette-swatch',
+				duration: 5000
 			});
 
 			// Close modal on success
