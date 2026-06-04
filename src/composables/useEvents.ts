@@ -50,6 +50,21 @@ export function useEvents(serverRequest: typeof makeServerRequest = makeServerRe
 		return { items: [], total: 0, page, limit };
 	};
 
+	const fetchAll = async (
+		limit: number = 25,
+		search: string = '',
+		sort: SortingOption = 'desc'
+	) => {
+		return await paginatedAPIRequest<Event>(
+			`/v2/events`,
+			authStore.sessionToken,
+			{},
+			limit,
+			search,
+			sort
+		);
+	};
+
 	const createEvent = async (eventData: EventData) => {
 		return await eventStore.createEvent(eventData);
 	};
@@ -155,6 +170,7 @@ export function useEvents(serverRequest: typeof makeServerRequest = makeServerRe
 
 	return {
 		fetch,
+		fetchAll,
 		createEvent,
 		deleteEvent,
 		fetchRandom,
