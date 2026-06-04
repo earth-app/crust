@@ -64,6 +64,15 @@
 				class="mb-4"
 			/>
 		</div>
+		<div class="flex justify-center w-full px-4 mt-8 mb-4">
+			<div class="w-full max-w-2xl">
+				<LazyWidgetSlot
+					kind="MicroReflection"
+					topic="prompts"
+					hydrate-on-visible
+				/>
+			</div>
+		</div>
 	</div>
 
 	<ClientOnly>

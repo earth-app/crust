@@ -25,7 +25,7 @@
 	</div>
 	<div class="flex justify-center w-full px-4 mt-8">
 		<div class="w-full max-w-2xl">
-			<LazyActivityWidgetsWordOfTheDay hydrate-on-visible />
+			<LazyWidgetsWordOfTheDay hydrate-on-visible />
 		</div>
 	</div>
 
@@ -64,7 +64,7 @@
 					:style="`--motion-delay: ${Math.min(i % 12, 8) * 40}ms`"
 					hydrate-on-visible
 				/>
-				<LazyActivityWidgetSlot
+				<LazyWidgetSlot
 					v-if="widgetForIndex(i)"
 					:kind="widgetForIndex(i)!"
 					topic="activities"

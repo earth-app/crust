@@ -57,6 +57,15 @@
 				content-size="small"
 			/>
 		</InfoCardGroup>
+		<div class="flex justify-center w-full px-4 my-2">
+			<div class="w-full max-w-2xl">
+				<LazyWidgetSlot
+					kind="MoodSpark"
+					topic="articles"
+					hydrate-on-visible
+				/>
+			</div>
+		</div>
 		<InfoCardGroup
 			title="Explore Articles"
 			description="Discover new and interesting reads"
@@ -96,6 +105,15 @@
 				/>
 			</InfoCardGroup>
 		</div>
+		<div class="flex justify-center w-full px-4 my-2">
+			<div class="w-full max-w-2xl">
+				<LazyWidgetSlot
+					kind="MicroQuiz"
+					topic="articles"
+					hydrate-on-visible
+				/>
+			</div>
+		</div>
 		<div ref="olderSentinel">
 			<InfoCardGroup
 				title="Older Articles"
@@ -115,6 +133,15 @@
 					content-size="small"
 				/>
 			</InfoCardGroup>
+		</div>
+		<div class="flex justify-center w-full px-4 my-2">
+			<div class="w-full max-w-2xl">
+				<LazyWidgetSlot
+					kind="MicroReflection"
+					topic="articles"
+					hydrate-on-visible
+				/>
+			</div>
 		</div>
 		<div ref="byCloudSentinel">
 			<InfoCardGroup

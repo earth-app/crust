@@ -125,7 +125,7 @@
 					:color="card.color || 0xffffff"
 					hydrate-on-visible
 				/>
-				<LazyActivityWidgetSlot
+				<LazyWidgetSlot
 					v-if="cardWidgetKind(index)"
 					:kind="cardWidgetKind(index)!"
 					:activity="{ id: activity.id, name: activity.name }"

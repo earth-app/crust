@@ -53,6 +53,15 @@
 				content-size="small"
 			/>
 		</InfoCardGroup>
+		<div class="flex justify-center w-full px-4 my-2">
+			<div class="w-full max-w-2xl">
+				<LazyWidgetSlot
+					kind="MoodSpark"
+					topic="events"
+					hydrate-on-visible
+				/>
+			</div>
+		</div>
 		<InfoCardGroup
 			title="Upcoming Events"
 			description="Don't miss out on these!"
@@ -90,6 +99,15 @@
 				content-size="small"
 			/>
 		</InfoCardGroup>
+		<div class="flex justify-center w-full px-4 my-2">
+			<div class="w-full max-w-2xl">
+				<LazyWidgetSlot
+					kind="MicroPoll"
+					topic="events"
+					hydrate-on-visible
+				/>
+			</div>
+		</div>
 		<InfoCardGroup
 			title="Recent Events"
 			description="Latest events from the community"
