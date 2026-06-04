@@ -156,14 +156,21 @@
 				</div>
 			</template>
 			<template #body>
-				<LazyUserQuestStepSubmission
-					v-if="openStep"
-					:quest="quest"
-					:progress="progress"
-					:step="openStep"
-					@submitted="stepOpen = false"
-				/>
-				<Loading v-else-if="stepOpen" />
+				<div class="relative">
+					<LazyUserQuestStepSubmission
+						v-if="openStep"
+						:quest="quest"
+						:progress="progress"
+						:step="openStep"
+						@submitted="onStepSubmitted"
+					/>
+					<Loading v-else-if="stepOpen" />
+					<UiSparkleBurst
+						:trigger="sparkleTick"
+						:count="36"
+						color="success"
+					/>
+				</div>
 			</template>
 		</UModal>
 
@@ -266,6 +273,16 @@ const openStep = ref<
 >(null);
 
 const premiumOpen = ref(false);
+const sparkleTick = ref(0);
+
+// micro-confetti tick + brief delay so the burst renders before the step modal closes
+function onStepSubmitted() {
+	sparkleTick.value++;
+	setTimeout(() => {
+		stepOpen.value = false;
+	}, 650);
+}
+
 const canOpenPremium = computed(() => {
 	if (!props.quest.premium) return true;
 	return user.value?.account.account_type !== 'FREE';
