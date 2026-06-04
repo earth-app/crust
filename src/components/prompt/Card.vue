@@ -34,31 +34,31 @@
 					: undefined
 			"
 		/>
+		<UModal
+			v-if="hasButtons"
+			title="Edit Prompt"
+			size="2xl"
+			:closeable="true"
+			v-model:open="editOpen"
+			:overlay="false"
+		>
+			<template #body>
+				<div class="flex flex-col space-y-4">
+					<LazyUInput
+						v-model="promptText"
+						hydrate-on-visible
+					/>
+					<LazyUButton
+						@click="savePrompt"
+						:loading="editLoading"
+						:disabled="editLoading || promptText.trim().length === 0"
+						hydrate-on-visible
+						>Save</LazyUButton
+					>
+				</div>
+			</template>
+		</UModal>
 	</div>
-	<UModal
-		v-if="hasButtons"
-		title="Edit Prompt"
-		size="2xl"
-		:closeable="true"
-		v-model:open="editOpen"
-		:overlay="false"
-	>
-		<template #body>
-			<div class="flex flex-col space-y-4">
-				<LazyUInput
-					v-model="promptText"
-					hydrate-on-visible
-				/>
-				<LazyUButton
-					@click="savePrompt"
-					:loading="editLoading"
-					:disabled="editLoading || promptText.trim().length === 0"
-					hydrate-on-visible
-					>Save</LazyUButton
-				>
-			</div>
-		</template>
-	</UModal>
 </template>
 
 <script setup lang="ts">
