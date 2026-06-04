@@ -14,18 +14,25 @@
 
 		<div
 			v-if="!hasVoted"
-			class="grid grid-cols-6 gap-1.5"
+			class="grid grid-cols-3 sm:grid-cols-6 gap-2"
 		>
-			<UButton
+			<button
 				v-for="emoji in EMOJIS"
 				:key="emoji"
-				variant="ghost"
-				color="neutral"
+				type="button"
 				:disabled="loading"
-				class="text-2xl! aspect-square flex items-center justify-center hover:scale-110 transition-transform"
+				:title="MOOD_LABELS[emoji]"
+				:aria-label="`Vote ${MOOD_LABELS[emoji]}`"
+				class="group flex flex-col items-center gap-1 py-2 rounded-lg border border-default bg-elevated/40 hover:bg-info/10 hover:border-info/40 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
 				@click="onVote(emoji)"
-				>{{ emoji }}</UButton
 			>
+				<span class="text-3xl transition-transform duration-200 group-hover:scale-110">{{
+					emoji
+				}}</span>
+				<span class="text-[10px] uppercase tracking-wide text-muted group-hover:text-info">{{
+					MOOD_LABELS[emoji]
+				}}</span>
+			</button>
 		</div>
 
 		<div
@@ -91,6 +98,16 @@ const emit = defineEmits<{
 
 const { snapshot, hasVoted, vote, fetchSnapshot, EMOJIS } = useMood(() => props.topic);
 const toast = useToast();
+
+// short labels keep the button readable in the 6-up grid and double as aria-labels
+const MOOD_LABELS: Record<MoodEmoji, string> = {
+	'😍': 'Love',
+	'😊': 'Good',
+	'🤔': 'Curious',
+	'😐': 'Meh',
+	'😟': 'Worried',
+	'😤': 'Frustrated'
+};
 
 const myVote = ref<MoodEmoji | null>(null);
 const loading = ref(false);

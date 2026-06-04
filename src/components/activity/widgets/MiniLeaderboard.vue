@@ -13,10 +13,21 @@
 			</h3>
 		</div>
 		<div
-			v-if="rows.length === 0"
+			v-if="loading"
 			class="text-xs text-muted py-4 text-center"
 		>
 			Loading top streaks...
+		</div>
+		<div
+			v-else-if="rows.length === 0"
+			class="text-xs text-muted py-6 text-center flex flex-col items-center gap-2"
+		>
+			<UIcon
+				name="mdi:medal-outline"
+				class="size-8 text-muted/60"
+			/>
+			<p>No active {{ typeLabel.toLowerCase() }} streaks yet.</p>
+			<p class="text-[10px]">Be the first to start one.</p>
 		</div>
 		<ul
 			v-else
@@ -65,9 +76,25 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const { leaderboard } = useJourneyLeaderboard(props.type);
+const { leaderboard, fetchLeaderboard } = useJourneyLeaderboard(props.type);
 const { user: currentUser } = useAuth();
 const avatarStore = useAvatarStore();
+
+// initial-fetch loading flag. leaderboard.value can be empty either because we haven't
+// fetched yet or because there are genuinely no streaks - distinguish so the empty UI
+// only shows after we've actually heard back from the backend.
+const loading = ref(leaderboard.value.length === 0);
+onMounted(async () => {
+	if (leaderboard.value.length > 0) {
+		loading.value = false;
+		return;
+	}
+	try {
+		await fetchLeaderboard(10);
+	} finally {
+		loading.value = false;
+	}
+});
 
 const typeLabel = computed(() => {
 	const t = props.type;

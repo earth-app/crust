@@ -2163,9 +2163,10 @@ export function useMood(initialTopic: MaybeRefOrGetter<string> = 'today') {
 
 // deterministic per-day widget picker. seed = (date hash) xor (user-id hash) so each user
 // gets a stable rotation across reloads but the slate refreshes daily and varies by user
-// WordOfTheDay is intentionally NOT in this rotation. The widget fetches a real "word of
-// the day" from a public API and is mounted standalone on /activities (above the grid) -
-// rotating it through random slots would just duplicate or stale it.
+// WordOfTheDay is intentionally NOT in this rotation - it's standalone on /activities.
+// MiniLeaderboard is NOT in this rotation either - the leaderboard is by content type
+// (article/prompt/event) and showing a "Top Prompt Streaks" card inline on an activities
+// page is jarring. Both kinds stay in the type union for explicit standalone use.
 export type FeedWidgetKind =
 	| 'MoodSpark'
 	| 'MicroPoll'
@@ -2180,7 +2181,6 @@ const FEED_WIDGET_POOL: FeedWidgetKind[] = [
 	'MicroPoll',
 	'ImpactTracker',
 	'MicroReflection',
-	'MiniLeaderboard',
 	'MicroQuiz',
 	'RapidFlash'
 ];

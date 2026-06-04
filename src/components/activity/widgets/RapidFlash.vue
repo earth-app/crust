@@ -1,5 +1,6 @@
 <template>
 	<UCard
+		ref="rootRef"
 		variant="soft"
 		class="relative min-w-72 max-w-md p-4 shadow-md rounded-xl bg-linear-to-br from-secondary/10 via-primary/5 to-transparent overflow-hidden"
 	>
@@ -12,10 +13,18 @@
 				<h3 class="text-sm font-semibold uppercase tracking-wide text-muted">Rapid Flash Match</h3>
 			</div>
 			<UBadge
+				v-if="started"
 				color="secondary"
 				variant="soft"
 				icon="mdi:timer-outline"
 				>{{ formattedTime }}</UBadge
+			>
+			<UBadge
+				v-else
+				color="neutral"
+				variant="soft"
+				icon="mdi:pause"
+				>Ready</UBadge
 			>
 		</div>
 		<div
@@ -88,8 +97,11 @@ const shakeTerm = ref<number | null>(null);
 const shakeDef = ref<number | null>(null);
 const elapsed = ref(0);
 const done = ref(false);
+const started = ref(false);
+const rootRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null);
 let startedAt = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
+let observer: IntersectionObserver | null = null;
 
 function shuffle<T>(arr: T[]): T[] {
 	const a = [...arr];
@@ -115,21 +127,56 @@ const cellColor = (matched: Set<number>, selected: number | null, i: number) =>
 const cellVariant = (matched: Set<number>, selected: number | null, i: number) =>
 	matched.has(i) || selected === i ? ('solid' as const) : ('outline' as const);
 
-onMounted(() => {
-	const round = shuffle(props.pool).slice(0, ROUND);
-	terms.value = round;
-	defs.value = shuffle(round);
+function startGame() {
+	if (started.value) return;
+	started.value = true;
 	startedAt = performance.now();
 	timer = setInterval(() => {
 		elapsed.value = performance.now() - startedAt;
 	}, 100);
+}
+
+onMounted(() => {
+	// deal the cards immediately so the layout is stable, but don't start the clock
+	// until the widget is actually in the viewport - otherwise scrolling past it from
+	// the top of the page elapses the user's time without them ever seeing it
+	const round = shuffle(props.pool).slice(0, ROUND);
+	terms.value = round;
+	defs.value = shuffle(round);
+
+	if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
+		startGame();
+		return;
+	}
+	const el =
+		rootRef.value && '$el' in (rootRef.value as object)
+			? (rootRef.value as { $el: HTMLElement }).$el
+			: (rootRef.value as HTMLElement | null);
+	if (!el) {
+		startGame();
+		return;
+	}
+	observer = new IntersectionObserver(
+		(entries) => {
+			if (entries.some((e) => e.isIntersecting)) {
+				startGame();
+				observer?.disconnect();
+				observer = null;
+			}
+		},
+		{ threshold: 0.4 }
+	);
+	observer.observe(el);
 });
 
 onBeforeUnmount(() => {
 	if (timer) clearInterval(timer);
+	if (observer) observer.disconnect();
 });
 
 function pick(kind: 'term' | 'def', i: number) {
+	// safety: if a user manages to click before IO fires (e.g. keyboard nav), kick off the clock
+	if (!started.value) startGame();
 	if (kind === 'term') {
 		if (matchedTerms.value.has(i)) return;
 		selectedTerm.value = i;
