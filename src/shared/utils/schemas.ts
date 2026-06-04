@@ -28,6 +28,43 @@ export const fullNameSchema = z
 	.regex(/^[a-zA-Z'-]+(\s+[a-zA-Z'-]+)*$/, 'Must be a valid full name (e.g., "John" or "John Doe")')
 	.optional();
 
+// MoodSpark
+
+export const MOOD_EMOJIS = ['😍', '😊', '🤔', '😐', '😟', '😤'] as const;
+export type MoodEmoji = (typeof MOOD_EMOJIS)[number];
+
+export const moodEmojiSchema = z.enum(MOOD_EMOJIS);
+
+// loose record schema (we know the keys, but JSON parses come in as Record<string,number>)
+export const moodCountsSchema = z.record(z.string(), z.number().nonnegative()).transform((raw) => {
+	// normalize so missing emojis read as 0 and unknown emojis are dropped
+	const counts: Record<MoodEmoji, number> = {
+		'😍': 0,
+		'😊': 0,
+		'🤔': 0,
+		'😐': 0,
+		'😟': 0,
+		'😤': 0
+	};
+	for (const e of MOOD_EMOJIS) {
+		counts[e] = Math.floor(raw[e] ?? 0);
+	}
+	return counts;
+});
+
+export const moodSnapshotSchema = z.object({
+	counts: moodCountsSchema,
+	total: z.number().nonnegative(),
+	updated_at: z.number().nonnegative()
+});
+
+export const moodVoteBodySchema = z.object({
+	emoji: moodEmojiSchema
+});
+
+export type MoodSnapshot = z.infer<typeof moodSnapshotSchema>;
+export type MoodVoteBody = z.infer<typeof moodVoteBodySchema>;
+
 // Article Form
 
 export const articleSchema = z.object({

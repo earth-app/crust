@@ -1722,3 +1722,505 @@ export function buildBadgeMasteryTour(opts: BadgeMasteryTourOptions) {
 		}
 	]);
 }
+
+// #region daily quest
+
+// today's quest — deterministic random quest from the user's interests, refreshes daily
+// keep this composable thin: it leans on useQuests() + useAuth() + a localStorage flag
+
+export function useDailyQuest() {
+	const { user } = useAuth();
+	const { quests, fetchQuests } = useQuests();
+
+	// UTC YYYY-MM-DD so the quest flips at the same instant globally
+	const dateKey = computed(() => {
+		const now = new Date();
+		const y = now.getUTCFullYear();
+		const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+		const d = String(now.getUTCDate()).padStart(2, '0');
+		return `${y}-${m}-${d}`;
+	});
+
+	// djb2-style hash; not cryptographic, just stable
+	function hashString(input: string): number {
+		let h = 5381;
+		for (let i = 0; i < input.length; i++) {
+			h = ((h << 5) + h + input.charCodeAt(i)) | 0;
+		}
+		return Math.abs(h);
+	}
+
+	const isLoading = computed(() => quests.value === null);
+
+	// candidate pool — skip premium + mobile_only so taps from web actually open something playable
+	const pool = computed<Quest[]>(() => {
+		const all = quests.value ?? [];
+		return all.filter((q) => !q.premium && !q.mobile_only);
+	});
+
+	// prefer quests that match the user's interests via the activity_quest_<id> convention
+	const interestPool = computed<Quest[]>(() => {
+		const interests = user.value?.activities ?? [];
+		if (interests.length === 0) return [];
+		const ids = new Set(interests.map((a) => `activity_quest_${a.id}`));
+		return pool.value.filter((q) => ids.has(q.id));
+	});
+
+	const quest = computed<Quest | null>(() => {
+		const seedPool = interestPool.value.length > 0 ? interestPool.value : pool.value;
+		if (seedPool.length === 0) return null;
+		const seed = `${dateKey.value}:${user.value?.id ?? 'anon'}`;
+		const idx = hashString(seed) % seedPool.length;
+		return seedPool[idx] ?? null;
+	});
+
+	// client-only tap flag — never read storage during SSR
+	const tappedKey = computed(() => `daily_quest_tapped:${dateKey.value}`);
+	const isTapped = ref(false);
+
+	const refreshTapped = () => {
+		if (!import.meta.client) return;
+		try {
+			isTapped.value = window.localStorage.getItem(tappedKey.value) === '1';
+		} catch {
+			isTapped.value = false;
+		}
+	};
+
+	onMounted(() => {
+		refreshTapped();
+		// kick a fetch if the quests list hasn't been hydrated yet
+		if (quests.value === null) void fetchQuests();
+	});
+
+	// re-check the flag when the date rolls over mid-session
+	watch(tappedKey, () => refreshTapped());
+
+	const markTapped = () => {
+		if (!import.meta.client) return;
+		isTapped.value = true;
+		try {
+			window.localStorage.setItem(tappedKey.value, '1');
+		} catch {
+			// quota / private mode — pulse will reappear, no real harm
+		}
+	};
+
+	return {
+		quest,
+		isLoading,
+		isTapped,
+		markTapped,
+		dateKey
+	};
+}
+
+// #region badge unlock listener
+
+// shared singleton state — both crust + sky import this composable. holds the
+// pending ribbon queue and exposes push/dismiss so the ribbon component stays a
+// pure renderer.
+export type BadgeUnlockEntry = {
+	badgeId?: string;
+	badgeName: string;
+	badgeIcon?: string;
+	trackerId?: string;
+};
+
+const badgeUnlockQueue = ref<BadgeUnlockEntry[]>([]);
+const badgeUnlockSeenIds = new Set<string>();
+
+const BADGE_UNLOCK_LAST_SEEN_KEY = 'badges_last_seen_at';
+const BADGE_UNLOCK_TITLE_PATTERN = /new badges? unlocked/i;
+// "you've unlocked the \"Curious Mind\" badge!" — first capture is the name.
+// also tolerates curly quotes the backend may emit on some platforms.
+const BADGE_UNLOCK_SINGLE_NAME_PATTERN = /unlocked the ["“]([^"”]+)["”] badge/i;
+// "you've unlocked the following badges: name1, name2."
+const BADGE_UNLOCK_MULTI_NAMES_PATTERN = /unlocked the following badges:\s*(.+?)\.?$/i;
+
+const readBadgeUnlockLastSeen = (): number => {
+	if (!import.meta.client) return 0;
+	try {
+		const raw = localStorage.getItem(BADGE_UNLOCK_LAST_SEEN_KEY);
+		const parsed = raw ? Number(raw) : 0;
+		return Number.isFinite(parsed) ? parsed : 0;
+	} catch {
+		return 0;
+	}
+};
+
+const writeBadgeUnlockLastSeen = (ms: number) => {
+	if (!import.meta.client) return;
+	try {
+		localStorage.setItem(BADGE_UNLOCK_LAST_SEEN_KEY, String(ms));
+	} catch {
+		// swallow — private mode / quota
+	}
+};
+
+const enqueueBadgeUnlockEntry = (entry: BadgeUnlockEntry, dedupeKey?: string) => {
+	if (dedupeKey) {
+		if (badgeUnlockSeenIds.has(dedupeKey)) return;
+		badgeUnlockSeenIds.add(dedupeKey);
+	}
+	badgeUnlockQueue.value = [...badgeUnlockQueue.value, entry];
+};
+
+const resolveBadgeUnlockMeta = (
+	name: string,
+	currentUserId: string | undefined
+): Partial<BadgeUnlockEntry> => {
+	if (!currentUserId) return {};
+	const userStore = useUserStore();
+	const list = (userStore as any).badges?.get?.(currentUserId) as UserBadge[] | undefined;
+	if (!list || !Array.isArray(list)) return {};
+	const match = list.find(
+		(b) => typeof b?.name === 'string' && b.name.toLowerCase() === name.toLowerCase()
+	);
+	if (!match) return {};
+	return { badgeId: match.id, badgeIcon: match.icon, trackerId: match.tracker_id };
+};
+
+// parses a notification payload and pushes entries; returns count enqueued
+const ingestBadgeUnlockNotification = (
+	notification: Pick<UserNotification, 'title' | 'message' | 'id'>,
+	currentUserId: string | undefined
+): number => {
+	if (!notification?.title || !BADGE_UNLOCK_TITLE_PATTERN.test(notification.title)) return 0;
+
+	const message = notification.message || '';
+	const names: string[] = [];
+
+	const single = message.match(BADGE_UNLOCK_SINGLE_NAME_PATTERN);
+	if (single?.[1]) names.push(single[1].trim());
+
+	if (names.length === 0) {
+		const multi = message.match(BADGE_UNLOCK_MULTI_NAMES_PATTERN);
+		if (multi?.[1]) {
+			multi[1]
+				.split(',')
+				.map((s) => s.trim())
+				.filter(Boolean)
+				.forEach((n) => names.push(n));
+		}
+	}
+
+	if (names.length === 0) return 0;
+
+	let pushed = 0;
+	for (const name of names) {
+		const meta = resolveBadgeUnlockMeta(name, currentUserId);
+		const key = `notif:${notification.id || ''}:${name.toLowerCase()}`;
+		const before = badgeUnlockQueue.value.length;
+		enqueueBadgeUnlockEntry({ badgeName: name, ...meta }, key);
+		if (badgeUnlockQueue.value.length > before) pushed += 1;
+	}
+	return pushed;
+};
+
+// diff fetched badges against the localStorage watermark and enqueue any that
+// were granted after we last looked. polling-fallback path for missed ws events.
+const ingestBadgeUnlockSnapshot = (badges: UserBadge[]) => {
+	if (!badges?.length) return;
+	const lastSeen = readBadgeUnlockLastSeen();
+	let maxGrantedAt = lastSeen;
+
+	for (const badge of badges) {
+		if (!badge?.granted) continue;
+		const grantedAtRaw = badge.granted_at;
+		const grantedAt =
+			typeof grantedAtRaw === 'number' ? grantedAtRaw : grantedAtRaw ? Number(grantedAtRaw) : 0;
+		if (!Number.isFinite(grantedAt) || grantedAt <= 0) continue;
+		if (grantedAt > maxGrantedAt) maxGrantedAt = grantedAt;
+		if (grantedAt <= lastSeen) continue;
+		const key = `badge:${badge.id}:${grantedAt}`;
+		enqueueBadgeUnlockEntry(
+			{
+				badgeId: badge.id,
+				badgeName: badge.name,
+				badgeIcon: badge.icon,
+				trackerId: badge.tracker_id
+			},
+			key
+		);
+	}
+
+	if (maxGrantedAt > lastSeen) writeBadgeUnlockLastSeen(maxGrantedAt);
+};
+
+// pull current user's badges + diff against last_seen
+const pollBadgeUnlockOnce = async () => {
+	if (!import.meta.client) return;
+	const authStore = useAuthStore();
+	if (!authStore.sessionToken) return;
+	const { user } = useAuth();
+	const uid = user.value?.id;
+	if (!uid) return;
+	try {
+		const userStore = useUserStore();
+		const fetched = await userStore.fetchBadges(uid);
+		ingestBadgeUnlockSnapshot(fetched);
+	} catch (err) {
+		console.warn('badge-unlock polling fallback failed:', err);
+	}
+};
+
+let badgeUnlockStarted = false;
+
+export function useBadgeUnlockListener() {
+	const push = (entry: BadgeUnlockEntry) => enqueueBadgeUnlockEntry(entry);
+
+	const dismiss = () => {
+		if (badgeUnlockQueue.value.length === 0) return;
+		badgeUnlockQueue.value = badgeUnlockQueue.value.slice(1);
+	};
+
+	// hook called by the websocket plugin for any 'notification' payload. cheap to
+	// call indiscriminately — the title regex filters non-badge events first.
+	const onIncomingNotification = (notification: UserNotification) => {
+		if (!import.meta.client) return;
+		const { user } = useAuth();
+		ingestBadgeUnlockNotification(notification, user.value?.id);
+	};
+
+	// idempotent bootstrap: schedules one poll on auth + one on focus to recover
+	// any grants that landed while the ws was offline
+	const start = () => {
+		if (!import.meta.client || badgeUnlockStarted) return;
+		badgeUnlockStarted = true;
+		void pollBadgeUnlockOnce();
+		const focusHandler = () => void pollBadgeUnlockOnce();
+		window.addEventListener('focus', focusHandler);
+		window.addEventListener('online', focusHandler);
+	};
+
+	return {
+		queue: badgeUnlockQueue,
+		push,
+		dismiss,
+		start,
+		onIncomingNotification
+	};
+}
+
+// #region MoodSpark
+
+const MOOD_EMOJIS_RUNTIME = ['😍', '😊', '🤔', '😐', '😟', '😤'] as const;
+type MoodEmojiRuntime = (typeof MOOD_EMOJIS_RUNTIME)[number];
+
+export type MoodCounts = Record<MoodEmojiRuntime, number>;
+
+export type MoodSnapshot = {
+	counts: MoodCounts;
+	total: number;
+	updated_at: number;
+};
+
+function moodTodayUtc(): string {
+	const d = new Date();
+	const y = d.getUTCFullYear();
+	const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+	const day = String(d.getUTCDate()).padStart(2, '0');
+	return `${y}-${m}-${day}`;
+}
+
+function moodVoteStorageKey(topic: string, date: string): string {
+	return `mood_voted:${topic}:${date}`;
+}
+
+function emptyMoodCounts(): MoodCounts {
+	return MOOD_EMOJIS_RUNTIME.reduce((acc, e) => {
+		acc[e] = 0;
+		return acc;
+	}, {} as MoodCounts);
+}
+
+export function useMood(initialTopic: MaybeRefOrGetter<string> = 'today') {
+	const authStore = useAuthStore();
+	const snapshot = ref<MoodSnapshot | null>(null);
+	const isLoading = ref(false);
+	const currentTopic = ref(toValue(initialTopic));
+	const currentDate = ref(moodTodayUtc());
+
+	// hasVoted is purely a client-side localStorage check; the backend rate-limit is the authoritative defense
+	const hasVoted = computed(() => {
+		if (!import.meta.client) return false;
+		try {
+			return (
+				window.localStorage.getItem(moodVoteStorageKey(currentTopic.value, currentDate.value)) !==
+				null
+			);
+		} catch {
+			return false;
+		}
+	});
+
+	const fetchSnapshot = async (topic?: string, date?: string) => {
+		const t = (topic ?? currentTopic.value).trim().toLowerCase();
+		const d = date ?? moodTodayUtc();
+		if (!/^[a-z0-9-]{1,64}$/.test(t)) return;
+		currentTopic.value = t;
+		currentDate.value = d;
+		isLoading.value = true;
+		try {
+			const res = await makeClientAPIRequest<MoodSnapshot>(`/v2/mood/${t}/${d}`);
+			if (valid(res)) {
+				const data = res.data;
+				snapshot.value = {
+					counts: { ...emptyMoodCounts(), ...(data.counts ?? {}) } as MoodCounts,
+					total:
+						typeof data.total === 'number'
+							? data.total
+							: Object.values(data.counts ?? {}).reduce((a, b) => a + b, 0),
+					updated_at: data.updated_at ?? 0
+				};
+			} else {
+				snapshot.value = { counts: emptyMoodCounts(), total: 0, updated_at: 0 };
+			}
+		} finally {
+			isLoading.value = false;
+		}
+	};
+
+	const vote = async (
+		topic: string,
+		emoji: MoodEmojiRuntime
+	): Promise<{ success: boolean; snapshot?: MoodSnapshot; error?: string }> => {
+		const t = topic.trim().toLowerCase();
+		const d = moodTodayUtc();
+		if (!/^[a-z0-9-]{1,64}$/.test(t)) {
+			return { success: false, error: 'Invalid topic' };
+		}
+		if (!(MOOD_EMOJIS_RUNTIME as readonly string[]).includes(emoji)) {
+			return { success: false, error: 'Invalid emoji' };
+		}
+
+		// localStorage guard avoids a wasted round-trip when the same browser already voted
+		const storageKey = moodVoteStorageKey(t, d);
+		if (import.meta.client) {
+			try {
+				if (window.localStorage.getItem(storageKey) !== null) {
+					return { success: false, error: 'Already voted from this device' };
+				}
+			} catch {
+				// no localStorage (private mode etc) → fall through and let the backend enforce
+			}
+		}
+
+		try {
+			const res = await makeClientAPIRequest<MoodSnapshot>(
+				`/v2/mood/${t}/${d}`,
+				authStore.sessionToken,
+				{
+					method: 'POST',
+					body: { emoji }
+				}
+			);
+			if (!valid(res)) {
+				return { success: false, error: res.message ?? 'Failed to record vote' };
+			}
+
+			const data = res.data;
+			const next: MoodSnapshot = {
+				counts: { ...emptyMoodCounts(), ...(data.counts ?? {}) } as MoodCounts,
+				total:
+					typeof data.total === 'number'
+						? data.total
+						: Object.values(data.counts ?? {}).reduce((a, b) => a + b, 0),
+				updated_at: data.updated_at ?? Date.now()
+			};
+
+			snapshot.value = next;
+			currentTopic.value = t;
+			currentDate.value = d;
+
+			if (import.meta.client) {
+				try {
+					window.localStorage.setItem(storageKey, String(Date.now()));
+				} catch {
+					// quota / private mode — backend rate limit still wins
+				}
+			}
+
+			return { success: true, snapshot: next };
+		} catch (e: any) {
+			return { success: false, error: e?.message ?? 'Failed to record vote' };
+		}
+	};
+
+	return {
+		snapshot,
+		isLoading,
+		hasVoted,
+		vote,
+		fetchSnapshot,
+		EMOJIS: MOOD_EMOJIS_RUNTIME
+	};
+}
+
+// #region useFeedWidgets
+
+// deterministic per-day widget picker. seed = (date hash) xor (user-id hash) so each user
+// gets a stable rotation across reloads but the slate refreshes daily and varies by user
+export type FeedWidgetKind =
+	| 'MoodSpark'
+	| 'MicroPoll'
+	| 'MicroQuiz'
+	| 'WordOfTheDay'
+	| 'ImpactTracker'
+	| 'MiniLeaderboard'
+	| 'MicroReflection'
+	| 'RapidFlash';
+
+const FEED_WIDGET_POOL: FeedWidgetKind[] = [
+	'MoodSpark',
+	'MicroPoll',
+	'WordOfTheDay',
+	'ImpactTracker',
+	'MicroReflection',
+	'MiniLeaderboard',
+	'MicroQuiz',
+	'RapidFlash'
+];
+
+function hashString(input: string): number {
+	let h = 2166136261 >>> 0;
+	for (let i = 0; i < input.length; i++) {
+		h ^= input.charCodeAt(i);
+		h = Math.imul(h, 16777619);
+	}
+	return h >>> 0;
+}
+
+// every 8th card slot gets a widget. the first slot always wins MoodSpark to maximize exposure
+// of the new placement; subsequent slots cycle through the rest of the pool deterministically
+export function useFeedWidgets() {
+	const { user } = useAuth();
+
+	const slotInterval = 8;
+	const seed = computed(() => {
+		const dateSeed = hashString(moodTodayUtc());
+		const userSeed = user.value?.id ? hashString(user.value.id) : 0;
+		return (dateSeed ^ userSeed) >>> 0;
+	});
+
+	function widgetForIndex(index: number): FeedWidgetKind | null {
+		// 0-indexed: widget slots at 7, 15, 23, ... (so the first row of activities stays pure)
+		if (index < slotInterval) return null;
+		if ((index + 1) % slotInterval !== 0) return null;
+
+		const slotNumber = Math.floor((index + 1) / slotInterval) - 1;
+		// always seed the very first widget slot of the day with MoodSpark
+		if (slotNumber === 0) return 'MoodSpark';
+
+		// deterministic pick from the rest of the pool
+		const pickIndex = (seed.value + slotNumber * 31) % FEED_WIDGET_POOL.length;
+		return FEED_WIDGET_POOL[pickIndex] ?? null;
+	}
+
+	return {
+		slotInterval,
+		widgetForIndex,
+		seed
+	};
+}

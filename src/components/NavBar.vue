@@ -19,7 +19,7 @@
 					decoding="async"
 				/>
 			</NuxtLink>
-			<div class="flex shrink-0">
+			<div class="flex shrink-0 sm:ml-2">
 				<Discover />
 			</div>
 			<div class="hidden lg:flex items-center justify-start gap-3 xl:gap-6 min-w-0 ml-2 xl:ml-6">

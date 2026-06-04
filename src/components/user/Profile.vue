@@ -33,9 +33,9 @@
 		</div>
 		<div class="flex gap-2 mb-10">
 			<UModal
+				v-if="points !== undefined"
 				title="Points History"
 				id="points-history"
-				v-if="points !== undefined"
 			>
 				<UButton
 					color="neutral"

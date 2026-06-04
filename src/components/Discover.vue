@@ -5,7 +5,7 @@
 			color="neutral"
 			icon="mdi:compass"
 			variant="outline"
-			class="w-full"
+			class="w-full sm:min-w-50 md:min-w-60"
 			:ui="{
 				base: 'text-xs sm:text-sm md:text-base'
 			}"
