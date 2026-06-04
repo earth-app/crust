@@ -4,7 +4,9 @@
 		aria-label="Main navigation"
 		class="bg-secondary-800 border-b-primary-500 border-b-8 text-white p-4 flex items-center"
 	>
-		<div class="flex items-center w-2/3 max-w-40 sm:max-w-60">
+		<div
+			class="flex items-center max-w-40 sm:max-w-60 lg:max-w-none lg:flex-1 lg:min-w-0 gap-1 sm:gap-2"
+		>
 			<NuxtLink to="/">
 				<NuxtImg
 					src="/favicon.png"
@@ -12,60 +14,61 @@
 					format="webp"
 					width="48"
 					height="48"
-					class="min-w-8 w-8 h-auto xl:w-12 inline-block sm:mr-2 shadow-lg shadow-black/50 rounded-full hover:scale-105 transition-transform duration-300"
+					class="min-w-8 w-8 h-auto xl:w-12 inline-block shadow-lg shadow-black/50 rounded-full hover:scale-105 transition-transform duration-300"
 					loading="eager"
 					decoding="async"
 				/>
 			</NuxtLink>
-			<div class="flex sm:min-w-70 md:min-w-60 max-w-120">
-				<Discover class="mx-1 sm:ml-4 md:ml-8 lg:ml-12" />
+			<div class="flex shrink-0">
+				<Discover />
 			</div>
-			<div class="hidden lg:flex items-center ml-2 mr-12 justify-between gap-2 xl:gap-8">
+			<div class="hidden lg:flex items-center justify-start gap-3 xl:gap-6 min-w-0 ml-2 xl:ml-6">
 				<NuxtLink
 					to="/activities"
-					class="text-xl xl:text-2xl font-semibold hover:text-gray-300"
+					class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
 					>Activities</NuxtLink
 				>
 				<NuxtLink
 					to="/prompts"
-					class="text-xl xl:text-2xl font-semibold hover:text-gray-300"
+					class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
 					>Prompts</NuxtLink
 				>
 				<NuxtLink
 					to="/articles"
-					class="text-xl xl:text-2xl font-semibold hover:text-gray-300"
+					class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
 					>Articles</NuxtLink
 				>
 				<NuxtLink
 					to="/events"
-					class="text-xl xl:text-2xl font-semibold hover:text-gray-300"
+					class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
 					>Events</NuxtLink
 				>
 			</div>
 		</div>
-		<div class="ml-auto">
+		<div class="ml-auto min-w-0 shrink-0">
 			<ClientOnly
 				fallback-tag="div"
 				class="flex items-center"
 			>
 				<div
 					v-if="user"
-					class="flex items-center space-x-1 sm:space-x-4"
+					class="flex items-center gap-1 sm:gap-2 lg:gap-3"
 				>
 					<div
-						class="flex items-center justify-center space-x-1 md:space-x-2 cursor-pointer hover:opacity-80 transition-opacity duration-250"
+						class="flex items-center gap-1 md:gap-2 cursor-pointer hover:opacity-80 transition-opacity duration-250 min-w-0"
 						@click="$router.push(`/profile/@${user.username}`)"
 					>
 						<UAvatar
 							:src="avatar128"
-							class="size-6 sm:size-8 lg:size-12 rounded-full shadow-lg shadow-black/50"
+							class="size-6 sm:size-8 lg:size-10 xl:size-12 rounded-full shadow-lg shadow-black/50 shrink-0"
 						/>
 
-						<span class="text-md sm:text-lg md:text-xl text-shadow-2xs text-shadow-black">{{
-							user.username
-						}}</span>
+						<span
+							class="hidden xl:inline text-md sm:text-lg xl:text-xl text-shadow-2xs text-shadow-black truncate max-w-32 2xl:max-w-none"
+							>{{ user.username }}</span
+						>
 					</div>
-					<div class="flex space-x-1 sm:space-x-2 items-center justify-center">
+					<div class="flex gap-1 sm:gap-2 items-center justify-center">
 						<UiPulseRing
 							v-if="dailyQuest"
 							:active="!dailyQuestTapped"
@@ -83,7 +86,7 @@
 								class="rounded-full"
 								@click="openDailyQuest"
 							>
-								<span class="hidden lg:inline">Today's Quest</span>
+								<span class="hidden xl:inline">Today's Quest</span>
 							</UButton>
 						</UiPulseRing>
 						<NuxtLink
