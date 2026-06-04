@@ -66,6 +66,26 @@
 						}}</span>
 					</div>
 					<div class="flex space-x-1 sm:space-x-2 items-center justify-center">
+						<UiPulseRing
+							v-if="dailyQuest"
+							:active="!dailyQuestTapped"
+							color="primary"
+							class="rounded-full"
+						>
+							<UButton
+								id="daily-quest-chip"
+								size="sm"
+								color="primary"
+								variant="soft"
+								icon="mdi:compass-rose"
+								:title="`Today's Quest: ${dailyQuest.title}`"
+								:aria-label="`Today's Quest: ${dailyQuest.title}`"
+								class="rounded-full"
+								@click="openDailyQuest"
+							>
+								<span class="hidden lg:inline">Today's Quest</span>
+							</UButton>
+						</UiPulseRing>
 						<NuxtLink
 							to="/profile/notifications"
 							class="size-6 lg:size-7 relative"
@@ -237,6 +257,19 @@ const toast = useToast();
 const router = useRouter();
 const logout = useLogout();
 const { motd, fetchMotd } = useMotd();
+
+// today's quest chip — deterministic per-day pick from the user's interests
+const {
+	quest: dailyQuest,
+	isTapped: dailyQuestTapped,
+	markTapped: markDailyQuestTapped
+} = useDailyQuest();
+
+function openDailyQuest() {
+	markDailyQuestTapped();
+	if (!dailyQuest.value) return;
+	router.push({ path: '/profile/quests/', query: { open: dailyQuest.value.id } });
+}
 
 async function openMotdLink() {
 	if (!motd.value.link) return;

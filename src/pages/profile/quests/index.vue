@@ -228,6 +228,14 @@
 			tour-id="quests"
 		/>
 	</ClientOnly>
+
+	<LazyUserQuestModal
+		v-if="autoOpenQuest"
+		v-model:open="autoOpen"
+		:quest="autoOpenQuest"
+		:progress="questHistory.get(autoOpenQuest.id)?.progress"
+		:completedAt="questHistory.get(autoOpenQuest.id)?.completedAt"
+	/>
 </template>
 
 <script setup lang="ts">
@@ -360,5 +368,31 @@ setTitleSuffix('Quests');
 useSeoMeta({
 	ogTitle: 'Quests - The Earth App',
 	ogDescription: 'Track your progress and earn rewards with quests on The Earth App!'
+});
+
+// auto-open a quest modal when navigated here via ?open=<id> (used by the daily-quest chip)
+const route = useRoute();
+const router2 = useRouter();
+const autoOpen = ref(false);
+const autoOpenQuest = computed<Quest | null>(() => {
+	const id = typeof route.query.open === 'string' ? route.query.open : null;
+	if (!id) return null;
+	return allQuests.value.find((q) => q.id === id) ?? null;
+});
+
+watch(
+	autoOpenQuest,
+	(q) => {
+		if (q) autoOpen.value = true;
+	},
+	{ immediate: true }
+);
+
+// strip the ?open= query when the modal closes so re-tapping the chip re-triggers the watcher
+watch(autoOpen, (open) => {
+	if (open) return;
+	if (typeof route.query.open !== 'string') return;
+	const { open: _omit, ...rest } = route.query;
+	router2.replace({ query: rest });
 });
 </script>
