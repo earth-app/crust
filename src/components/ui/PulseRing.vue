@@ -1,18 +1,12 @@
 <template>
-	<span
-		:class="[
-			'relative inline-flex',
-			active && !prefersReducedMotion ? 'after:animate-[pulse-ring_1.4s_ease-out_infinite]' : ''
-		]"
-	>
+	<span :class="['relative inline-flex', active && !prefersReducedMotion ? 'pulse-ring-host' : '']">
 		<slot />
 		<span
 			v-if="active && !prefersReducedMotion"
 			aria-hidden="true"
 			:class="[
-				'pointer-events-none absolute inset-0 rounded-[inherit] ring-2 opacity-0',
-				colorClass,
-				'animate-[pulse-ring_1.4s_ease-out_infinite]'
+				'pulse-ring-anim pointer-events-none absolute inset-0 rounded-[inherit] ring-2',
+				colorClass
 			]"
 		/>
 	</span>
@@ -49,9 +43,7 @@ const colorClass = computed(() => {
 });
 </script>
 
-<style>
-/* keyframe must be unscoped — the template references it via tailwind's
-   arbitrary `animate-[pulse-ring_...]` which doesn't get rewritten by scoped css */
+<style scoped>
 @keyframes pulse-ring {
 	0% {
 		opacity: 0.85;
@@ -64,6 +56,17 @@ const colorClass = computed(() => {
 	100% {
 		opacity: 0;
 		transform: scale(1.4);
+	}
+}
+
+.pulse-ring-anim {
+	opacity: 0;
+	animation: pulse-ring 1.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.pulse-ring-anim {
+		animation: none;
 	}
 }
 </style>
