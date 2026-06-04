@@ -178,6 +178,7 @@
 			<UModal
 				v-model:open="showCosmeticModal"
 				:title="`${selectedCosmeticForPurchase ? capitalizeFully(selectedCosmeticForPurchase.key.replace('_', ' ')) : 'Cosmetic'}`"
+				@update:open="onCosmeticModalOpenChange"
 			>
 				<template #header>
 					<div class="flex items-center justify-between w-full">
@@ -203,11 +204,7 @@
 						v-if="selectedCosmeticForPurchase"
 						class="flex flex-col items-center gap-4"
 					>
-						<div class="relative w-full flex justify-center">
-							<USkeleton
-								v-if="modalPreviewLoading"
-								class="size-48 rounded-full absolute inset-0 m-auto"
-							/>
+						<div class="w-full flex justify-center">
 							<LazyUserCosmetic
 								:cosmetic-key="selectedCosmeticForPurchase.key"
 								state="available"
@@ -885,16 +882,9 @@ const hasOwnAvatar = computed(() => {
 	return !!url && (url.startsWith('http://') || url.startsWith('https://'));
 });
 
-// loading skeleton shown over the modal preview while the self-preview fetches
-const modalPreviewLoading = computed(() => {
-	const key = selectedCosmeticForPurchase.value?.key;
-	if (!key) return false;
-	if (!hasOwnAvatar.value) return false;
-	if (avatarStore.getSelfPreview(key)) return false;
-	return avatarStore.isSelfPreviewLoading(key) || !avatarStore.getPreview(key);
-});
-
 // kick off the self-preview fetch when the modal opens for a new cosmetic
+// the card itself handles the skeleton/fade between generic and self preview,
+// so no separate overlay is needed here
 watch(
 	[() => selectedCosmeticForPurchase.value?.key, hasOwnAvatar],
 	([key, withSelf]) => {
@@ -904,6 +894,13 @@ watch(
 	},
 	{ immediate: true }
 );
+
+// drop the staged cosmetic when the modal closes so reopening for a different
+// cosmetic doesn't briefly render the previous one before the new key applies
+function onCosmeticModalOpenChange(open: boolean) {
+	if (open) return;
+	selectedCosmeticForPurchase.value = null;
+}
 
 function handleCosmeticClick(cosmetic: CosmeticWithState) {
 	if (cosmetic.state === 'selected') {

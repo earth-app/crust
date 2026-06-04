@@ -11,18 +11,24 @@
 		"
 	>
 		<div class="flex flex-col items-center gap-1 mb-4 w-full">
-			<div class="relative inline-flex items-center justify-center">
-				<UAvatar
-					v-if="displayUrl"
-					:src="displayUrl"
-					:alt="props.cosmeticKey"
-					size="2xl"
-					:class="props.animated && !prefersReducedMotion ? 'cosmetic-animated' : ''"
-				/>
-				<USkeleton
-					v-else
-					class="size-16 rounded-full"
-				/>
+			<div class="relative inline-flex items-center justify-center size-11">
+				<Transition
+					name="cosmetic-preview"
+					mode="out-in"
+				>
+					<UAvatar
+						v-if="displayUrl"
+						:key="displayUrl"
+						:src="displayUrl"
+						:alt="props.cosmeticKey"
+						size="2xl"
+						:class="props.animated && !prefersReducedMotion ? 'cosmetic-animated' : ''"
+					/>
+					<USkeleton
+						v-else
+						class="size-11 rounded-full"
+					/>
+				</Transition>
 				<UiSparkleBurst :trigger="celebrateTick" />
 			</div>
 			<h2 class="font-semibold text-sm text-center line-clamp-2">
@@ -162,9 +168,25 @@ watch(
 	}
 }
 
+/* smooth swap when displayUrl changes (skeleton -> generic preview -> self preview) */
+.cosmetic-preview-enter-active,
+.cosmetic-preview-leave-active {
+	transition: opacity 200ms ease;
+}
+
+.cosmetic-preview-enter-from,
+.cosmetic-preview-leave-to {
+	opacity: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.cosmetic-animated {
 		animation: none;
+	}
+
+	.cosmetic-preview-enter-active,
+	.cosmetic-preview-leave-active {
+		transition: none;
 	}
 }
 </style>
