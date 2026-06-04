@@ -192,7 +192,10 @@ export function useArticle(
 		);
 
 		if (res.success) {
-			await fetchQuiz();
+			// invalidate the cached [] (set by the prior 404) before refetching
+			articleStore.quizCache.delete(id);
+			articleStore.quizSummaryCache.delete(id);
+			await articleStore.fetchQuiz(id);
 		}
 
 		return res;
