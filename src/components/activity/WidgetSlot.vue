@@ -1,10 +1,12 @@
 <template>
 	<ClientOnly>
-		<div class="w-full flex justify-center my-2">
+		<div class="w-full flex">
 			<component
 				:is="resolved"
 				v-if="resolved"
+				v-bind="extraProps"
 				:topic="topic"
+				class="w-full max-w-none!"
 			/>
 		</div>
 	</ClientOnly>
@@ -44,4 +46,14 @@ const COMPONENTS: Record<FeedWidgetKind, ReturnType<typeof defineAsyncComponent>
 };
 
 const resolved = computed(() => COMPONENTS[props.kind] ?? null);
+
+// MiniLeaderboard needs a journey type. rotate per UTC day so each slot doesn't always show "article".
+const LEADERBOARD_TYPES = ['article', 'prompt', 'event'] as const;
+const extraProps = computed<Record<string, unknown>>(() => {
+	if (props.kind === 'MiniLeaderboard') {
+		const day = Math.floor(Date.now() / 86_400_000);
+		return { type: LEADERBOARD_TYPES[day % LEADERBOARD_TYPES.length] };
+	}
+	return {};
+});
 </script>

@@ -2008,9 +2008,10 @@ export function useBadgeUnlockListener() {
 const MOOD_EMOJIS_RUNTIME = ['😍', '😊', '🤔', '😐', '😟', '😤'] as const;
 type MoodEmojiRuntime = (typeof MOOD_EMOJIS_RUNTIME)[number];
 
-export type MoodCounts = Record<MoodEmojiRuntime, number>;
+// types are file-local; the canonical exported versions live in shared/utils/schemas.ts
+type MoodCounts = Record<MoodEmojiRuntime, number>;
 
-export type MoodSnapshot = {
+type MoodSnapshot = {
 	counts: MoodCounts;
 	total: number;
 	updated_at: number;

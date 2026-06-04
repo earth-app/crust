@@ -1,9 +1,20 @@
 <template>
 	<div
 		v-if="currentActivity"
-		class="flex flex-row items-center justify-between w-full pt-20 sm:pt-0"
+		class="flex flex-col items-center w-full pt-20 sm:pt-0 gap-6"
 	>
-		<ActivityProfile :activity="currentActivity" />
+		<div class="flex flex-row items-center justify-between w-full">
+			<ActivityProfile :activity="currentActivity" />
+		</div>
+		<ClientOnly>
+			<div class="w-full max-w-2xl px-4 mb-8">
+				<LazyActivityWidgetSlot
+					:kind="detailWidgetKind"
+					:topic="`activity-${currentActivity.id}`"
+					hydrate-on-visible
+				/>
+			</div>
+		</ClientOnly>
 	</div>
 	<div
 		v-else-if="currentActivity === null"
@@ -47,7 +58,19 @@ useSeoMeta({
 });
 
 const { user, tapCurrentJourney } = useAuth();
+const { widgetForIndex } = useFeedWidgets();
 const { count: totalActivities, refresh } = useActivitiesCount();
+
+// pick a single widget for the detail page. seed off the activity id so the same activity
+// always shows the same widget kind for a given day - feels intentional rather than random.
+const detailWidgetKind = computed<FeedWidgetKind>(() => {
+	const idSeed = (currentActivity.value?.id ?? '')
+		.split('')
+		.reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+	// widgetForIndex returns a kind only at indices 7, 15, 23, ... so step through valid slots only
+	const slotNumber = idSeed % 8;
+	return widgetForIndex(7 + slotNumber * 8) ?? 'MoodSpark';
+});
 const journeyTrackedActivityId = ref<string | null>(null);
 const journeyTrackingActivityId = ref<string | null>(null);
 

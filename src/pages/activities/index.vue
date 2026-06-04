@@ -40,7 +40,7 @@
 	</div>
 	<div class="flex flex-col w-full justify-between items-center">
 		<div
-			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 place-items-center w-9/10 px-4 gap-x-4 gap-y-12 *:mx-2 *:max-w-100 *:lg:w-1/2 *:xl:w-1/3"
+			class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 place-items-stretch w-9/10 px-4 gap-4"
 		>
 			<InfoCardSkeleton
 				v-if="allActivities.length === 0"
@@ -54,7 +54,7 @@
 			>
 				<LazyActivityCard
 					:activity="activity"
-					class="motion-preset-fade-md"
+					class="motion-preset-fade-md w-full"
 					:style="`--motion-delay: ${Math.min(i % 12, 8) * 40}ms`"
 					hydrate-on-visible
 				/>
