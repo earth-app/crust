@@ -56,10 +56,11 @@
 				</UModal>
 			</div>
 			<UserNotificationCard
-				v-for="notification in displayed"
+				v-for="(notification, idx) in displayed"
 				:key="notification.id"
 				:notification="notification"
 				:additional="additional"
+				:index="idx"
 				@deleted="handleDelete"
 			/>
 		</div>

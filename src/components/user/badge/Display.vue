@@ -18,7 +18,8 @@
 			:class="[
 				sizeClasses.icon,
 				isGranted ? 'text-white light:text-amber-900' : 'opacity-70',
-				isMastered ? 'text-purple-200! opacity-100!' : ''
+				isMastered ? 'text-purple-200! opacity-100!' : '',
+				isMastered ? 'badge-pulse-mastered' : isGranted ? 'badge-pulse-granted' : ''
 			]"
 		/>
 
@@ -111,3 +112,43 @@ const emit = defineEmits<{
 	(event: 'clicked'): void;
 }>();
 </script>
+
+<style scoped>
+/* subtle resting-state glow pulse — keeps earned/mastered badges feeling alive without distraction */
+@keyframes badge-pulse-granted {
+	0%,
+	100% {
+		transform: scale(1);
+		filter: drop-shadow(0 0 0 rgba(250, 204, 21, 0));
+	}
+	50% {
+		transform: scale(1.04);
+		filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.55));
+	}
+}
+.badge-pulse-granted {
+	animation: badge-pulse-granted 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse-mastered {
+	0%,
+	100% {
+		transform: scale(1);
+		filter: drop-shadow(0 0 0 rgba(192, 132, 252, 0));
+	}
+	50% {
+		transform: scale(1.06);
+		filter: drop-shadow(0 0 10px rgba(192, 132, 252, 0.7));
+	}
+}
+.badge-pulse-mastered {
+	animation: badge-pulse-mastered 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.badge-pulse-granted,
+	.badge-pulse-mastered {
+		animation: none !important;
+	}
+}
+</style>
