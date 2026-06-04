@@ -49,7 +49,9 @@ const colorClass = computed(() => {
 });
 </script>
 
-<style scoped>
+<style>
+/* keyframe must be unscoped — the template references it via tailwind's
+   arbitrary `animate-[pulse-ring_...]` which doesn't get rewritten by scoped css */
 @keyframes pulse-ring {
 	0% {
 		opacity: 0.85;
