@@ -49,10 +49,9 @@
 					/>
 				</div>
 			</div>
-			<LazyUTooltip
+			<UTooltip
 				text="Drag to scroll"
 				arrow
-				hydrate-on-interaction="mouseover"
 			>
 				<div
 					ref="scrollContainer"
@@ -68,7 +67,7 @@
 				>
 					<slot />
 				</div>
-			</LazyUTooltip>
+			</UTooltip>
 			<LazyUProgress
 				v-if="showProgress"
 				v-model="progress"

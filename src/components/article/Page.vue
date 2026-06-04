@@ -82,7 +82,7 @@
 			>
 
 			<UButton
-				v-if="!quiz && user?.is_admin"
+				v-if="(!quiz || quiz.length === 0) && !score && user?.is_admin"
 				id="quiz-button"
 				color="primary"
 				icon="mdi:plus"
@@ -327,7 +327,6 @@ onMounted(() => {
 
 const quizLoading = ref(false);
 async function generateQuiz() {
-	quizLoading.value = true;
 	if (user.value?.account.account_type !== 'ADMINISTRATOR') {
 		toast.add({
 			title: 'Access Denied',
@@ -339,6 +338,7 @@ async function generateQuiz() {
 		return;
 	}
 
+	quizLoading.value = true;
 	const { generateQuiz } = useArticle(props.article.id);
 	const res = await generateQuiz();
 	if (valid(res)) {
@@ -349,8 +349,6 @@ async function generateQuiz() {
 			color: 'success',
 			duration: 5000
 		});
-
-		await fetchQuiz();
 	} else {
 		toast.add({
 			title: 'Error',

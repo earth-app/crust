@@ -8,7 +8,7 @@
 			kind="event"
 			variant="countdown"
 			:expires-at="eventExpiresAt"
-			class="w-full max-w-3xl px-4"
+			class="w-full max-w-3xl px-4 mt-4"
 		/>
 		<EventPage :event="event" />
 

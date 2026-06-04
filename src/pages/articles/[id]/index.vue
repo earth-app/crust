@@ -8,7 +8,7 @@
 			kind="article"
 			variant="countdown"
 			:expires-at="articleExpiresAt"
-			class="w-full max-w-3xl px-4 mt-2"
+			class="w-full max-w-3xl px-4 mt-4"
 		/>
 		<ArticlePage :article="article" />
 		<USeparator

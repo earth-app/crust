@@ -8,7 +8,7 @@
 			kind="prompt"
 			variant="countdown"
 			:expires-at="promptExpiresAt"
-			class="w-full max-w-3xl px-4"
+			class="w-full max-w-3xl px-4 mt-4"
 		/>
 		<PromptPage :prompt="prompt" />
 	</div>
