@@ -38,6 +38,3 @@ coverage/
 
 # Test-only env config (no secrets, but local-only)
 .config/test.env.local
-
-# Local-only working notes (not for distribution)
-UX_IMPROVEMENT_REPORT.md
