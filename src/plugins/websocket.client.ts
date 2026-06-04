@@ -107,6 +107,15 @@ export default defineNuxtPlugin((nuxtApp) => {
 
 							notificationStore.addLiveNotification(notification);
 
+							// fan badge-unlock notifications into the floating ribbon queue.
+							// the listener regex-filters by title so generic events are no-ops
+							try {
+								const { onIncomingNotification } = useBadgeUnlockListener();
+								onIncomingNotification(notification);
+							} catch (err) {
+								console.warn('badge-unlock listener failed:', err);
+							}
+
 							const actions: ButtonProps[] = [
 								{
 									label: 'Show Notification',

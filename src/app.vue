@@ -1,5 +1,6 @@
 <template>
 	<UApp :toaster="{ expand: false }">
+		<BadgeUnlockRibbon />
 		<NuxtLayout>
 			<NuxtPage />
 		</NuxtLayout>
