@@ -188,42 +188,54 @@ const endDrag = () => {
 </script>
 
 <style scoped>
+/* rotate the gradient angle, not the element - rotating the element escapes the host without overflow:hidden */
+@property --icg-gradient-angle {
+	syntax: '<angle>';
+	initial-value: 0deg;
+	inherits: false;
+}
+
 @keyframes icg-gradient-spin {
-	0% {
-		transform: rotate(0deg);
-	}
-	100% {
-		transform: rotate(360deg);
+	to {
+		--icg-gradient-angle: 360deg;
 	}
 }
 
 .gradient-border-host {
 	isolation: isolate;
+	overflow: hidden;
 }
 
 .gradient-border-ring {
 	position: absolute;
-	inset: -2px;
+	inset: 0;
 	border-radius: inherit;
 	padding: 2px;
 	background: conic-gradient(
-		from 0deg,
+		from var(--icg-gradient-angle),
 		var(--ui-primary, #22c55e),
 		var(--ui-secondary, #3b82f6),
 		var(--ui-info, #06b6d4),
 		var(--ui-primary, #22c55e)
 	);
 	-webkit-mask:
-		linear-gradient(#000 0 0) content-box,
-		linear-gradient(#000 0 0);
+		linear-gradient(black, black) content-box,
+		linear-gradient(black, black);
 	-webkit-mask-composite: xor;
 	mask:
-		linear-gradient(#000 0 0) content-box,
-		linear-gradient(#000 0 0);
+		linear-gradient(black, black) content-box,
+		linear-gradient(black, black);
 	mask-composite: exclude;
 	pointer-events: none;
 	z-index: 0;
 	animation: icg-gradient-spin 12s linear infinite;
 	opacity: 0.7;
+}
+
+/* firefox < 128 doesn't support @property — fall back to a static gradient (no escape, just no spin) */
+@supports not (background: conic-gradient(from var(--icg-gradient-angle), red, blue)) {
+	.gradient-border-ring {
+		animation: none;
+	}
 }
 </style>
