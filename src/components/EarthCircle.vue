@@ -1,5 +1,8 @@
 <template>
-	<div class="ea-circle-root">
+	<div
+		ref="root"
+		class="ea-circle-root"
+	>
 		<NuxtImg
 			src="/earth-app.png"
 			alt="Earth App Logo"
@@ -30,6 +33,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
+
 type Orbit = {
 	name: string;
 	speed: number;
@@ -61,6 +66,22 @@ function orbitStyle(icon: Orbit, idx: number) {
 		'--ea-z': idx
 	};
 }
+
+// webkit pauses composited css animations on a hidden (display:none) ion-page and
+// may not resume them; re-trigger the keyframes when we become visible again
+const root = ref<HTMLElement | null>(null);
+
+function restartAnimations() {
+	root.value?.querySelectorAll<HTMLElement>('.ea-orbit, .ea-satellite').forEach((node) => {
+		node.style.animation = 'none';
+		void node.offsetWidth; // force reflow so the restart takes effect
+		node.style.animation = '';
+	});
+}
+
+useIntersectionObserver(root, (entries) => {
+	if (entries[0]?.isIntersecting) restartAnimations();
+});
 </script>
 
 <style scoped>
