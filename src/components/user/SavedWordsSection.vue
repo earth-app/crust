@@ -25,7 +25,7 @@
 		</div>
 
 		<p class="text-sm opacity-70 mb-3 text-center">
-			Words you’ve saved from Word of the Day. Stored on this device — up to {{ cap }} entries.
+			Words you've saved from Word of the Day. Stored on this device, up to {{ cap }} entries.
 		</p>
 
 		<div

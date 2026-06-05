@@ -81,6 +81,8 @@
 			@update:modelValue="updateActivities"
 		/>
 
+		<UserSavedWordsSection v-if="isSelf" />
+
 		<h3
 			class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8"
 			id="cosmetics"
@@ -478,6 +480,7 @@
 				</div>
 			</div>
 		</div>
+
 		<UserApiKeysSection
 			v-if="isSelf"
 			:email-verified="!!user.account?.email_verified"
