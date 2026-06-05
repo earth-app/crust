@@ -27,7 +27,16 @@ export const useArticleStore = defineStore('article', () => {
 
 	const quizCache = reactive(new Map<string, ArticleQuizQuestion[]>());
 	const quizSummaryCache = reactive(
-		new Map<string, { total: number; multiple_choice_count: number; true_false_count: number }>()
+		new Map<
+			string,
+			{
+				total: number;
+				multiple_choice_count: number;
+				multi_select_count: number;
+				true_false_count: number;
+				order_count: number;
+			}
+		>()
 	);
 	const randomCache = reactive(new Map<string, { items: Article[]; timestamp: number }>());
 
@@ -144,7 +153,13 @@ export const useArticleStore = defineStore('article', () => {
 			const authStore = useAuthStore();
 			const res = await makeAPIRequest<{
 				questions: ArticleQuizQuestion[];
-				summary: { total: number; multiple_choice_count: number; true_false_count: number };
+				summary: {
+					total: number;
+					multiple_choice_count: number;
+					multi_select_count: number;
+					true_false_count: number;
+					order_count: number;
+				};
 			}>(`article-${id}-quiz`, `/v2/articles/${id}/quiz`, authStore.sessionToken);
 
 			if (valid(res)) {
@@ -226,11 +241,13 @@ export const useArticleStore = defineStore('article', () => {
 
 			if (valid(res)) {
 				quizCache.set(id, res.data.questions);
+				const qs = res.data.questions;
 				quizSummaryCache.set(id, {
-					total: res.data.questions.length,
-					multiple_choice_count: res.data.questions.filter((q) => q.type === 'multiple_choice')
-						.length,
-					true_false_count: res.data.questions.filter((q) => q.type === 'true_false').length
+					total: qs.length,
+					multiple_choice_count: qs.filter((q) => q.type === 'multiple_choice').length,
+					multi_select_count: qs.filter((q) => q.type === 'multi_select').length,
+					true_false_count: qs.filter((q) => q.type === 'true_false').length,
+					order_count: qs.filter((q) => q.type === 'order').length
 				});
 			} else {
 				console.warn(`Failed to update quiz for article ${id}:`, res.message);
