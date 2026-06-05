@@ -240,7 +240,7 @@ const debouncedSearch = useDebounceFn((term: string) => performSearch(term), 300
 async function handleSearchChange(term: string) {
 	searchTerm.value = term;
 
-	if (!term || term.trim() === '') {
+	if (!term || term.trim().length < 2) {
 		results.value = [];
 		return;
 	}
@@ -248,11 +248,16 @@ async function handleSearchChange(term: string) {
 	debouncedSearch(term);
 }
 
+// older searches that resolve after a newer one are discarded
+let searchGeneration = 0;
+
 async function performSearch(term: string) {
+	const gen = ++searchGeneration;
 	loading.value = true;
 
 	try {
 		const res = await autocomplete(term, session);
+		if (gen !== searchGeneration) return;
 
 		if (valid(res)) {
 			const suggestions = res.data;
@@ -260,7 +265,7 @@ async function performSearch(term: string) {
 			results.value = suggestions.map((suggestion: EventAutocompleteSuggestion) => ({
 				label: suggestion.name,
 				subtitle: suggestion.address || formatDistance(suggestion.distance_meters),
-				latitude: 0, // Will be geocoded when selected
+				latitude: 0,
 				longitude: 0,
 				full_name: suggestion.full_name,
 				types: suggestion.types || []
@@ -269,6 +274,7 @@ async function performSearch(term: string) {
 			results.value = [];
 		}
 	} catch (error) {
+		if (gen !== searchGeneration) return;
 		console.error('Autocomplete error:', error);
 		toast.add({
 			title: 'Error',
@@ -279,7 +285,7 @@ async function performSearch(term: string) {
 		});
 		results.value = [];
 	} finally {
-		loading.value = false;
+		if (gen === searchGeneration) loading.value = false;
 	}
 }
 
