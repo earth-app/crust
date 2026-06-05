@@ -1,4 +1,4 @@
-import { ensureAdministrator, ensureLoggedIn } from '~/server/utils';
+import { cloudErrorMessage, ensureAdministrator, ensureLoggedIn } from '~/server/utils';
 
 export default defineEventHandler(async (event) => {
 	await ensureLoggedIn(event);
@@ -40,10 +40,12 @@ export default defineEventHandler(async (event) => {
 				},
 				timeout: 10000,
 				onResponseError: (ctx) => {
+					const message = cloudErrorMessage(ctx.response._data);
 					throw createError({
 						data: ctx.response._data,
 						statusCode: ctx.response.status,
-						statusMessage: `Failed to trigger event thumbnail generation: ${ctx.response.statusText}`
+						statusMessage:
+							message || `Failed to trigger event thumbnail generation: ${ctx.response.statusText}`
 					});
 				}
 			}
@@ -85,10 +87,11 @@ export default defineEventHandler(async (event) => {
 		body: file,
 		timeout: 10000,
 		onResponseError: (ctx) => {
+			const message = cloudErrorMessage(ctx.response._data);
 			throw createError({
 				data: ctx.response._data,
 				statusCode: ctx.response.status,
-				statusMessage: `Failed to upload event thumbnail: ${ctx.response.statusText}`
+				statusMessage: message || `Failed to upload event thumbnail: ${ctx.response.statusText}`
 			});
 		}
 	});

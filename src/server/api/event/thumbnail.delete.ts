@@ -1,3 +1,5 @@
+import { cloudErrorMessage } from '~/server/utils';
+
 export default defineEventHandler(async (event) => {
 	const config = useRuntimeConfig();
 	const { id } = getQuery(event);
@@ -16,10 +18,11 @@ export default defineEventHandler(async (event) => {
 		},
 		timeout: 10000,
 		onResponseError: (ctx) => {
+			const message = cloudErrorMessage(ctx.response._data);
 			throw createError({
 				data: ctx.response._data,
 				statusCode: ctx.response.status,
-				statusMessage: `Failed to delete event thumbnail: ${ctx.response.statusText}`
+				statusMessage: message || `Failed to delete event thumbnail: ${ctx.response.statusText}`
 			});
 		}
 	});

@@ -1,4 +1,4 @@
-import { ensureLoggedIn, parseUserAgent } from '~/server/utils';
+import { cloudErrorMessage, ensureLoggedIn, parseUserAgent } from '~/server/utils';
 
 export default defineEventHandler(async (event) => {
 	const user = await ensureLoggedIn(event);
@@ -74,7 +74,7 @@ export default defineEventHandler(async (event) => {
 				rank
 			},
 			onResponseError: (ctx) => {
-				const message = ctx.response._data?.message;
+				const message = cloudErrorMessage(ctx.response._data);
 				throw createError({
 					data: ctx.response._data,
 					statusCode: ctx.response.status,

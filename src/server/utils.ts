@@ -2,6 +2,26 @@ import { H3Event } from 'h3';
 import { importPKCS8, SignJWT } from 'jose';
 import { InternetArchiveSearch } from '~/shared/types/activity';
 
+export function cloudErrorMessage(data: unknown): string | undefined {
+	const str = (v: unknown): string | undefined =>
+		typeof v === 'string' && v.trim().length > 0 && v.trim().length <= 500 ? v.trim() : undefined;
+
+	// plain-text body
+	if (typeof data === 'string') return str(data);
+	if (!data || typeof data !== 'object') return undefined;
+
+	const obj = data as Record<string, unknown>;
+	const primary = str(obj.message) ?? str(obj.error);
+	if (!primary) return undefined;
+
+	// fold any human-relevant context cloud attaches alongside the message; skip `code` (mirrors
+	// the http status) and `availableAt` (a timestamp the message already states in seconds)
+	const extras = [str(obj.details), str(obj.reason)].filter(
+		(v): v is string => !!v && !primary.includes(v)
+	);
+	return extras.length ? `${primary} (${extras.join('; ')})` : primary;
+}
+
 export async function ensureAdministrator(event: H3Event) {
 	const config = useRuntimeConfig();
 	const token = getRequestHeader(event, 'Authorization')?.replace('Bearer ', '');
