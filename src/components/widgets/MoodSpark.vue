@@ -66,12 +66,16 @@
 			</p>
 		</div>
 
-		<p
+		<UAlert
 			v-if="errorMessage"
-			class="text-xs text-error mt-2"
-		>
-			{{ errorMessage }}
-		</p>
+			color="error"
+			variant="subtle"
+			icon="mdi:alert-circle"
+			:title="errorMessage"
+			:close="{ color: 'error', variant: 'link' }"
+			class="mt-2"
+			@update:open="errorMessage = null"
+		/>
 
 		<UiSparkleBurst
 			:trigger="sparkleTrigger"

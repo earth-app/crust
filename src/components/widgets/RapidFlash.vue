@@ -1,6 +1,5 @@
 <template>
 	<UCard
-		ref="rootRef"
 		variant="soft"
 		class="relative min-w-72 max-w-md p-4 shadow-md rounded-xl bg-linear-to-br from-secondary/10 via-primary/5 to-transparent overflow-hidden"
 	>
@@ -27,8 +26,29 @@
 				>Ready</UBadge
 			>
 		</div>
+
 		<div
-			v-if="!done"
+			v-if="!started"
+			class="flex flex-col items-center text-center py-3 gap-3"
+		>
+			<UIcon
+				name="mdi:flash-outline"
+				class="size-10 text-secondary"
+			/>
+			<div class="flex flex-col gap-1">
+				<p class="text-sm font-semibold m-0">{{ ctaTitle }}</p>
+				<p class="text-xs text-muted m-0">{{ ctaSubtitle }}</p>
+			</div>
+			<UButton
+				color="secondary"
+				icon="mdi:play"
+				@click="start"
+			>
+				Start Round
+			</UButton>
+		</div>
+		<div
+			v-else-if="!done"
 			class="grid grid-cols-2 gap-2"
 		>
 			<UButton
@@ -71,6 +91,15 @@
 			>
 				{{ questHint }}
 			</p>
+			<UButton
+				color="secondary"
+				variant="outline"
+				icon="mdi:restart"
+				class="mt-3"
+				@click="restart"
+			>
+				Play Again
+			</UButton>
 		</div>
 		<UiSparkleBurst
 			:trigger="sparkleTrigger"
@@ -81,10 +110,20 @@
 
 <script setup lang="ts">
 type Pair = { term: string; def: string };
-const props = withDefaults(defineProps<{ pool?: Pair[]; questHint?: string }>(), {
-	pool: () => DEFAULT_POOL,
-	questHint: undefined
-});
+const props = withDefaults(
+	defineProps<{
+		pool?: Pair[];
+		questHint?: string;
+		ctaTitle?: string;
+		ctaSubtitle?: string;
+	}>(),
+	{
+		pool: () => DEFAULT_POOL,
+		questHint: undefined,
+		ctaTitle: 'Match 4 terms to their definitions',
+		ctaSubtitle: 'Tap when you’re ready — the timer only starts after you do.'
+	}
+);
 const emit = defineEmits<{ (event: 'complete', payload: { timeMs: number }): void }>();
 
 const ROUND = 4;
@@ -98,10 +137,8 @@ const shakeDef = ref<number | null>(null);
 const elapsed = ref(0);
 const done = ref(false);
 const started = ref(false);
-const rootRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null);
 let startedAt = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
-let observer: IntersectionObserver | null = null;
 
 function shuffle<T>(arr: T[]): T[] {
 	const a = [...arr];
@@ -127,56 +164,38 @@ const cellColor = (matched: Set<number>, selected: number | null, i: number) =>
 const cellVariant = (matched: Set<number>, selected: number | null, i: number) =>
 	matched.has(i) || selected === i ? ('solid' as const) : ('outline' as const);
 
-function startGame() {
+function start() {
 	if (started.value) return;
-	started.value = true;
+	// pool can be degenerate on niche activities — fall back to DEFAULT_POOL so the round always fills
+	const sourcePool = props.pool.length >= ROUND ? props.pool : DEFAULT_POOL;
+	const round = shuffle(sourcePool).slice(0, ROUND);
+	terms.value = round;
+	defs.value = shuffle(round);
+	elapsed.value = 0;
 	startedAt = performance.now();
 	timer = setInterval(() => {
 		elapsed.value = performance.now() - startedAt;
 	}, 100);
+	started.value = true;
 }
 
-onMounted(() => {
-	// deal the cards immediately so the layout is stable, but don't start the clock
-	// until the widget is actually in the viewport - otherwise scrolling past it from
-	// the top of the page elapses the user's time without them ever seeing it
-	const round = shuffle(props.pool).slice(0, ROUND);
-	terms.value = round;
-	defs.value = shuffle(round);
-
-	if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
-		startGame();
-		return;
-	}
-	const el =
-		rootRef.value && '$el' in (rootRef.value as object)
-			? (rootRef.value as { $el: HTMLElement }).$el
-			: (rootRef.value as HTMLElement | null);
-	if (!el) {
-		startGame();
-		return;
-	}
-	observer = new IntersectionObserver(
-		(entries) => {
-			if (entries.some((e) => e.isIntersecting)) {
-				startGame();
-				observer?.disconnect();
-				observer = null;
-			}
-		},
-		{ threshold: 0.4 }
-	);
-	observer.observe(el);
-});
+function restart() {
+	if (timer) clearInterval(timer);
+	timer = null;
+	matchedTerms.value = new Set();
+	matchedDefs.value = new Set();
+	selectedTerm.value = null;
+	selectedDef.value = null;
+	done.value = false;
+	started.value = false;
+	elapsed.value = 0;
+}
 
 onBeforeUnmount(() => {
 	if (timer) clearInterval(timer);
-	if (observer) observer.disconnect();
 });
 
 function pick(kind: 'term' | 'def', i: number) {
-	// safety: if a user manages to click before IO fires (e.g. keyboard nav), kick off the clock
-	if (!started.value) startGame();
 	if (kind === 'term') {
 		if (matchedTerms.value.has(i)) return;
 		selectedTerm.value = i;

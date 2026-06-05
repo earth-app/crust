@@ -16,12 +16,7 @@
 </template>
 
 <script setup lang="ts">
-// renders a widget by kind. when `activity` is supplied, the slot tunes a handful of
-// widgets to that activity's context (mood question, poll question, reflection prompt).
-// leaves the others generic since their content doesn't naturally scope to a single hobby.
-// outer wrapper matches an InfoCard's dimensions so widgets sit cleanly in the same grid.
-
-type ActivityContext = { id: string; name: string };
+type ActivityContext = { id: string; name: string; types?: readonly ActivityType[] };
 
 const props = withDefaults(
 	defineProps<{
@@ -47,11 +42,120 @@ const COMPONENTS: Record<FeedWidgetKind, ReturnType<typeof defineAsyncComponent>
 
 const resolved = computed(() => COMPONENTS[props.kind] ?? null);
 
+// server topic regex is /^[a-z0-9_-]{1,64}$/ — sanitize so any non-conforming activity id char
+// (space, dot, slash, colon, etc.) becomes a hyphen and the mood request doesn't 4xx "Invalid topic"
+function sanitizeTopic(raw: string): string {
+	return raw
+		.toLowerCase()
+		.replace(/[^a-z0-9_-]+/g, '-')
+		.replace(/-+/g, '-')
+		.replace(/^-|-$/g, '')
+		.slice(0, 64);
+}
+
 // activity-scoped mood buckets so different activities don't bleed into one another
 const effectiveTopic = computed(() => {
-	if (props.activity) return `activity-${props.activity.id}`;
-	return props.topic;
+	const raw = props.activity ? `activity-${props.activity.id}` : props.topic;
+	return sanitizeTopic(raw) || 'today';
 });
+
+type Pair = { term: string; def: string };
+const RAPID_FLASH_POOLS_BY_TYPE: Partial<Record<ActivityType, Pair[]>> = {
+	NATURE: [
+		{ term: 'Biome', def: 'a large ecological community' },
+		{ term: 'Watershed', def: 'land draining to one body of water' },
+		{ term: 'Canopy', def: 'top layer of a forest' },
+		{ term: 'Pollinator', def: 'moves pollen between flowers' },
+		{ term: 'Mycelium', def: 'underground fungal network' },
+		{ term: 'Estuary', def: 'where river meets the sea' }
+	],
+	SPORT: [
+		{ term: 'Cadence', def: 'rhythm of strides or strokes' },
+		{ term: 'Endurance', def: 'capacity to sustain effort' },
+		{ term: 'Form', def: 'posture and technique under load' },
+		{ term: 'Recovery', def: 'rest that rebuilds tissue' },
+		{ term: 'PR', def: 'a personal best result' },
+		{ term: 'Drill', def: 'focused repeated practice' }
+	],
+	HEALTH: [
+		{ term: 'Hydration', def: 'maintaining body fluid balance' },
+		{ term: 'Sleep Debt', def: 'cumulative missed sleep' },
+		{ term: 'VO2 Max', def: 'peak oxygen uptake' },
+		{ term: 'Mobility', def: 'range of joint motion' },
+		{ term: 'Resting HR', def: 'heart rate at rest' },
+		{ term: 'Macros', def: 'carbs, protein, and fat' }
+	],
+	CREATIVE: [
+		{ term: 'Composition', def: 'arrangement of elements' },
+		{ term: 'Palette', def: 'a chosen set of colors' },
+		{ term: 'Negative Space', def: 'the empty area around' },
+		{ term: 'Texture', def: 'tactile or visual surface' },
+		{ term: 'Contrast', def: 'difference that draws the eye' },
+		{ term: 'Rhythm', def: 'repeated visual or sonic beat' }
+	],
+	ART: [
+		{ term: 'Hue', def: 'pure color on the wheel' },
+		{ term: 'Value', def: 'lightness or darkness of a color' },
+		{ term: 'Underpainting', def: 'a tonal base layer' },
+		{ term: 'Gesture', def: 'a quick capture of motion' },
+		{ term: 'Vanishing Point', def: 'where lines meet in perspective' }
+	],
+	LEARNING: [
+		{ term: 'Spaced Repetition', def: 'review at growing intervals' },
+		{ term: 'Chunking', def: 'grouping info to aid memory' },
+		{ term: 'Active Recall', def: 'retrieve before rereading' },
+		{ term: 'Interleaving', def: 'mixing topics in practice' },
+		{ term: 'Schema', def: 'a mental framework' },
+		{ term: 'Metacognition', def: 'thinking about thinking' }
+	],
+	STUDY: [
+		{ term: 'Outline', def: 'a structured skeleton of ideas' },
+		{ term: 'Citation', def: 'credit pointing to a source' },
+		{ term: 'Margin Note', def: 'a thought tucked beside the text' },
+		{ term: 'Synthesis', def: 'combining sources into your own view' },
+		{ term: 'Thesis', def: 'a single claim a paper defends' }
+	],
+	TECHNOLOGY: [
+		{ term: 'Latency', def: 'delay between action and result' },
+		{ term: 'Throughput', def: 'amount processed per unit time' },
+		{ term: 'Cache', def: 'fast lookup of recent values' },
+		{ term: 'API', def: 'a contract between systems' },
+		{ term: 'Pipeline', def: 'a series of processing stages' },
+		{ term: 'Token', def: 'unit of input a model parses' }
+	],
+	TRAVEL: [
+		{ term: 'Itinerary', def: 'planned route of a trip' },
+		{ term: 'Layover', def: 'pause between flights' },
+		{ term: 'Visa', def: 'permission to enter a country' },
+		{ term: 'Embassy', def: "a nation's diplomatic outpost" },
+		{ term: 'Phrasebook', def: 'collection of helpful sentences' },
+		{ term: 'Local Time', def: 'time zone where you stand' }
+	],
+	SOCIAL: [
+		{ term: 'Empathy', def: 'feeling with another person' },
+		{ term: 'Active Listening', def: 'focused engaged hearing' },
+		{ term: 'Boundary', def: 'a limit you set with others' },
+		{ term: 'Reciprocity', def: 'mutual give and take' },
+		{ term: 'Rapport', def: 'easy mutual understanding' },
+		{ term: 'Common Ground', def: 'a shared starting point' }
+	]
+};
+
+function buildRapidFlashPool(types: readonly ActivityType[] | null | undefined): Pair[] {
+	if (!types || types.length === 0) return [];
+	const seen = new Set<string>();
+	const merged: Pair[] = [];
+	for (const t of types) {
+		const pool = RAPID_FLASH_POOLS_BY_TYPE[t];
+		if (!pool) continue;
+		for (const pair of pool) {
+			if (seen.has(pair.term)) continue;
+			seen.add(pair.term);
+			merged.push(pair);
+		}
+	}
+	return merged;
+}
 
 const LEADERBOARD_TYPES = ['article', 'prompt', 'event'] as const;
 
@@ -167,6 +271,13 @@ const extraProps = computed<Record<string, unknown>>(() => {
 		} else if (props.kind === 'MicroReflection') {
 			const pick = REFLECTION_VARIANTS[seed % REFLECTION_VARIANTS.length]!;
 			out.prompt = pick(name);
+		} else if (props.kind === 'RapidFlash') {
+			const pool = buildRapidFlashPool(props.activity.types);
+			if (pool.length >= 4) {
+				out.pool = pool;
+				out.ctaTitle = `Match 4 ${name} terms to their meanings`;
+				out.ctaSubtitle = `Themed to ${name}. Tap when you’re ready — the timer only starts after you do.`;
+			}
 		}
 	}
 

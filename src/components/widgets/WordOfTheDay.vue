@@ -132,12 +132,11 @@ const emit = defineEmits<{
 }>();
 
 const REMOTE_URL = 'https://wordoftheday.freeapi.me/';
-const SAVED_KEY = 'wordoftheday:saved';
-const SAVED_CAP = 30;
 const REMOTE_CACHE_KEY = 'wordoftheday:remote';
 // the remote refreshes daily; cache for 12h so we don't burn requests on every nav
 const REMOTE_TTL_MS = 12 * 60 * 60 * 1000;
 
+const savedWords = useSavedWords();
 const remoteEntry = ref<WordEntry | null>(null);
 const loading = ref(true);
 const acted = ref(false);
@@ -156,48 +155,13 @@ function fallbackEntry(): WordEntry {
 
 const entry = computed<WordEntry>(() => remoteEntry.value ?? fallbackEntry());
 
-function readSavedList(): WordEntry[] {
-	if (typeof window === 'undefined') return [];
-	try {
-		const raw = window.localStorage.getItem(SAVED_KEY);
-		if (!raw) return [];
-		const parsed = JSON.parse(raw);
-		if (!Array.isArray(parsed)) return [];
-		return parsed.filter(
-			(item): item is WordEntry =>
-				item &&
-				typeof item.word === 'string' &&
-				typeof item.partOfSpeech === 'string' &&
-				typeof item.definition === 'string'
-		);
-	} catch {
-		return [];
-	}
-}
-
-function isAlreadySaved(word: string): boolean {
-	return readSavedList().some((w) => w.word.toLowerCase() === word.toLowerCase());
-}
-
 function saveWord() {
-	if (typeof window === 'undefined') return;
-	const list = readSavedList();
 	const w = entry.value;
-	if (!isAlreadySaved(w.word)) {
-		list.unshift({
-			word: w.word,
-			partOfSpeech: w.partOfSpeech,
-			definition: w.definition,
-			...(w.example ? { example: w.example } : {}),
-			...(w.etymology ? { etymology: w.etymology } : {})
-		});
-		while (list.length > SAVED_CAP) list.pop();
-		try {
-			window.localStorage.setItem(SAVED_KEY, JSON.stringify(list));
-		} catch {
-			// quota or disabled storage — silent
-		}
-	}
+	savedWords.save({
+		word: w.word,
+		partOfSpeech: w.partOfSpeech,
+		definition: w.definition
+	});
 	saved.value = true;
 	acted.value = true;
 	actedMsg.value = 'Saved to your words.';
@@ -216,7 +180,7 @@ function markKnown() {
 watchEffect(() => {
 	if (typeof window === 'undefined') return;
 	if (!entry.value?.word) return;
-	saved.value = isAlreadySaved(entry.value.word);
+	saved.value = savedWords.isSaved(entry.value.word);
 });
 
 onMounted(async () => {

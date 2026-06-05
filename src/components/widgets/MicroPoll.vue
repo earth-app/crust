@@ -17,7 +17,7 @@
 				:key="`poll-${i}`"
 				:variant="voted === null ? 'outline' : voted === i ? 'solid' : 'ghost'"
 				:color="voted === i ? 'primary' : 'neutral'"
-				:disabled="voted !== null"
+				:disabled="voted !== null || submitting"
 				block
 				class="justify-start text-left"
 				@click="vote(i)"
@@ -26,7 +26,7 @@
 			</UButton>
 		</div>
 		<div
-			v-if="voted !== null"
+			v-if="voted !== null && isAuthed && hasAggregate"
 			class="mt-3 flex flex-col gap-2"
 		>
 			<div
@@ -36,14 +36,20 @@
 			>
 				<div class="flex justify-between text-xs text-muted">
 					<span :class="{ 'text-primary font-semibold': voted === i }">{{ option }}</span>
-					<span>{{ percentages[i] }}%</span>
+					<span>{{ percentages[i] ?? 0 }}%</span>
 				</div>
 				<UProgress
-					:model-value="percentages[i]"
+					:model-value="percentages[i] ?? 0"
 					:color="voted === i ? 'primary' : 'neutral'"
 					size="sm"
 				/>
 			</div>
+			<p
+				v-if="aggregate && aggregate.total > 0"
+				class="text-xs text-muted"
+			>
+				{{ aggregate.total }} {{ aggregate.total === 1 ? 'vote' : 'votes' }} so far
+			</p>
 			<p
 				v-if="questHint"
 				class="text-xs text-primary mt-2"
@@ -51,6 +57,32 @@
 				{{ questHint }}
 			</p>
 		</div>
+		<div
+			v-else-if="voted !== null && !isAuthed"
+			class="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted flex items-center gap-2"
+		>
+			<UIcon
+				name="mdi:account-arrow-right"
+				class="size-4 text-primary shrink-0"
+			/>
+			<span>
+				Sign in to make your vote count and see what others picked.
+				<NuxtLink
+					to="/login"
+					class="text-primary font-semibold underline"
+				>
+					Sign in
+				</NuxtLink>
+			</span>
+		</div>
+
+		<p
+			v-if="errorMessage"
+			class="text-xs text-danger mt-2"
+		>
+			{{ errorMessage }}
+		</p>
+
 		<UiSparkleBurst
 			:trigger="sparkleTrigger"
 			color="primary"
@@ -59,17 +91,21 @@
 </template>
 
 <script setup lang="ts">
+import type { PollAggregate } from '~/composables/usePoll';
+import { sanitizePollId } from '~/composables/usePoll';
+
 const props = withDefaults(
 	defineProps<{
 		question?: string;
 		options?: string[];
-		results?: number[];
+		// optional explicit id so callers can scope a poll to "this article", "this activity", etc.
+		pollId?: string;
 		questHint?: string;
 	}>(),
 	{
 		question: 'Which would you choose: Plant a tree OR Walk 1 mile?',
 		options: () => ['Plant a tree', 'Walk 1 mile'],
-		results: undefined,
+		pollId: undefined,
 		questHint: undefined
 	}
 );
@@ -78,36 +114,73 @@ const emit = defineEmits<{
 	(event: 'complete', payload: { outcome: number }): void;
 }>();
 
+const { isAuthed, submitVote, fetchMyVotes } = usePoll();
+
 const voted = ref<number | null>(null);
+const submitting = ref(false);
+const errorMessage = ref<string | null>(null);
+const aggregate = ref<PollAggregate | null>(null);
 const sparkleTrigger = ref(0);
 
-// pseudo-aggregate when no results prop supplied (stable per option set)
-const pseudoResults = computed(() => {
-	const n = props.options.length;
-	// deterministic distribution biased toward earlier options
-	const base = props.options.map((opt, i) => {
-		let h = 0;
-		for (let c = 0; c < opt.length; c++) h = (h * 31 + opt.charCodeAt(c)) >>> 0;
-		return 20 + ((h + i * 17) % 50);
-	});
-	const sum = base.reduce((a, b) => a + b, 0) || 1;
-	return base.map((v) => Math.round((v / sum) * 100));
+// stable id from explicit prop, else a deterministic hash of the question so repeat renders bucket together
+const effectivePollId = computed(() => {
+	if (props.pollId) return sanitizePollId(props.pollId);
+	return sanitizePollId(`q-${hashString(props.question)}`);
 });
 
-const percentages = computed(() => {
-	const source = props.results ?? pseudoResults.value;
-	// bump voted option slightly so user feels their click counted
-	if (voted.value === null) return source;
-	const bumped = [...source];
-	bumped[voted.value] = (bumped[voted.value] ?? 0) + 3;
-	const total = bumped.reduce((a, b) => a + b, 0) || 1;
-	return bumped.map((v) => Math.round((v / total) * 100));
+function hashString(input: string): string {
+	let h = 2166136261 >>> 0;
+	for (let i = 0; i < input.length; i++) {
+		h ^= input.charCodeAt(i);
+		h = Math.imul(h, 16777619);
+	}
+	return (h >>> 0).toString(36);
+}
+
+const hasAggregate = computed(() => (aggregate.value?.total ?? 0) > 0);
+
+const percentages = computed<number[]>(() => {
+	const counts = aggregate.value?.counts ?? [];
+	const total = aggregate.value?.total ?? 0;
+	if (total <= 0) return props.options.map(() => 0);
+	return props.options.map((_, i) => Math.round(((counts[i] ?? 0) / total) * 100));
 });
 
-function vote(i: number) {
-	if (voted.value !== null) return;
+async function vote(i: number) {
+	if (voted.value !== null || submitting.value) return;
 	voted.value = i;
 	sparkleTrigger.value++;
 	emit('complete', { outcome: i });
+
+	if (!isAuthed.value) {
+		return; // anonymous: client-side only, no aggregate displayed
+	}
+
+	submitting.value = true;
+	errorMessage.value = null;
+	const res = await submitVote({
+		poll_id: effectivePollId.value,
+		option_index: i,
+		question: props.question,
+		options: props.options
+	});
+	submitting.value = false;
+	if (valid(res)) {
+		aggregate.value = res.data.aggregate ?? null;
+	} else {
+		errorMessage.value = res.message || 'Could not record vote.';
+	}
 }
+
+// hydrate prior vote + aggregate if the user already answered this poll
+onMounted(async () => {
+	if (!isAuthed.value) return;
+	const res = await fetchMyVotes();
+	if (!valid(res)) return;
+	const prior = res.data.find((v) => v.poll_id === effectivePollId.value);
+	if (prior) {
+		voted.value = prior.option_index;
+		aggregate.value = prior.aggregate ?? null;
+	}
+});
 </script>
