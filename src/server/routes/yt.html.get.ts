@@ -1,3 +1,21 @@
+// lite-embed proxy. shows the YouTube thumbnail immediately (no nested iframe, no
+// cross-origin script, no storage handshake -> no white-block failure mode), then
+// loads the IFrame Player API ONLY on user tap. WKWebView's third-party storage
+// partitioning has a user-gesture carve-out, so the same handshake that fails on
+// cold load often succeeds post-tap. if it still fails (script blocked, onError,
+// 5s timeout with no onReady), the proxy swaps to a visible "Watch on YouTube"
+// button that opens the system browser via target=_blank.
+//
+// !! CLOUDFLARE TRAP !! Cloudflare's Managed Transforms / security profiles will
+// overwrite Referrer-Policy, Content-Security-Policy, X-Frame-Options, and
+// Cache-Control on every response. Custom Transform Rules on /yt.html stomp them
+// back. Required rules:
+//   Referrer-Policy = strict-origin-when-cross-origin
+//   Content-Security-Policy = (the value below)
+//   X-Frame-Options = (remove)
+//   Cache-Control = no-store, no-transform   (optional - belt-and-suspenders against
+//                                             stale broken responses living in webview cache)
+
 const PROXY_ORIGIN = 'https://app.earth-app.com';
 
 const PROXY_HTML = `<!doctype html>
@@ -16,6 +34,55 @@ const PROXY_HTML = `<!doctype html>
 				background: #000;
 				height: 100%;
 				overflow: hidden;
+				font:
+					14px/1.4 system-ui,
+					-apple-system,
+					sans-serif;
+			}
+			#stage {
+				position: absolute;
+				inset: 0;
+			}
+			#thumb {
+				position: absolute;
+				inset: 0;
+				background-size: cover;
+				background-position: center;
+				background-color: #111;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				-webkit-tap-highlight-color: transparent;
+			}
+			#thumb::before {
+				content: '';
+				position: absolute;
+				inset: 0;
+				background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+			}
+			#play {
+				position: relative;
+				z-index: 1;
+				width: 68px;
+				height: 48px;
+				border: none;
+				background: rgba(0, 0, 0, 0.6);
+				border-radius: 12px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				transition: background 180ms ease;
+				cursor: pointer;
+			}
+			#thumb:hover #play,
+			#thumb:active #play {
+				background: rgb(229, 9, 20);
+			}
+			#play svg {
+				width: 28px;
+				height: 28px;
+				fill: #fff;
 			}
 			#player {
 				position: absolute;
@@ -29,35 +96,64 @@ const PROXY_HTML = `<!doctype html>
 				border: 0;
 				display: block;
 			}
-			.error {
+			.fallback {
 				position: absolute;
 				inset: 0;
 				display: flex;
 				flex-direction: column;
-				gap: 8px;
+				gap: 14px;
 				align-items: center;
 				justify-content: center;
 				color: #ddd;
-				font:
-					14px/1.4 system-ui,
-					-apple-system,
-					sans-serif;
-				padding: 16px;
+				padding: 24px;
 				text-align: center;
 			}
-			.error a {
-				color: #6cf;
-				text-decoration: underline;
+			.fallback a {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				padding: 12px 22px;
+				border-radius: 999px;
+				background: rgb(229, 9, 20);
+				color: #fff;
+				text-decoration: none;
+				font-weight: 600;
+				font-size: 15px;
+			}
+			.hidden {
+				display: none !important;
 			}
 		</style>
 	</head>
 	<body>
-		<div id="player"></div>
+		<div id="stage">
+			<div
+				id="thumb"
+				role="button"
+				aria-label="Play video"
+			>
+				<button
+					id="play"
+					aria-label="Play"
+				>
+					<svg
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+					>
+						<path d="M8 5v14l11-7z" />
+					</svg>
+				</button>
+			</div>
+			<div id="player"></div>
+		</div>
 		<noscript>
-			<div class="error">
-				JavaScript required to load this player.
-				<a href="https://www.youtube.com/" rel="noopener noreferrer" target="_blank"
-					>Open on YouTube</a
+			<div class="fallback">
+				JavaScript required to play this video.
+				<a
+					href="https://www.youtube.com/"
+					rel="noopener noreferrer"
+					target="_blank"
+					>Open YouTube</a
 				>
 			</div>
 		</noscript>
@@ -66,79 +162,85 @@ const PROXY_HTML = `<!doctype html>
 				var params = new URLSearchParams(window.location.search);
 				var id = (params.get('v') || '').trim();
 				if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
-					document.body.innerHTML = '<div class="error">Invalid video id.</div>';
+					document.body.innerHTML = '<div class="fallback">Invalid video id.</div>';
 					return;
 				}
 
-				var autoplay = params.get('autoplay') === '1' ? 1 : 0;
-				var startRaw = params.get('start');
-				var startSec = startRaw && /^\\d{1,5}$/.test(startRaw) ? parseInt(startRaw, 10) : null;
+				var thumb = document.getElementById('thumb');
+				thumb.style.backgroundImage =
+					'url("https://i.ytimg.com/vi/' + encodeURIComponent(id) + '/hqdefault.jpg")';
 
-				function watchOnYTLink() {
-					return (
+				function showFallback(msg) {
+					document.body.innerHTML =
+						'<div class="fallback">' +
+						(msg ? msg + '<br />' : '') +
 						'<a href="https://www.youtube.com/watch?v=' +
 						encodeURIComponent(id) +
-						'" rel="noopener noreferrer" target="_blank">Watch on YouTube</a>'
-					);
+						'" rel="noopener noreferrer" target="_blank">' +
+						'<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>' +
+						'Watch on YouTube</a></div>';
 				}
 
-				function fail(msg) {
-					document.body.innerHTML =
-						'<div class="error">' + msg + '. ' + watchOnYTLink() + '.</div>';
+				var readyFired = false;
+				var fallbackArmed = false;
+				function armFallback(msg) {
+					if (fallbackArmed) return;
+					fallbackArmed = true;
+					showFallback(msg);
 				}
 
-				// IFrame Player API global hook. defined before the script loads so we don't
-				// race the api callback.
-				window.onYouTubeIframeAPIReady = function () {
-					try {
-						var playerVars = {
-							autoplay: autoplay,
-							controls: 1,
-							rel: 0,
-							modestbranding: 1,
-							playsinline: 1,
-							origin: '${PROXY_ORIGIN}'
-						};
-						if (startSec !== null) playerVars.start = startSec;
+				function startEmbed() {
+					thumb.classList.add('hidden');
 
-						new window.YT.Player('player', {
-							videoId: id,
-							host: 'https://www.youtube.com',
-							playerVars: playerVars,
-							events: {
-								onError: function (e) {
-									var code = e && e.data;
-									var msg = 'Could not load this video';
-									if (code === 2) msg = 'Invalid video request';
-									else if (code === 5) msg = 'HTML5 player error';
-									else if (code === 100) msg = 'Video not found';
-									else if (code === 101 || code === 150)
-										msg = 'Embedding disabled by the uploader';
-									else if (code === 153) msg = 'Player configuration error';
-									fail(msg);
+					var startRaw = params.get('start');
+					var startSec = startRaw && /^\\d{1,5}$/.test(startRaw) ? parseInt(startRaw, 10) : null;
+
+					window.onYouTubeIframeAPIReady = function () {
+						try {
+							var playerVars = {
+								autoplay: 1,
+								controls: 1,
+								rel: 0,
+								modestbranding: 1,
+								playsinline: 1,
+								origin: '${PROXY_ORIGIN}'
+							};
+							if (startSec !== null) playerVars.start = startSec;
+
+							new window.YT.Player('player', {
+								videoId: id,
+								host: 'https://www.youtube.com',
+								playerVars: playerVars,
+								events: {
+									onReady: function () {
+										readyFired = true;
+									},
+									onError: function () {
+										armFallback('Player error');
+									}
 								}
-							}
-						});
-					} catch (err) {
-						fail('Player crashed');
-					}
-				};
+							});
+						} catch (err) {
+							armFallback('Player crashed');
+						}
+					};
 
-				var apiScript = document.createElement('script');
-				apiScript.src = 'https://www.youtube.com/iframe_api';
-				apiScript.referrerPolicy = 'strict-origin-when-cross-origin';
-				apiScript.onerror = function () {
-					fail('Player script failed to load');
-				};
-				document.head.appendChild(apiScript);
+					var apiScript = document.createElement('script');
+					apiScript.src = 'https://www.youtube.com/iframe_api';
+					apiScript.referrerPolicy = 'strict-origin-when-cross-origin';
+					apiScript.onerror = function () {
+						armFallback('Player script failed to load');
+					};
+					document.head.appendChild(apiScript);
 
-				// belt-and-suspenders: if the api never reports ready in 8s, surface a fallback
-				// rather than leaving a silent white screen
-				setTimeout(function () {
-					var hasIframe = !!document.querySelector('#player iframe');
-					var apiReady = !!(window.YT && window.YT.Player);
-					if (!hasIframe && !apiReady) fail('Player timed out');
-				}, 8000);
+					// belt-and-suspenders: if the api never says onReady in 5s, swap to the
+					// visible "Watch on YouTube" button so the user is never stuck on a blank
+					setTimeout(function () {
+						if (!readyFired && !fallbackArmed) armFallback('Player timed out');
+					}, 5000);
+				}
+
+				thumb.addEventListener('click', startEmbed, { once: true });
 			})();
 		</script>
 	</body>
