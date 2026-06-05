@@ -1,19 +1,10 @@
-<!doctype html>
+const PROXY_HTML = `<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1, viewport-fit=cover"
-		/>
-		<meta
-			name="referrer"
-			content="origin"
-		/>
-		<meta
-			name="color-scheme"
-			content="dark light"
-		/>
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<meta name="referrer" content="origin" />
+		<meta name="color-scheme" content="dark light" />
 		<title>Video</title>
 		<style>
 			html,
@@ -57,28 +48,19 @@
 		</style>
 	</head>
 	<body>
-		<div
-			id="frame"
-			class="frame"
-		></div>
+		<div id="frame" class="frame"></div>
 		<noscript>
 			<div class="error">
 				JavaScript required to load this player.
-				<a
-					id="ns-fallback"
-					href="https://www.youtube.com/"
-					rel="noopener noreferrer"
-					target="_blank"
+				<a href="https://www.youtube.com/" rel="noopener noreferrer" target="_blank"
 					>Open on YouTube</a
 				>
 			</div>
 		</noscript>
 		<script>
-			// served from the app's real HTTPS origin so YouTube sees a valid Referer (fixes WKWebView error 153)
 			(function () {
 				var params = new URLSearchParams(window.location.search);
 				var id = (params.get('v') || '').trim();
-				// strict YouTube id format: 11 chars of [A-Za-z0-9_-]
 				if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
 					document.body.innerHTML = '<div class="error">Invalid video id.</div>';
 					return;
@@ -87,7 +69,9 @@
 				var autoplay = params.get('autoplay') === '1' ? '1' : '0';
 				var start = params.get('start');
 				var startParam =
-					start && /^\d{1,5}$/.test(start) ? '&start=' + encodeURIComponent(start) : '';
+					start && /^\\d{1,5}$/.test(start)
+						? '&start=' + encodeURIComponent(start)
+						: '';
 
 				var src =
 					'https://www.youtube-nocookie.com/embed/' +
@@ -109,7 +93,7 @@
 
 				iframe.addEventListener('error', function () {
 					document.body.innerHTML =
-						'<div class="error">Couldn’t load this video. <a href="https://www.youtube.com/watch?v=' +
+						'<div class="error">Couldn\\u2019t load this video. <a href="https://www.youtube.com/watch?v=' +
 						encodeURIComponent(id) +
 						'" rel="noopener noreferrer" target="_blank">Watch on YouTube</a>.</div>';
 				});
@@ -119,3 +103,12 @@
 		</script>
 	</body>
 </html>
+`;
+
+export default defineEventHandler((event) => {
+	setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
+	setResponseHeader(event, 'Content-Security-Policy', 'frame-ancestors *');
+	setResponseHeader(event, 'X-Frame-Options', 'ALLOWALL');
+	setResponseHeader(event, 'Cache-Control', 'public, max-age=300');
+	return PROXY_HTML;
+});
