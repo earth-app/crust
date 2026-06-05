@@ -1,5 +1,5 @@
-import type { Activity } from './activity';
-import type { User } from './user';
+import type { Activity, ActivityType } from './activity';
+import type { User, Visibility } from './user';
 
 export type EventType = 'IN_PERSON' | 'HYBRID' | 'ONLINE';
 

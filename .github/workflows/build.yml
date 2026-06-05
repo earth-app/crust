@@ -33,6 +33,8 @@ jobs:
           bun run postinstall
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Typecheck
+        run: bun run typecheck
       - name: Build
         run: bun run build
         env:
