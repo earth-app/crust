@@ -2,9 +2,18 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-		<meta name="referrer" content="origin" />
-		<meta name="color-scheme" content="dark light" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, viewport-fit=cover"
+		/>
+		<meta
+			name="referrer"
+			content="origin"
+		/>
+		<meta
+			name="color-scheme"
+			content="dark light"
+		/>
 		<title>Video</title>
 		<style>
 			html,
@@ -71,8 +80,7 @@
 				var id = (params.get('v') || '').trim();
 				// strict YouTube id format: 11 chars of [A-Za-z0-9_-]
 				if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
-					document.body.innerHTML =
-						'<div class="error">Invalid video id.</div>';
+					document.body.innerHTML = '<div class="error">Invalid video id.</div>';
 					return;
 				}
 
