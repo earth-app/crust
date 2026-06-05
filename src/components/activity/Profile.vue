@@ -140,7 +140,7 @@
 				<LazyWidgetSlot
 					v-if="cardWidgetKind(index)"
 					:kind="cardWidgetKind(index)!"
-					:activity="{ id: activity.id, name: activity.name }"
+					:activity="{ id: activity.id, name: activity.name, types: activity.types }"
 					hydrate-on-visible
 				/>
 			</template>
