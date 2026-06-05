@@ -430,6 +430,11 @@ export function useGeocoding(serverRequest: typeof makeServerRequest = makeServe
 	const longitude = useState<number | null>('user-longitude', () => null);
 
 	const retrieveLocation = () => {
+		if (typeof window === 'undefined') return;
+		const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+			.Capacitor;
+		if (cap?.isNativePlatform?.()) return;
+
 		if (navigator.geolocation) {
 			navigator.geolocation.getCurrentPosition(
 				(position) => {
