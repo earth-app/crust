@@ -70,9 +70,14 @@ export function usePoll() {
 		if (!isValidPollId(payload.poll_id)) {
 			return { success: false as const, message: 'Invalid poll id' };
 		}
+
+		const trimmedPayload: PollSubmitPayload = {
+			...payload,
+			question: payload.question.trim().slice(0, 240)
+		};
 		return await makeClientAPIRequest<PollVote>('/v2/users/current/poll', authStore.sessionToken, {
 			method: 'POST',
-			body: payload
+			body: trimmedPayload
 		});
 	};
 
