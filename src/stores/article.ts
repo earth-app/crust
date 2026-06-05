@@ -168,19 +168,41 @@ export const useArticleStore = defineStore('article', () => {
 		try {
 			const authStore = useAuthStore();
 			const normalizedQuiz = quiz.map((question) => {
+				const stem = question.question || '';
+
 				if (question.type === 'true_false') {
 					return {
 						type: 'true_false' as const,
-						question: question.question || '',
+						question: stem,
 						options: ['True', 'False'] as const,
 						correct_answer: question.correct_answer === 'True' ? 'True' : 'False'
 					};
 				}
 
-				const options = (question.options || []).map((option) => option || '').slice(0, 6);
-				while (options.length < 2) {
-					options.push('');
+				if (question.type === 'multi_select') {
+					const opts = (question.options ?? []).map((o) => o || '').slice(0, 6);
+					while (opts.length < 3) opts.push('');
+					const correct = question.correct_answers.filter((a) => opts.includes(a));
+					return {
+						type: 'multi_select' as const,
+						question: stem,
+						options: opts,
+						correct_answers: correct
+					};
 				}
+
+				if (question.type === 'order') {
+					const items = (question.items ?? []).map((s) => s || '').slice(0, 6);
+					while (items.length < 3) items.push('');
+					return {
+						type: 'order' as const,
+						question: stem,
+						items
+					};
+				}
+
+				const options = (question.options ?? []).map((option) => option || '').slice(0, 6);
+				while (options.length < 2) options.push('');
 
 				const correctAnswer = options.includes(question.correct_answer)
 					? question.correct_answer
@@ -188,7 +210,7 @@ export const useArticleStore = defineStore('article', () => {
 
 				return {
 					type: 'multiple_choice' as const,
-					question: question.question || '',
+					question: stem,
 					options,
 					correct_answer: correctAnswer
 				};

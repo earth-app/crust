@@ -7,7 +7,10 @@
 		/>
 
 		<template v-else-if="phase === 'playing'">
-			<div class="flex items-center gap-2!">
+			<div
+				v-if="!untimed"
+				class="flex items-center gap-2!"
+			>
 				<span
 					class="text-xs! font-mono! tabular-nums! w-8!"
 					:class="lowTime ? 'text-red-400!' : ''"
@@ -23,7 +26,7 @@
 			</div>
 
 			<p
-				v-if="step.description"
+				v-if="step?.description"
 				class="text-sm! text-neutral-300! text-center!"
 			>
 				{{ step.description }}
@@ -181,20 +184,30 @@ interface DragPayload {
 }
 
 interface Props {
-	step: QuestStep & {
+	// quest-context inputs (existing). step.parameters[0] supplies the canonical-order items.
+	step?: QuestStep & {
 		icon: string;
 		completed: boolean;
 		index: number;
 		altIndex?: number;
 		isCurrentQuest: boolean;
 	};
+	// quiz-context input: items in canonical (correct) order. Component shuffles on init.
+	// Either `step` or `items` must be supplied.
+	items?: string[];
 	disabled?: boolean;
 	submit?: boolean;
 	serverRequest?: typeof makeServerRequest;
+	// quiz mode: no countdown, no timer, no auto-submit. Parent reads order via update:order.
+	untimed?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), { submit: true });
-const emit = defineEmits<{ submitted: [] }>();
+const props = withDefaults(defineProps<Props>(), { submit: true, untimed: false });
+const emit = defineEmits<{
+	submitted: [];
+	// emits the current ordered list (with empty slots filtered) every time a slot changes
+	'update:order': [order: string[]];
+}>();
 
 const { submit, submitting, submitError } = useStepSubmission(props, emit);
 
@@ -362,7 +375,19 @@ function commitDrop(payload: DragPayload, target: { slot: number | null; bank: b
 	}
 }
 
+function emitOrder() {
+	emit(
+		'update:order',
+		slots.value.filter((s): s is string => s !== null)
+	);
+}
+
 function validate() {
+	if (props.untimed) {
+		// quiz mode: emit the running order; never auto-submit, never reach 'win'/'lose'
+		emitOrder();
+		return;
+	}
 	if (slots.value.some((s) => s === null)) return;
 	if (wrongSlots.value.length === 0) {
 		gameTick.pause();
@@ -372,7 +397,8 @@ function validate() {
 }
 
 function slotClass(slot: string | null, i: number) {
-	if (slot !== null && wrongSlots.value.includes(i))
+	// in quiz/untimed mode we must not paint wrong slots red — that would leak the answer key
+	if (!props.untimed && slot !== null && wrongSlots.value.includes(i))
 		return 'border-red-500 bg-red-500/10 text-red-300 cursor-pointer';
 	if (dragOverSlot.value === i) return 'border-primary border-dashed bg-primary/10 cursor-pointer';
 	if (slot) return 'border-neutral-600 bg-neutral-900/60 cursor-pointer';
@@ -389,13 +415,28 @@ function init() {
 	dragOverSlot.value = null;
 	dragOverBank.value = false;
 
-	const params = props.step.parameters as [string[]] | undefined;
-	if (!params || !Array.isArray(params[0])) return;
-	const items = params[0];
+	// quiz path: explicit items prop. quest path: step.parameters[0]
+	let items: string[] | undefined;
+	if (Array.isArray(props.items)) {
+		items = props.items;
+	} else {
+		const params = props.step?.parameters as [string[]] | undefined;
+		if (params && Array.isArray(params[0])) items = params[0];
+	}
+	if (!items) return;
+
 	correctOrder.value = items;
 	bank.value = shuffle([...items]);
 	slots.value = Array(items.length).fill(null);
 	timeLeft.value = 60;
+
+	if (props.untimed) {
+		// skip the timed game loop entirely; start in playing mode and stay there
+		phase.value = 'playing';
+		emitOrder();
+		return;
+	}
+
 	phase.value = 'countdown';
 	countdown.value = 3;
 	if (props.disabled) return;

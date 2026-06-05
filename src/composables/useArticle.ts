@@ -2,6 +2,7 @@ import { useArticleStore } from 'stores/article';
 import { useAuthStore } from 'stores/auth';
 import {
 	type Article,
+	type ArticleQuizAnswer,
 	type ArticleQuizQuestion,
 	type ArticleQuizQuestionSubmission,
 	type ArticleQuizScoreResult
@@ -39,7 +40,7 @@ export function useArticle(
 	const scoreCache = reactive(new Map<string, ArticleQuizScoreResult>());
 	const score = computed(() => scoreCache.get(id));
 
-	const submitQuiz = async (answers: number[]) => {
+	const submitQuiz = async (answers: ArticleQuizAnswer[]) => {
 		if (!article.value) {
 			await fetch(true);
 		}
@@ -60,10 +61,11 @@ export function useArticle(
 			);
 		}
 
-		const answers0 = answers.map((a, i) => ({
-			question: quiz0[i]!.question,
-			text: quiz0[i]!.options[a]!,
-			index: a
+		// stamp each answer with the matching question text so the server can pair them safely even
+		// when the client renders in a different order
+		const answers0: ArticleQuizAnswer[] = answers.map((a, i) => ({
+			...a,
+			question: quiz0[i]!.question
 		}));
 
 		const articleTypes = article.value.tags.map((t) => t.toUpperCase().replace(/\s+/g, '_'));

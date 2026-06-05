@@ -831,7 +831,7 @@ interface SubmittableStep {
 }
 
 export interface UseStepSubmissionProps {
-	step: SubmittableStep;
+	step?: SubmittableStep;
 	disabled?: boolean;
 	submit?: boolean;
 	serverRequest?: typeof makeServerRequest;
@@ -851,9 +851,11 @@ export function useStepSubmission(
 	const submitError = ref('');
 
 	async function submit() {
+		if (!props.step) return;
+
 		// drop duplicate clicks while a submission is already in flight
 		if (submitting.value) return;
-		if (props.disabled || props.submit === false) {
+		if (props?.disabled || props?.submit === false) {
 			emit('submitted');
 			return;
 		}
@@ -1251,6 +1253,12 @@ export function useQuestGeolocation() {
 	const error = ref<string | null>(null);
 
 	const fetchLocation = () => {
+		if (typeof window === 'undefined') return;
+
+		const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+			.Capacitor;
+		if (cap?.isNativePlatform?.()) return;
+
 		if (!navigator.geolocation) {
 			error.value = 'Geolocation is not supported by your browser.';
 			return;
