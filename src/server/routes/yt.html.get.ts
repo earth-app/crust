@@ -1,9 +1,11 @@
+const PROXY_ORIGIN = 'https://app.earth-app.com';
+
 const PROXY_HTML = `<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-		<meta name="referrer" content="origin" />
+		<meta name="referrer" content="strict-origin-when-cross-origin" />
 		<meta name="color-scheme" content="dark light" />
 		<title>Video</title>
 		<style>
@@ -15,11 +17,13 @@ const PROXY_HTML = `<!doctype html>
 				height: 100%;
 				overflow: hidden;
 			}
-			.frame {
+			#player {
 				position: absolute;
 				inset: 0;
+				width: 100%;
+				height: 100%;
 			}
-			.frame iframe {
+			#player iframe {
 				width: 100%;
 				height: 100%;
 				border: 0;
@@ -48,7 +52,7 @@ const PROXY_HTML = `<!doctype html>
 		</style>
 	</head>
 	<body>
-		<div id="frame" class="frame"></div>
+		<div id="player"></div>
 		<noscript>
 			<div class="error">
 				JavaScript required to load this player.
@@ -66,39 +70,75 @@ const PROXY_HTML = `<!doctype html>
 					return;
 				}
 
-				var autoplay = params.get('autoplay') === '1' ? '1' : '0';
-				var start = params.get('start');
-				var startParam =
-					start && /^\\d{1,5}$/.test(start)
-						? '&start=' + encodeURIComponent(start)
-						: '';
+				var autoplay = params.get('autoplay') === '1' ? 1 : 0;
+				var startRaw = params.get('start');
+				var startSec = startRaw && /^\\d{1,5}$/.test(startRaw) ? parseInt(startRaw, 10) : null;
 
-				var src =
-					'https://www.youtube-nocookie.com/embed/' +
-					encodeURIComponent(id) +
-					'?autoplay=' +
-					autoplay +
-					'&playsinline=1&modestbranding=1&rel=0&controls=1' +
-					startParam;
-
-				var iframe = document.createElement('iframe');
-				iframe.src = src;
-				iframe.title = 'YouTube video';
-				iframe.allow =
-					'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-				iframe.allowFullscreen = true;
-				iframe.setAttribute('referrerpolicy', 'origin');
-				iframe.setAttribute('loading', 'eager');
-				iframe.setAttribute('frameborder', '0');
-
-				iframe.addEventListener('error', function () {
-					document.body.innerHTML =
-						'<div class="error">Couldn\\u2019t load this video. <a href="https://www.youtube.com/watch?v=' +
+				function watchOnYTLink() {
+					return (
+						'<a href="https://www.youtube.com/watch?v=' +
 						encodeURIComponent(id) +
-						'" rel="noopener noreferrer" target="_blank">Watch on YouTube</a>.</div>';
-				});
+						'" rel="noopener noreferrer" target="_blank">Watch on YouTube</a>'
+					);
+				}
 
-				document.getElementById('frame').appendChild(iframe);
+				function fail(msg) {
+					document.body.innerHTML =
+						'<div class="error">' + msg + '. ' + watchOnYTLink() + '.</div>';
+				}
+
+				// IFrame Player API global hook. defined before the script loads so we don't
+				// race the api callback.
+				window.onYouTubeIframeAPIReady = function () {
+					try {
+						var playerVars = {
+							autoplay: autoplay,
+							controls: 1,
+							rel: 0,
+							modestbranding: 1,
+							playsinline: 1,
+							origin: '${PROXY_ORIGIN}'
+						};
+						if (startSec !== null) playerVars.start = startSec;
+
+						new window.YT.Player('player', {
+							videoId: id,
+							host: 'https://www.youtube.com',
+							playerVars: playerVars,
+							events: {
+								onError: function (e) {
+									var code = e && e.data;
+									var msg = 'Could not load this video';
+									if (code === 2) msg = 'Invalid video request';
+									else if (code === 5) msg = 'HTML5 player error';
+									else if (code === 100) msg = 'Video not found';
+									else if (code === 101 || code === 150)
+										msg = 'Embedding disabled by the uploader';
+									else if (code === 153) msg = 'Player configuration error';
+									fail(msg);
+								}
+							}
+						});
+					} catch (err) {
+						fail('Player crashed');
+					}
+				};
+
+				var apiScript = document.createElement('script');
+				apiScript.src = 'https://www.youtube.com/iframe_api';
+				apiScript.referrerPolicy = 'strict-origin-when-cross-origin';
+				apiScript.onerror = function () {
+					fail('Player script failed to load');
+				};
+				document.head.appendChild(apiScript);
+
+				// belt-and-suspenders: if the api never reports ready in 8s, surface a fallback
+				// rather than leaving a silent white screen
+				setTimeout(function () {
+					var hasIframe = !!document.querySelector('#player iframe');
+					var apiReady = !!(window.YT && window.YT.Player);
+					if (!hasIframe && !apiReady) fail('Player timed out');
+				}, 8000);
 			})();
 		</script>
 	</body>
@@ -107,8 +147,18 @@ const PROXY_HTML = `<!doctype html>
 
 export default defineEventHandler((event) => {
 	setResponseHeader(event, 'Content-Type', 'text/html; charset=utf-8');
-	setResponseHeader(event, 'Content-Security-Policy', 'frame-ancestors *');
-	setResponseHeader(event, 'X-Frame-Options', 'ALLOWALL');
+	setResponseHeader(event, 'Referrer-Policy', 'strict-origin-when-cross-origin');
+	setResponseHeader(
+		event,
+		'Content-Security-Policy',
+		'frame-ancestors *; ' +
+			"script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com; " +
+			'frame-src https://www.youtube.com https://www.youtube-nocookie.com; ' +
+			"img-src 'self' https://i.ytimg.com data:; " +
+			"style-src 'self' 'unsafe-inline'; " +
+			"default-src 'self' https://www.youtube.com"
+	);
+	setResponseHeader(event, 'Permissions-Policy', 'autoplay=*, fullscreen=*, picture-in-picture=*');
 	setResponseHeader(event, 'Cache-Control', 'public, max-age=300');
 	return PROXY_HTML;
 });
