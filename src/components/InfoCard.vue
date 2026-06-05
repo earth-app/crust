@@ -129,14 +129,13 @@
 						class="border-gray-500 light:border-black my-2 w-11/12"
 					/>
 					<NuxtLink
-						v-if="imageLink && image"
+						v-if="imageLink && image && !imageFailed"
 						:to="appendUTMParameters(imageLink)"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="text-xs text-gray-500 hover:underline mb-1"
 					>
 						<LazyNuxtImg
-							v-if="image"
 							:src="image"
 							:alt="title"
 							:title="`Retrieved from ${link}`"
@@ -147,10 +146,11 @@
 							decoding="async"
 							class="ken-burns w-full h-48 object-cover rounded-lg mb-2 will-change-transform"
 							:style="parallaxStyle"
+							@error="imageFailed = true"
 						/>
 					</NuxtLink>
 					<LazyNuxtImg
-						v-else-if="image"
+						v-else-if="image && !imageFailed"
 						:src="image"
 						:alt="title"
 						:title="`Retrieved from ${link}`"
@@ -161,6 +161,7 @@
 						decoding="async"
 						class="ken-burns w-full h-48 object-cover rounded-lg mb-2 will-change-transform"
 						:style="parallaxStyle"
+						@error="imageFailed = true"
 					/>
 					<LazyClientOnly
 						v-if="youtubeId"
@@ -503,6 +504,16 @@ const rgb = computed<[number, number, number]>(() => {
 // Ensure fade/translate animation reliably completes and final state sticks
 const isVisible = ref(false);
 const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+
+// suppress the broken-image placeholder (alt + question mark) for cards whose source
+// disappeared — empty space beats a confusing icon
+const imageFailed = ref(false);
+watch(
+	() => props.image,
+	() => {
+		imageFailed.value = false;
+	}
+);
 
 const cardRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null);
 const audioRef = ref<HTMLAudioElement | null>(null);
