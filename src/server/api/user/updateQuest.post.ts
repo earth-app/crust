@@ -64,6 +64,7 @@ export default defineEventHandler(async (event) => {
 		`${config.public.cloudBaseUrl}/v1/users/quests/progress/${user.id}/update`,
 		{
 			method: 'PATCH',
+			timeout: 20_000,
 			headers: {
 				Authorization: `Bearer ${config.adminApiKey}`,
 				Accept: 'application/json'
