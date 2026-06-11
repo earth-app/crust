@@ -198,6 +198,8 @@ interface Props {
 	disabled?: boolean;
 	submit?: boolean;
 	serverRequest?: typeof makeServerRequest;
+	questTitle?: string;
+	questReward?: number;
 	// quiz mode: no countdown, no timer, no auto-submit. Parent reads order via update:order.
 	untimed?: boolean;
 }

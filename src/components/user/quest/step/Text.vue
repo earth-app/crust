@@ -65,6 +65,8 @@ interface Props {
 	disabled?: boolean;
 	submit?: boolean;
 	serverRequest?: typeof makeServerRequest;
+	questTitle?: string;
+	questReward?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), { submit: true });
@@ -184,6 +186,13 @@ async function onSubmit() {
 			lng.value
 		);
 		if (res.validated) {
+			if (res.completed) {
+				const { triggerCelebration } = useQuestCelebration();
+				triggerCelebration({
+					questTitle: props.questTitle,
+					points: props.questReward ?? 0
+				});
+			}
 			await new Promise((r) => setTimeout(r, 600));
 			emit('submitted');
 			// text stays in place - host unmounts the component on success

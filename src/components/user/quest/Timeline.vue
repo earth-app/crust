@@ -788,6 +788,69 @@ const currentIndex = computed(() => {
 	});
 });
 
+// surface a "step complete" toast each time a step is freshly finished, so web
+// users get the same feedback the mobile app gives. keyed per entry
+// (index:altIndex) so completing a bonus alternative in an already-finished group
+// notifies too. the final step that completes the whole quest is skipped here -
+// the global completion overlay owns that celebration.
+function collectCompletedRewards(): Map<string, number> {
+	const map = new Map<string, number>();
+	for (const item of items.value) {
+		if (Array.isArray(item)) {
+			for (const alt of item) {
+				if (alt.completed) map.set(`${alt.index}:${alt.altIndex}`, alt.reward ?? 0);
+			}
+		} else if (item.completed) {
+			map.set(`${item.index}`, item.reward ?? 0);
+		}
+	}
+	return map;
+}
+
+let knownCompleted = new Set<string>();
+let completionArmed = false;
+
+watch(
+	items,
+	() => {
+		const current = collectCompletedRewards();
+		const currentKeys = new Set(current.keys());
+
+		// arm only once real progress has loaded, capturing already-completed steps
+		// as the baseline so opening a partially/fully finished quest never toasts.
+		if (!completionArmed) {
+			if (props.progress === undefined) return;
+			knownCompleted = currentKeys;
+			completionArmed = true;
+			return;
+		}
+
+		let freshReward = 0;
+		let hasFresh = false;
+		for (const [key, reward] of current) {
+			if (!knownCompleted.has(key)) {
+				hasFresh = true;
+				freshReward += reward;
+			}
+		}
+		knownCompleted = currentKeys;
+
+		if (!hasFresh || completed.value) return;
+
+		toast.add({
+			title: 'Step complete!',
+			description:
+				freshReward > 0
+					? `+${freshReward} bonus points earned`
+					: 'Nice work — on to the next step.',
+			icon: 'mdi:check-circle',
+			color: 'success',
+			duration: 3000
+		});
+	},
+	{ immediate: true }
+);
+
 // quest timeline tour
 
 const { startTour } = useSiteTour();

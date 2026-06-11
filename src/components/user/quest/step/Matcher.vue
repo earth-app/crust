@@ -139,6 +139,8 @@ interface Props {
 	submit?: boolean;
 	disabled?: boolean;
 	serverRequest?: typeof makeServerRequest;
+	questTitle?: string;
+	questReward?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), { submit: true });

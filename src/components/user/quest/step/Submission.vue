@@ -212,6 +212,8 @@
 			<template v-else-if="category === 'describe_text'">
 				<UserQuestStepText
 					:step="step"
+					:quest-title="quest.title"
+					:quest-reward="quest.reward"
 					:disabled="!step.isCurrentQuest || !step.isUnlocked"
 					:server-request="props.serverRequest || makeServerRequest"
 					@submitted="emit('submitted')"
@@ -221,6 +223,8 @@
 			<template v-else-if="category === 'match_terms'">
 				<UserQuestStepMatcher
 					:step="step"
+					:quest-title="quest.title"
+					:quest-reward="quest.reward"
 					:disabled="!step.isCurrentQuest || !step.isUnlocked"
 					@submitted="emit('submitted')"
 				/>
@@ -229,6 +233,8 @@
 			<template v-else-if="category === 'order_items'">
 				<UserQuestStepOrderer
 					:step="step"
+					:quest-title="quest.title"
+					:quest-reward="quest.reward"
 					:disabled="!step.isCurrentQuest || !step.isUnlocked"
 					@submitted="emit('submitted')"
 				/>

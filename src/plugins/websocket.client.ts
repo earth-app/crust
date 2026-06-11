@@ -150,12 +150,25 @@ export default defineNuxtPlugin((nuxtApp) => {
 							break;
 						}
 						case 'quest_progress': {
-							// remote step submission (mobile or another tab) — refetch the active
-							// quest + history so any open Timeline reflects the change without a
-							// manual reload. fire-and-forget; the server already persisted the truth.
 							const userId = user.value?.id;
 							if (!userId) break;
-							const payload = (message.data as { questId?: string; completed?: boolean }) || {};
+							const payload =
+								(message.data as {
+									questId?: string;
+									completed?: boolean;
+									questReward?: number;
+								}) || {};
+
+							// resolve the quest title before the caches are cleared
+							const activeQuest = userStore.quest.get(userId);
+							const questTitle = payload.questId
+								? ((activeQuest?.questId === payload.questId
+										? activeQuest?.quest?.title
+										: undefined) ??
+									userStore.questHistory.get(userId)?.get(payload.questId)?.quest?.title ??
+									userStore.questsCache.get(payload.questId)?.title)
+								: undefined;
+
 							// drop stale caches first so a refetch is forced even though the
 							// fetcher early-returns on `cache.has()`. then re-pull.
 							userStore.quest.delete(userId);
@@ -163,16 +176,10 @@ export default defineNuxtPlugin((nuxtApp) => {
 							void userStore.fetchUserQuest(userId, true);
 							void userStore.fetchQuestHistory(userId, { force: true });
 							if (payload.completed) {
-								// trust the WS push: the same celebration fires whether the user
-								// finished the quest in this tab or somewhere else
 								const { triggerCelebration } = useQuestCelebration();
-								const completedPayload = message.data as {
-									questId?: string;
-									questReward?: number;
-								};
 								triggerCelebration({
-									questTitle: undefined,
-									points: completedPayload.questReward ?? 0
+									questTitle,
+									points: payload.questReward ?? 0
 								});
 							}
 							break;

@@ -835,6 +835,10 @@ export interface UseStepSubmissionProps {
 	disabled?: boolean;
 	submit?: boolean;
 	serverRequest?: typeof makeServerRequest;
+	// quest context so the completion overlay can show the title + points count-up
+	// when this submission is the one that finishes the quest.
+	questTitle?: string;
+	questReward?: number;
 }
 
 // shared submit/loading/error wiring for timed game step components
@@ -879,8 +883,8 @@ export function useStepSubmission(
 				if (res.completed) {
 					const { triggerCelebration } = useQuestCelebration();
 					triggerCelebration({
-						questTitle: undefined,
-						points: 0
+						questTitle: props.questTitle,
+						points: props.questReward ?? 0
 					});
 				}
 				await new Promise((r) => setTimeout(r, 800));
