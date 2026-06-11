@@ -226,6 +226,10 @@ export default defineEventHandler(async (event) => {
 			return sendRedirect(event, `/profile?success=reauth_completed&provider=${provider}`);
 		}
 
+		const referralCookie = getCookie(event, 'referral_code');
+		const referralCode =
+			referralCookie && /^[0-9A-HJKMNP-TV-Z]{6}$/.test(referralCookie) ? referralCookie : undefined;
+
 		const response = await $fetch<{ session_token: string; user: any }>(
 			`https://api.earth-app.com/v2/users/oauth/${provider}?is_linking=${isLoggedIn}`,
 			{
@@ -233,6 +237,7 @@ export default defineEventHandler(async (event) => {
 				body: {
 					[tokenField]: token,
 					session_token: sessionToken,
+					...(referralCode ? { referral_code: referralCode } : {}),
 					...(appleUserFromBody?.email ? { email: appleUserFromBody.email } : {}),
 					...(appleUserFromBody?.name?.firstName
 						? { given_name: appleUserFromBody.name.firstName }
