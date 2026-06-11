@@ -41,6 +41,12 @@ export function useSignup() {
 		first_name?: string,
 		last_name?: string
 	) {
+		const referralCookie = useCookie<string | null>('referral_code');
+		const referralCode =
+			referralCookie.value && /^[0-9A-HJKMNP-TV-Z]{6}$/.test(referralCookie.value)
+				? referralCookie.value
+				: undefined;
+
 		try {
 			const response = await $fetch<{ user: User; session_token: string }>(
 				`${config.public.apiBaseUrl}/v2/users/create`,
@@ -54,7 +60,8 @@ export function useSignup() {
 						password,
 						email: email?.trim() || undefined,
 						first_name,
-						last_name
+						last_name,
+						referral_code: referralCode
 					},
 					timeout: AUTH_REQUEST_TIMEOUT_MS
 				}
@@ -62,6 +69,9 @@ export function useSignup() {
 
 			authStore.setSessionToken(response.session_token);
 			authStore.currentUser = response.user;
+
+			// attribution consumed — clear the cookie so a later signup isn't mis-credited
+			if (referralCode) referralCookie.value = null;
 
 			if (email) {
 				// Automatically send verification email upon signup
