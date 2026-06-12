@@ -35,7 +35,12 @@ export const usePromptStore = defineStore('prompt', () => {
 			const firstKey = cache.keys().next().value;
 			if (firstKey) {
 				cache.delete(firstKey);
-				responsesCache.delete(firstKey);
+				// responsesCache is keyed by `${id}-${page}-${limit}`, so purge every page for this id
+				for (const key of responsesCache.keys()) {
+					if (key.startsWith(`${firstKey}-`)) {
+						responsesCache.delete(key);
+					}
+				}
 				responsesLoadingState.delete(firstKey);
 			}
 		}

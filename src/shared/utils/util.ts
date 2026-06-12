@@ -347,7 +347,7 @@ export function toTitleCase(str: string): string {
 			const leadingMatch = word.match(/^[\s"'`«\[\(]*/);
 			const leading = leadingMatch ? leadingMatch[0] : '';
 
-			const trailingMatch = word.match(/[\s"'`»\]\).,;:!?-–-]*$/);
+			const trailingMatch = word.match(/[\s"'`»\]\).,;:!?–-]*$/);
 			const trailing = trailingMatch ? trailingMatch[0] : '';
 
 			const core = word.slice(leading.length, word.length - trailing.length || word.length);
@@ -590,7 +590,10 @@ export function describeRemainingTtl(
 	if (days >= 2) label = `${days} days`;
 	else if (days >= 1) label = `${days} day, ${hours} hour${hours === 1 ? '' : 's'}`;
 	else if (hours >= 1) label = `${hours} hour${hours === 1 ? '' : 's'}`;
-	else label = `${Math.max(1, minutes)} minute${minutes === 1 ? '' : 's'}`;
+	else {
+		const mins = Math.max(1, minutes);
+		label = `${mins} minute${mins === 1 ? '' : 's'}`;
+	}
 
 	// urgency thresholds tuned to feel right for short (2d prompt) and long (30d event) TTLs alike
 	const urgency: 'low' | 'medium' | 'high' = days >= 3 ? 'low' : days >= 1 ? 'medium' : 'high';

@@ -101,8 +101,11 @@ export const useNotificationStore = defineStore('notification', () => {
 		if (res.success) {
 			const notification = notifications.value.find((n) => n.id === id);
 			if (notification) {
+				// only adjust the count on a real unread→read transition
+				if (!notification.read) {
+					unreadCount.value = Math.max(0, unreadCount.value - 1);
+				}
 				notification.read = true;
-				unreadCount.value = Math.max(0, unreadCount.value - 1);
 			}
 
 			const cached = cache.get(id);
@@ -133,8 +136,11 @@ export const useNotificationStore = defineStore('notification', () => {
 		if (res.success) {
 			const notification = notifications.value.find((n) => n.id === id);
 			if (notification) {
+				// only adjust the count on a real read→unread transition
+				if (notification.read) {
+					unreadCount.value += 1;
+				}
 				notification.read = false;
-				unreadCount.value += 1;
 			}
 
 			const cached = cache.get(id);
