@@ -17,6 +17,16 @@ Key goals when making changes:
 - Maintain server-side request proxying and token validation
 - Keep public runtime config free of secrets (use runtime env variables)
 
+## Code organization
+
+Consolidate by domain into a single file rather than splitting across many small
+files: all user types in `src/shared/types/user.ts`, all user composables in
+`src/composables/useUser.ts`, each store in one file under `src/stores/`. Add a
+new feature's types/composable to the existing domain file (with a section
+comment) instead of creating a parallel file. Server proxy routes are grouped by
+resource too (e.g. `src/server/api/user/leaderboard.get.ts` serves points +
+journey leaderboards via a `type` query, not one route per metric).
+
 ## Quick Map (Key files & folders)
 
 - `src/` - Application source (components, composables, pages, plugins, server)
