@@ -178,6 +178,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 							if (payload.completed) {
 								const { triggerCelebration } = useQuestCelebration();
 								triggerCelebration({
+									questId: payload.questId,
 									questTitle,
 									points: payload.questReward ?? 0
 								});
