@@ -31,7 +31,7 @@
 				{{ props.user.account.bio }}
 			</span>
 		</div>
-		<div class="flex gap-2 mb-10">
+		<div class="flex items-center gap-2 mb-10">
 			<UModal
 				v-if="points !== undefined"
 				title="Points History"
@@ -91,6 +91,12 @@
 					>{{ grantedBadges.length }}</UButton
 				>
 			</NuxtLink>
+			<UserChallengeFriendButton
+				v-if="canChallenge"
+				:friend-id="props.user.id"
+				:friend-name="displayName"
+				variant="outline"
+			/>
 		</div>
 		<div class="flex mb-4">
 			<UBadge
@@ -368,6 +374,7 @@ const props = defineProps<{
 const { user } = useAuth();
 const i18n = useI18n();
 const { name: displayName, handle, hasFullName } = useDisplayName(() => props.user);
+const canChallenge = computed(() => !!props.user.is_friend && user.value?.id !== props.user.id);
 
 const {
 	avatar,
