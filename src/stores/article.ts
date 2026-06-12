@@ -67,16 +67,17 @@ export const useArticleStore = defineStore('article', () => {
 		return loading.has(id);
 	};
 
-	const getRandomCached = (count: number): Article[] | null => {
-		const entry = randomCache.get(`random-${count}`);
+	// variant discriminates author/tag-filtered pulls so they don't collide on count alone
+	const getRandomCached = (count: number, variant: string = ''): Article[] | null => {
+		const entry = randomCache.get(`random-${count}-${variant}`);
 		if (entry && Date.now() - entry.timestamp < RANDOM_CACHE_TTL) {
 			return entry.items;
 		}
 		return null;
 	};
 
-	const setRandomCached = (count: number, items: Article[]) => {
-		randomCache.set(`random-${count}`, { items, timestamp: Date.now() });
+	const setRandomCached = (count: number, items: Article[], variant: string = '') => {
+		randomCache.set(`random-${count}-${variant}`, { items, timestamp: Date.now() });
 	};
 
 	const getQuiz = (id: string): ArticleQuizQuestion[] | undefined => {

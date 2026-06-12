@@ -280,13 +280,17 @@ export function useArticles(
 	};
 
 	const fetchRandom = async (count: number = 3, author?: string, tags?: string | string[]) => {
+		const tags0 = Array.isArray(tags) ? tags.join(',') : tags;
+
+		// key the cache by author/tags too, otherwise every count-15 pull shares one bucket
+		const variant = `${author ?? ''}:${tags0 ?? ''}`;
+
 		// Return cached result if still fresh
-		const cached = articleStore.getRandomCached(count);
+		const cached = articleStore.getRandomCached(count, variant);
 		if (cached) {
 			return { success: true as const, data: cached, message: '' };
 		}
 
-		const tags0 = Array.isArray(tags) ? tags.join(',') : tags;
 		const res = await makeClientAPIRequest<Article[]>(
 			`/v2/articles/random?count=${count}&author=${encodeURIComponent(author || '')}&tags=${encodeURIComponent(tags0 || '')}`,
 			authStore.sessionToken
@@ -295,7 +299,7 @@ export function useArticles(
 		if (valid(res)) {
 			// load individual articles into store and cache random result
 			articleStore.setArticles(res.data);
-			articleStore.setRandomCached(count, res.data);
+			articleStore.setRandomCached(count, res.data, variant);
 		}
 
 		return res;
