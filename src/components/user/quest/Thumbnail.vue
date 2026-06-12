@@ -77,6 +77,13 @@
 						>Completed {{ completedAtRelative }}</span
 					>
 
+					<span
+						v-if="expiresLabel"
+						class="text-sm"
+						:class="expiresInDays !== null && expiresInDays <= 3 ? 'text-error' : 'opacity-80'"
+						>{{ expiresLabel }}</span
+					>
+
 					<UBadge
 						v-if="current"
 						icon="mdi:sword"
@@ -106,6 +113,7 @@ const props = defineProps<{
 	progress?: (QuestProgressEntry | QuestProgressEntry[])[];
 	current?: boolean;
 	completedAt?: number;
+	expiresAt?: number;
 }>();
 
 const { user } = useAuth();
@@ -154,6 +162,20 @@ const i18n = useI18n();
 const completedAtRelative = computed(() => {
 	if (!props.completedAt) return null;
 	return DateTime.fromMillis(props.completedAt).toRelative({ locale: i18n.locale.value });
+});
+
+// days until expiry, mirroring sky's mastery list (Math.ceil, clamped at 0); null when the
+// quest doesn't expire or is already completed.
+const expiresInDays = computed(() => {
+	if (props.expiresAt === undefined || completed.value) return null;
+	const days = DateTime.fromMillis(props.expiresAt).diffNow('days').days;
+	return days > 0 ? Math.ceil(days) : 0;
+});
+const expiresLabel = computed(() => {
+	const days = expiresInDays.value;
+	if (days === null) return null;
+	if (days <= 0) return 'Expires soon';
+	return `Expires in ${days} ${days === 1 ? 'day' : 'days'}`;
 });
 
 const rarityColor = computed(() => {
