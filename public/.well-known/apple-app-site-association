@@ -12,7 +12,8 @@
 					"/auth/complete",
 					"/auth/complete/*",
 					"/auth/callback-mobile",
-					"/auth/callback-mobile/*"
+					"/auth/callback-mobile/*",
+					"/invite/*"
 				]
 			}
 		]
