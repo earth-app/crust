@@ -82,8 +82,7 @@ const leaderboardUserSchema = z
 	.loose();
 
 export const leaderboardEntrySchema = z.object({
-	id: z.string(),
-	// value is nullable — the backend hides points behind privacy by sending null
+	id: z.string().optional(),
 	value: z.number().nullable(),
 	rank: z.number().optional(),
 	user: leaderboardUserSchema
@@ -98,6 +97,54 @@ export const scopedLeaderboardResponseSchema = z.object({
 
 export type ReferralStatsShape = z.infer<typeof referralStatsSchema>;
 export type ScopedLeaderboardResponseShape = z.infer<typeof scopedLeaderboardResponseSchema>;
+
+// Quest co-op challenge
+
+export const challengeStatusSchema = z.enum([
+	'pending',
+	'active',
+	'declined',
+	'completed',
+	'expired'
+]);
+
+export const questChallengeSchema = z.object({
+	id: z.string().min(1),
+	quest_id: z.string(),
+	quest_title: z.string(),
+	challenger_id: z.string(),
+	challenger_name: z.string(),
+	recipient_id: z.string(),
+	recipient_name: z.string(),
+	status: challengeStatusSchema,
+	created_at: z.number(),
+	accepted_at: z.number().optional()
+});
+
+// loose user shape (mantle2 may serialize a stripped/minimal user); cast to User at the boundary.
+const challengeUserSchema = z
+	.object({
+		id: z.string().min(1),
+		username: z.string()
+	})
+	.loose();
+
+// tolerate nulls on every nested field — a missing challenge just means "no challenge".
+export const questChallengeViewSchema = z.object({
+	challenge: questChallengeSchema.nullable().default(null),
+	other_user: challengeUserSchema.nullable().default(null),
+	other_progress: z
+		.object({
+			current_step: z.number().nonnegative(),
+			total_steps: z.number().nonnegative(),
+			completed: z.boolean()
+		})
+		.nullable()
+		.default(null)
+});
+
+export type QuestChallengeShape = z.infer<typeof questChallengeSchema>;
+export type QuestChallengeViewShape = z.infer<typeof questChallengeViewSchema>;
 
 // Article Form
 

@@ -1,10 +1,19 @@
 import { DateTime } from 'luxon';
+import { leaderboardEntrySchema, referralStatsSchema } from 'schemas';
 import { useAuthStore } from 'stores/auth';
 import { useAvatarStore } from 'stores/avatar';
 import { useFriendsStore } from 'stores/friends';
 import { useNotificationStore } from 'stores/notification';
 import { useUserStore } from 'stores/user';
-import { BadgeMasteryGenerationError, type OAuthProvider } from 'types/user';
+import {
+	BadgeMasteryGenerationError,
+	type LeaderboardEntry,
+	type LeaderboardMetric,
+	type LeaderboardScope,
+	type OAuthProvider,
+	type ReferralStats,
+	type User
+} from 'types/user';
 import type { MaybeRefOrGetter } from 'vue';
 
 // #region visited site
@@ -803,6 +812,7 @@ export function useQuests() {
 }
 
 export interface QuestCelebrationPayload {
+	questId?: string;
 	questTitle?: string;
 	points?: number;
 }
@@ -836,7 +846,8 @@ export interface UseStepSubmissionProps {
 	submit?: boolean;
 	serverRequest?: typeof makeServerRequest;
 	// quest context so the completion overlay can show the title + points count-up
-	// when this submission is the one that finishes the quest.
+	// (and a share link) when this submission is the one that finishes the quest.
+	questId?: string;
 	questTitle?: string;
 	questReward?: number;
 }
@@ -883,6 +894,7 @@ export function useStepSubmission(
 				if (res.completed) {
 					const { triggerCelebration } = useQuestCelebration();
 					triggerCelebration({
+						questId: props.questId,
 						questTitle: props.questTitle,
 						points: props.questReward ?? 0
 					});
@@ -992,49 +1004,78 @@ export async function deleteNotification(id: string) {
 	return await notificationStore.deleteNotification(id);
 }
 
-export function useJourneyLeaderboard(
-	type: string,
+export function useLeaderboard(
+	type: LeaderboardMetric,
+	scope: LeaderboardScope = 'global',
 	serverRequest: typeof makeServerRequest = makeServerRequest
 ) {
-	const leaderboard = useState<UserJourneyLeaderboardEntry[]>(
-		`journey-leaderboard-${type}`,
-		() => []
-	);
+	const leaderboard = useState<LeaderboardEntry[]>(`leaderboard-${type}-${scope}`, () => []);
 	const authStore = useAuthStore();
 	const currentLimit = ref(10);
 
-	const fetchLeaderboardData = async (limit: number = 10) => {
-		return await serverRequest<Omit<UserJourneyLeaderboardEntry, 'user'>[]>(
-			`journey-leaderboard-${type}-limit-${limit}`,
-			`/api/user/journeyLeaderboard?type=${type}&limit=${limit}`,
+	const fetchGlobal = async (limit: number): Promise<LeaderboardEntry[]> => {
+		// proxy normalizes both journey + points down to { id, streak }
+		const res = await serverRequest<{ id: string; streak: number }[]>(
+			`leaderboard-${type}-global-limit-${limit}`,
+			`/api/user/leaderboard?type=${type}&limit=${limit}`,
 			authStore.sessionToken
 		);
+		if (!valid(res)) return [];
+
+		const userPromises = res.data.map(async (entry, index) => {
+			const { user, fetchUser } = useUser(entry.id);
+			await fetchUser();
+			if (!user.value) return null;
+			return {
+				id: entry.id,
+				value: entry.streak,
+				user: user.value,
+				rank: index + 1
+			} as LeaderboardEntry;
+		});
+
+		return (await Promise.all(userPromises)).filter(
+			(entry): entry is LeaderboardEntry => entry !== null
+		);
+	};
+
+	const fetchScoped = async (limit: number): Promise<LeaderboardEntry[]> => {
+		const currentId = authStore.currentUser?.id;
+		if (!currentId) return [];
+
+		// friends/circle are auth-gated and self-scoped — bearer the session token.
+		const res = await makeAPIRequest<unknown>(
+			null,
+			`/v2/users/${currentId}/leaderboard?type=${type}&scope=${scope}&limit=${limit}`,
+			authStore.sessionToken
+		);
+		if (!valid(res)) return [];
+
+		// parse each row independently so one stripped/privacy-hidden entry (serializeUser
+		// can return a minimal user, value can be null) doesn't blank the whole board.
+		const items = Array.isArray((res.data as { items?: unknown })?.items)
+			? (res.data as { items: unknown[] }).items
+			: [];
+
+		return items
+			.map((entry, index) => {
+				const parsed = leaderboardEntrySchema.safeParse(entry);
+				if (!parsed.success) return null;
+				// scoped rows carry the id on the nested user (no top-level id like the
+				// global proxy), so derive it from there.
+				return {
+					id: parsed.data.id ?? parsed.data.user.id,
+					value: parsed.data.value ?? 0,
+					user: parsed.data.user as unknown as User,
+					rank: parsed.data.rank ?? index + 1
+				} as LeaderboardEntry;
+			})
+			.filter((entry): entry is LeaderboardEntry => entry !== null);
 	};
 
 	const fetchLeaderboard = async (limit: number = 10) => {
 		currentLimit.value = limit;
-		const res = await fetchLeaderboardData(limit);
-		if (valid(res)) {
-			const userPromises = res.data.map(async (entry) => {
-				const { user, fetchUser } = useUser(entry.id);
-				await fetchUser();
-				if (!user.value) {
-					return null;
-				}
-
-				return {
-					user: user.value,
-					id: entry.id,
-					streak: entry.streak
-				};
-			});
-
-			leaderboard.value = (await Promise.all(userPromises)).filter(
-				(entry): entry is UserJourneyLeaderboardEntry => entry !== null
-			);
-		} else {
-			leaderboard.value = [];
-		}
+		leaderboard.value = scope === 'global' ? await fetchGlobal(limit) : await fetchScoped(limit);
 	};
 
 	if (import.meta.client) {
@@ -1058,6 +1099,229 @@ export function useJourneyLeaderboard(
 	return {
 		leaderboard,
 		fetchLeaderboard
+	};
+}
+
+// back-compat shim — existing journey callers expect { id, streak, user } entries.
+// delegates to useLeaderboard(type, 'global') and adapts value -> streak.
+export function useJourneyLeaderboard(
+	type: 'article' | 'prompt' | 'event',
+	serverRequest: typeof makeServerRequest = makeServerRequest
+) {
+	const { leaderboard: scopedLeaderboard, fetchLeaderboard } = useLeaderboard(
+		type,
+		'global',
+		serverRequest
+	);
+
+	const leaderboard = computed<UserLeaderboardEntry[]>(() =>
+		scopedLeaderboard.value.map((entry) => ({
+			id: entry.id,
+			streak: entry.value,
+			user: entry.user
+		}))
+	);
+
+	return {
+		leaderboard,
+		fetchLeaderboard
+	};
+}
+
+// #region referral / invite
+
+export function useReferral() {
+	const authStore = useAuthStore();
+	const config = useRuntimeConfig();
+
+	const code = useState<string | null>('referral-code', () => null);
+	const stats = useState<ReferralStats | null>('referral-stats', () => null);
+
+	const inviteUrl = computed(() =>
+		code.value ? `https://app.earth-app.com/invite/${code.value}` : ''
+	);
+
+	const fetchCode = async () => {
+		const res = await makeClientAPIRequest<{ code: string }>(
+			`/v2/users/current/referral`,
+			authStore.sessionToken
+		);
+		if (valid(res) && typeof res.data.code === 'string') {
+			code.value = res.data.code;
+		}
+		return code.value;
+	};
+
+	const fetchStats = async () => {
+		const res = await makeClientAPIRequest<unknown>(
+			`/v2/users/current/referral/stats`,
+			authStore.sessionToken
+		);
+		if (!valid(res)) return stats.value;
+
+		const parsed = referralStatsSchema.safeParse(res.data);
+		if (!parsed.success) {
+			console.warn('Malformed referral stats payload — ignoring');
+			return stats.value;
+		}
+
+		stats.value = parsed.data;
+		// keep code in sync if it wasn't fetched yet
+		if (!code.value && parsed.data.code) code.value = parsed.data.code;
+		return stats.value;
+	};
+
+	const copyLink = async (): Promise<boolean> => {
+		if (!import.meta.client || !inviteUrl.value) return false;
+		try {
+			await navigator.clipboard.writeText(inviteUrl.value);
+			return true;
+		} catch {
+			return false;
+		}
+	};
+
+	const webShare = async (): Promise<'copied' | 'shared' | 'failed'> => {
+		if (!import.meta.client || !inviteUrl.value) return 'failed';
+		const shareData = {
+			title: 'Join me on The Earth App',
+			text: 'Come do quests with me on The Earth App',
+			url: inviteUrl.value
+		};
+		const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
+		if (typeof nav.share === 'function') {
+			try {
+				await nav.share(shareData);
+				return 'shared';
+			} catch {
+				// user dismissed the sheet or share failed — fall through to copy
+			}
+		}
+		await copyLink();
+		return 'copied';
+	};
+
+	return {
+		code,
+		stats,
+		inviteUrl,
+		fetchCode,
+		fetchStats,
+		copyLink,
+		webShare
+	};
+}
+
+// challenge a friend to a quest — fires a notification on their end.
+export async function challengeFriend(friendId: string, questId: string) {
+	const authStore = useAuthStore();
+	return await makeClientAPIRequest<unknown>(
+		`/v2/users/current/quest/challenge?friend=${encodeURIComponent(friendId)}&quest=${encodeURIComponent(questId)}`,
+		authStore.sessionToken,
+		{ method: 'POST' }
+	);
+}
+
+// live co-op challenge for a single quest — the modal banner reads this to show the
+// accept/decline prompt and the shared-progress card. keyed per quest so multiple
+// quests can hold independent challenge state.
+export function useQuestChallenge(questId: MaybeRefOrGetter<string>) {
+	const authStore = useAuthStore();
+	const resolveQuestId = () => toValue(questId);
+	// note: questId is interpolated into the state key so each quest gets its own slot.
+	const view = useState<QuestChallengeView | null>(
+		`quest-challenge-${resolveQuestId()}`,
+		() => null
+	);
+
+	const fetch = async () => {
+		const id = resolveQuestId();
+		if (!id) {
+			view.value = null;
+			return null;
+		}
+
+		const res = await makeClientAPIRequest<unknown>(
+			`/v2/users/current/quest/challenge?quest=${encodeURIComponent(id)}`,
+			authStore.sessionToken
+		);
+		if (!valid(res)) {
+			view.value = null;
+			return null;
+		}
+
+		const parsed = questChallengeViewSchema.safeParse(res.data);
+		if (!parsed.success) {
+			console.warn('Malformed quest challenge payload — ignoring');
+			view.value = null;
+			return null;
+		}
+
+		// cast the loose user shape back to User at the boundary.
+		view.value = {
+			challenge: parsed.data.challenge,
+			other_user: (parsed.data.other_user as unknown as User) ?? null,
+			other_progress: parsed.data.other_progress
+		};
+		return view.value;
+	};
+
+	const accept = async () => {
+		const id = view.value?.challenge?.id;
+		if (!id) return { success: false, message: 'No challenge to accept' };
+		const res = await makeClientAPIRequest<{ ok: boolean }>(
+			`/v2/users/current/quest/challenge/${encodeURIComponent(id)}/accept`,
+			authStore.sessionToken,
+			{ method: 'POST' }
+		);
+		await fetch();
+		return res;
+	};
+
+	const decline = async () => {
+		const id = view.value?.challenge?.id;
+		if (!id) return { success: false, message: 'No challenge to decline' };
+		const res = await makeClientAPIRequest<{ ok: boolean }>(
+			`/v2/users/current/quest/challenge/${encodeURIComponent(id)}/decline`,
+			authStore.sessionToken,
+			{ method: 'POST' }
+		);
+		await fetch();
+		return res;
+	};
+
+	const challenge = computed(() => view.value?.challenge ?? null);
+	const otherUser = computed(() => view.value?.other_user ?? null);
+	const otherProgress = computed(() => view.value?.other_progress ?? null);
+	const status = computed(() => challenge.value?.status ?? null);
+
+	// whether the current viewer sent or received the challenge.
+	const role = computed<'challenger' | 'recipient' | null>(() => {
+		const c = challenge.value;
+		const myId = authStore.currentUser?.id;
+		if (!c || !myId) return null;
+		if (c.challenger_id === myId) return 'challenger';
+		if (c.recipient_id === myId) return 'recipient';
+		return null;
+	});
+
+	// refetch when a live signal lands — the websocket plugin dispatches
+	// earth-app:quest-progress on both quest_progress (own progress changed) and
+	// notification (the other side accepted/declined/advanced) messages.
+	if (import.meta.client) {
+		useEventListener(window, 'earth-app:quest-progress', () => void fetch());
+	}
+
+	return {
+		view,
+		challenge,
+		otherUser,
+		otherProgress,
+		role,
+		status,
+		fetch,
+		accept,
+		decline
 	};
 }
 
