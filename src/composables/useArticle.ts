@@ -203,10 +203,15 @@ export function useArticle(
 		);
 
 		if (res.success) {
-			// invalidate the cached [] (set by the prior 404) before refetching
-			articleStore.quizCache.delete(id);
-			articleStore.quizSummaryCache.delete(id);
-			await articleStore.fetchQuiz(id);
+			if (Array.isArray(res.data) && res.data.length > 0) {
+				articleStore.setQuiz(id, res.data);
+				void articleStore.reconcileQuiz(id);
+			} else {
+				// nothing returned — fall back to the GET refetch
+				articleStore.quizCache.delete(id);
+				articleStore.quizSummaryCache.delete(id);
+				await articleStore.fetchQuiz(id);
+			}
 		}
 
 		return res;

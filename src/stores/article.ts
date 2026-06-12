@@ -83,6 +83,36 @@ export const useArticleStore = defineStore('article', () => {
 		return quizCache.get(id);
 	};
 
+	const summarizeQuiz = (qs: ArticleQuizQuestion[]) => ({
+		total: qs.length,
+		multiple_choice_count: qs.filter((q) => q.type === 'multiple_choice').length,
+		multi_select_count: qs.filter((q) => q.type === 'multi_select').length,
+		true_false_count: qs.filter((q) => q.type === 'true_false').length,
+		order_count: qs.filter((q) => q.type === 'order').length
+	});
+
+	const setQuiz = (id: string, questions: ArticleQuizQuestion[]) => {
+		quizCache.set(id, questions);
+		quizSummaryCache.set(id, summarizeQuiz(questions));
+	};
+
+	const reconcileQuiz = async (id: string): Promise<void> => {
+		try {
+			const authStore = useAuthStore();
+			const res = await makeAPIRequest<{
+				questions: ArticleQuizQuestion[];
+				summary: ReturnType<typeof summarizeQuiz>;
+			}>(null, `/v2/articles/${id}/quiz`, authStore.sessionToken);
+
+			if (valid(res) && Array.isArray(res.data.questions) && res.data.questions.length > 0) {
+				quizCache.set(id, res.data.questions);
+				quizSummaryCache.set(id, res.data.summary);
+			}
+		} catch {
+			// keep the response-populated quiz as the backup
+		}
+	};
+
 	const getQuizSummary = (
 		id: string
 	): { total: number; multiple_choice_count: number; true_false_count: number } | undefined => {
@@ -241,14 +271,7 @@ export const useArticleStore = defineStore('article', () => {
 
 			if (valid(res)) {
 				quizCache.set(id, res.data.questions);
-				const qs = res.data.questions;
-				quizSummaryCache.set(id, {
-					total: qs.length,
-					multiple_choice_count: qs.filter((q) => q.type === 'multiple_choice').length,
-					multi_select_count: qs.filter((q) => q.type === 'multi_select').length,
-					true_false_count: qs.filter((q) => q.type === 'true_false').length,
-					order_count: qs.filter((q) => q.type === 'order').length
-				});
+				quizSummaryCache.set(id, summarizeQuiz(res.data.questions));
 			} else {
 				console.warn(`Failed to update quiz for article ${id}:`, res.message);
 			}
@@ -353,6 +376,8 @@ export const useArticleStore = defineStore('article', () => {
 		setRandomCached,
 		getQuiz,
 		getQuizSummary,
+		setQuiz,
+		reconcileQuiz,
 		fetchArticle,
 		setArticles,
 		fetchQuiz,

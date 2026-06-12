@@ -453,7 +453,7 @@ export const useUserStore = defineStore('user', () => {
 			return null;
 		}
 
-		if (quest.has(identifier)) {
+		if (!force && quest.has(identifier)) {
 			return quest.get(identifier) || null;
 		}
 
@@ -662,9 +662,6 @@ export const useUserStore = defineStore('user', () => {
 		return questHistory.get(identifier) || new Map<string, QuestHistoryEntry>();
 	};
 
-	// fetch the full progress entry for one completed quest (lazy load — list endpoint
-	// returns lean entries to keep payload small). returns null when the entry doesn't exist
-	// or the request fails; merges into questHistory so subsequent reads are cached.
 	const fetchQuestHistoryEntry = async (
 		identifier: string,
 		questId: string,
@@ -677,7 +674,8 @@ export const useUserStore = defineStore('user', () => {
 
 		const authStore = useAuthStore();
 		const res = await makeAPIRequest<QuestHistoryEntry>(
-			`user-${identifier}-quest-history-${questId}`,
+			// force bypasses the LRU api cache so a post-completion reconcile sees fresh progress
+			opts.force ? null : `user-${identifier}-quest-history-${questId}`,
 			`/v2/users/${identifier}/quest/history/${questId}`,
 			authStore.sessionToken
 		);
