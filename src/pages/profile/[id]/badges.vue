@@ -32,6 +32,7 @@
 					:quest="item.quest"
 					:progress="masteryProgressFor(item.quest.id)"
 					:current="item.quest.id === quest?.questId"
+					:expires-at="item.expires_at"
 				/>
 			</div>
 			<p
