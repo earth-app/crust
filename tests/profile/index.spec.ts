@@ -27,6 +27,24 @@ test.describe('Own profile (logged in)', () => {
 		await expect(page).toHaveURL(/\/profile/);
 	});
 
+	test('renders the Invite Friends card with the personal invite link', async ({
+		asUser,
+		page,
+		gotoHydrated
+	}) => {
+		await asUser();
+		await gotoHydrated('/profile');
+		const invite = page.locator('#invite-section');
+		await expect(invite.getByText('Invite Friends')).toBeVisible({ timeout: 12_000 });
+		await expect(invite.getByRole('textbox').first()).toHaveValue(
+			/app\.earth-app\.com\/invite\/ABC234/,
+			{ timeout: 12_000 }
+		);
+		await expect(invite.getByRole('button', { name: 'Copy Link' })).toBeVisible();
+		// conversions=2 crosses the first Recruiter tier (1) but not the second (5)
+		await expect(invite.getByText('Recruiter', { exact: true })).toBeVisible();
+	});
+
 	test('shows success toast for ?success=oauth_signup', async ({ asUser, page, gotoHydrated }) => {
 		await asUser();
 		await gotoHydrated('/profile?success=oauth_signup');

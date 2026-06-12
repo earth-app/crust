@@ -41,9 +41,11 @@ import {
 	makeArticle,
 	makeBadge,
 	makeEvent,
+	makeNotification,
 	makePrompt,
 	makePromptResponse,
 	makeQuest,
+	makeReferralStats,
 	makeUser,
 	paginate
 } from './mock-data';
@@ -628,6 +630,94 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 		}
 	},
 
+	// Shareable quest achievement card (public OG image) - 1x1 png so the <img> resolves
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/[^/]+\/share\/quest\/[^/]+\/?$/,
+		handler: (_req, res) => {
+			const png = Buffer.from(
+				'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+				'base64'
+			);
+			res.writeHead(200, {
+				'content-type': 'image/png',
+				'access-control-allow-origin': (res as any)._reqOrigin || '*'
+			});
+			res.end(png);
+		}
+	},
+	// Referral code (current user)
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/current\/referral\/?$/,
+		handler: (_req, res, ctx) => {
+			if (!currentUserId(ctx)) return unauthorized(res);
+			json(res, 200, { code: 'ABC234' });
+		}
+	},
+	// Referral stats (current user)
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/current\/referral\/stats\/?$/,
+		handler: (_req, res, ctx) => {
+			if (!currentUserId(ctx)) return unauthorized(res);
+			json(res, 200, makeReferralStats());
+		}
+	},
+	// Scoped leaderboard - friends/circle resolve here; global is proxied via cloud
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/[^/]+\/leaderboard\/?$/,
+		handler: (_req, res, ctx) => {
+			if (!currentUserId(ctx)) return unauthorized(res);
+			const type = ctx.url.searchParams.get('type') ?? 'points';
+			const scope = ctx.url.searchParams.get('scope') ?? 'friends';
+			const members = [
+				state.users['author-1'],
+				state.users['host-1'],
+				state.users['writer-1']
+			].filter(Boolean);
+			const items = members.map((user: any, i: number) => ({
+				rank: i + 1,
+				value: type === 'points' ? 800 - i * 200 : 9 - i * 2,
+				user
+			}));
+			json(res, 200, { scope, type, items, total: items.length });
+		}
+	},
+	// Quest co-op challenge - view (current user); default: no challenge for this quest
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/current\/quest\/challenge\/?$/,
+		handler: (_req, res, ctx) => {
+			if (!currentUserId(ctx)) return unauthorized(res);
+			json(res, 200, { challenge: null, other_user: null, other_progress: null });
+		}
+	},
+	// Quest co-op challenge - create (current user challenges a friend to a quest)
+	{
+		method: 'POST',
+		pattern: /^\/v2\/users\/current\/quest\/challenge\/?$/,
+		handler: (_req, res, ctx) => {
+			if (!currentUserId(ctx)) return unauthorized(res);
+			const friend = ctx.url.searchParams.get('friend');
+			const quest = ctx.url.searchParams.get('quest');
+			if (!friend || !quest) return json(res, 400, { message: 'friend and quest required' });
+			json(res, 201, {
+				notification: makeNotification({ title: 'Quest Challenge', user_id: friend }),
+				challenge: { id: 'chal-new', quest_id: quest, recipient_id: friend, status: 'pending' }
+			});
+		}
+	},
+	// Quest co-op challenge - accept / decline (current user, by challenge id)
+	{
+		method: 'POST',
+		pattern: /^\/v2\/users\/current\/quest\/challenge\/[^/]+\/(accept|decline)\/?$/,
+		handler: (_req, res, ctx) => {
+			if (!currentUserId(ctx)) return unauthorized(res);
+			json(res, 200, { ok: true });
+		}
+	},
 	// MOTD
 	{
 		method: 'GET',
@@ -750,7 +840,8 @@ const cloudRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }> 
 	// Journey
 	{
 		method: 'GET',
-		pattern: /^\/v1\/users\/journey\/[^/]+\/[^/]+\/?$/,
+		// exclude the {type}/leaderboard path so it falls through to the leaderboard route below
+		pattern: /^\/v1\/users\/journey\/[^/]+\/(?!leaderboard)[^/]+\/?$/,
 		handler: (_req, res) => json(res, 200, { count: 5, progress: 0.5 })
 	},
 	{
@@ -767,10 +858,37 @@ const cloudRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }> 
 		method: 'GET',
 		pattern: /^\/v1\/users\/journey\/[^/]+\/leaderboard\/?$/,
 		handler: (_req, res) =>
+			// real cloud returns { id, streak } rows; the crust proxy fans each id out
+			// to /v2/users/{id} so the ids must reference seeded mock users.
 			json(res, 200, [
-				{ username: 'testuser', count: 12, rank: 1 },
-				{ username: 'admin', count: 8, rank: 2 }
+				{ id: 'test-user-1', streak: 12, rank: 1 },
+				{ id: 'author-1', streak: 8, rank: 2 },
+				{ id: 'host-1', streak: 5, rank: 3 }
 			])
+	},
+	// Impact points leaderboard (global) - { id, points } rows
+	{
+		method: 'GET',
+		pattern: /^\/v1\/users\/impact_points\/leaderboard\/?$/,
+		handler: (_req, res) =>
+			json(res, 200, [
+				{ id: 'test-user-1', points: 1500 },
+				{ id: 'author-1', points: 1200 },
+				{ id: 'host-1', points: 900 },
+				{ id: 'writer-1', points: 600 },
+				{ id: 'admin-user-1', points: 300 }
+			])
+	},
+	{
+		method: 'GET',
+		pattern: /^\/v1\/users\/impact_points\/[^/]+\/rank\/?$/,
+		handler: (_req, res) => json(res, 200, { rank: 3 })
+	},
+	// Referral click ping (proxied by the crust /api/user/referral/click route)
+	{
+		method: 'POST',
+		pattern: /^\/v1\/users\/referral\/click\/?$/,
+		handler: (_req, res) => json(res, 200, { ok: true })
 	},
 	{
 		method: 'GET',

@@ -258,6 +258,40 @@ export function makeNotification(overrides: Record<string, any> = {}): Record<st
 	};
 }
 
+export function makeReferralStats(overrides: Record<string, any> = {}): Record<string, any> {
+	return {
+		// code uses Crockford base32 (no I/L/O/U) - keep mocks regex-valid
+		code: overrides.code ?? 'ABC234',
+		clicks: overrides.clicks ?? 7,
+		conversions: overrides.conversions ?? 2,
+		converted_ids: overrides.converted_ids ?? ['author-1', 'host-1']
+	};
+}
+
+export function makeLeaderboardEntry(overrides: Record<string, any> = {}): Record<string, any> {
+	const user = overrides.user ?? makeUser({ id: overrides.id ?? 'lb-user-1', username: 'leader' });
+	return {
+		rank: overrides.rank ?? 1,
+		value: overrides.value ?? 1000,
+		user
+	};
+}
+
+export function makeChallenge(overrides: Record<string, any> = {}): Record<string, any> {
+	return {
+		id: overrides.id ?? 'chal-1',
+		quest_id: overrides.quest_id ?? 'q-current',
+		quest_title: overrides.quest_title ?? 'Daily Explorer',
+		challenger_id: overrides.challenger_id ?? 'author-1',
+		challenger_name: overrides.challenger_name ?? '@author',
+		recipient_id: overrides.recipient_id ?? 'test-user-1',
+		recipient_name: overrides.recipient_name ?? '@testuser',
+		status: overrides.status ?? 'pending',
+		created_at: overrides.created_at ?? Date.parse(FIXED_NOW),
+		...(overrides.accepted_at ? { accepted_at: overrides.accepted_at } : {})
+	};
+}
+
 export interface PaginatedResponse<T> {
 	items: T[];
 	total: number;
