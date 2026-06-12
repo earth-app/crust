@@ -100,6 +100,12 @@
 						]"
 					/>
 
+					<UserQuestChallengeBanner
+						:quest-id="quest.id"
+						:your-completed-steps="completedStepCount"
+						:total-steps="quest.steps.length"
+					/>
+
 					<div
 						v-if="isMasteryQuest && masteryBadge"
 						class="flex w-full justify-center"
@@ -231,6 +237,14 @@ const questOpen = computed({
 const completedAtNormal = computed(() => {
 	if (!props.completedAt) return null;
 	return DateTime.fromMillis(props.completedAt).toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS);
+});
+
+const completedStepCount = computed(() => {
+	const progress = props.progress ?? [];
+	return progress.reduce((count, slot) => {
+		if (Array.isArray(slot)) return count + (slot.length > 0 ? 1 : 0);
+		return count + (slot ? 1 : 0);
+	}, 0);
 });
 
 const isMasteryQuest = computed(() => props.quest?.id?.startsWith('badge_mastery_') ?? false);
