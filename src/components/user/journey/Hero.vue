@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="relative w-full p-4 rounded-xl bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 border-2 border-amber-200/60 dark:border-amber-900/40 shadow-md transition-transform duration-300"
+		class="relative w-full p-4 rounded-xl bg-linear-to-br from-amber-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 border-2 border-amber-200/60 dark:border-amber-900/40 shadow-md transition-transform duration-300"
 		:class="hoverClass"
 	>
 		<div class="flex items-center justify-between mb-3">
