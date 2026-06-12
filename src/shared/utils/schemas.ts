@@ -65,6 +65,40 @@ export const moodVoteBodySchema = z.object({
 export type MoodSnapshot = z.infer<typeof moodSnapshotSchema>;
 export type MoodVoteBody = z.infer<typeof moodVoteBodySchema>;
 
+// Referral + Leaderboard
+
+export const referralStatsSchema = z.object({
+	code: z.string(),
+	clicks: z.number().nonnegative(),
+	conversions: z.number().nonnegative(),
+	converted_ids: z.array(z.string())
+});
+
+const leaderboardUserSchema = z
+	.object({
+		id: z.string().min(1),
+		username: z.string()
+	})
+	.loose();
+
+export const leaderboardEntrySchema = z.object({
+	id: z.string(),
+	// value is nullable — the backend hides points behind privacy by sending null
+	value: z.number().nullable(),
+	rank: z.number().optional(),
+	user: leaderboardUserSchema
+});
+
+export const scopedLeaderboardResponseSchema = z.object({
+	scope: z.enum(['global', 'friends', 'circle']),
+	type: z.enum(['points', 'article', 'prompt', 'event']),
+	items: z.array(leaderboardEntrySchema),
+	total: z.number().nonnegative()
+});
+
+export type ReferralStatsShape = z.infer<typeof referralStatsSchema>;
+export type ScopedLeaderboardResponseShape = z.infer<typeof scopedLeaderboardResponseSchema>;
+
 // Article Form
 
 export const articleSchema = z.object({
