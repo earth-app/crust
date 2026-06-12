@@ -136,18 +136,27 @@ export default defineNuxtConfig({
 		'/profile/**': { ssr: false },
 		'/admin': { ssr: false },
 		'/oauth/complete': { ssr: false },
+		'/invite/**': { ssr: false },
 
 		'/': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 120 },
 		'/activities': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 300 },
 		'/articles': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 120 },
 		'/prompts': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 120 },
 		'/events': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 60 },
+		'/leaderboard': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 120 },
+
+		'/share/**': process.env.NUXT_TEST_BUILD === '1' ? {} : { isr: 300 },
+
+		'/.well-known/apple-app-site-association': {
+			headers: { 'content-type': 'application/json' }
+		},
 
 		// API routes
 		'/api/**': { cors: false },
 
 		// No-cache API routes
 		'/api/user/journey': { cache: false },
+		'/api/user/referral/click': { cache: false },
 		'/api/turnstile': { cache: false },
 		'/api/auth/session': {
 			cache: false,
