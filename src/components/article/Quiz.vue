@@ -201,7 +201,7 @@
 					variant="subtle"
 					size="md"
 					color="primary"
-					class="mt-4"
+					class="ml-4 mt-4"
 					@click="handleSubmit"
 					:disabled="!quizCompleted || submitting"
 					:loading="submitting"
