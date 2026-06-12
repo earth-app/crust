@@ -39,7 +39,7 @@ if (isCI) {
 
 export default defineConfig<ConfigOptions>({
 	testDir: './tests',
-	testIgnore: ['**/utils/**'],
+	testIgnore: ['**/utils/**', '**/unit/**'],
 	fullyParallel: true,
 	forbidOnly: isCI,
 	retries: isCI ? 2 : 3,

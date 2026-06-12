@@ -23,6 +23,9 @@ flag_management:
     - name: e2e-integration
       paths:
         - src/
+    - name: unit
+      paths:
+        - src/
 
 ignore:
   - 'tests/**/*'

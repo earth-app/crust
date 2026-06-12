@@ -24,5 +24,6 @@
 		}
 	},
 	"include": ["./**/*.ts", "./**/*.spec.ts", "../src/shared/types/**/*.ts"],
-	"exclude": ["../node_modules", "../.output", "../.nuxt", "../dist"]
+	"comment": "unit/ is typechecked + run by vitest (nuxt env); excluded here since this light config lacks Nuxt's ambient auto-imports",
+	"exclude": ["../node_modules", "../.output", "../.nuxt", "../dist", "./unit"]
 }

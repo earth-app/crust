@@ -41,6 +41,9 @@
     "test:e2e:report": "playwright show-report playwright-report",
     "test:coverage:report": "bun tests/utils/coverage.ts",
     "test:mock-server": "bun tests/utils/mock-server.ts",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:unit:coverage": "vitest run --coverage",
     "typecheck": "bunx vue-tsc --noEmit && bunx tsc --noEmit -p tests/tsconfig.json"
   },
   "dependencies": {
@@ -104,6 +107,7 @@
     "@nuxt/test-utils": "^4.0.3",
     "@playwright/test": "^1.60.0",
     "@types/piexifjs": "^1.0.0",
+    "@vitest/coverage-v8": "4.1.7",
     "@vue/test-utils": "^2.4.10",
     "estree-walker": "3.0.3",
     "happy-dom": "^20.9.0",
