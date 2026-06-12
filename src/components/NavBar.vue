@@ -70,7 +70,21 @@
 					</div>
 					<div class="flex gap-1 sm:gap-2 items-center justify-center">
 						<UButton
-							v-if="dailyQuest"
+							v-if="currentQuest"
+							id="daily-quest-chip"
+							size="sm"
+							color="warning"
+							variant="soft"
+							icon="mdi:compass-rose"
+							:title="`Continue Quest: ${currentQuest.quest.title}`"
+							:aria-label="`Continue Quest: ${currentQuest.quest.title}`"
+							class="rounded-full"
+							@click="openCurrentQuest"
+						>
+							<span class="hidden xl:inline">Continue Quest</span>
+						</UButton>
+						<UButton
+							v-else-if="dailyQuest"
 							id="daily-quest-chip"
 							size="sm"
 							color="primary"
@@ -250,22 +264,25 @@
 
 <script setup lang="ts">
 const { user, avatar128, sendVerificationEmail } = useAuth();
+const userId = computed(() => user.value?.id);
+
 const toast = useToast();
 const router = useRouter();
 const logout = useLogout();
 const { motd, fetchMotd } = useMotd();
 
-// today's quest chip — deterministic per-day pick from the user's interests
-const {
-	quest: dailyQuest,
-	isTapped: dailyQuestTapped,
-	markTapped: markDailyQuestTapped
-} = useDailyQuest();
+const { quest: dailyQuest, markTapped: markDailyQuestTapped } = useDailyQuest();
+const { quest: currentQuest, fetchUserQuest } = useUser(userId);
 
 function openDailyQuest() {
 	markDailyQuestTapped();
 	if (!dailyQuest.value) return;
 	router.push({ path: '/profile/quests/', query: { open: dailyQuest.value.id } });
+}
+
+function openCurrentQuest() {
+	if (!currentQuest.value) return;
+	router.push({ path: '/profile/quests/', query: { open: currentQuest.value.questId } });
 }
 
 async function openMotdLink() {
@@ -281,6 +298,7 @@ onMounted(() => {
 	const run = () => {
 		void fetchMotd();
 	};
+
 	if (typeof window !== 'undefined') {
 		const ric = (window as any).requestIdleCallback as
 			| ((cb: IdleRequestCallback, opts?: IdleRequestOptions) => number)
@@ -289,6 +307,29 @@ onMounted(() => {
 		else setTimeout(run, 0);
 	}
 });
+
+watch(
+	userId,
+	(id) => {
+		if (id) void fetchUserQuest();
+	},
+	{ immediate: true }
+);
+
+if (import.meta.client) {
+	watch(
+		() => !!currentQuest.value || !!dailyQuest.value,
+		(hasChip) => {
+			if (!hasChip) return;
+			try {
+				void prefetchComponents(['UserQuestModal', 'UserQuestTimeline']);
+			} catch {
+				// best-effort prefetch; ignore failures
+			}
+		},
+		{ immediate: true }
+	);
+}
 
 async function logoutUser() {
 	const result = await logout();
