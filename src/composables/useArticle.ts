@@ -37,8 +37,9 @@ export function useArticle(
 		await articleStore.fetchQuiz(id);
 	};
 
-	const scoreCache = reactive(new Map<string, ArticleQuizScoreResult>());
-	const score = computed(() => scoreCache.get(id));
+	// score lives in the store so every useArticle(id) instance shares it (Take Quiz button +
+	// quiz modal); a per-composable map would leave the button stale until a refresh
+	const score = computed(() => articleStore.getQuizScore(id));
 
 	const submitQuiz = async (answers: ArticleQuizAnswer[]) => {
 		if (!article.value) {
@@ -82,7 +83,7 @@ export function useArticle(
 			);
 
 			if (valid(res)) {
-				scoreCache.set(id, res.data);
+				articleStore.setQuizScore(id, res.data);
 			}
 
 			return res;
@@ -104,7 +105,7 @@ export function useArticle(
 			);
 
 			if (valid(res)) {
-				scoreCache.set(id, res.data);
+				articleStore.setQuizScore(id, res.data);
 				return res.data;
 			}
 
@@ -297,9 +298,22 @@ export function useArticles(
 		);
 
 		if (valid(res)) {
-			// load individual articles into store and cache random result
+			let data = res.data;
+
+			// the random endpoint may not filter tags server-side, so guarantee every card
+			// actually carries a requested tag — normalize like mantle2 (lowercase, _ -> space)
+			if (tags0) {
+				const normalize = (t: string) => t.toLowerCase().replace(/_/g, ' ').trim();
+				const wanted = tags0.split(',').map(normalize).filter(Boolean);
+				if (wanted.length) {
+					data = data.filter((a) => (a.tags ?? []).map(normalize).some((t) => wanted.includes(t)));
+				}
+			}
+
+			// load every fetched article into the store, but cache only the matching slice
 			articleStore.setArticles(res.data);
-			articleStore.setRandomCached(count, res.data, variant);
+			articleStore.setRandomCached(count, data, variant);
+			return { ...res, data };
 		}
 
 		return res;

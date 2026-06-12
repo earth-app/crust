@@ -1,5 +1,10 @@
 import { defineStore } from 'pinia';
-import type { Article, ArticleQuizQuestion, ArticleQuizQuestionSubmission } from 'types/article';
+import type {
+	Article,
+	ArticleQuizQuestion,
+	ArticleQuizQuestionSubmission,
+	ArticleQuizScoreResult
+} from 'types/article';
 import type { User } from 'types/user';
 import { makeAPIRequest, makeClientAPIRequest } from 'utils';
 import { reactive } from 'vue';
@@ -38,6 +43,9 @@ export const useArticleStore = defineStore('article', () => {
 			}
 		>()
 	);
+	// quiz scores live in the store (not per-composable) so the Take Quiz button and the quiz
+	// modal share one source of truth — a submit in the modal flips the button without a refresh
+	const quizScoreCache = reactive(new Map<string, ArticleQuizScoreResult>());
 	const randomCache = reactive(new Map<string, { items: Article[]; timestamp: number }>());
 
 	// LRU cache eviction
@@ -48,6 +56,7 @@ export const useArticleStore = defineStore('article', () => {
 				cache.delete(firstKey);
 				quizCache.delete(firstKey);
 				quizSummaryCache.delete(firstKey);
+				quizScoreCache.delete(firstKey);
 			}
 		}
 	};
@@ -118,6 +127,14 @@ export const useArticleStore = defineStore('article', () => {
 		id: string
 	): { total: number; multiple_choice_count: number; true_false_count: number } | undefined => {
 		return quizSummaryCache.get(id);
+	};
+
+	const getQuizScore = (id: string): ArticleQuizScoreResult | undefined => {
+		return quizScoreCache.get(id);
+	};
+
+	const setQuizScore = (id: string, result: ArticleQuizScoreResult) => {
+		quizScoreCache.set(id, result);
 	};
 
 	const fetchArticle = async (id: string, force: boolean = false): Promise<Article | null> => {
@@ -359,10 +376,12 @@ export const useArticleStore = defineStore('article', () => {
 			cache.delete(id);
 			quizCache.delete(id);
 			quizSummaryCache.delete(id);
+			quizScoreCache.delete(id);
 		} else {
 			cache.clear();
 			quizCache.clear();
 			quizSummaryCache.clear();
+			quizScoreCache.clear();
 		}
 	};
 
@@ -370,6 +389,7 @@ export const useArticleStore = defineStore('article', () => {
 		cache,
 		quizCache,
 		quizSummaryCache,
+		quizScoreCache,
 		get,
 		has,
 		isLoading,
@@ -377,6 +397,8 @@ export const useArticleStore = defineStore('article', () => {
 		setRandomCached,
 		getQuiz,
 		getQuizSummary,
+		getQuizScore,
+		setQuizScore,
 		setQuiz,
 		reconcileQuiz,
 		fetchArticle,
