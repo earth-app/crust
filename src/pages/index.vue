@@ -28,6 +28,7 @@
 				/>
 				<p class="text-lg font-semibold">Welcome, @{{ user.username }}</p>
 			</div>
+
 			<div
 				data-testid="hero-ctas"
 				class="flex flex-col items-center justify-center flex-wrap sm:flex-row my-3 gap-x-2 gap-y-2 max-w-md"
@@ -94,11 +95,14 @@
 					>Privacy Policy</UButton
 				>
 			</div>
+
 			<ClientOnly v-if="user">
 				<div class="w-11/12 max-w-2xl mt-4">
 					<OnboardingWelcomeChecklist @open-persona="personaOpen = true" />
 				</div>
 				<OnboardingPersonaPicker v-model="personaOpen" />
+
+				<UserInviteFriend />
 			</ClientOnly>
 			<div
 				v-if="user === null"
@@ -162,6 +166,22 @@
 						:activity="activity"
 						hydrate-on-visible
 					/>
+				</InfoCardGroup>
+
+				<InfoCardGroup
+					v-if="user"
+					title="Leaderboard"
+					description="See who stacks up"
+					icon="mdi:trophy-variant"
+					class="w-11/12 mt-4"
+				>
+					<div
+						v-for="metric in ['points', 'prompt', 'article', 'event']"
+						:key="metric"
+						class="flex flex-col items-center gap-3"
+					>
+						<WidgetsMiniLeaderboard :metric="metric" />
+					</div>
 				</InfoCardGroup>
 
 				<div

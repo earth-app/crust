@@ -1,9 +1,17 @@
 <template>
 	<div
 		v-if="user"
-		class="flex flex-row items-center justify-between w-full pt-24 sm:pt-0"
+		class="flex flex-col gap-6 w-full pt-24 sm:pt-0"
 	>
-		<UserProfileEditor :user="user" />
+		<div class="flex flex-row items-center justify-between w-full">
+			<UserProfileEditor :user="user" />
+		</div>
+		<div
+			id="invite-section"
+			class="flex justify-center w-full px-4"
+		>
+			<UserInviteFriend />
+		</div>
 	</div>
 	<Loading v-else />
 </template>
@@ -15,7 +23,16 @@ const { user, fetchUser } = useAuth();
 
 const toast = useToast();
 const route = useRoute();
-const { success, error, provider } = route.query;
+const { success, error, provider, invite } = route.query;
+
+// scroll to the invite card when arriving via the NavBar "Invite" entry
+if (invite) {
+	onMounted(() => {
+		nextTick(() => {
+			document.getElementById('invite-section')?.scrollIntoView({ behavior: 'smooth' });
+		});
+	});
+}
 
 watch(
 	() => user.value,
