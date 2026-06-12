@@ -31,6 +31,15 @@
 		>
 			<template #actions="{ close }">
 				<UButton
+					v-if="celebration.payload.value.questId && user?.id"
+					color="success"
+					variant="soft"
+					icon="mdi:share-variant"
+					@click="shareCompletedQuest"
+				>
+					Share
+				</UButton>
+				<UButton
 					color="primary"
 					trailing-icon="mdi:arrow-right"
 					@click="close"
@@ -47,6 +56,53 @@ const route = useRoute();
 const router = useRouter();
 const { user, fetchUser } = useAuth();
 const celebration = useQuestCelebration();
+const { code, fetchCode } = useReferral();
+const toast = useToast();
+
+async function shareCompletedQuest() {
+	const questId = celebration.payload.value.questId;
+	const selfId = user.value?.id;
+	if (!questId || !selfId) return;
+
+	if (!code.value) await fetchCode();
+
+	const refSuffix = code.value ? `&ref=${code.value}` : '';
+	const url = `https://app.earth-app.com/share/quest/${questId}?u=${selfId}${refSuffix}`;
+	const shareData = {
+		title: 'I completed a quest on The Earth App',
+		text: 'Check out the quest I just finished on The Earth App',
+		url
+	};
+
+	const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
+	if (typeof nav.share === 'function') {
+		try {
+			await nav.share(shareData);
+			return;
+		} catch {
+			// user dismissed the sheet or share failed — fall through to copy
+		}
+	}
+
+	try {
+		await navigator.clipboard.writeText(url);
+		toast.add({
+			title: 'Link Copied',
+			description: 'Your achievement link is on your clipboard - paste it anywhere to share.',
+			icon: 'mdi:clipboard-check-outline',
+			color: 'success',
+			duration: 4000
+		});
+	} catch {
+		toast.add({
+			title: 'Could Not Share',
+			description: 'Copy this link manually: ' + url,
+			icon: 'mdi:alert-circle-outline',
+			color: 'warning',
+			duration: 6000
+		});
+	}
+}
 
 onMounted(async () => {
 	if (route.query.force_refresh) {
@@ -188,6 +244,18 @@ const welcomeTour = computed<SiteTourStep[]>(() => [
 		icon: 'mdi:shield-account-outline'
 	},
 	{
+		url: '/profile',
+		id: 'invite-section',
+		title: 'Invite Friends, Earn Rewards',
+		description:
+			'Share your personal invite link to bring friends onto the Earth App. When they join, you BOTH earn Impact Points - and you climb the Recruiter badge tiers as more friends sign up.',
+		footer: 'Your invite link lives right here on your profile - copy it or share it anywhere.',
+		anonymous: false,
+		icon: 'mdi:account-arrow-right',
+		prerendered: true,
+		waitFor: 'invite-section'
+	},
+	{
 		id: 'notifications',
 		title: 'Notifications',
 		description:
@@ -268,9 +336,20 @@ const welcomeTour = computed<SiteTourStep[]>(() => [
 		title: 'Your Content',
 		description:
 			"Every article and prompt response you publish lives here. It's your portfolio on the Earth App - and a great way for others to discover your perspective.",
-		footer: "You're all caught up! Press Finish to start exploring.",
+		footer: 'One last stop - the leaderboard.',
 		anonymous: false,
 		icon: 'mdi:notebook-multiple'
+	},
+	{
+		url: '/leaderboard',
+		id: 'leaderboard-hero',
+		title: 'Friendly Competition',
+		description:
+			'See how you stack up on Impact Points and journey streaks - globally, among your friends, or inside your circle. Challenge a friend to a quest right from their row and settle it head-to-head.',
+		footer: "That's the tour! Press Finish and start climbing.",
+		icon: 'mdi:trophy-variant',
+		prerendered: true,
+		waitFor: 'leaderboard-hero'
 	}
 ]);
 </script>
