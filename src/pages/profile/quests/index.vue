@@ -113,11 +113,11 @@
 					</template>
 					<template #body>
 						<div class="flex flex-col w-full items-center gap-4">
-							<UserCard
+							<LazyUserCard
 								v-if="user"
 								:user="user"
 							/>
-							<Ranks highlighted="PRO" />
+							<LazyRanks highlighted="PRO" />
 						</div>
 					</template>
 				</UModal>
@@ -233,18 +233,16 @@
 		v-if="autoOpenQuest"
 		v-model:open="autoOpen"
 		:quest="autoOpenQuest"
-		:progress="questHistory.get(autoOpenQuest.id)?.progress"
-		:completedAt="questHistory.get(autoOpenQuest.id)?.completedAt"
+		:progress="autoOpenProgress"
+		:completedAt="autoOpenCompletedAt"
 	/>
 </template>
 
 <script setup lang="ts">
-// the daily-quest chip pushes to this route with ?open=<id>, and view transitions
-// on a heavy SPA mount were timing out (Skipped ViewTransition due to timeout) —
-// hold the transition off for this page so the modal opens immediately.
 definePageMeta({
 	pageTransition: false,
-	layoutTransition: false
+	layoutTransition: false,
+	viewTransition: false
 });
 
 const { user } = useAuth();
@@ -252,6 +250,7 @@ const { quests, fetchQuests } = useQuests();
 const userId = computed(() => user.value?.id);
 const { quest, fetchUserQuest, questHistory, fetchQuestHistory } = useUser(userId);
 const { setTitleSuffix } = useTitleSuffix();
+const route = useRoute();
 
 const isFree = computed(() => user.value?.account.account_type === 'FREE');
 
@@ -299,15 +298,11 @@ watch(
 	() => user.value,
 	(newUser) => {
 		if (newUser) {
-			// fetchQuests is needed to resolve `?open=<id>` into a Quest, so kick it
-			// immediately (the store short-circuits if already populated by NavBar's
-			// daily-quest composable). Heavier per-user history / active-quest fetches
-			// can wait for idle.
 			void fetchQuests();
+			const wantsOpen = typeof route.query.open === 'string';
+			if (wantsOpen) void fetchUserQuest();
 			deferIdle(() => {
-				void fetchUserQuest();
-				// limit only — the store short-circuits when already cached, so we
-				// rely on `refresh` for explicit force-refresh.
+				if (!wantsOpen) void fetchUserQuest();
 				void fetchQuestHistory({ limit: HISTORY_PAGE_LIMIT });
 			});
 		} else if (newUser === null) {
@@ -401,17 +396,28 @@ useSeoMeta({
 });
 
 // auto-open a quest modal when navigated here via ?open=<id> (used by the daily-quest chip)
-const route = useRoute();
 const router2 = useRouter();
 const autoOpen = ref(false);
 const autoOpenQuest = computed<Quest | null>(() => {
 	const id = typeof route.query.open === 'string' ? route.query.open : null;
 	if (!id) return null;
+	if (quest.value?.quest?.id === id) return quest.value.quest;
+
 	return allQuests.value.find((q) => q.id === id) ?? null;
 });
 
-// prefetch the modal chunk eagerly when ?open=<id> is present so the lazy
-// import isn't a serial step on the daily-quest tap path
+const autoOpenProgress = computed(() => {
+	const id = autoOpenQuest.value?.id;
+	if (!id) return undefined;
+	if (quest.value?.questId === id) return quest.value.progress;
+	return questHistory.value.get(id)?.progress;
+});
+const autoOpenCompletedAt = computed(() => {
+	const id = autoOpenQuest.value?.id;
+	if (!id) return undefined;
+	return questHistory.value.get(id)?.completedAt;
+});
+
 const wantsAutoOpen = computed(() => typeof route.query.open === 'string');
 if (import.meta.client) {
 	watch(
@@ -437,9 +443,6 @@ watch(
 	{ immediate: true }
 );
 
-// strip the ?open= query when the modal closes so re-tapping the chip re-triggers the watcher
-// defer the replace so the modal close paints first — without this, the router
-// nav fires synchronously during the close click and the user perceives a hang.
 watch(autoOpen, (open) => {
 	if (open) return;
 	if (typeof route.query.open !== 'string') return;
