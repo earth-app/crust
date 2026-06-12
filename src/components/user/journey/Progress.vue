@@ -90,7 +90,7 @@
 		class="min-w-200 max-w-full w-11/12"
 	>
 		<template #body>
-			<UserJourneyLeaderboard :type="leaderboard" />
+			<UserLeaderboard :initial-tab="leaderboard" />
 		</template>
 	</UModal>
 </template>

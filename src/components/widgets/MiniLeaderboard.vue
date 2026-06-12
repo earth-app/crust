@@ -1,7 +1,8 @@
 <template>
 	<UCard
 		variant="soft"
-		class="relative min-w-72 max-w-md p-4 shadow-md rounded-xl bg-linear-to-br from-warning/10 via-primary/5 to-transparent overflow-hidden"
+		class="relative min-w-72 max-w-md p-4 shadow-md rounded-xl bg-linear-to-br from-warning/10 via-primary/5 to-transparent overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"
+		@click="$router.push(`/leaderboard?tab=${metric}&scope=${scope}`)"
 	>
 		<div class="flex items-center gap-2 mb-3">
 			<UIcon
@@ -9,14 +10,14 @@
 				class="size-5 text-warning"
 			/>
 			<h3 class="text-sm font-semibold uppercase tracking-wide text-muted">
-				Top {{ typeLabel }} Streaks
+				{{ heading }}
 			</h3>
 		</div>
 		<div
 			v-if="loading"
 			class="text-xs text-muted py-4 text-center"
 		>
-			Loading top streaks...
+			Loading leaderboard...
 		</div>
 		<div
 			v-else-if="rows.length === 0"
@@ -26,8 +27,8 @@
 				name="mdi:medal-outline"
 				class="size-8 text-muted/60"
 			/>
-			<p>No active {{ typeLabel.toLowerCase() }} streaks yet.</p>
-			<p class="text-[10px]">Be the first to start one.</p>
+			<p>{{ emptyText }}</p>
+			<p class="text-[10px]">Be the first on the board.</p>
 		</div>
 		<ul
 			v-else
@@ -61,9 +62,9 @@
 					color="warning"
 					variant="soft"
 					size="sm"
-					icon="mdi:fire"
+					:icon="metric === 'points' ? 'mdi:star-four-points' : 'mdi:fire'"
 				>
-					{{ row.streak }}
+					{{ metric === 'points' ? withSuffix(row.value) : row.value }}
 				</UBadge>
 			</li>
 		</ul>
@@ -71,24 +72,25 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-	type: 'article' | 'prompt' | 'event';
-}>();
+import type { LeaderboardMetric, LeaderboardScope } from 'types/user';
+
+const props = withDefaults(
+	defineProps<{
+		scope?: LeaderboardScope;
+		metric?: LeaderboardMetric;
+	}>(),
+	{ metric: 'points', scope: 'global' }
+);
+
+const metric = computed<LeaderboardMetric>(() => props.metric);
 
 const router = useRouter();
-const { leaderboard, fetchLeaderboard } = useJourneyLeaderboard(props.type);
+const { leaderboard, fetchLeaderboard } = useLeaderboard(metric.value, props.scope);
 const { user: currentUser } = useAuth();
 const avatarStore = useAvatarStore();
 
-// initial-fetch loading flag. leaderboard.value can be empty either because we haven't
-// fetched yet or because there are genuinely no streaks - distinguish so the empty UI
-// only shows after we've actually heard back from the backend.
-const loading = ref(leaderboard.value.length === 0);
+const loading = ref(true);
 onMounted(async () => {
-	if (leaderboard.value.length > 0) {
-		loading.value = false;
-		return;
-	}
 	try {
 		await fetchLeaderboard(10);
 	} finally {
@@ -96,10 +98,25 @@ onMounted(async () => {
 	}
 });
 
-const typeLabel = computed(() => {
-	const t = props.type;
-	return t.charAt(0).toUpperCase() + t.slice(1);
+const metricLabel = computed(() =>
+	metric.value === 'points'
+		? 'Impact Points'
+		: metric.value.charAt(0).toUpperCase() + metric.value.slice(1) + ' Streaks'
+);
+
+const scopeLabel = computed(() => {
+	if (props.scope === 'friends') return 'Friends';
+	if (props.scope === 'circle') return 'Circle';
+	return 'Top';
 });
+
+const heading = computed(() => `${scopeLabel.value} ${metricLabel.value}`);
+
+const emptyText = computed(() =>
+	metric.value === 'points'
+		? 'No impact points on the board yet.'
+		: `No active ${metric.value} streaks yet.`
+);
 
 const rows = computed(() =>
 	leaderboard.value.slice(0, 3).map((entry, i) => {
@@ -107,10 +124,10 @@ const rows = computed(() =>
 		const avatarSrc = avatarStore.safeUrl(url, 'avatar128');
 		return {
 			id: entry.id,
-			rank: i + 1,
+			rank: entry.rank ?? i + 1,
 			username: entry.user.username ?? '',
 			fullName: entry.user.full_name ?? entry.user.username ?? '',
-			streak: entry.streak,
+			value: entry.value,
 			avatarSrc,
 			isSelf: currentUser.value?.id === entry.id
 		};
