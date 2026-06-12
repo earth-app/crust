@@ -8,6 +8,7 @@
     "src/composables/",
     "src/shared/",
     "src/stores/",
+    "src/plugins/websocket.client.ts",
     "nuxt.config.ts",
     "tsconfig.json",
     "LICENSE"

@@ -10,9 +10,17 @@ export default defineNuxtPlugin((nuxtApp) => {
 	const config = useRuntimeConfig();
 	const notificationStore = useNotificationStore();
 
+	// sky omits cloud config entirely, so we detect it by its absence
+	const isSky = !config.public.cloudBaseUrl;
+	const crustBase =
+		(config.public.crustBaseUrl as string | undefined) || 'https://app.earth-app.com';
+
 	let ws: WebSocket | null = null;
-	// "https://" -> "wss://"
-	const websocketRoot = config.public.cloudBaseUrl.replace(/http/g, 'ws');
+
+	// "https://" -> "wss://" (crust only; sky receives the resolved url from the ticket route)
+	const websocketRoot = config.public.cloudBaseUrl
+		? config.public.cloudBaseUrl.replace(/http/g, 'ws')
+		: '';
 
 	// defer to idle to increase hydration speed
 	const scheduleIdle = (cb: () => void) => {
@@ -71,18 +79,23 @@ export default defineNuxtPlugin((nuxtApp) => {
 			};
 
 			const connect = async (userId: string, token: string | null) => {
-				const { ticket } = await $fetch<{ ticket: string }>(
-					`${config.public.cloudBaseUrl}/ws/users/${userId}/ticket`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`
-						}
-					}
-				);
+				let wsUrl: string;
+				if (isSky) {
+					// sky carries no cloud config — fetch the ticket + resolved ws url through crust
+					const res = await $fetch<{ ticket: string; url: string }>(
+						`${crustBase}/api/user/wsTicket?id=${encodeURIComponent(userId)}`,
+						{ headers: { Authorization: `Bearer ${token}` } }
+					);
+					wsUrl = `${res.url}?ticket=${encodeURIComponent(res.ticket)}`;
+				} else {
+					const { ticket } = await $fetch<{ ticket: string }>(
+						`${config.public.cloudBaseUrl}/ws/users/${userId}/ticket`,
+						{ headers: { Authorization: `Bearer ${token}` } }
+					);
+					wsUrl = `${websocketRoot}/ws/users/${userId}/notifications?ticket=${encodeURIComponent(ticket)}`;
+				}
 
-				ws = new WebSocket(
-					`${websocketRoot}/ws/users/${userId}/notifications?ticket=${encodeURIComponent(ticket)}`
-				);
+				ws = new WebSocket(wsUrl);
 
 				ws.onopen = () => {
 					console.log(`WebSocket connection established to users:${userId}`);
@@ -140,13 +153,20 @@ export default defineNuxtPlugin((nuxtApp) => {
 								});
 							}
 
-							toast.add({
-								title: notification.title,
-								description: notification.message,
-								icon: 'mdi:bell-ring',
-								color: notification.type,
-								actions
-							});
+							// sky owns its own (capacitor) toasting; only crust raises the Nuxt UI toast
+							if (!isSky) {
+								toast.add({
+									title: notification.title,
+									description: notification.message,
+									icon: 'mdi:bell-ring',
+									color: notification.type,
+									actions
+								});
+							}
+
+							// nudge any open quest-challenge banner to refetch — a challenge
+							// accept/decline/advance from the other side arrives as a notification.
+							window.dispatchEvent(new CustomEvent('earth-app:quest-progress'));
 							break;
 						}
 						case 'quest_progress': {
@@ -183,6 +203,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 									points: payload.questReward ?? 0
 								});
 							}
+
+							// let an open quest-challenge banner refetch the shared-progress card.
+							window.dispatchEvent(new CustomEvent('earth-app:quest-progress'));
 							break;
 						}
 						default: {
