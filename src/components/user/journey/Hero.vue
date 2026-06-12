@@ -82,6 +82,8 @@
 <script setup lang="ts">
 type JourneyType = 'article' | 'prompt' | 'event';
 
+const { user: currentUser } = useAuth();
+
 const props = defineProps<{
 	user: User;
 }>();
@@ -133,6 +135,7 @@ const rows = computed(() =>
 
 // quest-funnel: nudge when any streak is about to die or user has nothing going yet
 const showQuestCta = computed(() => {
+	if (!currentUser || props.user.id !== currentUser.value?.id) return false;
 	const anyExpiring = rows.value.some((r) => r.expiringSoon);
 	const allZero = rows.value.every((r) => r.count === 0);
 	return anyExpiring || allZero;
