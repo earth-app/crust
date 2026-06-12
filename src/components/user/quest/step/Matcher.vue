@@ -128,19 +128,9 @@ interface Card {
 
 type Phase = 'countdown' | 'playing' | 'win' | 'lose';
 
-interface Props {
-	step: QuestStep & {
-		icon: string;
-		completed: boolean;
-		index: number;
-		altIndex?: number;
-		isCurrentQuest: boolean;
-	};
-	submit?: boolean;
-	disabled?: boolean;
+interface Props extends QuestStepContextProps {
+	step: QuestTimelineStep;
 	serverRequest?: typeof makeServerRequest;
-	questTitle?: string;
-	questReward?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), { submit: true });

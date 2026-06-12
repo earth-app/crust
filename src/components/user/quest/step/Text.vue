@@ -57,16 +57,9 @@
 </template>
 
 <script setup lang="ts">
-interface Props {
-	step?: QuestStep & {
-		index: number;
-		altIndex?: number;
-	};
-	disabled?: boolean;
-	submit?: boolean;
+interface Props extends QuestStepContextProps {
+	step?: QuestStep & QuestStepPosition;
 	serverRequest?: typeof makeServerRequest;
-	questTitle?: string;
-	questReward?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), { submit: true });
@@ -189,6 +182,7 @@ async function onSubmit() {
 			if (res.completed) {
 				const { triggerCelebration } = useQuestCelebration();
 				triggerCelebration({
+					questId: props.questId,
 					questTitle: props.questTitle,
 					points: props.questReward ?? 0
 				});

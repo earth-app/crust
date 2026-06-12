@@ -172,16 +172,62 @@ export class BadgeMasteryGenerationError extends Error {
 	}
 }
 
-export type UserJourneyLeaderboardEntry = {
+export type UserLeaderboardEntry = {
 	id: string;
 	streak: number;
 	user: User;
+};
+
+export type LeaderboardScope = 'global' | 'friends' | 'circle';
+export type LeaderboardMetric = 'points' | 'article' | 'prompt' | 'event';
+
+export type LeaderboardEntry = {
+	id: string;
+	value: number;
+	user: User;
+	rank?: number;
+};
+
+export type ScopedLeaderboardResponse = {
+	scope: LeaderboardScope;
+	type: LeaderboardMetric;
+	items: LeaderboardEntry[];
+	total: number;
+};
+
+export type ReferralStats = {
+	code: string;
+	clicks: number;
+	conversions: number;
+	converted_ids: string[];
 };
 
 export type ImpactPointsChange = {
 	reason: string;
 	difference: number;
 	timestamp?: number;
+};
+
+export type ChallengeStatus = 'pending' | 'active' | 'declined' | 'completed' | 'expired';
+
+export type QuestChallenge = {
+	id: string;
+	quest_id: string;
+	quest_title: string;
+	challenger_id: string;
+	challenger_name: string;
+	recipient_id: string;
+	recipient_name: string;
+	status: ChallengeStatus;
+	created_at: number;
+	accepted_at?: number;
+};
+
+// the modal banner reads this; a null challenge means there's no challenge for this quest.
+export type QuestChallengeView = {
+	challenge: QuestChallenge | null;
+	other_user: User | null;
+	other_progress: { current_step: number; total_steps: number; completed: boolean } | null;
 };
 
 export type AvatarCosmetic = {
@@ -237,13 +283,31 @@ export type QuestStep = {
 	parameters: any[];
 	reward?: number;
 	delay?: number; // delay in seconds before this step can be completed after the previous one
-	// whether this step is only available on mobile; alternatives are normally provided so
-	// desktop users can still progress. The submission interface is blocked here when true.
+	// whether this step is only available on mobile; alternatives are normally provided
 	mobile_only?: boolean;
-	// optional short coaching hint surfaced for first-quest users. Cloud may also emit a
-	// generic auto-hint when this field is unset; client should treat empty/whitespace as missing.
+	// optional short coaching hint surfaced for first-quest users
 	tutorial_hint?: string;
 };
+
+export type QuestStepPosition = {
+	index: number;
+	altIndex?: number;
+};
+
+export type QuestTimelineStep = QuestStep &
+	QuestStepPosition & {
+		icon: string;
+		completed: boolean;
+		isCurrentQuest: boolean;
+	};
+
+export interface QuestStepContextProps {
+	submit?: boolean;
+	disabled?: boolean;
+	questId?: string;
+	questTitle?: string;
+	questReward?: number;
+}
 
 export type QuestStepMigrationReason =
 	| 'type_changed'

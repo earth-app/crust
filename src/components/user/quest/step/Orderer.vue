@@ -183,23 +183,13 @@ interface DragPayload {
 	source: DragSource;
 }
 
-interface Props {
-	// quest-context inputs (existing). step.parameters[0] supplies the canonical-order items.
-	step?: QuestStep & {
-		icon: string;
-		completed: boolean;
-		index: number;
-		altIndex?: number;
-		isCurrentQuest: boolean;
-	};
+interface Props extends QuestStepContextProps {
+	// quest-context input. step.parameters[0] supplies the canonical-order items.
+	step?: QuestTimelineStep;
 	// quiz-context input: items in canonical (correct) order. Component shuffles on init.
 	// Either `step` or `items` must be supplied.
 	items?: string[];
-	disabled?: boolean;
-	submit?: boolean;
 	serverRequest?: typeof makeServerRequest;
-	questTitle?: string;
-	questReward?: number;
 	// quiz mode: no countdown, no timer, no auto-submit. Parent reads order via update:order.
 	untimed?: boolean;
 }

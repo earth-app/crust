@@ -212,6 +212,7 @@
 			<template v-else-if="category === 'describe_text'">
 				<UserQuestStepText
 					:step="step"
+					:quest-id="quest.id"
 					:quest-title="quest.title"
 					:quest-reward="quest.reward"
 					:disabled="!step.isCurrentQuest || !step.isUnlocked"
@@ -223,6 +224,7 @@
 			<template v-else-if="category === 'match_terms'">
 				<UserQuestStepMatcher
 					:step="step"
+					:quest-id="quest.id"
 					:quest-title="quest.title"
 					:quest-reward="quest.reward"
 					:disabled="!step.isCurrentQuest || !step.isUnlocked"
@@ -233,6 +235,7 @@
 			<template v-else-if="category === 'order_items'">
 				<UserQuestStepOrderer
 					:step="step"
+					:quest-id="quest.id"
 					:quest-title="quest.title"
 					:quest-reward="quest.reward"
 					:disabled="!step.isCurrentQuest || !step.isUnlocked"
@@ -397,6 +400,7 @@ async function submitPhoto(file: File) {
 			succeeded.value = true;
 			if (res.completed) {
 				celebration.triggerCelebration({
+					questId: props.quest.id,
 					questTitle: props.quest.title,
 					points: props.quest.reward ?? 0
 				});
