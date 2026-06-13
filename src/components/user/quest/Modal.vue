@@ -228,6 +228,7 @@ const { user } = useAuth();
 const userId = computed(() => user.value?.id);
 const { badges, fetchBadges } = useUser(userId);
 const appConfig = useAppConfig();
+const celebration = useQuestCelebration();
 
 const questOpen = computed({
 	get: () => props.open,
@@ -372,4 +373,16 @@ watch(premiumOpen, (isOpen) => {
 		emit('update:open', false);
 	}
 });
+
+watch(
+	() => celebration.open.value,
+	(open) => {
+		if (!open) return;
+		const celebratedId = celebration.payload.value.questId;
+		if (celebratedId && celebratedId !== props.quest.id) return;
+
+		stepOpen.value = false;
+		questOpen.value = false;
+	}
+);
 </script>
