@@ -182,6 +182,29 @@ export const useUserStore = defineStore('user', () => {
 		bumpQuestSyncVersion(identifier);
 	};
 
+	const completeActiveQuest = (identifier: string, questId?: string) => {
+		if (!identifier) return;
+		const active = quest.get(identifier);
+		if (active === null) return;
+		if (active && questId && active.questId !== questId) return;
+
+		if (active) {
+			const nextHistory = new Map(questHistory.get(identifier) || []);
+			if (!nextHistory.has(active.questId)) {
+				nextHistory.set(active.questId, {
+					quest: active.quest,
+					questId: active.questId,
+					completedAt: Date.now(),
+					progress: active.progress
+				});
+				questHistory.set(identifier, nextHistory);
+			}
+		}
+
+		quest.set(identifier, null);
+		bumpQuestSyncVersion(identifier);
+	};
+
 	const get = (identifier: string): User | null | undefined => {
 		if (!identifier) return undefined;
 		// While a fetch is in flight and nothing valid has been seen yet,
@@ -1088,6 +1111,7 @@ export const useUserStore = defineStore('user', () => {
 		fetchQuestStep,
 		startQuest,
 		updateQuest,
+		completeActiveQuest,
 		endQuest,
 		fetchQuestHistory,
 		fetchQuestHistoryEntry,
