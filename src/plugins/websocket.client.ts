@@ -43,6 +43,8 @@ export default defineNuxtPlugin((nuxtApp) => {
 			let reconnectAttempts = 0;
 			let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 			let teardown = false;
+			let connecting = false;
+
 			const MAX_RECONNECT_ATTEMPTS = 8;
 			const BASE_DELAY_MS = 1_000;
 			const MAX_DELAY_MS = 30_000;
@@ -72,10 +74,17 @@ export default defineNuxtPlugin((nuxtApp) => {
 			};
 
 			const attemptConnect = (userId: string, token: string | null) => {
-				connect(userId, token).catch((error) => {
-					console.error('Failed to establish WebSocket connection:', error);
-					scheduleReconnect(userId);
-				});
+				if (ws || connecting) return;
+
+				connecting = true;
+				connect(userId, token)
+					.catch((error) => {
+						console.error('Failed to establish WebSocket connection:', error);
+						scheduleReconnect(userId);
+					})
+					.finally(() => {
+						connecting = false;
+					});
 			};
 
 			const connect = async (userId: string, token: string | null) => {
@@ -94,6 +103,10 @@ export default defineNuxtPlugin((nuxtApp) => {
 					);
 					wsUrl = `${websocketRoot}/ws/users/${userId}/notifications?ticket=${encodeURIComponent(ticket)}`;
 				}
+
+				// the user may have logged out / switched, or the tab torn down, while we
+				// awaited the ticket — bail rather than open a now-orphaned socket.
+				if (teardown || !user.value || user.value.id !== userId) return;
 
 				ws = new WebSocket(wsUrl);
 
@@ -118,7 +131,11 @@ export default defineNuxtPlugin((nuxtApp) => {
 						case 'notification': {
 							const notification = message.data as UserNotification;
 
-							notificationStore.addLiveNotification(notification);
+							// dedupe by id — a redelivery (or a transient duplicate socket) must not
+							// surface the ribbon/toast twice. the store ignores known ids and reports
+							// whether this one was new.
+							const isNew = notificationStore.addLiveNotification(notification);
+							if (!isNew) break;
 
 							// fan badge-unlock notifications into the floating ribbon queue.
 							// the listener regex-filters by title so generic events are no-ops
@@ -179,7 +196,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 									questReward?: number;
 								}) || {};
 
-							// resolve the quest title before the caches are cleared
+							// resolve the quest title before we mutate the caches
 							const activeQuest = userStore.quest.get(userId);
 							const questTitle = payload.questId
 								? ((activeQuest?.questId === payload.questId
@@ -189,22 +206,21 @@ export default defineNuxtPlugin((nuxtApp) => {
 									userStore.questsCache.get(payload.questId)?.title)
 								: undefined;
 
-							// drop stale caches first so a refetch is forced even though the
-							// fetcher early-returns on `cache.has()`. then re-pull.
-							userStore.quest.delete(userId);
-							userStore.questHistory.delete(userId);
-							void userStore.fetchUserQuest(userId, true);
-							void userStore.fetchQuestHistory(userId, { force: true });
 							if (payload.completed) {
+								userStore.completeActiveQuest(userId, payload.questId);
+
 								const { triggerCelebration } = useQuestCelebration();
 								triggerCelebration({
 									questId: payload.questId,
 									questTitle,
 									points: payload.questReward ?? 0
 								});
+							} else {
+								void userStore.fetchUserQuest(userId, true);
 							}
 
-							// let an open quest-challenge banner refetch the shared-progress card.
+							void userStore.fetchQuestHistory(userId, { force: true });
+
 							window.dispatchEvent(new CustomEvent('earth-app:quest-progress'));
 							break;
 						}
@@ -232,6 +248,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 			const disconnect = () => {
 				clearReconnectTimer();
 				reconnectAttempts = 0;
+				// any connect() still awaiting its ticket will see the cleared user/teardown
+				// state post-await and bail, so it's safe to release the guard here.
+				connecting = false;
 				if (ws) {
 					ws.close(1000, 'client-initiated');
 					ws = null;
@@ -261,11 +280,10 @@ export default defineNuxtPlugin((nuxtApp) => {
 				{ immediate: true }
 			);
 
-			// when the tab regains focus or comes back online, force a reconnect attempt
-			// even if we'd exhausted the backoff schedule (user is paying attention now)
 			const refocus = () => {
 				if (teardown || !user.value) return;
-				if (ws && ws.readyState === WebSocket.OPEN) return;
+				if (ws || connecting) return;
+
 				reconnectAttempts = 0;
 				clearReconnectTimer();
 				attemptConnect(user.value.id, authStore.sessionToken);
