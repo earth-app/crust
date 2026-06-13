@@ -14,7 +14,7 @@
 				aria-modal="true"
 				:aria-labelledby="titleId"
 				:aria-describedby="descId"
-				class="fixed inset-0 z-90 flex items-center justify-center bg-black/60 light:bg-black/40 backdrop-blur-sm p-4 pointer-events-auto"
+				class="fixed inset-0 z-99999 flex items-center justify-center bg-black/60 light:bg-black/40 backdrop-blur-sm p-4 pointer-events-auto"
 				@click.self="close"
 				@keydown.esc="close"
 			>
@@ -136,8 +136,25 @@ watch(
 	{ immediate: true }
 );
 
+function onWindowKeydown(e: KeyboardEvent) {
+	if (e.key !== 'Escape') return;
+	e.stopPropagation();
+	e.preventDefault();
+	close();
+}
+
+watch(
+	() => props.open,
+	(opened) => {
+		if (typeof window === 'undefined') return;
+		if (opened) window.addEventListener('keydown', onWindowKeydown, true);
+		else window.removeEventListener('keydown', onWindowKeydown, true);
+	}
+);
+
 onBeforeUnmount(() => {
 	if (animationFrame) cancelAnimationFrame(animationFrame);
+	if (typeof window !== 'undefined') window.removeEventListener('keydown', onWindowKeydown, true);
 });
 
 function close() {
