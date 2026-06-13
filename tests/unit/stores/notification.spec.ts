@@ -472,5 +472,12 @@ describe('notification store', () => {
 			expect(ids(store.notifications)).toEqual(['a']);
 			expect(store.unreadCount).toBe(1);
 		});
+
+		it('returns true for a new notification and false for a duplicate', () => {
+			const store = useNotificationStore();
+
+			expect(store.addLiveNotification(note('x', false))).toBe(true);
+			expect(store.addLiveNotification(note('x', false))).toBe(false);
+		});
 	});
 });

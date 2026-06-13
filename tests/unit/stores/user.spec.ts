@@ -506,6 +506,62 @@ describe('user store', () => {
 			// validated false -> applyLocalQuestProgress skipped, progress untouched
 			expect((store.quest.get('u1') as any).progress).toEqual([]);
 		});
+
+		it('completeActiveQuest clears the active quest and lands it in history', () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			const active = {
+				questId: 'q1',
+				quest: { id: 'q1', steps: [] },
+				progress: [{ type: 't', submittedAt: 1 }]
+			};
+			store.quest.set('u1', active as any);
+
+			store.completeActiveQuest('u1', 'q1');
+
+			expect(store.quest.get('u1')).toBeNull();
+			const entry = store.questHistory.get('u1')?.get('q1');
+			expect(entry?.questId).toBe('q1');
+			expect(entry?.completedAt).toBeTypeOf('number');
+			expect(entry?.progress).toEqual(active.progress);
+		});
+
+		it('completeActiveQuest does NOT force-refetch /quest (no stale clobber)', () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			store.quest.set('u1', { questId: 'q1', quest: { id: 'q1', steps: [] } } as any);
+
+			store.completeActiveQuest('u1', 'q1');
+
+			// retiring the quest must be purely local — a refetch here would read the
+			// not-yet-finalized backend and revert the navbar chip / quests list.
+			expect(makeAPIRequest).not.toHaveBeenCalled();
+		});
+
+		it('completeActiveQuest is a no-op when the active slot is already cleared', () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			// the same-browser optimistic path already set this to null
+			store.quest.set('u1', null);
+
+			store.completeActiveQuest('u1', 'q1');
+
+			expect(store.quest.get('u1')).toBeNull();
+			expect(store.questHistory.get('u1')).toBeUndefined();
+		});
+
+		it('completeActiveQuest leaves the active quest alone on a mismatched questId', () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			const active = { questId: 'q1', quest: { id: 'q1', steps: [] } };
+			store.quest.set('u1', active as any);
+
+			// a completion signal for a different quest must not nuke the real active quest
+			store.completeActiveQuest('u1', 'q2');
+
+			expect(store.quest.get('u1')).toEqual(active);
+			expect(store.questHistory.get('u1')?.has('q1')).toBeFalsy();
+		});
 	});
 
 	describe('fetchQuestsList', () => {
