@@ -20,7 +20,7 @@
 			"utils": ["./src/shared/utils/util"],
 			"schemas": ["./src/shared/utils/schemas"],
 			"stores/*": ["./src/stores/*"],
-			"#test-utils/*": ["./tests/utils/*"]
+			"#test-utils/*": ["./tests/e2e/utils/*"]
 		}
 	},
 	"include": ["./**/*.ts", "./**/*.spec.ts", "../src/shared/types/**/*.ts"],

@@ -23,11 +23,6 @@ const PROJECT_ROOT = fileURLToPath(new URL('.', import.meta.url));
 const isCI = !!process.env.CI;
 const coverage = process.env.COVERAGE === '1';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
-// `PLAYWRIGHT_PROD=1` runs tests against a pre-built node-server bundle
-// (`bun run start:test`) instead of `nuxi dev`. The bundle has all routes
-// compiled ahead of time, eliminating the per-route Vite cold-compile cost
-// that makes dev-mode CI runs take 17min. CI uses this mode; local dev keeps
-// `nuxi dev` for fast iteration.
 const prodServer = process.env.PLAYWRIGHT_PROD === '1';
 
 const reporters: any[] = [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]];
@@ -38,23 +33,18 @@ if (isCI) {
 }
 
 export default defineConfig<ConfigOptions>({
-	testDir: './tests',
-	testIgnore: ['**/utils/**', '**/unit/**'],
+	testDir: './tests/e2e',
+	testIgnore: ['**/utils/**'],
 	fullyParallel: true,
 	forbidOnly: isCI,
 	retries: isCI ? 2 : 3,
-	// Worker counts:
-	//   - prod bundle: no Vite contention, push to 4 to drain the suite fast
-	//   - dev mode: 2 max (Vite compile is single-threaded; more workers just
-	//     create head-of-line blocking)
-	//   - coverage: keep modest so the V8 coverage stream doesn't get noisy
 	workers: prodServer ? 4 : coverage ? 2 : isCI ? 2 : undefined,
 	timeout: 120_000,
 	expect: {
 		timeout: 12_000
 	},
-	globalSetup: fileURLToPath(new URL('./tests/utils/global-setup.ts', import.meta.url)),
-	globalTeardown: fileURLToPath(new URL('./tests/utils/global-teardown.ts', import.meta.url)),
+	globalSetup: fileURLToPath(new URL('./tests/e2e/utils/global-setup.ts', import.meta.url)),
+	globalTeardown: fileURLToPath(new URL('./tests/e2e/utils/global-teardown.ts', import.meta.url)),
 	reporter: reporters,
 	// Keep test artifacts OUT of the HTML reporter folder. The HTML reporter
 	// clears its output dir before generating the report, which would wipe out

@@ -28,7 +28,7 @@
  *
  * This file is dependency-free (just `node:http`) so it can be required from
  * any context - globalSetup, individual tests, or CLI invocation for
- * debugging (`bun tests/utils/mock-server.ts`).
+ * debugging (`bun tests/e2e/utils/mock-server.ts`).
  */
 
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
@@ -1121,7 +1121,7 @@ export async function stopMockServers(): Promise<void> {
 	await Promise.all(closers);
 }
 
-// CLI entrypoint -- `bun tests/utils/mock-server.ts` starts the servers for
+// CLI entrypoint -- `bun tests/e2e/utils/mock-server.ts` starts the servers for
 // ad-hoc debugging.
 if (import.meta.url === `file://${process.argv[1]}`) {
 	startMockServers().then(() => {
