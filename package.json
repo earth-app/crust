@@ -107,7 +107,7 @@
     "@nuxt/test-utils": "^4.0.3",
     "@playwright/test": "^1.60.0",
     "@types/piexifjs": "^1.0.0",
-    "@vitest/coverage-v8": "4.1.7",
+    "@vitest/coverage-v8": "4.1.8",
     "@vue/test-utils": "^2.4.10",
     "estree-walker": "3.0.3",
     "happy-dom": "^20.9.0",
