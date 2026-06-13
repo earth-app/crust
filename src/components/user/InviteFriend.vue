@@ -176,9 +176,4 @@ onMounted(async () => {
 	await fetchCode();
 	await fetchStats();
 });
-
-onMounted(async () => {
-	await fetchCode();
-	await fetchStats();
-});
 </script>
