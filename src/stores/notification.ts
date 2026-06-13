@@ -275,8 +275,8 @@ export const useNotificationStore = defineStore('notification', () => {
 		return res;
 	};
 
-	const addLiveNotification = (notification: UserNotification) => {
-		if (notifications.value.some((n) => n.id === notification.id)) return;
+	const addLiveNotification = (notification: UserNotification): boolean => {
+		if (notifications.value.some((n) => n.id === notification.id)) return false;
 
 		notifications.value = [notification, ...notifications.value];
 		cache.set(notification.id, notification);
@@ -287,6 +287,7 @@ export const useNotificationStore = defineStore('notification', () => {
 		if (notification.type === 'error') hasErrors.value = true;
 
 		invalidateAPICache('notifications-current');
+		return true;
 	};
 
 	return {
