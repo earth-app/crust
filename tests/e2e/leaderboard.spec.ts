@@ -7,7 +7,7 @@
  * Challenge action. Anonymous visitors see a sign-in prompt on non-global tabs.
  */
 
-import { expect, test } from './utils/fixtures';
+import { expect, skipIfIntegration, test } from './utils/fixtures';
 
 test.describe('Leaderboard (anonymous)', () => {
 	test.beforeEach(async ({ asAnonymous }) => {
@@ -23,6 +23,7 @@ test.describe('Leaderboard (anonymous)', () => {
 	});
 
 	test('global board renders rows from the seeded users', async ({ page, gotoHydrated }) => {
+		skipIfIntegration('asserts the seeded mock user @author; real backend has different users');
 		await gotoHydrated('/leaderboard');
 		await expect(page.getByText('@author').first()).toBeVisible({ timeout: 12_000 });
 	});
@@ -59,6 +60,9 @@ test.describe('Leaderboard (logged in)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration(
+			'friends scope needs seeded friend rows (@author); real admin has no friends'
+		);
 		await asUser();
 		await gotoHydrated('/leaderboard');
 		await page.getByRole('tab', { name: 'Friends' }).click();

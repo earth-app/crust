@@ -5,7 +5,7 @@
  * Query params (?success=, ?error=) trigger OAuth-related toasts.
  */
 
-import { expect, test } from '../utils/fixtures';
+import { expect, skipIfIntegration, test } from '../utils/fixtures';
 
 test.describe('Own profile (anonymous)', () => {
 	test('redirects anonymous users to /login with return URL', async ({
@@ -32,6 +32,9 @@ test.describe('Own profile (logged in)', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration(
+			'asserts the seeded mock referral code ABC234; real backend mints a random code'
+		);
 		await asUser();
 		await gotoHydrated('/profile');
 		const invite = page.locator('#invite-section');

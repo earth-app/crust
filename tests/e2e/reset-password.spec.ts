@@ -65,6 +65,9 @@ test.describe('Forgot-password request modal', () => {
 		page,
 		gotoHydrated
 	}) => {
+		skipIfIntegration(
+			'depends on a mock 429 override; real mantle does not rate-limit a single request'
+		);
 		await asAnonymous();
 		await mockApi.set({
 			method: 'POST',
