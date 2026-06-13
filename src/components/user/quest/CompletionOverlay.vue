@@ -14,7 +14,7 @@
 				aria-modal="true"
 				:aria-labelledby="titleId"
 				:aria-describedby="descId"
-				class="fixed inset-0 z-80 flex items-center justify-center bg-black/60 light:bg-black/40 backdrop-blur-sm p-4"
+				class="fixed inset-0 z-90 flex items-center justify-center bg-black/60 light:bg-black/40 backdrop-blur-sm p-4 pointer-events-auto"
 				@click.self="close"
 				@keydown.esc="close"
 			>
