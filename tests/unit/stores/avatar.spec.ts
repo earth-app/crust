@@ -22,9 +22,21 @@ const FALLBACK = {
 };
 
 describe('avatar store', () => {
+	let fetchSpy: ReturnType<typeof vi.spyOn>;
+
 	beforeEach(() => {
 		setActivePinia(createPinia());
 		vi.clearAllMocks();
+		// safeUrl()/preloadAvatar() kick off a fire-and-forget fetchAvatarBlobs() for any
+		// uncached http(s) url. without a stub that resolves quietly, the background fetch
+		// hits the real network, fails, and console.warn()s *after* these (sync) tests have
+		// returned — racing worker teardown (EnvironmentTeardownError: Closing rpc while
+		// "onUserConsoleLog" was pending). a non-ok response settles it without logging
+		fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false } as Response);
+	});
+
+	afterEach(() => {
+		fetchSpy.mockRestore();
 	});
 
 	describe('isValidAvatarUrl guards (via safeUrl / preloadAvatar)', () => {
