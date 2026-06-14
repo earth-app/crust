@@ -1,6 +1,6 @@
 <template>
 	<div class="text-left">
-		<p class="text-md mt-2 max-w-3xl">Last Updated: March 4, 2026</p>
+		<p class="text-md mt-2 max-w-3xl">Last Updated: June 14, 2026</p>
 		<p class="text-md mt-2 max-w-3xl">
 			The Earth App ("we", "our", or "us") provides a platform for users to explore and learn about
 			the world around them. By accessing or using our services, you agree to comply with and be
@@ -101,6 +101,27 @@
 			functioning of our services or the experience of other users.
 		</p>
 		<p class="text-md mt-2 max-w-3xl">
+			You shall not access our services through automated means (including bots, scrapers, or
+			crawlers), attempt to bypass or interfere with rate limits, security measures, or
+			authentication, or collect or harvest data from our services except as expressly permitted by
+			these Terms of Service or through credentials we issue to you (see the Developer Access and
+			API Keys section below). We may impose and enforce limits on the volume and frequency of
+			requests to protect the stability and security of our services.
+		</p>
+		<p class="text-md mt-2 max-w-3xl">
+			We provide tools to help keep our community safe. You may report content or other users that
+			you believe violate these Terms of Service through the in-application reporting tools,
+			selecting a reason such as hate speech, harassment, sexual content, violence, spam,
+			misinformation, self-harm, illegal activity, or other concerns; some reports may be submitted
+			without an account. You may also block other users to limit your interactions with them. You
+			agree not to misuse these tools, including by submitting false, abusive, or repetitive
+			reports. We review reports and may take action at our discretion. Violations of these Terms of
+			Service may result in moderation actions tracked against your account, including strikes that
+			accumulate over time and may lead to content removal, temporary suspension, or a permanent
+			ban. You will generally be notified of moderation actions affecting your content or account,
+			and you may appeal as described below.
+		</p>
+		<p class="text-md mt-2 max-w-3xl">
 			Any photographs, writing, videos, or other content that you submit to our services ("User
 			Content") must comply with our content guidelines and must not violate any applicable laws or
 			regulations. You are solely responsible for the User Content you submit and must ensure that
@@ -173,6 +194,16 @@
 			Terms of Service and to respect the rights and privacy of others when submitting content to
 			our services.
 		</p>
+		<p class="text-md mt-2 max-w-3xl">
+			In addition to the temporary record described above, please be aware that some content is
+			removed automatically over time as part of the normal operation of our services. For example,
+			prompts, articles, and events are subject to limited lifespans and are deleted automatically
+			after a period of time (for instance, shortly after a prompt is posted, after an article has
+			been available for a period, or after an event has ended). These retention periods are
+			approximate and may change as our services evolve. You should not rely on our services as a
+			permanent store for your content, and we encourage you to keep your own copies of anything you
+			wish to retain.
+		</p>
 		<h1 class="text-2xl font-bold mt-4">4. Intellectual Property</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			All content and materials provided through our services, including but not limited to text,
@@ -230,7 +261,41 @@
 			were justified based on our policies and guidelines. We encourage all users to adhere to these
 			Terms of Service and to respect the rights and privacy of others when using our services.
 		</p>
-		<h1 class="text-2xl font-bold mt-4">5. Limitation of Liability</h1>
+		<h1 class="text-2xl font-bold mt-4">5. Developer Access and API Keys</h1>
+		<p class="text-md mt-2 max-w-3xl">
+			We may allow you to create API keys for programmatic access to our services. You are
+			responsible for keeping your API keys confidential and for all activity that occurs under
+			them. You must use API keys only within the scopes and permissions granted, must not share
+			them or use them on behalf of others without authorization, and must comply with any rate
+			limits and usage restrictions we set. We may log information associated with API key usage,
+			such as the time of use and the originating IP address, for security and abuse-prevention
+			purposes. We may suspend, revoke, or expire API keys at any time, and API keys are
+			automatically revoked if your account is disabled or banned. Any use of our services through
+			automated means is governed by the User Conduct section above, and we reserve the right to
+			revoke access for any use that we determine to be abusive, excessive, or otherwise in
+			violation of these Terms of Service.
+		</p>
+		<h1 class="text-2xl font-bold mt-4">6. Mobile Applications and Quests</h1>
+		<p class="text-md mt-2 max-w-3xl">
+			Our mobile applications and certain features, particularly quests, may request access to
+			capabilities and data on your device, including your location (including background location
+			while a distance-based quest is active), camera, microphone, motion and activity sensors,
+			health and fitness data (such as step or workout information), and the ability to send you
+			push notifications. We request these permissions only to provide the relevant features, and
+			you may grant or revoke them at any time through your device settings; some features may not
+			function without the necessary permissions. By participating in quests or using these
+			features, you consent to our collection and use of the associated data as described in our
+			<NuxtLink
+				to="/privacy-policy"
+				class="text-blue-500 hover:underline"
+				>Privacy Policy</NuxtLink
+			>. You are responsible for using location-based and physical-activity features safely, for
+			remaining aware of your surroundings, and for complying with all applicable laws; you
+			participate in any physical activity associated with our services at your own risk. Your use
+			of our mobile applications is also subject to the terms and policies of the applicable app
+			store or platform.
+		</p>
+		<h1 class="text-2xl font-bold mt-4">7. Limitation of Liability</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			To the fullest extent permitted by law, The Earth App shall not be liable for any direct,
 			indirect, incidental, special, consequential, or punitive damages arising out of or related to
@@ -251,7 +316,7 @@
 			for critical decisions or actions. In addition, we reserve the right to remove or modify any
 			AI-generated content that we deem inappropriate or in violation of our policies.
 		</p>
-		<h1 class="text-2xl font-bold mt-4">6. Changes to Terms</h1>
+		<h1 class="text-2xl font-bold mt-4">8. Changes to Terms</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			We reserve the right to modify or update these Terms of Service at any time. Any changes will
 			be effective immediately upon posting on our website. Your continued use of our services after
@@ -261,7 +326,7 @@
 			periodically to stay informed about any updates or changes. If you do not agree to the updated
 			terms, please discontinue use of our services.
 		</p>
-		<h1 class="text-2xl font-bold mt-4">7. Contact Us</h1>
+		<h1 class="text-2xl font-bold mt-4">9. Contact Us</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			If you have any questions or concerns about these Terms of Service, please contact us at
 			<NuxtLink
