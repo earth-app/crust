@@ -1,27 +1,34 @@
 <template>
 	<div class="w-full flex items-center justify-center my-8">
-		<InfoCard
-			:title="article.title"
-			:description="trimString(article.description, 100)"
-			:content="trimString(article.content, 300)"
-			:link="noLink ? undefined : `/articles/${article.id}`"
-			:footer="footer"
-			:color="article.color"
-			:avatar="{
-				src: authorAvatar,
-				chip: authorAvatarChipColor ? { color: authorAvatarChipColor as any } : undefined
-			}"
-			:secondary-avatar="{ src: article.ocean?.favicon, size: 'xs' }"
-			:badges="
-				article.tags.map((tag) => ({
-					text: tag,
-					color: 'warning',
-					icon: 'mdi:tag-outline',
-					variant: 'subtle',
-					size: 'md'
-				}))
-			"
-		/>
+		<div class="relative w-11/12 lg:w-auto flex justify-center">
+			<InfoCard
+				:title="article.title"
+				:description="trimString(article.description, 100)"
+				:content="trimString(article.content, 300)"
+				:link="noLink ? undefined : `/articles/${article.id}`"
+				:footer="footer"
+				:color="article.color"
+				:avatar="{
+					src: authorAvatar,
+					chip: authorAvatarChipColor ? { color: authorAvatarChipColor as any } : undefined
+				}"
+				:secondary-avatar="{ src: article.ocean?.favicon, size: 'xs' }"
+				:badges="
+					article.tags.map((tag) => ({
+						text: tag,
+						color: 'warning',
+						icon: 'mdi:tag-outline',
+						variant: 'subtle',
+						size: 'md'
+					}))
+				"
+			/>
+			<ReportMenu
+				content-type="article"
+				:content-id="String(article.id)"
+				class="absolute top-2 right-2 z-50"
+			/>
+		</div>
 	</div>
 </template>
 

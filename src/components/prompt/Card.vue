@@ -1,39 +1,27 @@
 <template>
 	<div class="w-full flex items-center justify-center my-2 sm:my-4 md:my-6 lg:my-8">
-		<InfoCard
-			:title="promptText"
-			:description="ownerHandle"
-			:avatar="{
-				src: authorAvatar,
-				size: 'xl',
-				chip: authorAvatarChipColor
-					? { color: authorAvatarChipColor as any, size: 'xl' }
-					: undefined
-			}"
-			:link="noLink ? undefined : `/prompts/${prompt.id}`"
-			:footer="`${footer} • ${prompt.responses_count ? withSuffix(prompt.responses_count) + ' Responses' : 'No Responses'}`"
-			:secondary-footer="secondaryFooter"
-			:buttons="
-				hasButtons
-					? [
-							{
-								text: 'Edit',
-								color: 'secondary',
-								onClick: () => {
-									editOpen = true;
-								}
-							},
-							{
-								text: 'Delete',
-								color: 'error',
-								onClick: () => {
-									deletePrompt();
-								}
-							}
-						]
-					: undefined
-			"
-		/>
+		<div class="relative w-11/12 lg:w-auto flex justify-center">
+			<InfoCard
+				:title="promptText"
+				:description="ownerHandle"
+				:avatar="{
+					src: authorAvatar,
+					size: 'xl',
+					chip: authorAvatarChipColor
+						? { color: authorAvatarChipColor as any, size: 'xl' }
+						: undefined
+				}"
+				:link="noLink ? undefined : `/prompts/${prompt.id}`"
+				:footer="`${footer} • ${prompt.responses_count ? withSuffix(prompt.responses_count) + ' Responses' : 'No Responses'}`"
+				:secondary-footer="secondaryFooter"
+			/>
+			<ReportMenu
+				content-type="prompt"
+				:content-id="String(prompt.id)"
+				:extra-items="ownerItems"
+				class="absolute top-2 right-2 z-50"
+			/>
+		</div>
 		<UModal
 			v-if="hasButtons"
 			title="Edit Prompt"
@@ -62,6 +50,7 @@
 </template>
 
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui';
 import { DateTime } from 'luxon';
 import { withSuffix } from 'utils';
 
@@ -105,6 +94,22 @@ const time = computed(() => {
 const hasButtons = computed(() => {
 	return user.value && (user.value.id === props.prompt.owner_id || user.value.is_admin);
 });
+
+const ownerItems = computed<DropdownMenuItem[][]>(() =>
+	hasButtons.value
+		? [
+				[
+					{ label: 'Edit', icon: 'mdi:comment-edit', onSelect: () => (editOpen.value = true) },
+					{
+						label: 'Delete',
+						icon: 'mdi:delete-outline',
+						color: 'error',
+						onSelect: () => deletePrompt()
+					}
+				]
+			]
+		: []
+);
 
 const updatedTime = computed(() => {
 	if (!props.prompt.updated_at) return 'sometime';

@@ -1,21 +1,28 @@
 <template>
-	<InfoCard
-		v-bind="$attrs"
-		:title="reactiveEvent.name"
-		:content="full ? reactiveEvent.description : trimString(reactiveEvent.description, 350)"
-		:link="noLink ? undefined : `/events/${reactiveEvent.id}`"
-		:avatar="{
-			src: authorAvatar,
-			chip: authorAvatarChipColor ? { color: authorAvatarChipColor as any } : undefined
-		}"
-		:badges="badges"
-		:image="full ? undefined : thumbnail || undefined"
-		:color="0xffca20"
-		:buttons="buttons"
-		:footer="footer"
-		:banner="banner || undefined"
-		:avatar-group="{ avatars: attendeeAvatars, max: 5 }"
-	/>
+	<div class="relative w-full flex justify-center">
+		<InfoCard
+			v-bind="$attrs"
+			:title="reactiveEvent.name"
+			:content="full ? reactiveEvent.description : trimString(reactiveEvent.description, 350)"
+			:link="noLink ? undefined : `/events/${reactiveEvent.id}`"
+			:avatar="{
+				src: authorAvatar,
+				chip: authorAvatarChipColor ? { color: authorAvatarChipColor as any } : undefined
+			}"
+			:badges="badges"
+			:image="full ? undefined : thumbnail || undefined"
+			:color="0xffca20"
+			:buttons="buttons"
+			:footer="footer"
+			:banner="banner || undefined"
+			:avatar-group="{ avatars: attendeeAvatars, max: 5 }"
+		/>
+		<ReportMenu
+			content-type="event"
+			:content-id="String(reactiveEvent.id)"
+			class="absolute top-2 right-2 z-50"
+		/>
+	</div>
 	<ContentDrawer
 		ref="attendeesDrawerRef"
 		:title="`Event Attendees (${comma(reactiveEvent.attendee_count)})`"

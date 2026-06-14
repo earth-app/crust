@@ -1,48 +1,37 @@
 <template>
 	<div class="w-full flex items-center justify-center my-8">
-		<InfoCard
-			:external="false"
-			variant="subtle"
-			:title="identifier"
-			:content="responseText"
-			:footer="time"
-			:footer-tooltip="tooltip"
-			:avatar="{
-				src: authorAvatar,
-				size: 'md',
-				chip:
-					user?.account.account_type || user?.is_admin
-						? {
-								color:
-									user?.account.account_type === 'ORGANIZER'
-										? 'warning'
-										: user?.is_admin
-											? 'error'
-											: undefined
-							}
-						: undefined
-			}"
-			:buttons="
-				hasButtons
-					? [
-							{
-								text: 'Edit',
-								color: 'secondary',
-								onClick: () => {
-									editOpen = true;
+		<div class="relative w-11/12 lg:w-auto flex justify-center">
+			<InfoCard
+				:external="false"
+				variant="subtle"
+				:title="identifier"
+				:content="responseText"
+				:footer="time"
+				:footer-tooltip="tooltip"
+				:avatar="{
+					src: authorAvatar,
+					size: 'md',
+					chip:
+						user?.account.account_type || user?.is_admin
+							? {
+									color:
+										user?.account.account_type === 'ORGANIZER'
+											? 'warning'
+											: user?.is_admin
+												? 'error'
+												: undefined
 								}
-							},
-							{
-								text: 'Delete',
-								color: 'error',
-								onClick: () => {
-									deleteResponse();
-								}
-							}
-						]
-					: undefined
-			"
-		/>
+							: undefined
+				}"
+			/>
+			<ReportMenu
+				content-type="prompt_response"
+				:content-id="String(response.id)"
+				:parent-id="String(response.prompt_id)"
+				:extra-items="ownerItems"
+				class="absolute top-2 right-2 z-50"
+			/>
+		</div>
 	</div>
 	<UModal
 		v-if="hasButtons"
@@ -68,6 +57,7 @@
 </template>
 
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui';
 import { DateTime } from 'luxon';
 
 const props = defineProps<{
@@ -130,6 +120,22 @@ const tooltip = computed(() => {
 const hasButtons = computed(() => {
 	return user.value && (user.value.id === props.response.owner.id || user.value.is_admin);
 });
+
+const ownerItems = computed<DropdownMenuItem[][]>(() =>
+	hasButtons.value
+		? [
+				[
+					{ label: 'Edit', icon: 'mdi:comment-edit', onSelect: () => (editOpen.value = true) },
+					{
+						label: 'Delete',
+						icon: 'mdi:delete-outline',
+						color: 'error',
+						onSelect: () => deleteResponse()
+					}
+				]
+			]
+		: []
+);
 
 const responseText = ref(props.response.response);
 watch(

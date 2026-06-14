@@ -88,6 +88,7 @@
 
 <script setup lang="ts">
 import { makeClientAPIRequest } from 'utils';
+import type { ModerationVerdict } from '~/composables/useReport';
 
 const { user, avatar128 } = useAuth();
 const { handle } = useDisplayName(user);
@@ -107,9 +108,29 @@ const newResponse = ref('');
 
 const emailGate = useEmailGate();
 
+const { checkText } = useClientModeration();
+function moderationReason(verdict: ModerationVerdict): string {
+	if (verdict.category === 'nsfw_image') return "This image looks explicit and can't be posted.";
+	if (verdict.category === 'profanity') return 'Please remove inappropriate language.';
+	return 'This looks like spam.';
+}
+
 async function postResponse() {
 	if (posting.value) return;
 	if (!emailGate.requireVerified('post a prompt response')) return;
+
+	// preventive client-side check before posting (fail-open)
+	const verdict = await checkText(newResponse.value);
+	if (!verdict.allowed) {
+		toast.add({
+			title: 'Content Blocked',
+			description: moderationReason(verdict),
+			duration: 5000,
+			icon: 'mdi:shield-alert-outline',
+			color: 'warning'
+		});
+		return;
+	}
 
 	posting.value = true;
 

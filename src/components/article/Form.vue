@@ -182,6 +182,7 @@
 
 <script setup lang="ts">
 import { articleSchema } from 'schemas';
+import type { ModerationVerdict } from '~/composables/useReport';
 import ArticleQuizEditor from './QuizEditor.vue';
 
 const props = defineProps<{
@@ -367,6 +368,13 @@ function validateQuizForCreate(questions: any[]) {
 
 const emailGate = useEmailGate();
 
+const { checkText } = useClientModeration();
+function moderationReason(verdict: ModerationVerdict): string {
+	if (verdict.category === 'nsfw_image') return "This image looks explicit and can't be posted.";
+	if (verdict.category === 'profanity') return 'Please remove inappropriate language.';
+	return 'This looks like spam.';
+}
+
 async function handleSubmit() {
 	if (props.mode === 'create' && !emailGate.requireVerified('publish articles')) return;
 	loading.value = true;
@@ -377,6 +385,20 @@ async function handleSubmit() {
 		const submittedQuiz = getSubmittedQuizQuestions();
 		if (!validateQuizForCreate(submittedQuiz)) {
 			loading.value = false;
+			return;
+		}
+
+		// preventive client-side check before posting (fail-open)
+		const verdict = await checkText(`${state.title}\n\n${state.content}`);
+		if (!verdict.allowed) {
+			loading.value = false;
+			toast.add({
+				title: 'Content Blocked',
+				description: moderationReason(verdict),
+				duration: 5000,
+				icon: 'mdi:shield-alert-outline',
+				color: 'warning'
+			});
 			return;
 		}
 

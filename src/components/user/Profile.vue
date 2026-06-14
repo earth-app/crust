@@ -97,6 +97,18 @@
 				:friend-name="displayName"
 				variant="outline"
 			/>
+			<ReportMenu
+				v-if="canReport"
+				content-type="user"
+				:content-id="String(props.user.id)"
+			>
+				<UButton
+					color="neutral"
+					variant="outline"
+					icon="mdi:flag-outline"
+					>Report User</UButton
+				>
+			</ReportMenu>
 		</div>
 		<div class="flex mb-4">
 			<UBadge
@@ -375,6 +387,7 @@ const { user } = useAuth();
 const i18n = useI18n();
 const { name: displayName, handle, hasFullName } = useDisplayName(() => props.user);
 const canChallenge = computed(() => !!props.user.is_friend && user.value?.id !== props.user.id);
+const canReport = computed(() => user.value?.id !== props.user.id);
 
 const {
 	avatar,

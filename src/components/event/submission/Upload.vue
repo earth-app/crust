@@ -65,6 +65,8 @@
 </template>
 
 <script setup lang="ts">
+import type { ModerationVerdict } from '~/composables/useReport';
+
 const props = defineProps<{
 	eventId: string;
 }>();
@@ -77,6 +79,13 @@ const toast = useToast();
 const { user } = useAuth();
 const { event, fetch, fetchSubmissionsForUser, submitImage } = useEvent(props.eventId);
 const currentSubmissionsCount = ref(0);
+
+const { checkImage } = useClientModeration();
+function moderationReason(verdict: ModerationVerdict): string {
+	if (verdict.category === 'nsfw_image') return "This image looks explicit and can't be posted.";
+	if (verdict.category === 'profanity') return 'Please remove inappropriate language.';
+	return 'This looks like spam.';
+}
 
 onMounted(() => {
 	fetch();
@@ -177,6 +186,19 @@ async function submitUpload() {
 
 	submitting.value = true;
 	for (const file of value.value) {
+		// preventive client-side check before uploading; a blocked file aborts the batch (fail-open)
+		const verdict = await checkImage(file);
+		if (!verdict.allowed) {
+			toast.add({
+				title: 'Content Blocked',
+				description: moderationReason(verdict),
+				icon: 'mdi:shield-alert-outline',
+				color: 'warning'
+			});
+			submitting.value = false;
+			return;
+		}
+
 		const res = await submitImage(file);
 		if (valid(res, false)) {
 			// successful upload
