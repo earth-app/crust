@@ -27,7 +27,9 @@ export default defineNuxtConfig({
 			appleClientId: process.env.NUXT_PUBLIC_APPLE_CLIENT_ID || '',
 			// public keys & ids
 			mapsApiKey: process.env.NUXT_PUBLIC_MAPS_API_KEY || '',
-			unsplashApplicationId: process.env.NUXT_PUBLIC_UNSPLASH_APPLICATION_ID || ''
+			unsplashApplicationId: process.env.NUXT_PUBLIC_UNSPLASH_APPLICATION_ID || '',
+			// only true in test builds; gates the deterministic client-moderation hook used by e2e
+			testBuild: process.env.NUXT_PUBLIC_TEST_BUILD === '1'
 		},
 		turnstile: {
 			secretKey: process.env.NUXT_TURNSTILE_SECRET_KEY || ''
@@ -81,21 +83,20 @@ export default defineNuxtConfig({
 			include: [
 				'@vue/devtools-core',
 				'@vue/devtools-kit',
+				'@tensorflow/tfjs',
+				'@earth-app/ocean',
+				'@internationalized/date',
 				'luxon',
 				'zod',
-				'@earth-app/ocean',
-				'@internationalized/date'
+				'obscenity',
+				'nsfwjs',
+				'tesseract.js'
 			]
 		},
 		ssr: {
 			noExternal: ['@earth-app/ocean']
 		}
 	},
-	// External sourcemaps in the test build so V8 → istanbul coverage maps
-	// the prod-bundle chunks (`/_nuxt/{hash}.js`) back to original src/*
-	// paths. v8-to-istanbul follows the `//# sourceMappingURL=` comment to
-	// fetch the .map file. Without this the coverage report lists chunk
-	// hashes, not real component files. Inline mode overflows the parser.
 	sourcemap: {
 		client: process.env.NUXT_TEST_BUILD === '1',
 		server: process.env.NUXT_TEST_BUILD === '1'
