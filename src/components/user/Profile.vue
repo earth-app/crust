@@ -423,6 +423,13 @@ async function toggleBlock() {
 	if (res.success) {
 		blocking.value = willBlock;
 		props.user.is_blocking = willBlock;
+		// blocking severs friendship on the backend — mirror that here
+		if (willBlock) {
+			props.user.is_friend = false;
+			props.user.is_my_friend = false;
+			props.user.is_mutual = false;
+		}
+
 		toast.add({
 			title: willBlock ? 'User Blocked' : 'User Unblocked',
 			description: willBlock
