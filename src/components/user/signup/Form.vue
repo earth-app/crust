@@ -79,6 +79,21 @@
 				"
 			/>
 
+			<p class="text-xs text-muted text-center mb-3">
+				By signing up, you agree to our
+				<NuxtLink
+					to="/terms-of-service"
+					class="text-primary hover:underline"
+					>Terms of Service</NuxtLink
+				>
+				and
+				<NuxtLink
+					to="/privacy-policy"
+					class="text-primary hover:underline"
+					>Privacy Policy</NuxtLink
+				>.
+			</p>
+
 			<UButton
 				type="submit"
 				:loading="loading"
