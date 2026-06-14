@@ -32,6 +32,7 @@
 						kind="prompts"
 					/>
 					<AdminActivities v-else-if="item.value === 'activities'" />
+					<AdminReports v-else-if="item.value === 'reports'" />
 					<AdminMotd v-else-if="item.value === 'motd'" />
 					<AdminPolls v-else-if="item.value === 'polls'" />
 				</div>
@@ -71,6 +72,7 @@ const tabs = [
 	{ label: 'Blacklist', icon: 'mdi:shield-off', value: 'blacklist' },
 	{ label: 'Content', icon: 'mdi:file-document-multiple', value: 'content' },
 	{ label: 'Activities', icon: 'mdi:tag-multiple', value: 'activities' },
+	{ label: 'Reports', icon: 'mdi:flag-outline', value: 'reports' },
 	{ label: 'MOTD', icon: 'mdi:bullhorn', value: 'motd' },
 	{ label: 'Polls', icon: 'mdi:poll', value: 'polls' }
 ];
