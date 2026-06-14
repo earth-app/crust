@@ -436,7 +436,7 @@
 				</div>
 				<div class="flex flex-col w-full max-w-3xl items-center mb-6">
 					<USeparator class="my-4" />
-					<div class="flex items-center justify-center gap-4 w-full">
+					<div class="flex flex-wrap items-center justify-center gap-4 w-full">
 						<USwitch
 							id="email-subscriptions"
 							v-model="subscribed"
@@ -459,6 +459,26 @@
 							Change Password
 						</UButton>
 						<UButton
+							id="blocked-users"
+							color="neutral"
+							variant="outline"
+							trailing-icon="mdi:account-cancel-outline"
+							class="font-semibold hover:cursor-pointer"
+							@click="blockedUsersModal?.open()"
+						>
+							Blocked Users
+						</UButton>
+						<UButton
+							id="moderation-status"
+							color="primary"
+							variant="outline"
+							trailing-icon="mdi:shield-account-outline"
+							class="font-semibold hover:cursor-pointer"
+							@click="moderationStatusModal?.open()"
+						>
+							Moderation Status
+						</UButton>
+						<UButton
 							id="account-deletion"
 							color="error"
 							variant="outline"
@@ -468,6 +488,7 @@
 						>
 							Delete Account
 						</UButton>
+
 						<UserPasswordChangeModal
 							ref="passwordChangeModal"
 							@changed="handlePasswordChange"
@@ -476,6 +497,8 @@
 							ref="deleteAccountModal"
 							@deleted="handleAccountDeletion"
 						/>
+						<UserBlockedUsersModal ref="blockedUsersModal" />
+						<UserModerationStatusModal ref="moderationStatusModal" />
 					</div>
 				</div>
 			</div>
@@ -507,7 +530,9 @@ import { extractServerMessage } from 'errors';
 import { OAUTH_PROVIDERS, type User } from 'types/user';
 import { capitalizeFully } from 'utils';
 import type { InputTypeHTMLAttribute } from 'vue';
+import { type BlockedUsersModalRef } from './BlockedUsersModal.vue';
 import { type EmailVerificationModalRef } from './email/VerificationModal.vue';
+import { type ModerationStatusModalRef } from './ModerationStatusModal.vue';
 import { type PasswordChangeModalRef } from './PasswordChangeModal.vue';
 
 type DeleteAccountModalRef = {
@@ -1238,6 +1263,8 @@ function handleEmailVerified() {
 // Password Change
 const passwordChangeModal = ref<PasswordChangeModalRef | null>(null);
 const deleteAccountModal = ref<DeleteAccountModalRef | null>(null);
+const blockedUsersModal = ref<BlockedUsersModalRef | null>(null);
+const moderationStatusModal = ref<ModerationStatusModalRef | null>(null);
 
 function handlePasswordChange() {
 	toast.add({

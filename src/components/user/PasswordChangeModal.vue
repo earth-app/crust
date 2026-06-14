@@ -1,6 +1,6 @@
 <template>
 	<UModal
-		v-model="open"
+		v-model:open="open"
 		title="Change Password"
 	>
 		<template #body>

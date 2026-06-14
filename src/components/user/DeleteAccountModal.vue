@@ -1,6 +1,6 @@
 <template>
 	<UModal
-		v-model="open"
+		v-model:open="open"
 		title="Delete Your Account"
 		description="This action is permanent. You may be asked to reauthenticate before we proceed."
 	>
