@@ -53,6 +53,30 @@ export type ReportListItem = Report & {
 	author_username: string | null;
 };
 
+export type StrikeStanding = 'ok' | 'disabled' | 'banned';
+
+export type StrikeHistoryEntry = {
+	content_type: ContentType;
+	content_id: string;
+	reason: ReportReason;
+	source: ReportSource;
+	at: number;
+	report_id?: string;
+	action_notes?: string;
+	preview?: string;
+};
+
+export type ModerationStatus = {
+	count: number;
+	cycles: number;
+	banned: boolean;
+	disabled_until?: number;
+	updated_at: number;
+	strikes_remaining: number;
+	standing: StrikeStanding;
+	history: StrikeHistoryEntry[];
+};
+
 export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
 	{ value: 'hate_speech', label: 'Hate speech / slurs' },
 	{ value: 'harassment', label: 'Harassment or bullying' },

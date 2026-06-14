@@ -78,14 +78,6 @@ export function useReport() {
 	return { submitReport, listReports, patchReport };
 }
 
-// ===== Client-side moderation =====
-//
-// Preventive, best-effort screening that runs in client event handlers before a
-// create/upload request leaves the browser. Everything here fails open: a model
-// that won't load, an OCR that hangs, or any thrown error resolves to "allowed"
-// so moderation can never block a legitimate post. The real enforcement lives
-// server-side; this just catches the obvious stuff early for a nicer UX.
-
 export type ModerationVerdict = {
 	allowed: boolean;
 	category?: 'nsfw_image' | 'profanity' | 'spam';

@@ -5,6 +5,7 @@ import { useAvatarStore } from 'stores/avatar';
 import { useFriendsStore } from 'stores/friends';
 import { useNotificationStore } from 'stores/notification';
 import { useUserStore } from 'stores/user';
+import type { ModerationStatus } from 'types/report';
 import {
 	BadgeMasteryGenerationError,
 	type LeaderboardEntry,
@@ -1506,6 +1507,77 @@ export function useFriends(id?: string) {
 		fetchCirclePage,
 		addToCircle,
 		removeFromCircle
+	};
+}
+
+// #region blocking + moderation
+
+export function useBlocking(id?: string) {
+	const authStore = useAuthStore();
+	const dataId = id || 'current';
+	const blockedUsers = ref<User[]>([]);
+
+	const fetchBlocked = async () => {
+		const res = await makeClientAPIRequest<{ items: User[]; total: number }>(
+			`/v2/users/${dataId}/blocked`,
+			authStore.sessionToken
+		);
+		if (valid(res) && Array.isArray(res.data.items)) {
+			blockedUsers.value = res.data.items;
+		}
+		return res;
+	};
+
+	const block = async (target: string) => {
+		const res = await makeClientAPIRequest<{ user: User; blocked: User }>(
+			`/v2/users/${dataId}/blocked?user=${encodeURIComponent(target)}`,
+			authStore.sessionToken,
+			{ method: 'PUT' }
+		);
+		if (valid(res) && res.data.blocked) {
+			const exists = blockedUsers.value.some((u) => u.id === res.data!.blocked.id);
+			if (!exists) blockedUsers.value = [...blockedUsers.value, res.data.blocked];
+		}
+		return res;
+	};
+
+	const unblock = async (target: string) => {
+		const res = await makeClientAPIRequest<{ user: User; unblocked: User }>(
+			`/v2/users/${dataId}/blocked?user=${encodeURIComponent(target)}`,
+			authStore.sessionToken,
+			{ method: 'DELETE' }
+		);
+		if (valid(res)) {
+			blockedUsers.value = blockedUsers.value.filter((u) => String(u.id) !== String(target));
+		}
+		return res;
+	};
+
+	return {
+		blockedUsers,
+		fetchBlocked,
+		block,
+		unblock
+	};
+}
+
+export function useModeration(id?: string) {
+	const authStore = useAuthStore();
+	const dataId = id || 'current';
+	const status = ref<ModerationStatus | null>(null);
+
+	const fetchModeration = async () => {
+		const res = await makeClientAPIRequest<ModerationStatus>(
+			`/v2/users/${dataId}/moderation`,
+			authStore.sessionToken
+		);
+		if (valid(res)) status.value = res.data;
+		return res;
+	};
+
+	return {
+		status,
+		fetchModeration
 	};
 }
 

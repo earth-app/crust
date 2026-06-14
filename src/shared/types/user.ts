@@ -70,6 +70,7 @@ export type User = {
 	is_friend: boolean;
 	is_my_friend: boolean;
 	is_mutual: boolean;
+	is_blocking: boolean; // requester has blocked this user
 	friends?: string[];
 	added_count?: number;
 	mutual_count: number; // always public
