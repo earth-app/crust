@@ -103,12 +103,21 @@
 				:content-id="String(props.user.id)"
 			>
 				<UButton
-					color="neutral"
+					color="warning"
 					variant="outline"
 					icon="mdi:flag-outline"
-					>Report User</UButton
+					>Report</UButton
 				>
 			</ReportMenu>
+			<UButton
+				v-if="canBlock"
+				:color="blocking ? 'neutral' : 'error'"
+				variant="outline"
+				:icon="blocking ? 'mdi:account-check-outline' : 'mdi:account-cancel-outline'"
+				:loading="blockBusy"
+				@click="toggleBlock"
+				>{{ blocking ? 'Unblock' : 'Block' }}</UButton
+			>
 		</div>
 		<div class="flex mb-4">
 			<UBadge
@@ -385,9 +394,54 @@ const props = defineProps<{
 
 const { user } = useAuth();
 const i18n = useI18n();
+const toast = useToast();
 const { name: displayName, handle, hasFullName } = useDisplayName(() => props.user);
 const canChallenge = computed(() => !!props.user.is_friend && user.value?.id !== props.user.id);
 const canReport = computed(() => user.value?.id !== props.user.id);
+
+const { block, unblock } = useBlocking();
+// block someone else's profile — never self, never an admin target
+const canBlock = computed(() => user.value?.id !== props.user.id && !props.user.is_admin);
+const blocking = ref(props.user.is_blocking);
+const blockBusy = ref(false);
+
+async function toggleBlock() {
+	if (blockBusy.value) return;
+	const willBlock = !blocking.value;
+	if (
+		willBlock &&
+		!confirm(
+			`Block @${props.user.username}? They won't be able to see your profile or interact with you.`
+		)
+	)
+		return;
+
+	blockBusy.value = true;
+	const res = willBlock ? await block(props.user.id) : await unblock(props.user.id);
+	blockBusy.value = false;
+
+	if (res.success) {
+		blocking.value = willBlock;
+		props.user.is_blocking = willBlock;
+		toast.add({
+			title: willBlock ? 'User Blocked' : 'User Unblocked',
+			description: willBlock
+				? `@${props.user.username} can no longer see your profile or interact with you.`
+				: `@${props.user.username} can interact with you again.`,
+			icon: willBlock ? 'mdi:account-cancel' : 'mdi:account-check',
+			color: 'success',
+			duration: 4000
+		});
+	} else {
+		toast.add({
+			title: willBlock ? 'Failed to Block' : 'Failed to Unblock',
+			description: res.message || 'Could not update block status.',
+			icon: 'mdi:alert-circle',
+			color: 'error',
+			duration: 5000
+		});
+	}
+}
 
 const {
 	avatar,
