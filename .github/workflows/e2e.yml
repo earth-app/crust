@@ -146,7 +146,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage-integration-artifacts-${{ github.run_id }}
-          path: coverage/
+          path: crust/coverage/
           retention-days: 14
       - name: Tear-Down Servers
         if: always()
