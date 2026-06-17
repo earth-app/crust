@@ -11,6 +11,38 @@ function stubArticles(...ids: string[]): Article[] {
 
 const ids = (items: Article[] | null) => (items ?? []).map((a) => a.id);
 
+// minimal well-formed article: id + author with an id is all isValidArticle checks
+function makeArticle(id: string, extra: Partial<Article> = {}): Article {
+	return { id, author: { id: `author-${id}` }, ...extra } as unknown as Article;
+}
+
+describe('article store setArticles', () => {
+	beforeEach(() => {
+		setActivePinia(createPinia());
+	});
+
+	it('caches a well-formed article and rejects a partial (author: []) one', () => {
+		const store = useArticleStore();
+		store.setArticles([makeArticle('a1'), { id: 'bad', author: [] } as unknown as Article]);
+		expect(store.has('a1')).toBe(true);
+		expect(store.has('bad')).toBe(false);
+	});
+
+	it('does not let setArticles overwrite an already-cached article', () => {
+		const store = useArticleStore();
+		store.cache.set('a1', makeArticle('a1', { content: 'full' } as Partial<Article>));
+		store.setArticles([makeArticle('a1', { content: '' } as Partial<Article>)]);
+		expect((store.get('a1') as any).content).toBe('full');
+	});
+
+	it('still seeds articles not yet cached via setArticles', () => {
+		const store = useArticleStore();
+		store.cache.set('a1', makeArticle('a1'));
+		store.setArticles([makeArticle('a1'), makeArticle('a2')]);
+		expect(store.has('a2')).toBe(true);
+	});
+});
+
 describe('article store random cache', () => {
 	beforeEach(() => {
 		setActivePinia(createPinia());

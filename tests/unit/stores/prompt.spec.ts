@@ -70,6 +70,20 @@ describe('prompt store validation guard', () => {
 		expect(store.has('good')).toBe(true);
 		expect(store.has('bad')).toBe(false);
 	});
+
+	it('does not let setPrompts overwrite an already-cached prompt', () => {
+		const store = usePromptStore();
+		store.cache.set('p1', makePrompt('p1', { content: 'full' } as Partial<Prompt>));
+		store.setPrompts([makePrompt('p1', { content: '' } as Partial<Prompt>)]);
+		expect((store.get('p1') as any).content).toBe('full');
+	});
+
+	it('still seeds prompts not yet cached via setPrompts', () => {
+		const store = usePromptStore();
+		store.cache.set('p1', makePrompt('p1'));
+		store.setPrompts([makePrompt('p1'), makePrompt('p2')]);
+		expect(store.has('p2')).toBe(true);
+	});
 });
 
 describe('prompt store get/has/three-state', () => {

@@ -190,8 +190,8 @@ export const useArticleStore = defineStore('article', () => {
 
 	const setArticles = (articles: Article[]) => {
 		for (const article of articles) {
-			// mantle2 can return partial-serialization shapes on cached reads; skip those rather than poison the cache
 			if (!isValidArticle(article)) continue;
+			if (cache.get(article.id)) continue;
 			cache.set(article.id, article);
 		}
 	};

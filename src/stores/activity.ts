@@ -99,6 +99,8 @@ export const useActivityStore = defineStore('activity', () => {
 
 	const setActivities = (activities: Activity[]) => {
 		for (const activity of activities) {
+			if (cache.get(activity.id)) continue;
+
 			evictOldestIfNeeded();
 			cache.set(activity.id, activity);
 		}

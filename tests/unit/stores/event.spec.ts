@@ -73,6 +73,20 @@ describe('event store validation guard', () => {
 		expect(store.has('good')).toBe(true);
 		expect(store.has('bad')).toBe(false);
 	});
+
+	it('does not let setEvents overwrite an already-cached event', () => {
+		const store = useEventStore();
+		store.cache.set('e1', makeEvent('e1', { is_attending: true } as Partial<Event>));
+		store.setEvents([makeEvent('e1', { is_attending: false } as Partial<Event>)]);
+		expect((store.get('e1') as any).is_attending).toBe(true);
+	});
+
+	it('still seeds events not yet cached via setEvents', () => {
+		const store = useEventStore();
+		store.cache.set('e1', makeEvent('e1'));
+		store.setEvents([makeEvent('e1'), makeEvent('e2')]);
+		expect(store.has('e2')).toBe(true);
+	});
 });
 
 describe('event store get/has/three-state', () => {

@@ -158,6 +158,10 @@ export const useEventStore = defineStore('event', () => {
 	const setEvents = (events: Event[]) => {
 		for (const event of events) {
 			if (!isValidEvent(event)) continue;
+			// list/random responses carry unreliable per-user fields (is_attending,
+			// can_edit); don't let them downgrade an event already loaded via its
+			// authoritative single-event fetch — only seed events not yet cached
+			if (cache.get(event.id)) continue;
 			cache.set(event.id, event);
 		}
 	};

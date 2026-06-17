@@ -59,6 +59,20 @@ describe('activity store setActivities', () => {
 		expect(store.get('a2')?.id).toBe('a2');
 		expect(store.cache.size).toBe(2);
 	});
+
+	it('does not overwrite an already-cached activity', () => {
+		const store = useActivityStore();
+		store.cache.set('a1', { id: 'a1', name: 'full' } as unknown as Activity);
+		store.setActivities([{ id: 'a1', name: '' } as unknown as Activity]);
+		expect((store.get('a1') as any).name).toBe('full');
+	});
+
+	it('still seeds activities not yet cached', () => {
+		const store = useActivityStore();
+		store.cache.set('a1', stubActivities('a1')[0]!);
+		store.setActivities(stubActivities('a1', 'a2'));
+		expect(store.has('a2')).toBe(true);
+	});
 });
 
 describe('activity store random cache', () => {
