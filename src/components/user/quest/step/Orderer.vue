@@ -44,7 +44,7 @@
 					<button
 						v-for="(tile, idx) in bank"
 						:key="`${tile}-${idx}`"
-						class="px-3! py-2! rounded-xl! border-2! text-sm! font-medium! transition-all duration-150 cursor-grab active:cursor-grabbing!"
+						class="px-3! py-2! rounded-xl! border-2! text-sm! font-medium! transition-all duration-150 touch-none cursor-grab active:cursor-grabbing!"
 						:class="[
 							selectedIndex === idx || (dragSource?.kind === 'bank' && dragSource.bankIndex === idx)
 								? 'border-primary bg-primary/20 text-white scale-105'
@@ -77,7 +77,7 @@
 					<span class="text-xs! text-neutral-500! w-4! shrink-0 tabular-nums!">{{ i + 1 }}</span>
 					<span
 						v-if="slot && !(dragSource?.kind === 'slot' && dragSource.index === i)"
-						class="text-sm! font-medium! text-white! flex-1! cursor-grab active:cursor-grabbing! transition-transform"
+						class="text-sm! font-medium! text-white! flex-1! touch-none cursor-grab active:cursor-grabbing! transition-transform"
 						:class="pendingHighlight === `slot:${i}` ? 'scale-105' : ''"
 						@pointerdown="drag.start($event, { tile: slot, source: { kind: 'slot', index: i } })"
 						@click.stop
@@ -215,6 +215,7 @@ const lastPointer = ref({ x: 0, y: 0 });
 const dragOverSlot = ref<number | null>(null);
 const dragOverBank = ref(false);
 const scrollTarget = ref<HTMLElement | Window | null>(null);
+const lifted = ref(false);
 
 const lowTime = computed(() => timeLeft.value <= 10 && phase.value === 'playing');
 const wrongSlots = computed(() =>
@@ -267,15 +268,26 @@ const autoScroll = useDragAutoScroll({
 });
 
 const drag = useLongPressDrag<DragPayload>({
+	// pick up on touchdown (matches desktop). touch-action:none on the tiles + the composable's
+	// global touchmove lock keep the scrollable modal from hijacking the gesture as a scroll.
+	touchMode: 'immediate',
 	onActivate: (payload, ctx) => {
 		dragPos.value = { x: ctx.x, y: ctx.y };
 		lastPointer.value = { x: ctx.x, y: ctx.y };
 		scrollTarget.value = autoScroll.findScrollableAncestor(ctx.target as HTMLElement);
-		selectedIndex.value = null;
+		lifted.value = false;
 	},
-	onMove: (e, _payload) => {
+	onMove: (e, _payload, mctx) => {
 		dragPos.value = { x: e.clientX, y: e.clientY };
 		lastPointer.value = { x: e.clientX, y: e.clientY };
+
+		if (!mctx.moved) return;
+		if (!lifted.value) {
+			lifted.value = true;
+			selectedIndex.value = null;
+			if (import.meta.client && 'vibrate' in navigator) navigator.vibrate?.(8);
+		}
+
 		const t = findTargetUnderPointer(e.clientX, e.clientY);
 		dragOverSlot.value = t.slot;
 		dragOverBank.value = t.bank;
@@ -284,22 +296,25 @@ const drag = useLongPressDrag<DragPayload>({
 	onCommit: (e, payload, ctx) => {
 		autoScroll.stop();
 		scrollTarget.value = null;
-		const target =
-			!ctx.wasCancel && e.type === 'pointerup'
-				? findTargetUnderPointer(e.clientX, e.clientY)
-				: { slot: null as number | null, bank: false };
 		dragOverSlot.value = null;
 		dragOverBank.value = false;
-		// pointercancel = system gesture interrupted; leave board untouched
-		if (!ctx.wasCancel) commitDrop(payload, target);
+		// pointercancel = system gesture interrupted; a no-move release is a tap (handled by @click)
+		if (ctx.wasCancel || !ctx.moved) return;
+		const target =
+			e.type === 'pointerup'
+				? findTargetUnderPointer(e.clientX, e.clientY)
+				: { slot: null as number | null, bank: false };
+		commitDrop(payload, target);
 		// swallow the synthetic click the browser fires after touch pointerup on the same element
 		if (e.pointerType === 'touch') suppressNextClickOn(ctx.pointerDownTarget);
 	}
 });
 
-// template aliases for the active drag payload
-const draggingPayload = computed(() => drag.activePayload.value);
-const dragSource = computed(() => drag.activePayload.value?.source ?? null);
+const isDragging = computed(() => !!drag.activePayload.value && drag.isMoved.value);
+const draggingPayload = computed(() => (isDragging.value ? drag.activePayload.value : null));
+const dragSource = computed(() =>
+	isDragging.value ? (drag.activePayload.value?.source ?? null) : null
+);
 const pendingHighlight = computed(() => {
 	const p = drag.pendingPayload.value;
 	if (!p) return null;
@@ -355,15 +370,11 @@ function commitDrop(payload: DragPayload, target: { slot: number | null; bank: b
 		validate();
 		return;
 	}
-	if (target.bank && source.kind === 'slot') {
-		bank.value.push(tile);
-		slots.value[source.index] = null;
-		return;
-	}
-	// released outside any drop zone - slot tiles fall back to bank so they aren't stranded
+
 	if (source.kind === 'slot') {
 		bank.value.push(tile);
 		slots.value[source.index] = null;
+		validate();
 	}
 }
 

@@ -100,6 +100,7 @@ export interface UseLongPressDragOptions<T> {
 	holdMs?: number;
 	moveTolerance?: number;
 	dragThreshold?: number;
+	touchMode?: 'long-press' | 'immediate';
 }
 
 export interface LongPressDragHandle<T> {
@@ -128,6 +129,7 @@ export function useLongPressDrag<T>(opts: UseLongPressDragOptions<T>): LongPress
 	const holdMs = opts.holdMs ?? 180;
 	const moveTolerance = opts.moveTolerance ?? 14;
 	const dragThreshold = opts.dragThreshold ?? 8;
+	const touchMode = opts.touchMode ?? 'long-press';
 
 	const pending = shallowRef<Pending<T> | null>(null);
 	const pendingPayload = shallowRef<T | null>(null);
@@ -145,7 +147,14 @@ export function useLongPressDrag<T>(opts: UseLongPressDragOptions<T>): LongPress
 	}
 
 	function activate(payload: T, target: HTMLElement, pointerId: number, x: number, y: number) {
-		target.setPointerCapture?.(pointerId);
+		// setPointerCapture throws InvalidStateError if the pointer is no longer active (a stale
+		// pointer the browser already released, or a synthetic event). the drag still works through
+		// the window-level move/up listeners, so never let a failed capture abort the pickup.
+		try {
+			target.setPointerCapture?.(pointerId);
+		} catch {
+			/* ignore */
+		}
 		activePayload.value = payload;
 		active.value = { target };
 		activeStart.value = { x, y };
@@ -173,9 +182,9 @@ export function useLongPressDrag<T>(opts: UseLongPressDragOptions<T>): LongPress
 		// ignore secondary pointers so a second finger can't open a parallel drag
 		if (pending.value || activePayload.value) return;
 
-		if (e.pointerType !== 'touch') {
+		if (e.pointerType !== 'touch' || touchMode === 'immediate') {
 			activate(payload, e.target as HTMLElement, e.pointerId, e.clientX, e.clientY);
-			e.preventDefault();
+			if (e.pointerType !== 'touch') e.preventDefault();
 			return;
 		}
 

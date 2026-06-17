@@ -75,6 +75,8 @@ export default defineConfig<ConfigOptions>({
 	projects: [
 		{
 			name: 'chromium',
+			// mobile/responsive specs belong to the Pixel 7 project
+			testIgnore: /\.(mobile|responsive)\.spec\.ts$/,
 			use: { ...devices['Desktop Chrome'] }
 		},
 		{
