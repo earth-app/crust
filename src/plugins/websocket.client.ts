@@ -45,14 +45,27 @@ export default defineNuxtPlugin((nuxtApp) => {
 			let teardown = false;
 			let connecting = false;
 
+			let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+			let lastActivityAt = 0;
+
 			const MAX_RECONNECT_ATTEMPTS = 8;
 			const BASE_DELAY_MS = 1_000;
 			const MAX_DELAY_MS = 30_000;
+			const PING_INTERVAL_MS = 25_000;
+			// no inbound traffic (notification or pong) for this long => treat the socket as dead
+			const LIVENESS_TIMEOUT_MS = 60_000;
 
 			const clearReconnectTimer = () => {
 				if (reconnectTimer) {
 					clearTimeout(reconnectTimer);
 					reconnectTimer = null;
+				}
+			};
+
+			const clearHeartbeat = () => {
+				if (heartbeatTimer) {
+					clearInterval(heartbeatTimer);
+					heartbeatTimer = null;
 				}
 			};
 
@@ -114,6 +127,31 @@ export default defineNuxtPlugin((nuxtApp) => {
 					console.log(`WebSocket connection established to users:${userId}`);
 					reconnectAttempts = 0;
 					clearReconnectTimer();
+
+					lastActivityAt = Date.now();
+					clearHeartbeat();
+					heartbeatTimer = setInterval(() => {
+						if (!ws) return;
+						if (Date.now() - lastActivityAt > LIVENESS_TIMEOUT_MS) {
+							console.warn('WebSocket heartbeat timed out; forcing reconnect.');
+							clearHeartbeat();
+							try {
+								// non-1000 close routes through onclose -> scheduleReconnect
+								ws.close(4000, 'heartbeat-timeout');
+							} catch {
+								// wedged socket may never fire onclose — reconnect defensively
+								ws = null;
+								if (!teardown && user.value?.id === userId) scheduleReconnect(userId);
+							}
+							return;
+						}
+						try {
+							ws.send(JSON.stringify({ type: 'ping' }));
+						} catch (err) {
+							console.warn('WebSocket ping failed:', err);
+						}
+					}, PING_INTERVAL_MS);
+
 					// catch up on notifications that arrived while we were disconnected
 					notificationStore.fetchNotifications(true).catch((err) => {
 						console.warn('Post-reconnect notification fetch failed:', err);
@@ -121,6 +159,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 				};
 
 				ws.onmessage = (event: MessageEvent) => {
+					// any inbound frame (notification or pong) proves the socket is alive
+					lastActivityAt = Date.now();
+
 					const message = JSON.parse(event.data) satisfies { type: string; data: any };
 					if (!message.type) {
 						console.warn('Received WebSocket message without type:', message);
@@ -128,6 +169,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 					}
 
 					switch (message.type) {
+						case 'pong':
+							// heartbeat acknowledgement — liveness already refreshed above
+							break;
 						case 'notification': {
 							const notification = message.data as UserNotification;
 
@@ -234,6 +278,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 				ws.onclose = (event: CloseEvent) => {
 					console.log('WebSocket connection closed', event.code, event.reason);
 					ws = null;
+					clearHeartbeat();
 					// 1000 = normal close (we initiated). anything else is unexpected -> retry.
 					if (!teardown && event.code !== 1000 && user.value?.id === userId) {
 						scheduleReconnect(userId);
@@ -247,6 +292,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
 			const disconnect = () => {
 				clearReconnectTimer();
+				clearHeartbeat();
 				reconnectAttempts = 0;
 				// any connect() still awaiting its ticket will see the cleared user/teardown
 				// state post-await and bail, so it's safe to release the guard here.
