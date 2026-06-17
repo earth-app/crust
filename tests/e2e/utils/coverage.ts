@@ -64,6 +64,23 @@ function isAppSourcePath(filePath: string): boolean {
 	return KEEP_PREFIXES.some((p) => filePath.includes(p));
 }
 
+/**
+ * v8-to-istanbul keys coverage by ABSOLUTE on-disk path
+ * (`/home/runner/work/crust/crust/crust/src/...` in CI). Codecov matches
+ * coverage onto the repo tree by REPO-RELATIVE path (`src/...`) - absolute CI
+ * paths match nothing and the entire report is rejected as unusable. Strip the
+ * project-root prefix so SF / coverage-final keys are repo-relative.
+ */
+export function toRepoRelative(filePath: string): string {
+	if (!filePath) return filePath;
+	const root = PROJECT_ROOT.endsWith('/') ? PROJECT_ROOT : PROJECT_ROOT + '/';
+	if (filePath.startsWith(root)) return filePath.slice(root.length);
+	// fallback: trim everything up to the first app-source dir (handles symlinked
+	// or otherwise non-root-prefixed paths v8-to-istanbul might emit)
+	const m = filePath.match(/(?:^|\/)(src\/.*)$/);
+	return m?.[1] ?? filePath;
+}
+
 export async function saveCoverageForTest(
 	testId: string,
 	entries: Array<{ url: string; source?: string; functions: any[] }>
@@ -121,10 +138,13 @@ export async function mergeAndReport(): Promise<void> {
 				const istanbul = converter.toIstanbul();
 				for (const [filePath, fileCov] of Object.entries(istanbul)) {
 					if (!isAppSourcePath(filePath)) continue;
-					if (!merged[filePath]) {
-						merged[filePath] = fileCov;
+					// re-key onto repo-relative paths so codecov can locate the source
+					const relPath = toRepoRelative(filePath);
+					(fileCov as any).path = relPath;
+					if (!merged[relPath]) {
+						merged[relPath] = fileCov;
 					} else {
-						mergeFileCoverage(merged[filePath], fileCov as any);
+						mergeFileCoverage(merged[relPath], fileCov as any);
 					}
 				}
 				converter.destroy();
@@ -169,7 +189,7 @@ function mergeFileCoverage(target: any, src: any) {
 	}
 }
 
-function toLcov(merged: Record<string, any>): string {
+export function toLcov(merged: Record<string, any>): string {
 	let out = '';
 	for (const [filePath, cov] of Object.entries(merged)) {
 		out += `TN:\nSF:${filePath}\n`;

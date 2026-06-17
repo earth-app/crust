@@ -138,9 +138,7 @@ jobs:
           slug: earth-app/crust
           fail_ci_if_error: false
           flags: e2e-integration
-          files: |
-            crust/coverage/lcov.info
-            crust/coverage/coverage-final.json
+          files: crust/coverage/lcov.info
       - name: Archive Coverage Artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
