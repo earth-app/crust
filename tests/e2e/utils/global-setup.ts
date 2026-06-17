@@ -16,7 +16,8 @@ import { fileURLToPath } from 'node:url';
 import { startMockServers } from './mock-server';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = resolve(__dirname, '../..');
+// repo root is three up from tests/e2e/utils (must match coverage.ts + fixtures.ts)
+const PROJECT_ROOT = resolve(__dirname, '../../..');
 const RAW_COVERAGE_DIR = resolve(PROJECT_ROOT, '.coverage', 'raw');
 const INTEGRATION_SESSION_FILE = resolve(PROJECT_ROOT, '.integration-session.json');
 

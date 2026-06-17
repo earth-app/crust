@@ -23,7 +23,8 @@ import { MockClient } from './mock-client';
 import { makeAdmin, makeUser } from './mock-data';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const INTEGRATION_SESSION_FILE = resolve(__dirname, '../../.integration-session.json');
+// repo root is three up from tests/e2e/utils (must match global-setup.ts)
+const INTEGRATION_SESSION_FILE = resolve(__dirname, '../../../.integration-session.json');
 
 /**
  * `true` when running against the real mantle2/cloud backends rather than the
