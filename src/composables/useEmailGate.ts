@@ -50,8 +50,9 @@ export function useEmailGate() {
 	function handleServerError(err: unknown, forAction?: string): boolean {
 		const body = extractErrorBody(err);
 		if (body && body.reason === 'EMAIL_VERIFICATION_REQUIRED') {
-			hasEmailOverride.value = body.has_email === true;
+			// openModal clears the override, so apply the server's has_email after it
 			openModal(forAction || body.message);
+			hasEmailOverride.value = body.has_email === true;
 			return true;
 		}
 		return false;
