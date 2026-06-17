@@ -50,6 +50,7 @@ const toast = useToast();
 const route = useRoute();
 const router = useRouter();
 const redirectingAfterSubmit = ref(false);
+const wasAuthenticatedAtMount = Boolean(user.value);
 
 const { error } = route.query;
 if (error) {
@@ -90,20 +91,29 @@ if (error) {
 watch(
 	() => user.value,
 	(currentUser) => {
-		if (currentUser && !redirectingAfterSubmit.value) {
-			router.replace('/');
+		if (!currentUser || redirectingAfterSubmit.value) return;
+		redirectingAfterSubmit.value = true;
+		router.replace('/');
 
-			// add buffer if just signed up
-			if (new Date(currentUser.created_at).getTime() + 60 * 1000 <= Date.now()) {
-				toast.add({
-					title: 'Already Logged In',
-					description: 'You are already logged in.',
-					icon: 'mdi:login-variant',
-					color: 'info',
-					duration: 3000
-				});
-			}
+		if (wasAuthenticatedAtMount) {
+			toast.add({
+				title: 'Already Logged In',
+				description: 'You are already logged in.',
+				icon: 'mdi:login-variant',
+				color: 'info',
+				duration: 3000
+			});
+			return;
 		}
+
+		const isNewAccount = Date.now() - new Date(currentUser.created_at).getTime() <= 60 * 1000;
+		toast.add({
+			title: isNewAccount ? 'Welcome!' : 'Welcome Back!',
+			description: isNewAccount ? 'Your account is ready.' : 'Signed in to your existing account.',
+			icon: isNewAccount ? 'mdi:account-check' : 'mdi:login-variant',
+			color: 'success',
+			duration: 3000
+		});
 	},
 	{ immediate: true }
 );
