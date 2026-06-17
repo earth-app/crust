@@ -81,7 +81,18 @@ export const useAuthStore = defineStore('auth', () => {
 				credentials: 'include'
 			});
 
+			const hasValidSessionShape =
+				!!response && typeof response === 'object' && 'session_token' in response;
+			if (!hasValidSessionShape) {
+				return sessionToken.value ?? existingToken;
+			}
+
 			const syncedToken = normalizeSessionToken(response.session_token);
+
+			const liveToken = sessionToken.value;
+			if (!syncedToken && liveToken) {
+				return liveToken;
+			}
 
 			if (!existingToken && syncedToken && hasRecentLogout()) {
 				return null;
@@ -95,7 +106,7 @@ export const useAuthStore = defineStore('auth', () => {
 			return syncedToken;
 		} catch (error) {
 			console.error('Failed to sync session token:', error);
-			return existingToken;
+			return sessionToken.value ?? existingToken;
 		}
 	};
 
