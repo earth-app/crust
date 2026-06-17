@@ -1,21 +1,20 @@
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { toLcov, toRepoRelative } from '../e2e/utils/coverage';
+import { PROJECT_ROOT, toLcov, toRepoRelative } from '../e2e/utils/coverage';
 
 // regression: v8-to-istanbul keys coverage by absolute on-disk path; codecov
 // matches onto the repo tree by repo-relative path, so absolute CI paths made
 // the whole e2e-integration report "unusable". paths must come out repo-relative.
+// (build against the live PROJECT_ROOT, not a hardcoded CI path that could itself
+// be a prefix of the runner's checkout)
 describe('toRepoRelative', () => {
-	it('strips the CI triple-nested absolute prefix to a repo-relative src path', () => {
-		// exact shape codecov rejected: earth-app/crust checked out into a crust/
-		// subdir of the /home/runner/work/crust/crust workspace
-		const ci = '/home/runner/work/crust/crust/crust/src/components/OfflineBanner.vue';
-		expect(toRepoRelative(ci)).toBe('src/components/OfflineBanner.vue');
+	it('strips the absolute project-root prefix to a repo-relative src path', () => {
+		const abs = `${PROJECT_ROOT}/src/components/OfflineBanner.vue`;
+		expect(toRepoRelative(abs)).toBe('src/components/OfflineBanner.vue');
 	});
 
-	it('strips the local project-root prefix', () => {
-		const abs = resolve(process.cwd(), 'src/composables/useArticle.ts');
-		expect(toRepoRelative(abs)).toBe('src/composables/useArticle.ts');
+	it('falls back to the first src/ segment for a path outside the project root', () => {
+		const foreign = '/zzz-foreign-root/src/composables/useArticle.ts';
+		expect(toRepoRelative(foreign)).toBe('src/composables/useArticle.ts');
 	});
 
 	it('leaves an already-relative path untouched', () => {

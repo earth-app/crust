@@ -23,7 +23,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // repo root is three up from tests/e2e/utils (build output, node_modules and codecov reports live there)
-const PROJECT_ROOT = resolve(__dirname, '../../..');
+export const PROJECT_ROOT = resolve(__dirname, '../../..');
 const RAW_DIR = resolve(PROJECT_ROOT, '.coverage', 'raw');
 const OUT_DIR = resolve(PROJECT_ROOT, 'coverage');
 const CHUNK_DIR = resolve(PROJECT_ROOT, '.output/public/_nuxt');
