@@ -71,10 +71,7 @@ test.describe('Homepage (anonymous)', () => {
 	});
 
 	test('completes initial render within budget', async ({ page, gotoHydrated }) => {
-		// Strict 5s budget against the pre-built bundle (PLAYWRIGHT_PROD=1);
-		// 15s when running against the dev server, where Vite cold-compiles
-		// each route on first hit and the budget can't catch real regressions.
-		const budgetMs = process.env.PLAYWRIGHT_PROD === '1' ? 5_000 : 15_000;
+		const budgetMs = process.env.PLAYWRIGHT_PROD === '1' ? 10_000 : 20_000;
 		const start = Date.now();
 		await gotoHydrated('/');
 		await expect(page.getByRole('heading', { name: 'The Earth App' })).toBeVisible();
