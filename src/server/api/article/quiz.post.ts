@@ -28,7 +28,8 @@ export default defineEventHandler(async (event) => {
 			answers,
 			articleId,
 			userId: user.id,
-			articleTypes
+			articleTypes,
+			rank: user.account?.account_type
 		}
 	});
 
