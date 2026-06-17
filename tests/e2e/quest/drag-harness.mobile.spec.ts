@@ -1,18 +1,24 @@
 /**
- * Mobile/touch interaction tests for the Orderer quest step, driven through the
- * gated harness page at /__test__/drag-harness on a Pixel 7 (mobile-chromium
- * project — see playwright.config.ts).
+ * Mobile/touch interaction tests for the quest step components, driven through the
+ * gated harness page at /__test__/drag-harness.
  *
- * This is the regression net for the mobile drag rework: the tiles must declare
- * `touch-action: none` (so the browser can't claim the gesture as a scroll) and
- * a touch drag must pick up immediately and behave like the desktop mouse drag —
- * place into a slot, eject back to the bank leaving a gap, and tap-to-place.
+ * These components are shared into the `sky` Capacitor app (via the @earth-app/crust
+ * tarball), so they run in two engines: Chromium (Android System WebView + Android
+ * Chrome) and WebKit (iOS WKWebView + iOS Safari). The `mobile-chromium` project
+ * covers the former; run `bun run test:e2e:mobile:webkit` to also exercise the latter
+ * on the same specs (gated behind PLAYWRIGHT_WEBKIT — CI installs chromium only).
+ *
+ * Regression net for the mobile drag rework: tiles must declare `touch-action: none`
+ * (so neither the browser nor Ionic's WebView can claim the gesture as a scroll), a
+ * touch drag must pick up immediately and behave like the desktop mouse drag (place,
+ * eject-leaving-a-gap, tap-to-place), and Matcher must still match by touch.
  */
 
 import { expect, test } from '../utils/fixtures';
 import { center, touchDrag } from './drag-helpers';
 
 const ORDERER = '/__test__/drag-harness?c=orderer';
+const MATCHER = '/__test__/drag-harness?c=matcher';
 
 const bankTiles = '[data-bank] button';
 const slot = (i: number) => `[data-slot-index="${i}"]`;
@@ -64,5 +70,26 @@ test.describe('Orderer — mobile touch drag', () => {
 
 		await expect(page.locator(slot(1))).toContainText(label);
 		await expect(page.getByTestId('emitted-order')).toHaveText(label);
+	});
+});
+
+test.describe('Matcher — mobile touch', () => {
+	test('counts down, then matching every pair by tapping wins', async ({ page, gotoHydrated }) => {
+		await gotoHydrated(MATCHER);
+
+		const cards = page.locator('[data-card-id]');
+		await expect(cards.first()).toBeVisible({ timeout: 12_000 });
+
+		const tapMatch = async (term: string, def: string) => {
+			await page.locator('[data-card-id]', { hasText: term }).first().tap();
+			await page.locator('[data-card-id]', { hasText: def }).first().tap();
+		};
+
+		await tapMatch('Sun', 'Star');
+		await tapMatch('Moon', 'Satellite');
+
+		await expect(page.getByRole('heading', { name: /All Matched/i })).toBeVisible({
+			timeout: 12_000
+		});
 	});
 });

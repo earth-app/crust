@@ -24,6 +24,7 @@ const isCI = !!process.env.CI;
 const coverage = process.env.COVERAGE === '1';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
 const prodServer = process.env.PLAYWRIGHT_PROD === '1';
+const includeWebkit = process.env.PLAYWRIGHT_WEBKIT === '1';
 
 const reporters: any[] = [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]];
 
@@ -80,9 +81,20 @@ export default defineConfig<ConfigOptions>({
 			use: { ...devices['Desktop Chrome'] }
 		},
 		{
+			// Android System WebView + Android Chrome both run Chromium (Blink)
 			name: 'mobile-chromium',
 			testMatch: /\.(mobile|responsive)\.spec\.ts$/,
 			use: { ...devices['Pixel 7'] }
-		}
+		},
+		// iOS WKWebView (the sky app) + iOS Safari run WebKit. Same mobile specs, different engine.
+		...(includeWebkit
+			? [
+					{
+						name: 'mobile-webkit',
+						testMatch: /\.(mobile|responsive)\.spec\.ts$/,
+						use: { ...devices['iPhone 14'] }
+					}
+				]
+			: [])
 	]
 });

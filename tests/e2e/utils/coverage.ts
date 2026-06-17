@@ -59,6 +59,8 @@ function isCandidateUrl(url: string): boolean {
 function isAppSourcePath(filePath: string): boolean {
 	if (!filePath) return false;
 	if (filePath.includes('node_modules')) return false;
+	// test-only scaffolding (e.g. the drag-harness page) lives under src/ but isn't shipped code
+	if (filePath.includes('__test__')) return false;
 	return KEEP_PREFIXES.some((p) => filePath.includes(p));
 }
 

@@ -44,7 +44,7 @@
 					<button
 						v-for="(tile, idx) in bank"
 						:key="`${tile}-${idx}`"
-						class="px-3! py-2! rounded-xl! border-2! text-sm! font-medium! transition-all duration-150 touch-none cursor-grab active:cursor-grabbing!"
+						class="px-3! py-2! rounded-xl! border-2! text-sm! font-medium! transition-all duration-150 touch-none! cursor-grab active:cursor-grabbing!"
 						:class="[
 							selectedIndex === idx || (dragSource?.kind === 'bank' && dragSource.bankIndex === idx)
 								? 'border-primary bg-primary/20 text-white scale-105'
@@ -77,7 +77,7 @@
 					<span class="text-xs! text-neutral-500! w-4! shrink-0 tabular-nums!">{{ i + 1 }}</span>
 					<span
 						v-if="slot && !(dragSource?.kind === 'slot' && dragSource.index === i)"
-						class="text-sm! font-medium! text-white! flex-1! touch-none cursor-grab active:cursor-grabbing! transition-transform"
+						class="text-sm! font-medium! text-white! flex-1! touch-none! cursor-grab active:cursor-grabbing! transition-transform"
 						:class="pendingHighlight === `slot:${i}` ? 'scale-105' : ''"
 						@pointerdown="drag.start($event, { tile: slot, source: { kind: 'slot', index: i } })"
 						@click.stop
