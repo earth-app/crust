@@ -46,16 +46,18 @@
 		<p class="text-md mt-2 max-w-3xl">
 			<strong>Location, sensor, camera, and health data.</strong> Some features — particularly
 			quests in our mobile application — may, with your permission, access additional information
-			from your device. This can include precise GPS location (including background location while a
-			distance-based quest is active), motion and step-count data from your device's activity
-			sensors, and, on supported devices, distance or workout data you allow us to read from your
-			platform's health service (such as Apple Health). If you submit photos, we may read embedded
-			metadata (EXIF), which can include the location where a photo was taken, and we may use that
-			location to determine the general area (such as the country) associated with a submission.
-			Quests may also use your device's camera and microphone when you choose to complete steps that
-			require a photo, video, or audio recording. Your device prompts you for permission before we
-			access location, camera, microphone, health, or motion data, and you can change these
-			permissions at any time in your device settings.
+			from your device. This can include your device's location while you are using the app (used to
+			verify and tag where you complete a photo-based quest step), motion and step-count data from
+			your device's activity sensors, and, on supported devices, distance or workout data you allow
+			us to read from your platform's health service (such as Apple Health). Distance and workout
+			data read from your health service is used only to record your progress on distance-based
+			quests; it is never sold, shared with third parties, or used for advertising. If you submit
+			photos, we may read embedded metadata (EXIF), which can include the location where a photo was
+			taken, and we may use that location to determine the general area (such as the country)
+			associated with a submission. Quests may also use your device's camera and microphone when you
+			choose to complete steps that require a photo, video, or audio recording. Your device prompts
+			you for permission before we access location, camera, microphone, health, or motion data, and
+			you can change these permissions at any time in your device settings.
 		</p>
 		<p class="text-md mt-2 max-w-3xl">
 			<strong>Notifications and on-device data.</strong> If you enable push notifications, we
