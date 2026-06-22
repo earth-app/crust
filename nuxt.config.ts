@@ -95,6 +95,9 @@ export default defineNuxtConfig({
 		},
 		ssr: {
 			noExternal: ['@earth-app/ocean']
+		},
+		build: {
+			reportCompressedSize: false
 		}
 	},
 	sourcemap: {
