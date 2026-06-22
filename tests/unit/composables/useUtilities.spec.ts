@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia';
+import { useAuthStore } from 'stores/auth';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, h, nextTick, reactive, ref } from 'vue';
 import {
@@ -66,6 +67,8 @@ function pointerEvent(
 describe('useTimeOnPage', () => {
 	beforeEach(() => {
 		setActivePinia(createPinia());
+		// timer only runs for authenticated users (recompute gates on sessionToken)
+		useAuthStore().setSessionToken('test-token');
 		vi.clearAllMocks();
 	});
 
