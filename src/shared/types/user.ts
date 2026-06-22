@@ -356,6 +356,14 @@ export type QuestHistoryEntry = {
 	progress?: (QuestProgressEntry | QuestProgressEntry[])[];
 };
 
+export type ActiveReadTime = {
+	stepIndex: number;
+	altIndex?: number;
+	tracker: 'articles_read_time' | 'activity_read_time';
+	accumulatedSeconds: number;
+	targetSeconds: number;
+};
+
 export type UserQuestProgress = {
 	quest: Quest;
 	questId: Quest['id'];
@@ -365,4 +373,5 @@ export type UserQuestProgress = {
 	progress: (QuestProgressEntry | QuestProgressEntry[])[];
 	migrationSignals?: QuestMigrationSignal[];
 	migrated?: boolean;
+	activeReadTime?: ActiveReadTime[];
 };

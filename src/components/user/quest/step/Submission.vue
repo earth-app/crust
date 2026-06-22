@@ -243,6 +243,30 @@
 				/>
 			</template>
 
+			<template v-else-if="readTimeProgress">
+				<div class="flex w-full max-w-md flex-col items-center gap-4 py-8">
+					<UIcon
+						name="i-lucide-book-open-text"
+						class="size-10 text-primary"
+					/>
+					<p class="m-0! text-center text-sm! opacity-80">
+						Keep reading to complete this step — your time is tracked automatically.
+					</p>
+					<div class="flex w-full flex-col gap-1">
+						<UProgress
+							:model-value="readTimeProgress.accumulated"
+							:max="readTimeProgress.target"
+							color="primary"
+							size="md"
+						/>
+						<div class="flex justify-between text-xs! opacity-70">
+							<span>{{ formatReadTime(readTimeProgress.accumulated) }} read</span>
+							<span>{{ formatReadTime(readTimeProgress.target) }} goal</span>
+						</div>
+					</div>
+				</div>
+			</template>
+
 			<template v-else>
 				<div class="flex flex-col items-center gap-3 py-8 text-center opacity-60">
 					<UIcon
@@ -291,8 +315,37 @@ const emit = defineEmits<{
 
 const { user, avatar128 } = useAuth(props.serverRequest || makeServerRequest);
 const userId = computed(() => user.value?.id);
-const { updateQuest } = useUser(userId, props.serverRequest || makeServerRequest);
+const { quest: activeQuest, updateQuest } = useUser(
+	userId,
+	props.serverRequest || makeServerRequest
+);
 const { lat, lng, fetchLocation } = useQuestGeolocation();
+
+function formatReadTime(totalSeconds: number): string {
+	const s = Math.max(0, Math.round(totalSeconds));
+	const m = Math.floor(s / 60);
+	const sec = s % 60;
+	if (m > 0) return sec > 0 ? `${m}m ${sec}s` : `${m}m`;
+	return `${sec}s`;
+}
+
+const readTimeProgress = computed(() => {
+	if (!props.step.type.endsWith('_read_time')) return null;
+	if (!activeQuest.value) return null;
+	if (activeQuest.value?.questId !== props.quest.id) return null;
+	const entry = activeQuest.value?.activeReadTime?.find(
+		(r) =>
+			r.stepIndex === props.step.index &&
+			(r.altIndex ?? undefined) === (props.step.altIndex ?? undefined)
+	);
+	if (!entry) return null;
+	const target =
+		entry.targetSeconds ||
+		(typeof props.step.parameters?.[1] === 'number' ? (props.step.parameters[1] as number) : 0);
+	if (!target) return null;
+	const accumulated = Math.min(entry.accumulatedSeconds, target);
+	return { accumulated, target };
+});
 
 const submitting = ref(false);
 const succeeded = ref(false);
