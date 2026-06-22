@@ -14,7 +14,7 @@ export function usePrompt(id: string) {
 	};
 
 	const update = async (promptText: string) => {
-		return await promptStore.updatePrompt({ id, title: promptText });
+		return await promptStore.updatePrompt({ id, prompt: promptText });
 	};
 
 	const remove = async () => {
@@ -92,8 +92,7 @@ export function usePrompts(
 
 	const create = async (promptText: string, visibility?: Visibility) => {
 		return await promptStore.createPrompt({
-			title: promptText,
-			description: promptText,
+			prompt: promptText,
 			visibility
 		});
 	};

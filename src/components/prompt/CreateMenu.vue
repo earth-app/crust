@@ -194,8 +194,7 @@ async function newPrompt() {
 
 		const promptStore = usePromptStore();
 		const res = await promptStore.createPrompt({
-			title: text,
-			description: text,
+			prompt: text,
 			visibility: state.visibility
 		});
 		if (valid(res)) {
