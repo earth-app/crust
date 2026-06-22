@@ -1,69 +1,209 @@
 import { useAuthStore } from 'stores/auth';
 
+const IDLE_MS = 60_000;
+const ACTIVITY_THROTTLE_MS = 1_000;
+const TIMER_ENDPOINT = '/api/user/timer';
+
 export function useTimeOnPage(field: string, metadata: Record<string, any> = {}) {
 	const authStore = useAuthStore();
 	const timeOnPage = ref(0);
 	const isTimerRunning = ref(false);
 	const timerPending = ref(false);
 
-	const startTimer = async () => {
-		if (isTimerRunning.value || timerPending.value) return;
+	const desiredRunning = ref(false);
+	const isMounted = ref(false);
+	const isAttended = ref(true);
+	let needsResync = false;
+	let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+	const recompute = () => {
+		desiredRunning.value = isMounted.value && isAttended.value && Boolean(authStore.sessionToken);
+	};
+
+	const syncTimer = async () => {
+		if (timerPending.value) {
+			needsResync = true;
+			return;
+		}
+
+		if (desiredRunning.value === isTimerRunning.value) return;
+
 		timerPending.value = true;
-
 		try {
-			const res = await makeServerRequest<void>(null, '/api/user/timer', authStore.sessionToken, {
-				method: 'POST',
-				body: { action: 'start', field, metadata }
-			});
+			if (desiredRunning.value) {
+				const res = await makeServerRequest<void>(null, TIMER_ENDPOINT, authStore.sessionToken, {
+					method: 'POST',
+					body: { action: 'start', field, metadata }
+				});
 
-			if (!res.success) {
-				console.error('Failed to start timer:', res.message);
-				return;
+				if (!res.success) {
+					console.error('Failed to start timer:', res.message);
+					return;
+				}
+
+				isTimerRunning.value = true;
+			} else {
+				const res = await makeServerRequest<{ durationMs: number }>(
+					null,
+					TIMER_ENDPOINT,
+					authStore.sessionToken,
+					{
+						method: 'POST',
+						body: { action: 'stop', field, metadata }
+					}
+				);
+
+				if (!res.success || !res.data) {
+					console.error('Failed to stop timer:', res.message);
+					return;
+				}
+
+				isTimerRunning.value = false;
+				timeOnPage.value += res.data.durationMs;
 			}
-
-			isTimerRunning.value = true;
 		} finally {
 			timerPending.value = false;
+			if (needsResync) {
+				needsResync = false;
+				void syncTimer();
+			}
 		}
+	};
+
+	const startTimer = async () => {
+		isMounted.value = true;
+		isAttended.value = true;
+		armIdleTimeout();
+		recompute();
+		await syncTimer();
 	};
 
 	const stopTimer = async () => {
-		if (!isTimerRunning.value || timerPending.value) return;
-		timerPending.value = true;
+		desiredRunning.value = false;
+		await syncTimer();
+	};
+
+	// pause counted time once the user has gone quiet, resume on the next activity event
+	const armIdleTimeout = () => {
+		if (idleTimer) clearTimeout(idleTimer);
+		idleTimer = setTimeout(() => {
+			isAttended.value = false;
+			recompute();
+			void syncTimer();
+		}, IDLE_MS);
+	};
+
+	let lastActivity = 0;
+	const onActivity = () => {
+		const now = Date.now();
+		if (now - lastActivity < ACTIVITY_THROTTLE_MS) return;
+		lastActivity = now;
+
+		if (!isAttended.value) {
+			isAttended.value = true;
+			recompute();
+			void syncTimer();
+		}
+		armIdleTimeout();
+	};
+
+	const flushStop = () => {
+		if (!isTimerRunning.value) return;
+		isTimerRunning.value = false;
+		desiredRunning.value = false;
+
+		const payload = JSON.stringify({ action: 'stop', field, metadata });
+		const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+		if (authStore.sessionToken) headers['Authorization'] = `Bearer ${authStore.sessionToken}`;
 
 		try {
-			const res = await makeServerRequest<{ durationMs: number }>(
-				null,
-				'/api/user/timer',
-				authStore.sessionToken,
-				{
-					method: 'POST',
-					body: { action: 'stop', field, metadata }
-				}
-			);
-
-			if (!res.success || !res.data) {
-				console.error('Failed to stop timer:', res.message);
-				return;
+			void fetch(TIMER_ENDPOINT, {
+				method: 'POST',
+				headers,
+				body: payload,
+				keepalive: true
+			});
+		} catch {
+			// last resort — body-only, only authenticates if a session cookie is present
+			try {
+				navigator.sendBeacon?.(TIMER_ENDPOINT, payload);
+			} catch {
+				/* ignore */
 			}
-
-			isTimerRunning.value = false;
-			timeOnPage.value += res.data.durationMs;
-		} finally {
-			timerPending.value = false;
 		}
 	};
 
-	// visibilitychange covers both tab-switching and window focus/blur;
-	// using it alone avoids the double-fire that occurs when pairing it with focus/blur.
 	useEventListener(
 		() => (import.meta.client ? document : null),
 		'visibilitychange',
 		() => {
-			if (document.visibilityState === 'hidden') stopTimer();
-			else startTimer();
+			if (document.visibilityState === 'hidden') {
+				// hidden can precede a tab close, so flush a reliable stop here too
+				flushStop();
+			} else {
+				isAttended.value = true;
+				armIdleTimeout();
+				recompute();
+				void syncTimer();
+			}
 		}
 	);
+
+	// blur/focus catch window-switching that doesn't toggle document visibility
+	useEventListener(
+		() => (import.meta.client ? window : null),
+		'blur',
+		() => {
+			isAttended.value = false;
+			recompute();
+			void syncTimer();
+		}
+	);
+	useEventListener(
+		() => (import.meta.client ? window : null),
+		'focus',
+		() => {
+			isAttended.value = true;
+			armIdleTimeout();
+			recompute();
+			void syncTimer();
+		}
+	);
+
+	// pagehide is the most reliable unload signal across browsers
+	useEventListener(() => (import.meta.client ? window : null), 'pagehide', flushStop);
+
+	const activityEvents = [
+		'mousemove',
+		'keydown',
+		'scroll',
+		'wheel',
+		'pointerdown',
+		'touchstart',
+		'click'
+	] as const;
+	for (const evt of activityEvents) {
+		useEventListener(() => (import.meta.client ? document : null), evt, onActivity, {
+			passive: true
+		});
+	}
+
+	watch(
+		() => authStore.sessionToken,
+		() => {
+			recompute();
+			void syncTimer();
+		}
+	);
+
+	onBeforeUnmount(() => {
+		if (idleTimer) clearTimeout(idleTimer);
+		isMounted.value = false;
+		desiredRunning.value = false;
+		// flushStop keeps the stop reliable even if syncTimer's await gets cut short on teardown
+		if (isTimerRunning.value) flushStop();
+		else void syncTimer();
+	});
 
 	return {
 		timeOnPage,
