@@ -142,7 +142,7 @@ async function savePrompt() {
 	editLoading.value = true;
 
 	const promptStore = usePromptStore();
-	const res = await promptStore.updatePrompt({ id: props.prompt.id, title: promptText.value });
+	const res = await promptStore.updatePrompt(props.prompt.id, promptText.value);
 
 	if (res.success) {
 		editOpen.value = false;

@@ -193,10 +193,10 @@ async function newPrompt() {
 		loading.value = true;
 
 		const promptStore = usePromptStore();
-		const res = await promptStore.createPrompt({
-			prompt: text,
-			visibility: state.visibility
-		});
+		const res = await promptStore.createPrompt(
+			text,
+			com.earthapp.Visibility.valueOf(state.visibility)
+		);
 		if (valid(res)) {
 			loading.value = false;
 			toast.add({

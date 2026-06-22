@@ -1,3 +1,4 @@
+import { com } from '@earth-app/ocean';
 import { useAuthStore } from 'stores/auth';
 import { usePromptStore } from 'stores/prompt';
 import type { SortingOption } from 'types/global';
@@ -14,7 +15,7 @@ export function usePrompt(id: string) {
 	};
 
 	const update = async (promptText: string) => {
-		return await promptStore.updatePrompt({ id, prompt: promptText });
+		return await promptStore.updatePrompt(id, promptText);
 	};
 
 	const remove = async () => {
@@ -91,10 +92,11 @@ export function usePrompts(
 	};
 
 	const create = async (promptText: string, visibility?: Visibility) => {
-		return await promptStore.createPrompt({
-			prompt: promptText,
-			visibility
-		});
+		// callers hold the name string; store wants the enum instance (defaults PUBLIC when omitted)
+		return await promptStore.createPrompt(
+			promptText,
+			visibility ? com.earthapp.Visibility.valueOf(visibility) : undefined
+		);
 	};
 
 	return {
