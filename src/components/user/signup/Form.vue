@@ -187,7 +187,9 @@ async function handleSignup() {
 		emit('signupSuccess', result.user, !!email.value.trim());
 	} else {
 		if (result.message.includes('409')) {
-			error.value = 'Username already exists. Please choose another.';
+			error.value = /email/i.test(result.message)
+				? 'An account with this email already exists. Try logging in instead.'
+				: 'Username already exists. Please choose another.';
 		} else if (result.message.includes('400')) {
 			error.value = 'Invalid signup data. Please check your inputs.';
 		} else if (result.message.includes('429')) {
