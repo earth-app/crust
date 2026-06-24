@@ -145,6 +145,14 @@
 			safety of The Earth App, our users, or the public.
 		</p>
 		<p class="text-md mt-2 max-w-3xl">
+			<strong>With our administrators for moderation.</strong> Our administrators may review the
+			content and data you submit to quests — including photos, audio recordings, text responses,
+			scan and event data, and related submission metadata — to enforce our policies, investigate
+			abuse, and keep the services safe, and they may remove that content or related rewards when it
+			violates our rules. This quest submission data is used for moderation and to power your own
+			quest experience; it is not made available to other users.
+		</p>
+		<p class="text-md mt-2 max-w-3xl">
 			<strong>In a business transfer</strong>, such as a merger, acquisition, financing, or sale of
 			assets, in which case we will continue to protect your information consistent with this
 			Privacy Policy and notify you of any material change in how it is handled.
