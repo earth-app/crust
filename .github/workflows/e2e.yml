@@ -20,17 +20,17 @@ jobs:
 
     steps:
       - name: Checkout crust
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: crust
       - name: Checkout mantle2
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: earth-app/mantle2
           path: mantle2
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout cloud
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: earth-app/cloud
           path: cloud
