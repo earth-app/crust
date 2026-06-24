@@ -477,6 +477,20 @@ export function useUsers() {
 	};
 }
 
+// map a client-moderation verdict to a user-facing quest-submission block message
+function moderationBlockMessage(verdict: { category?: string }): string {
+	switch (verdict.category) {
+		case 'nsfw_image':
+			return 'This image appears to contain explicit content and cannot be submitted.';
+		case 'profanity':
+			return 'Your submission contains language that is not allowed.';
+		case 'spam':
+			return 'Your submission looks like spam and cannot be submitted.';
+		default:
+			return 'Your submission could not be accepted by our content checks.';
+	}
+}
+
 export function useUser(
 	identifier?: MaybeRefOrGetter<string | null | undefined>,
 	serverRequest?: typeof makeServerRequest
@@ -621,6 +635,30 @@ export function useUser(
 		if (!resolvedIdentifier) return { message: 'Invalid identifier' };
 		return await userStore.startQuest(resolvedIdentifier, questId, override);
 	};
+	// returns a user-facing block message, or null when the submission is allowed
+	const screenQuestSubmission = async (stepResponse: {
+		dataUrl?: string;
+		[x: string]: any;
+	}): Promise<string | null> => {
+		const { checkText, checkImage } = useClientModeration();
+
+		const text = [stepResponse.text, stepResponse.caption, stepResponse.prompt]
+			.filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+			.join('\n');
+		if (text) {
+			const verdict = await checkText(text);
+			if (!verdict.allowed) return moderationBlockMessage(verdict);
+		}
+
+		// only photos/drawings are images; audio data urls fail-open in checkImage
+		if (typeof stepResponse.dataUrl === 'string' && stepResponse.dataUrl.startsWith('data:image')) {
+			const verdict = await checkImage(stepResponse.dataUrl);
+			if (!verdict.allowed) return moderationBlockMessage(verdict);
+		}
+
+		return null;
+	};
+
 	const updateQuest = async (
 		stepResponse: {
 			type: string;
@@ -639,6 +677,17 @@ export function useUser(
 				completed: boolean;
 				validated: boolean;
 			};
+
+		// client-side safety gate (shared by crust + sky via this composable): block obscene text
+		// and explicit images before they ever reach the backend. fail-open inside the checks.
+		const blocked = await screenQuestSubmission(stepResponse);
+		if (blocked)
+			return { message: blocked, completed: false, validated: false } as {
+				message: string;
+				completed: boolean;
+				validated: boolean;
+			};
+
 		return await userStore.updateQuest(resolvedIdentifier, stepResponse, lat, lng, serverRequest);
 	};
 	const endQuest = async () => {

@@ -345,6 +345,16 @@ export type QuestProgressEntry = {
 	eventId?: string; // for event attendance steps
 	timestamp?: number; // for event attendance steps (timestamp of attendance)
 	scoreKey?: string; // for activity quiz steps
+	// for scan_barcode steps
+	kind?: string;
+	title?: string;
+	metadata?: Record<string, unknown>;
+	duration?: number; // accumulated seconds for read-time steps
+	distance?: number; // meters for distance_covered steps
+	text?: string; // user text for describe_text / respond_to_prompt
+	// moderation metadata captured at submission (admin quest console)
+	device?: { make?: string; model?: string; os?: string; latitude?: number; longitude?: number };
+	pointsAwarded?: number; // impact points this step awarded
 	// when present this entry is a migration placeholder; original submission data is gone
 	migrated?: QuestStepMigrationInfo;
 };
