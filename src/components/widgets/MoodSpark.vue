@@ -13,7 +13,7 @@
 		<p class="text-base font-medium mb-3">{{ question }}</p>
 
 		<div
-			v-if="!hasVoted"
+			v-if="!showResults"
 			class="grid grid-cols-3 sm:grid-cols-6 gap-2"
 		>
 			<button
@@ -117,6 +117,7 @@ const myVote = ref<MoodEmoji | null>(null);
 const loading = ref(false);
 const sparkleTrigger = ref(0);
 const errorMessage = ref<string | null>(null);
+const showResults = computed(() => hasVoted.value || myVote.value !== null);
 
 const percentages = computed<Record<MoodEmoji, number>>(() => {
 	const counts = snapshot.value?.counts;
