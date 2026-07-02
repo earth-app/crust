@@ -43,54 +43,56 @@
 				/>
 			</div>
 
-			<TurnstileWidget
-				v-if="user"
-				class="mt-4"
-				@received-token="loading = true"
-				@error="
-					loading = false;
-					disabled = true;
-					error = 'Turnstile verification failed. Please re-open and try again.';
-				"
-				@expired="
-					loading = false;
-					disabled = true;
-					error = 'Turnstile verification expired. Please re-open and try again.';
-				"
-				@verified="
-					loading = false;
-					disabled = false;
-				"
-			/>
+			<ClientOnly>
+				<TurnstileWidget
+					v-if="user"
+					class="mt-4"
+					@received-token="loading = true"
+					@error="
+						loading = false;
+						disabled = true;
+						error = 'Turnstile verification failed. Please re-open and try again.';
+					"
+					@expired="
+						loading = false;
+						disabled = true;
+						error = 'Turnstile verification expired. Please re-open and try again.';
+					"
+					@verified="
+						loading = false;
+						disabled = false;
+					"
+				/>
 
-			<UButton
-				v-if="user"
-				class="mt-4 w-22"
-				color="primary"
-				icon="mdi:plus-box"
-				variant="subtle"
-				block
-				@click="newPrompt"
-				:disabled="
-					disabled ||
-					loading ||
-					newDisabled ||
-					state.prompt.trim().length < 10 ||
-					state.prompt.trim().length > 256
-				"
-				:loading="loading"
-				>Create</UButton
-			>
-			<UButton
-				v-else
-				class="mt-4 w-28"
-				color="info"
-				trailing-icon="mdi:account-plus"
-				variant="subtle"
-				block
-				@click="$router.push('/sign-up')"
-				>Sign Up</UButton
-			>
+				<UButton
+					v-if="user"
+					class="mt-4 w-22"
+					color="primary"
+					icon="mdi:plus-box"
+					variant="subtle"
+					block
+					@click="newPrompt"
+					:disabled="
+						disabled ||
+						loading ||
+						newDisabled ||
+						state.prompt.trim().length < 10 ||
+						state.prompt.trim().length > 256
+					"
+					:loading="loading"
+					>Create</UButton
+				>
+				<UButton
+					v-else
+					class="mt-4 w-28"
+					color="info"
+					trailing-icon="mdi:account-plus"
+					variant="subtle"
+					block
+					@click="$router.push('/sign-up')"
+					>Sign Up</UButton
+				>
+			</ClientOnly>
 			<div
 				v-if="error"
 				class="text-red-500 mt-2"
