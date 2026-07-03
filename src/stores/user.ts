@@ -304,13 +304,13 @@ export const useUserStore = defineStore('user', () => {
 					// an anon / not-yet-hydrated fetch returns a stripped payload and must stay retryable
 					if (authStore.sessionToken) cache.set(identifier, null);
 					console.warn(`Malformed user payload for ${identifier} — treating as not found`);
-				} else if (!res.message) {
-					// definitive not-found (makeRequest returns success:false with no message for a 404) —
-					// cache null so the not-found UI renders instead of spinning
+				} else if (res.status === 404) {
+					// definitive not-found — cache null so the not-found UI renders instead of spinning
+					// (a real user is stripped/200 or 401/403 when restricted, never 404, so this can't poison)
 					cache.set(identifier, null);
 				} else {
-					// transient failure (network / 4xx-5xx that carries a message) — don't poison; allow retry
-					console.warn(`Failed to fetch user ${identifier}:`, res.message);
+					// transient failure (network / 5xx / 401 / 403 / 429) — don't poison; allow a retry
+					if (res.message) console.warn(`Failed to fetch user ${identifier}:`, res.message);
 				}
 			} catch (error) {
 				// same self-protection rule for thrown errors
