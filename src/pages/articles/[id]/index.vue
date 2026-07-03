@@ -50,7 +50,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineArticle } from 'nuxt-schema-org/schema';
 import { computeContentExpiry } from 'utils';
 
 const toast = useToast();
@@ -156,20 +155,23 @@ useSeoMeta({
 	ogDescription: article.value ? article.value.description : 'Article'
 });
 
-// JSON-LD Article schema for richer search-engine previews
-useSchemaOrg(() => {
+const articleJsonLd = computed(() => {
 	const a = article.value;
-	if (!a || 'error' in (a as any)) return [];
-	return [
-		defineArticle({
-			'@type': 'Article',
-			headline: a.title,
-			description: a.description,
-			datePublished: a.created_at,
-			...(a.updated_at ? { dateModified: a.updated_at } : {}),
-			...(a.author?.username ? { author: { '@type': 'Person', name: a.author.username } } : {})
-		})
-	];
+	if (!a || 'error' in (a as any) || !('title' in a)) return null;
+	return JSON.stringify({
+		'@context': 'https://schema.org',
+		'@type': 'Article',
+		headline: a.title,
+		description: a.description,
+		datePublished: a.created_at,
+		...(a.updated_at ? { dateModified: a.updated_at } : {}),
+		...(a.author?.username ? { author: { '@type': 'Person', name: a.author.username } } : {})
+	});
+});
+useHead({
+	script: computed(() =>
+		articleJsonLd.value ? [{ type: 'application/ld+json', innerHTML: articleJsonLd.value }] : []
+	)
 });
 
 async function loadSimilar(article?: Article) {

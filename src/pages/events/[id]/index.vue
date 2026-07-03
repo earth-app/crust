@@ -49,7 +49,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineEvent } from 'nuxt-schema-org/schema';
 import type { Event } from 'types/event';
 import { computeContentExpiry } from 'utils';
 
@@ -105,18 +104,22 @@ useSeoMeta({
 	ogDescription: event.value ? event.value.description : 'Event'
 });
 
-useSchemaOrg(() => {
+const eventJsonLd = computed(() => {
 	const e = event.value;
-	if (!e) return [];
-	return [
-		defineEvent({
-			'@type': 'Event',
-			name: e.name,
-			description: e.description,
-			startDate: new Date(e.date).toISOString(),
-			...(e.end_date ? { endDate: new Date(e.end_date).toISOString() } : {})
-		})
-	];
+	if (!e) return null;
+	return JSON.stringify({
+		'@context': 'https://schema.org',
+		'@type': 'Event',
+		name: e.name,
+		description: e.description,
+		startDate: new Date(e.date).toISOString(),
+		...(e.end_date ? { endDate: new Date(e.end_date).toISOString() } : {})
+	});
+});
+useHead({
+	script: computed(() =>
+		eventJsonLd.value ? [{ type: 'application/ld+json', innerHTML: eventJsonLd.value }] : []
+	)
 });
 
 async function loadSimilar(event?: Event) {
