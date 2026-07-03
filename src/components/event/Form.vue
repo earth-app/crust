@@ -489,10 +489,15 @@ async function handleSubmit(event: FormSubmitEvent<EventData>) {
 	}
 
 	try {
-		if (props.mode === 'create') {
-			await createEvent(event.data);
-		} else {
-			await updateEvent(event.data);
+		// create/update return a result object (they don't throw); a failed save
+		// must not fall through to the success toast + emit('submitted')
+		const saveRes =
+			props.mode === 'create' ? await createEvent(event.data) : await updateEvent(event.data);
+		if (saveRes && (saveRes as any).success === false) {
+			throw new Error(
+				(saveRes as any).message ||
+					`Failed to ${props.mode === 'create' ? 'create' : 'update'} event`
+			);
 		}
 
 		if (thumbnailFile.value) {
