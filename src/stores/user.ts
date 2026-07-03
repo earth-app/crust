@@ -299,22 +299,22 @@ export const useUserStore = defineStore('user', () => {
 							`Malformed self-payload for ${identifier} — falling back to auth store currentUser`
 						);
 					}
-				} else {
-					cache.set(identifier, null);
-					if (valid(res)) {
-						console.warn(`Malformed user payload for ${identifier} — treating as not found`);
-					} else if (res.message) {
-						console.warn(`Failed to fetch user ${identifier}:`, res.message);
-					}
+				} else if (valid(res)) {
+					// valid envelope but not a usable user shape; only cache not-found when authenticated —
+					// an anon / not-yet-hydrated fetch returns a stripped payload and must stay retryable
+					if (authStore.sessionToken) cache.set(identifier, null);
+					console.warn(`Malformed user payload for ${identifier} — treating as not found`);
+				} else if (res.message) {
+					// request failed (network / non-success envelope) — transient, don't poison the cache
+					console.warn(`Failed to fetch user ${identifier}:`, res.message);
 				}
 			} catch (error) {
 				// same self-protection rule for thrown errors
 				if (isSelfIdentifier(identifier, authStore.currentUser)) {
 					if (authStore.currentUser) cache.set(identifier, authStore.currentUser);
 					else cache.delete(identifier);
-				} else {
-					cache.set(identifier, null);
 				}
+				// non-self thrown error is transient — don't poison; allow a later retry
 				console.warn(`Failed to fetch user ${identifier}:`, error);
 			} finally {
 				loading.delete(identifier);
@@ -329,10 +329,8 @@ export const useUserStore = defineStore('user', () => {
 	};
 
 	const fetchAttendingEvents = async (identifier: string): Promise<Event[]> => {
-		if (!identifier) {
-			attendingEvents.set(identifier, []);
-			return [];
-		}
+		// never cache under a falsy identifier (poisons the empty key)
+		if (!identifier) return [];
 		const authStore = useAuthStore();
 		const res = await paginatedAPIRequest<Event>(
 			`/v2/users/${identifier}/events/attending`,
@@ -344,15 +342,13 @@ export const useUserStore = defineStore('user', () => {
 			return res.data;
 		}
 
-		attendingEvents.set(identifier, []);
-		return [];
+		// transient failure — keep last-known so a retry can recover; don't poison with []
+		return attendingEvents.get(identifier) ?? [];
 	};
 
 	const fetchHostingEvents = async (identifier: string): Promise<Event[]> => {
-		if (!identifier) {
-			hostingEvents.set(identifier, []);
-			return [];
-		}
+		// never cache under a falsy identifier (poisons the empty key)
+		if (!identifier) return [];
 		const authStore = useAuthStore();
 		const res = await paginatedAPIRequest<Event>(
 			`/v2/users/${identifier}/events`,
@@ -364,15 +360,13 @@ export const useUserStore = defineStore('user', () => {
 			return res.data;
 		}
 
-		hostingEvents.set(identifier, []);
-		return [];
+		// transient failure — keep last-known so a retry can recover; don't poison with []
+		return hostingEvents.get(identifier) ?? [];
 	};
 
 	const fetchBadges = async (identifier: string): Promise<UserBadge[]> => {
-		if (!identifier) {
-			badges.set(identifier, []);
-			return [];
-		}
+		// never cache under a falsy identifier (poisons the empty key)
+		if (!identifier) return [];
 		const authStore = useAuthStore();
 		const res = await makeAPIRequest<UserBadge[]>(
 			`user-${identifier}-badges`,
@@ -385,15 +379,13 @@ export const useUserStore = defineStore('user', () => {
 			return res.data;
 		}
 
-		badges.set(identifier, []);
-		return [];
+		// transient failure — keep last-known so a retry can recover; don't poison with []
+		return badges.get(identifier) ?? [];
 	};
 
 	const fetchEventSubmissions = async (identifier: string): Promise<EventImageSubmission[]> => {
-		if (!identifier) {
-			eventSubmissions.set(identifier, []);
-			return [];
-		}
+		// never cache under a falsy identifier (poisons the empty key)
+		if (!identifier) return [];
 		const authStore = useAuthStore();
 		const res = await paginatedAPIRequest<EventImageSubmission>(
 			`/v2/users/${identifier}/events/images`,
@@ -405,8 +397,8 @@ export const useUserStore = defineStore('user', () => {
 			return res.data;
 		}
 
-		eventSubmissions.set(identifier, []);
-		return [];
+		// transient failure — keep last-known so a retry can recover; don't poison with []
+		return eventSubmissions.get(identifier) ?? [];
 	};
 
 	const getChipColor = (user: User | null | undefined) => {
@@ -441,11 +433,8 @@ export const useUserStore = defineStore('user', () => {
 	};
 
 	const fetchPoints = async (identifier: string): Promise<[number, ImpactPointsChange[]]> => {
-		if (!identifier) {
-			points.set(identifier, 0);
-			pointsHistory.set(identifier, []);
-			return [0, []];
-		}
+		// never cache under a falsy identifier (poisons the empty key)
+		if (!identifier) return [0, []];
 		const authStore = useAuthStore();
 		const res = await makeAPIRequest<{
 			points: number;
@@ -462,9 +451,8 @@ export const useUserStore = defineStore('user', () => {
 			return [res.data.points, res.data.history];
 		}
 
-		points.set(identifier, 0);
-		pointsHistory.set(identifier, []);
-		return [0, []];
+		// transient failure — keep last-known so a retry can recover; don't poison with 0/[]
+		return [points.get(identifier) ?? 0, pointsHistory.get(identifier) ?? []];
 	};
 
 	const fetchUserQuest = async (
@@ -496,7 +484,9 @@ export const useUserStore = defineStore('user', () => {
 			return normalized;
 		}
 
-		if (getQuestSyncVersion(identifier) === requestVersion) {
+		// transient failure — don't clobber a known quest (poisons the read guard); let a first
+		// fetch settle to "no quest" so users with none don't spin forever
+		if (getQuestSyncVersion(identifier) === requestVersion && !quest.has(identifier)) {
 			quest.set(identifier, null);
 		}
 
@@ -666,12 +656,13 @@ export const useUserStore = defineStore('user', () => {
 			const existing = questHistory.get(identifier) || new Map<string, QuestHistoryEntry>();
 			for (const [questId, entry] of Object.entries(res.data.history ?? {})) {
 				const prior = existing.get(questId);
-				// preserve previously-loaded progress when refreshing the lean list
-				if (prior?.progress && !entry.progress) {
-					existing.set(questId, { ...entry, progress: prior.progress });
-				} else {
-					existing.set(questId, entry);
-				}
+				// a quest can recur across pages or change between requests — keep the freshest by
+				// completedAt (new wins ties), and carry forward lazy-loaded progress either way
+				const priorAt = prior?.completedAt ?? 0;
+				const entryAt = entry.completedAt ?? 0;
+				const fresher = prior && priorAt > entryAt ? prior : entry;
+				const progress = entry.progress ?? prior?.progress;
+				existing.set(questId, progress ? { ...fresher, progress } : fresher);
 			}
 			if (getQuestSyncVersion(identifier) === requestVersion) {
 				questHistory.set(identifier, existing);
