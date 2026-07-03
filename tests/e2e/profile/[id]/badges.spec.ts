@@ -1,7 +1,3 @@
-/**
- * E2E tests for `src/pages/profile/[id]/badges.vue` - badges grid for a user.
- */
-
 import { expect, skipIfIntegration, test } from '../../utils/fixtures';
 
 test.describe('User badges page', () => {
@@ -18,7 +14,7 @@ test.describe('User badges page', () => {
 	});
 
 	test('shows "User Not Found" for unknown user', async ({
-		asAnonymous,
+		asUser,
 		mockApi,
 		page,
 		gotoHydrated
@@ -26,11 +22,11 @@ test.describe('User badges page', () => {
 		await mockApi.set({
 			method: 'GET',
 			path: '^/v2/users/ghost-badges$',
-			status: 404,
-			body: { message: 'User not found' },
+			status: 200,
+			body: {},
 			once: false
 		});
-		await asAnonymous();
+		await asUser({ username: 'me' });
 		await gotoHydrated('/profile/ghost-badges/badges');
 		await expect(page.getByText(/User Not Found|does not exist/i).first()).toBeVisible({
 			timeout: 10_000

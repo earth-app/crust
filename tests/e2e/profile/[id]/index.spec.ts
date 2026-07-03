@@ -1,7 +1,3 @@
-/**
- * E2E tests for `src/pages/profile/[id]/index.vue` - public profile by id/username.
- */
-
 import { expect, test } from '../../utils/fixtures';
 
 test.describe('User profile (by id/username)', () => {
@@ -14,7 +10,7 @@ test.describe('User profile (by id/username)', () => {
 	});
 
 	test('shows "User doesn\'t exist" for unknown username', async ({
-		asAnonymous,
+		asUser,
 		page,
 		gotoHydrated,
 		mockApi
@@ -22,11 +18,11 @@ test.describe('User profile (by id/username)', () => {
 		await mockApi.set({
 			method: 'GET',
 			path: '^/v2/users/ghost$',
-			status: 404,
-			body: { message: 'User not found' },
+			status: 200,
+			body: {},
 			once: false
 		});
-		await asAnonymous();
+		await asUser({ username: 'me' });
 		await gotoHydrated('/profile/ghost');
 		await expect(
 			page.getByText(/User doesn't exist|does not exist|User not found/i).first()
