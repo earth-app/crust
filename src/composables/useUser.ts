@@ -623,12 +623,15 @@ export function useUser(
 	const fetchUserQuest = async (force: boolean = false) => {
 		const resolvedIdentifier = currentIdentifier();
 		if (!resolvedIdentifier) return null;
-		return await userStore.fetchUserQuest(resolvedIdentifier, force);
+		const result = await userStore.fetchUserQuest(resolvedIdentifier, force);
+		// drop a result whose identifier changed mid-flight (rapid logout+login / user switch)
+		return currentIdentifier() === resolvedIdentifier ? result : null;
 	};
 	const fetchQuestStep = async (index: number) => {
 		const resolvedIdentifier = currentIdentifier();
 		if (!resolvedIdentifier) return null;
-		return await userStore.fetchQuestStep(resolvedIdentifier, index);
+		const result = await userStore.fetchQuestStep(resolvedIdentifier, index);
+		return currentIdentifier() === resolvedIdentifier ? result : null;
 	};
 	const startQuest = async (questId: string, override: boolean = false) => {
 		const resolvedIdentifier = currentIdentifier();
@@ -706,12 +709,17 @@ export function useUser(
 	) => {
 		const resolvedIdentifier = currentIdentifier();
 		if (!resolvedIdentifier) return new Map<string, QuestHistoryEntry>();
-		return await userStore.fetchQuestHistory(resolvedIdentifier, opts);
+		const result = await userStore.fetchQuestHistory(resolvedIdentifier, opts);
+		// drop a result whose identifier changed mid-flight (rapid logout+login / user switch)
+		return currentIdentifier() === resolvedIdentifier
+			? result
+			: new Map<string, QuestHistoryEntry>();
 	};
 	const fetchQuestHistoryEntry = async (questId: string, opts: { force?: boolean } = {}) => {
 		const resolvedIdentifier = currentIdentifier();
 		if (!resolvedIdentifier) return null;
-		return await userStore.fetchQuestHistoryEntry(resolvedIdentifier, questId, opts);
+		const result = await userStore.fetchQuestHistoryEntry(resolvedIdentifier, questId, opts);
+		return currentIdentifier() === resolvedIdentifier ? result : null;
 	};
 
 	const setAccountType = async (type: User['account']['account_type']) => {
@@ -1686,12 +1694,7 @@ export function useQuestGeolocation() {
 // #region badge mastery
 
 export type MasteryButtonState =
-	| 'loading'
-	| 'locked'
-	| 'completed'
-	| 'ready'
-	| 'cap_reached'
-	| 'default';
+	'loading' | 'locked' | 'completed' | 'ready' | 'cap_reached' | 'default';
 
 const MASTERY_BUTTON_ICONS: Record<MasteryButtonState, string> = {
 	loading: 'mdi:loading',
