@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
+    env:
+      DDEV_VERSION: v1.25.2
+
     permissions:
       contents: read
       packages: read
@@ -46,26 +49,43 @@ jobs:
           extensions: json, curl, mbstring, dom, intl, gd, pdo_mysql
           coverage: none
           tools: composer:v2
+      - name: Cache ddev Binary
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ddev
+          key: ddev-bin-${{ runner.os }}-${{ env.DDEV_VERSION }}
       - name: Install ddev
         run: |
-          curl -fsSL https://apt.fury.io/drud/gpg.key | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/ddev.gpg
-          echo "deb [signed-by=/etc/apt/trusted.gpg.d/ddev.gpg] https://apt.fury.io/drud/ * *" | sudo tee /etc/apt/sources.list.d/ddev.list
-          sudo apt-get update
-          sudo apt-get install -y ddev
-      - name: Cache Docker Images
+          # download+extract only on a cache miss; the tarball bundles ddev + mkcert
+          if [ ! -x "$HOME/.cache/ddev/ddev" ]; then
+            mkdir -p "$HOME/.cache/ddev"
+            curl -fsSL "https://github.com/ddev/ddev/releases/download/${DDEV_VERSION}/ddev_linux-amd64.${DDEV_VERSION}.tar.gz" \
+              | tar -xz -C "$HOME/.cache/ddev"
+          fi
+          # (re)install cached binaries onto PATH (cheap even on cache hit)
+          sudo install "$HOME/.cache/ddev/ddev" /usr/local/bin/ddev
+          [ -f "$HOME/.cache/ddev/ddev-hostname" ] && sudo install "$HOME/.cache/ddev/ddev-hostname" /usr/local/bin/ddev-hostname
+          [ -f "$HOME/.cache/ddev/mkcert" ] && sudo install "$HOME/.cache/ddev/mkcert" /usr/local/bin/mkcert
+          mkcert -install || true
+          ddev config global --instrumentation-opt-in=false
+          ddev --version
+      - name: Cache ddev Docker Images
         if: ${{ !cancelled() }}
         uses: actions/cache@v6
         with:
-          path: /tmp/docker-images
-          key: docker-${{ runner.os }}-${{ hashFiles('docker/**') }}
-      - name: Load or Pull Docker Images
+          path: /tmp/ddev-images
+          key: ddev-images-${{ runner.os }}-${{ env.DDEV_VERSION }}
+      - name: Load or Pull ddev Docker Images
         run: |
-          if [ -f /tmp/docker-images/images.tar ]; then
-            docker load -i /tmp/docker-images/images.tar
+          if [ -f /tmp/ddev-images/images.tar ]; then
+            docker load -i /tmp/ddev-images/images.tar
           else
-            docker compose -f docker/compose.yml pull
-            mkdir -p /tmp/docker-images
-            docker compose -f docker/compose.yml config --images | sort -u | xargs docker save -o /tmp/docker-images/images.tar
+            # ddev pulls its own stack (webserver, mariadb, router); no docker compose here
+            ddev debug download-images
+            mkdir -p /tmp/ddev-images
+            docker images --format '{{.Repository}}:{{.Tag}}' \
+              | grep -E '^(ddev/|mariadb)' \
+              | xargs -r docker save -o /tmp/ddev-images/images.tar
           fi
       - name: Boot earth-app/mantle2
         run: |
