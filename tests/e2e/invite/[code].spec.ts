@@ -1,11 +1,3 @@
-/**
- * E2E tests for `src/pages/invite/[code].vue` - the referral landing page.
- *
- * Pure redirect page: on mount it validates the code, persists it to the
- * `referral_code` cookie, fires a best-effort click ping, then forwards to
- * `/signup?ref=CODE`. An invalid code skips straight to `/signup`.
- */
-
 import { expect, test } from '../utils/fixtures';
 
 async function referralCookie(page: import('@playwright/test').Page) {
