@@ -399,7 +399,7 @@
 						</ClientOnly>
 					</div>
 					<ClientOnly>
-						<LazyUBadge
+						<UBadge
 							v-if="prop.unverified === true"
 							class="mt-1 transition-all duration-300 hover:cursor-pointer shrink-0"
 							color="warning"
@@ -412,8 +412,7 @@
 							tabindex="0"
 							@keydown.enter="if (prop.verify) prop.verify();"
 							@keydown.space.prevent="if (prop.verify) prop.verify();"
-							hydrate-on-visible
-							>Unverified</LazyUBadge
+							>Unverified</UBadge
 						>
 					</ClientOnly>
 				</div>
