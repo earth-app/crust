@@ -74,7 +74,7 @@
     "luxon": "^3.7.2",
     "nsfwjs": "^4.3.0",
     "nuxt": "^4.4.8",
-    "nuxt-api-shield": "^0.10.2",
+    "nuxt-api-shield": "^1.0.0",
     "nuxt-schema-org": "^6.2.3",
     "nuxt-viewport": "^2.4.0",
     "obscenity": "^0.4.6",
