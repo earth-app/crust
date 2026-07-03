@@ -500,6 +500,26 @@ export function valid<T>(
 	return false;
 }
 
+// decode the short-lived oauth user handoff (base64 utf-8 json) the oauth callback sets so the
+// client populates currentUser without a /v2/users/current round-trip. env-safe (nitro + browser);
+// returns the parsed object (caller validates with isValidUser) or null on any failure
+export function decodeOAuthUserHandoff(value: string | null | undefined): unknown | null {
+	if (!value) return null;
+	try {
+		let json: string;
+		if (typeof Buffer !== 'undefined') {
+			json = Buffer.from(value, 'base64').toString('utf8');
+		} else {
+			const bin = atob(value);
+			const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+			json = new TextDecoder().decode(bytes);
+		}
+		return JSON.parse(json);
+	} catch {
+		return null;
+	}
+}
+
 // fisher-yates, non-mutating
 export function shuffle<T>(arr: readonly T[]): T[] {
 	const a = [...arr];

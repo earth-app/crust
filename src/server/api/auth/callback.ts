@@ -64,6 +64,19 @@ function errorSummary(error: any): string {
 	}
 }
 
+// short-lived oauth user handoff so the client sets currentUser directly (mirrors useLogin)
+// instead of depending on a /v2/users/current round-trip; size-guarded to keep cookies/urls small
+function encodeUserHandoff(user: unknown): string | null {
+	try {
+		if (!user || typeof user !== 'object') return null;
+		const json = JSON.stringify(user);
+		if (!json || json.length > 3000) return null;
+		return Buffer.from(json, 'utf8').toString('base64');
+	} catch {
+		return null;
+	}
+}
+
 export default defineEventHandler(async (event) => {
 	const cookieSessionToken = getCookie(event, 'session_token');
 	let sessionToken = cookieSessionToken;
@@ -256,13 +269,24 @@ export default defineEventHandler(async (event) => {
 		);
 
 		const isNewUser = event.context.oauthStatus === 201;
+		const userHandoff = encodeUserHandoff(response.user);
 
-		if (isNewUser || !isLoggedIn)
+		if (isNewUser || !isLoggedIn) {
 			setCookie(event, 'session_token', response.session_token, {
 				sameSite: 'none',
 				secure: true,
 				maxAge: 60 * 60 * 24 * 14 // 14 days
 			});
+
+			// readable, short-lived handoff so the client hydrates currentUser without a follow-up fetch
+			if (userHandoff)
+				setCookie(event, 'oauth_user', userHandoff, {
+					sameSite: 'none',
+					secure: true,
+					httpOnly: false,
+					maxAge: 120
+				});
+		}
 
 		if (source === 'mobile') {
 			const context: OAuthContext =
@@ -270,7 +294,9 @@ export default defineEventHandler(async (event) => {
 			return mobileRedirect({
 				session_token: response.session_token,
 				context,
-				provider
+				provider,
+				// sky reads `user` from the deep link to skip the round-trip
+				...(userHandoff ? { user: userHandoff } : {})
 			});
 		}
 
