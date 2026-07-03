@@ -42,6 +42,9 @@ useSeoMeta({
 	msapplicationTileColor: appConfig.themeColor,
 	msapplicationTileImage: '/earth-app.png',
 	mobileWebAppCapable: 'yes',
+	appleItunesApp: {
+		appId: '6771985151'
+	},
 	appleMobileWebAppCapable: 'yes',
 	appleMobileWebAppStatusBarStyle: 'black'
 });
