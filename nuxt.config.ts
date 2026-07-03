@@ -119,6 +119,12 @@ export default defineNuxtConfig({
 		},
 		prerender: {
 			routes: ['/sitemap.xml']
+		},
+		storage: {
+			shield: {
+				driver: 'cloudflare-kv-binding',
+				binding: 'CACHE'
+			}
 		}
 	},
 	hub: {
