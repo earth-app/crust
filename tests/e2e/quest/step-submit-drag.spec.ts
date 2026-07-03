@@ -38,22 +38,17 @@ test.describe('order_items step submit (timed, through modal)', () => {
 		await openQuestModal(page);
 		await openStep(page, 0, 0);
 
-		// timed step: 3s countdown precedes the shuffled bank tiles + one slot per item
-		// (generous first wait absorbs a cold dev-worker compile on top of the countdown)
 		await expect(page.locator(bankTiles).first()).toBeVisible({ timeout: 15_000 });
 		await expect(page.locator(bankTiles)).toHaveCount(order.length, { timeout: 8_000 });
 
-		// place every tile EXCEPT the last: tap-to-place (selectBankTile -> onSlotClick) filling each
-		// slot proves the modal mounts a playable Orderer. we stop before the final placement because
-		// that one auto-submits and unmounts the board, and catching the transient win/"Saving
-		// Progress..." frame through a scrollable modal is timing-fragile. the correct-order ->
-		// win -> auto-submit -> overlay path is the same as Matcher's, covered deterministically by
-		// drag-harness.spec.ts (Orderer placement + win) and step-submit-text.spec.ts (overlay)
 		for (let i = 0; i < order.length - 1; i++) {
-			const tile = page.locator(bankTiles, { hasText: order[i] }).first();
+			const text = order[i];
+			if (!text) continue;
+
+			const tile = page.locator(bankTiles, { hasText: text }).first();
 			await tile.click();
 			await page.locator(slot(i)).click();
-			await expect(page.locator(slot(i))).toContainText(order[i]);
+			await expect(page.locator(slot(i))).toContainText(text);
 		}
 	});
 });

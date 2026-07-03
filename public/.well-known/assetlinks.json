@@ -1,0 +1,17 @@
+[
+	{
+		"relation": [
+			"delegate_permission/common.handle_all_urls",
+			"delegate_permission/common.get_login_creds"
+		],
+		"target": {
+			"namespace": "android_app",
+			"package_name": "com.earthapp.sky",
+			"sha256_cert_fingerprints": [
+				"REPLACE_WITH_RELEASE_SIGNING_KEY_SHA256_FINGERPRINT",
+				"REPLACE_WITH_PLAY_APP_SIGNING_KEY_SHA256_FINGERPRINT_IF_USING_PLAY_SIGNING",
+				"REPLACE_WITH_DEBUG_KEY_SHA256_FINGERPRINT_FOR_LOCAL_TESTING"
+			]
+		}
+	}
+]
