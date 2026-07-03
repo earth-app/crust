@@ -96,14 +96,18 @@
 				>
 			</div>
 
-			<ClientOnly v-if="user">
-				<div class="w-11/12 max-w-2xl mt-4">
+			<LazyClientOnly
+				v-if="user"
+				hydrate-on-visible
+			>
+				<div class="flex flex-col items-center gap-4 w-11/12 max-w-2xl mt-4">
 					<OnboardingWelcomeChecklist @open-persona="personaOpen = true" />
-				</div>
-				<OnboardingPersonaPicker v-model="personaOpen" />
+					<OnboardingPersonaPicker v-model="personaOpen" />
 
-				<UserInviteFriend />
-			</ClientOnly>
+					<UserJourneyHero :user="user" />
+					<UserInviteFriend />
+				</div>
+			</LazyClientOnly>
 			<div
 				v-if="user === null"
 				class="w-full max-w-5xl px-4 mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4"
