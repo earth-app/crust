@@ -13,6 +13,7 @@ import {
 	checkPropertyExists,
 	comma,
 	computeContentExpiry,
+	decodeOAuthUserHandoff,
 	describeRemainingTtl,
 	getEffectiveQuestStepDelay,
 	getQuestDelayReduction,
@@ -481,5 +482,29 @@ describe('api cache helpers', () => {
 describe('errors dependency', () => {
 	it('extractServerMessage is importable', () => {
 		expect(extractServerMessage('x')).toBe('x');
+	});
+});
+
+// the oauth callback encodes the user as base64(utf-8 json); the auth plugin decodes it to set
+// currentUser without a /v2/users/current round-trip. test the decode against that exact format
+describe('decodeOAuthUserHandoff', () => {
+	const encode = (u: unknown) => Buffer.from(JSON.stringify(u), 'utf8').toString('base64');
+
+	it('round-trips a user object encoded the way the callback encodes it', () => {
+		const user = { id: 'u1', username: 'alice', account: { account_type: 'FREE' } };
+		expect(decodeOAuthUserHandoff(encode(user))).toEqual(user);
+	});
+
+	it('preserves unicode in user fields', () => {
+		const user = { id: 'u1', username: 'rené', full_name: 'José 🌍' };
+		expect(decodeOAuthUserHandoff(encode(user))).toEqual(user);
+	});
+
+	it('returns null for empty / malformed / non-base64 input', () => {
+		expect(decodeOAuthUserHandoff(null)).toBeNull();
+		expect(decodeOAuthUserHandoff('')).toBeNull();
+		expect(decodeOAuthUserHandoff('!!!not base64 json!!!')).toBeNull();
+		// valid base64 of a non-json string
+		expect(decodeOAuthUserHandoff(Buffer.from('hello', 'utf8').toString('base64'))).toBeNull();
 	});
 });
