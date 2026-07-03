@@ -38,14 +38,19 @@ import {
 	MOCK_SESSION_TOKEN,
 	makeActivity,
 	makeAdmin,
+	makeAnalytics,
 	makeArticle,
 	makeBadge,
+	makeBlacklistEntry,
 	makeEvent,
+	makeMoodSnapshot,
 	makeNotification,
+	makePollVote,
 	makePrompt,
 	makePromptResponse,
 	makeQuest,
 	makeReferralStats,
+	makeReportListItem,
 	makeUser,
 	paginate
 } from './mock-data';
@@ -85,6 +90,9 @@ interface BackendState {
 	currentUserByToken: Record<string, string>; // token -> userId
 	currentUserByTestId: Record<string, string | null>; // testId -> userId (overrides currentUserByToken)
 	overrides: Override[];
+	// wave-2: per-topic mood tallies, per-test blacklist rows (roundtrip state)
+	mood: Record<string, Record<string, number>>;
+	blacklist: any[];
 }
 
 function freshState(): BackendState {
@@ -136,7 +144,12 @@ function freshState(): BackendState {
 			[MOCK_ADMIN_TOKEN]: adminUser.id
 		},
 		currentUserByTestId: {},
-		overrides: []
+		overrides: [],
+		mood: {},
+		blacklist: [
+			makeBlacklistEntry({ kind: 'username', value: 'spammer', reason: 'Known abuser' }),
+			makeBlacklistEntry({ kind: 'email', value: 'evil@bad.com', reason: 'Fraud' })
+		]
 	};
 }
 
@@ -315,6 +328,33 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			const id = currentUserId(ctx);
 			if (!id) return unauthorized(res);
 			json(res, 204, '');
+		}
+	},
+
+	// api-keys scope catalog (ProfileEditor's ApiKeys section fetches this on mount)
+	{
+		method: 'GET',
+		pattern: /^\/v2\/api-keys\/scopes\/?$/,
+		handler: (_req, res) =>
+			json(res, 200, {
+				scopes: {},
+				leaves: [],
+				tier_limits: { FREE: 3, PRO: 25 },
+				expiry_presets: {},
+				token: { prefix: 'ea_', total_length: 40, random_hex_length: 32 },
+				name: { min: 1, max: 60 },
+				description: { max: 255 }
+			})
+	},
+
+	// api-keys list for the current user
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/current\/api-keys\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			json(res, 200, { items: [], count: 0, active: 0, max: 3 });
 		}
 	},
 
@@ -740,6 +780,226 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			if (!user?.is_admin) return json(res, 403, { message: 'Forbidden' });
 			json(res, 204, '');
 		}
+	},
+
+	// GET current tally for a topic/date; POST records a vote and returns the new snapshot
+	{
+		method: 'GET',
+		pattern: /^\/v2\/mood\/[^/]+\/[^/]+\/?$/,
+		handler: (_req, res, ctx) => {
+			const topic = ctx.url.pathname.split('/')[3] ?? 'today';
+			json(res, 200, makeMoodSnapshot({ counts: state.mood[topic] ?? {} }));
+		}
+	},
+	{
+		method: 'POST',
+		pattern: /^\/v2\/mood\/[^/]+\/[^/]+\/?$/,
+		handler: (_req, res, ctx) => {
+			const topic = ctx.url.pathname.split('/')[3] ?? 'today';
+			const emoji = ctx.body?.emoji as string | undefined;
+			if (!emoji) return json(res, 400, { message: 'emoji required' });
+			const counts = (state.mood[topic] ??= {});
+			counts[emoji] = (counts[emoji] ?? 0) + 1;
+			json(res, 200, makeMoodSnapshot({ counts }));
+		}
+	},
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/current\/poll\/?$/,
+		handler: (_req, res, ctx) => {
+			if (!currentUserId(ctx)) return unauthorized(res);
+			json(res, 200, { items: [] });
+		}
+	},
+	{
+		method: 'POST',
+		pattern: /^\/v2\/users\/current\/poll\/?$/,
+		handler: (_req, res, ctx) => {
+			if (!currentUserId(ctx)) return unauthorized(res);
+			const body = ctx.body ?? {};
+			json(
+				res,
+				200,
+				makePollVote({
+					poll_id: body.poll_id,
+					option_index: body.option_index ?? 0,
+					question: body.question,
+					options: body.options
+				})
+			);
+		}
+	},
+	{
+		method: 'DELETE',
+		pattern: /^\/v2\/users\/current\/poll\/?$/,
+		handler: (_req, res, ctx) => {
+			if (!currentUserId(ctx)) return unauthorized(res);
+			json(res, 200, { removed: true, poll_id: ctx.body?.poll_id ?? '' });
+		}
+	},
+	{
+		method: 'GET',
+		pattern: /^\/v2\/admin\/polls\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!state.users[id]?.is_admin) return json(res, 403, { message: 'Forbidden' });
+			json(res, 200, {
+				items: [
+					{
+						poll_id: 'q-sample',
+						question: 'Where do you do this most often?',
+						options: ['Alone', 'With Friends', 'With Family'],
+						counts: [5, 3, 2],
+						total: 10,
+						updated_at: Math.floor(Date.now() / 1000)
+					}
+				]
+			});
+		}
+	},
+
+	// --- wave-2: reports ---
+	// POST create (anon allowed); GET admin list; PATCH admin action
+	{
+		method: 'POST',
+		pattern: /^\/v2\/reports\/?$/,
+		handler: (_req, res, ctx) => {
+			const body = ctx.body ?? {};
+			const report = makeReportListItem({
+				content_type: body.content_type,
+				content_id: body.content_id,
+				reason: body.reason,
+				description: body.description ?? ''
+			});
+			json(res, 200, { report, deduped: false });
+		}
+	},
+	{
+		method: 'GET',
+		pattern: /^\/v2\/reports\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!state.users[id]?.is_admin) return json(res, 403, { message: 'Forbidden' });
+			const status = (ctx.url.searchParams.get('status') ?? 'pending') as string;
+			const reports =
+				status === 'pending'
+					? [
+							makeReportListItem({ id: 'rpt-1', reason: 'spam', report_count: 3 }),
+							makeReportListItem({
+								id: 'rpt-2',
+								content_type: 'article',
+								reason: 'hate_speech',
+								source: 'ai'
+							})
+						]
+					: [];
+			json(res, 200, { reports, page: 1, limit: 50, total: reports.length });
+		}
+	},
+	{
+		method: 'PATCH',
+		pattern: /^\/v2\/reports\/[^/]+\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!state.users[id]?.is_admin) return json(res, 403, { message: 'Forbidden' });
+			const reportId = ctx.url.pathname.split('/').pop()!;
+			const action = ctx.body?.action as string | undefined;
+			const enforced =
+				action === 'ban_user'
+					? 'permanent_ban'
+					: action === 'delete_content'
+						? 'disable_1_month'
+						: 'none';
+			json(res, 200, {
+				...makeReportListItem({ id: reportId, status: 'actioned', reviewed_by: 'admin' }),
+				enforced_action: enforced
+			});
+		}
+	},
+
+	// --- wave-2: admin analytics ---
+	{
+		method: 'GET',
+		pattern: /^\/v2\/admin\/analytics\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!state.users[id]?.is_admin) return json(res, 403, { message: 'Forbidden' });
+			json(
+				res,
+				200,
+				makeAnalytics({
+					since: ctx.url.searchParams.get('since') ?? undefined,
+					until: ctx.url.searchParams.get('until') ?? undefined
+				})
+			);
+		}
+	},
+	{
+		method: 'GET',
+		pattern: /^\/v2\/admin\/blacklist\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!state.users[id]?.is_admin) return json(res, 403, { message: 'Forbidden' });
+			json(res, 200, { entries: state.blacklist });
+		}
+	},
+	{
+		method: 'POST',
+		pattern: /^\/v2\/admin\/blacklist\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!state.users[id]?.is_admin) return json(res, 403, { message: 'Forbidden' });
+			const body = ctx.body ?? {};
+			if (!body.value) return json(res, 400, { message: 'value required' });
+			const entry = makeBlacklistEntry({
+				kind: body.kind ?? 'username',
+				value: body.value,
+				reason: body.reason ?? ''
+			});
+			state.blacklist.unshift(entry);
+			json(res, 200, { entry });
+		}
+	},
+	{
+		method: 'DELETE',
+		pattern: /^\/v2\/admin\/blacklist\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!state.users[id]?.is_admin) return json(res, 403, { message: 'Forbidden' });
+			const kind = ctx.url.searchParams.get('kind');
+			const value = ctx.url.searchParams.get('value');
+			state.blacklist = state.blacklist.filter(
+				(e) => !(e.kind === kind && e.original_value === value)
+			);
+			json(res, 204, '');
+		}
+	},
+
+	// --- wave-2: content delete (prompts + articles; events delete already above) ---
+	{
+		method: 'DELETE',
+		pattern: /^\/v2\/prompts\/[^/]+\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = ctx.url.pathname.split('/').pop()!;
+			delete state.prompts[id];
+			json(res, 204, '');
+		}
+	},
+	{
+		method: 'DELETE',
+		pattern: /^\/v2\/articles\/[^/]+\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = ctx.url.pathname.split('/').pop()!;
+			delete state.articles[id];
+			json(res, 204, '');
+		}
 	}
 ];
 
@@ -1012,13 +1272,8 @@ function findOverride(req: IncomingMessage, ctx: RouteContext): Override | undef
 	for (let i = 0; i < state.overrides.length; i++) {
 		const o = state.overrides[i]!;
 		if (o.method !== req.method) continue;
-		// An override registered for a specific test matches:
-		//   - browser requests carrying that test's X-Test-Id, AND
-		//   - SSR/Nitro-side requests that have no testId at all (since the
-		//     Nuxt server can't read browser headers when forwarding through
-		//     $fetch). Without this fallback, SSR-fetched data caches the
-		//     default response and overrides never take effect.
 		if (o.testId && ctx.testId && ctx.testId !== o.testId) continue;
+
 		const regex = new RegExp(o.path);
 		if (regex.test(ctx.url.pathname)) {
 			if (o.once) state.overrides.splice(i, 1);
@@ -1121,8 +1376,6 @@ export async function stopMockServers(): Promise<void> {
 	await Promise.all(closers);
 }
 
-// CLI entrypoint -- `bun tests/e2e/utils/mock-server.ts` starts the servers for
-// ad-hoc debugging.
 if (import.meta.url === `file://${process.argv[1]}`) {
 	startMockServers().then(() => {
 		process.on('SIGINT', () => stopMockServers().then(() => process.exit(0)));
