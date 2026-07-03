@@ -104,7 +104,7 @@ const editing = ref<ApiKey | null>(null);
 const atLimit = computed(() => max.value !== Number.MAX_SAFE_INTEGER && active.value >= max.value);
 
 onMounted(async () => {
-	await Promise.all([fetchKeys(), fetchCatalog()]);
+	await Promise.allSettled([fetchKeys(), fetchCatalog()]);
 });
 
 function onCreated(key: ApiKeyCreated) {
