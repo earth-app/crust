@@ -252,16 +252,35 @@ describe('user store', () => {
 			expect(store.cache.has('stranger')).toBe(false);
 		});
 
-		it('caches null for a definitive 404 (success:false, no message) so not-found renders', async () => {
+		it('caches null for a definitive 404 (status 404) so not-found renders', async () => {
 			const store = useUserStore();
 			setAuthUser(null);
-			// makeRequest returns success:false with NO message for a real 404
-			vi.mocked(makeAPIRequest).mockResolvedValue({ success: false } as any);
+			// makeRequest surfaces the http status; a real 404 (even with a message body) is not-found
+			vi.mocked(makeAPIRequest).mockResolvedValue({
+				success: false,
+				status: 404,
+				message: 'User not found'
+			} as any);
 
 			const res = await store.fetchUser('ghost');
 
 			expect(res).toBeNull();
 			expect(store.cache.get('ghost')).toBeNull();
+		});
+
+		it('does NOT cache a transient 5xx (status present, not 404) — retryable', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			vi.mocked(makeAPIRequest).mockResolvedValue({
+				success: false,
+				status: 500,
+				message: 'server error'
+			} as any);
+
+			const res = await store.fetchUser('stranger');
+
+			expect(res).toBeNull();
+			expect(store.cache.has('stranger')).toBe(false);
 		});
 
 		it('recovers after a transient failure then a success (no poison)', async () => {
