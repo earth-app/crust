@@ -52,24 +52,21 @@ jobs:
           echo "deb [signed-by=/etc/apt/trusted.gpg.d/ddev.gpg] https://apt.fury.io/drud/ * *" | sudo tee /etc/apt/sources.list.d/ddev.list
           sudo apt-get update
           sudo apt-get install -y ddev
-      - name: Generate Docker Cache Key
-        id: docker_cache_key
-        run: |
-          ddev_ver=$(ddev --version 2>/dev/null | head -n1)
-          startup_sha=$(sha1sum mantle2/startup.sh 2>/dev/null | awk '{print $1}')
-          # Include any committed docker-compose / Dockerfile files to future-proof
-          extra=$(find mantle2 cloud -type f \( -name 'docker-compose*.yml' -o -name 'Dockerfile*' \) 2>/dev/null \
-                  | sort | xargs -r cat | sha1sum | awk '{print $1}')
-          key=$(printf '%s|%s|%s' "$ddev_ver" "$startup_sha" "$extra" | sha1sum | awk '{print $1}')
-          echo "key=${key}" >> "$GITHUB_OUTPUT"
-          echo "ddev: $ddev_ver"
-          echo "startup.sh sha: $startup_sha"
-          echo "extra files sha: $extra"
-          echo "composite cache key: $key"
-      - name: Load Docker Cache
-        uses: ScribeMD/docker-cache@0.5.0
+      - name: Cache Docker Images
+        if: ${{ !cancelled() }}
+        uses: actions/cache@v6
         with:
-          key: docker-${{ runner.os }}-${{ steps.docker_cache_key.outputs.key }}
+          path: /tmp/docker-images
+          key: docker-${{ runner.os }}-${{ hashFiles('docker/**') }}
+      - name: Load or Pull Docker Images
+        run: |
+          if [ -f /tmp/docker-images/images.tar ]; then
+            docker load -i /tmp/docker-images/images.tar
+          else
+            docker compose -f docker/compose.yml pull
+            mkdir -p /tmp/docker-images
+            docker compose -f docker/compose.yml config --images | sort -u | xargs docker save -o /tmp/docker-images/images.tar
+          fi
       - name: Boot earth-app/mantle2
         run: |
           cd mantle2
@@ -106,7 +103,7 @@ jobs:
         run: |
           cd crust
           bunx playwright install --with-deps chromium
-      - name: Build production test bundle
+      - name: Build Test Bundle
         run: |
           cd crust
           bun run build:test
