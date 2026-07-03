@@ -53,7 +53,7 @@
 				class="rounded-lg border border-default p-4 flex flex-col gap-2"
 			>
 				<div class="flex items-baseline justify-between gap-3">
-					<h3 class="text-base font-semibold m-0 break-words">
+					<h3 class="text-base font-semibold m-0 wrap-break-word">
 						{{ entry.question || entry.poll_id }}
 					</h3>
 					<UBadge
