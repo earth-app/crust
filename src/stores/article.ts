@@ -6,7 +6,7 @@ import type {
 	ArticleQuizScoreResult
 } from 'types/article';
 import type { User } from 'types/user';
-import { makeAPIRequest, makeClientAPIRequest } from 'utils';
+import { invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
 import { reactive } from 'vue';
 import { useAuthStore } from './auth';
 
@@ -149,6 +149,10 @@ export const useArticleStore = defineStore('article', () => {
 			await existingFetch;
 			return cache.get(id) || null;
 		}
+
+		// force must also blow away the shared util-level apiCache; in the browser
+		// isApiCacheDisabled() is false (no process.env) so a stale cached body persists
+		if (force) invalidateAPICache(`article-${id}`);
 
 		loading.add(id);
 

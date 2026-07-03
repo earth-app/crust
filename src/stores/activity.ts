@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { Activity } from 'types/activity';
-import { makeAPIRequest, makeClientAPIRequest } from 'utils';
+import { invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
 import { reactive, ref } from 'vue';
 import { useAuthStore } from './auth';
 
@@ -62,6 +62,10 @@ export const useActivityStore = defineStore('activity', () => {
 			await existingFetch;
 			return cache.get(id) || null;
 		}
+
+		// force must also blow away the shared util-level apiCache; in the browser
+		// isApiCacheDisabled() is false (no process.env) so a stale cached body persists
+		if (force) invalidateAPICache(`activity-${id}`);
 
 		loading.add(id);
 

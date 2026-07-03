@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import type { Event, EventImageSubmission } from 'types/event';
 import type { User } from 'types/user';
 import {
+	invalidateAPICache,
 	makeAPIRequest,
 	makeClientAPIRequest,
 	makeServerRequest,
@@ -112,6 +113,11 @@ export const useEventStore = defineStore('event', () => {
 		if (force && existingFetch) {
 			await existingFetch;
 		}
+
+		// force must also blow away the shared util-level apiCache; in the browser
+		// isApiCacheDisabled() is false (no process.env), so a stale cached body
+		// (e.g. is_attending before a signup/leave) would otherwise be replayed
+		if (force) invalidateAPICache(`event-${id}`);
 
 		loading.add(id);
 
