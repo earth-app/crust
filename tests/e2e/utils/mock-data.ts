@@ -243,6 +243,130 @@ export function makeQuest(overrides: Record<string, any> = {}): Record<string, a
 	};
 }
 
+export function makeQuestStep(overrides: Record<string, any> = {}): Record<string, any> {
+	const type = overrides.type ?? 'describe_text';
+	const iconByType: Record<string, string> = {
+		describe_text: 'i-lucide-pen-line',
+		match_terms: 'i-lucide-link',
+		order_items: 'i-lucide-list-ordered',
+		article_quiz: 'i-lucide-book-open-check',
+		respond_to_prompt: 'i-lucide-message-square',
+		attend_event: 'i-lucide-calendar-check',
+		article_read_time: 'i-lucide-book-open-text',
+		activity_read_time: 'i-lucide-book-open-text'
+	};
+	return {
+		type,
+		description: overrides.description ?? `Complete the ${type} step`,
+		parameters: overrides.parameters ?? [],
+		icon: overrides.icon ?? iconByType[type] ?? 'i-lucide-check',
+		...(overrides.reward !== undefined ? { reward: overrides.reward } : {}),
+		...(overrides.delay !== undefined ? { delay: overrides.delay } : {}),
+		...(overrides.mobile_only !== undefined ? { mobile_only: overrides.mobile_only } : {}),
+		...(overrides.tutorial_hint !== undefined ? { tutorial_hint: overrides.tutorial_hint } : {})
+	};
+}
+
+/**
+ * Timeline `Quest` definition (what the modal renders). `steps` is the array of
+ * single-or-alternative steps; pass real step objects via makeQuestStep.
+ */
+export function makeQuestDefinition(overrides: Record<string, any> = {}): Record<string, any> {
+	const id = overrides.id ?? `q-${Math.random().toString(36).slice(2, 8)}`;
+	return {
+		id,
+		title: overrides.title ?? 'Test Quest',
+		description: overrides.description ?? 'A quest used in e2e tests.',
+		icon: overrides.icon ?? 'mdi:trophy',
+		rarity: overrides.rarity ?? 'normal',
+		steps: overrides.steps ?? [makeQuestStep()],
+		reward: overrides.reward ?? 25,
+		...(overrides.premium !== undefined ? { premium: overrides.premium } : {}),
+		...(overrides.mobile_only !== undefined ? { mobile_only: overrides.mobile_only } : {}),
+		...(overrides.permissions !== undefined ? { permissions: overrides.permissions } : {})
+	};
+}
+
+/**
+ * `UserQuestProgress` — the active-quest store entry returned by GET /v2/users/{id}/quest.
+ * Override `progress` (array indexed by step) to mark steps complete.
+ */
+export function makeActiveQuest(overrides: Record<string, any> = {}): Record<string, any> {
+	const quest = overrides.quest ?? makeQuestDefinition();
+	const progress = overrides.progress ?? [];
+	const currentStepIndex = overrides.currentStepIndex ?? progress.length;
+	const steps = quest.steps as any[];
+	const currentRaw = steps[Math.min(currentStepIndex, steps.length - 1)];
+	const currentStep = Array.isArray(currentRaw) ? currentRaw[0] : currentRaw;
+	return {
+		quest,
+		questId: quest.id,
+		currentStep,
+		currentStepIndex,
+		completed: overrides.completed ?? false,
+		progress,
+		...(overrides.activeReadTime ? { activeReadTime: overrides.activeReadTime } : {}),
+		...(overrides.migrated !== undefined ? { migrated: overrides.migrated } : {})
+	};
+}
+
+export function makeQuestProgressEntry(overrides: Record<string, any> = {}): Record<string, any> {
+	return {
+		type: overrides.type ?? 'describe_text',
+		index: overrides.index ?? 0,
+		...(overrides.altIndex !== undefined ? { altIndex: overrides.altIndex } : {}),
+		submittedAt: overrides.submittedAt ?? Date.parse(FIXED_NOW),
+		...overrides
+	};
+}
+
+/** Article quiz question (GET /v2/articles/{id}/quiz returns { questions, summary }). */
+export function makeQuizQuestion(overrides: Record<string, any> = {}): Record<string, any> {
+	const type = overrides.type ?? 'multiple_choice';
+	const base: Record<string, any> = {
+		question: overrides.question ?? 'What color is the sky on a clear day?',
+		type
+	};
+	if (type === 'order') {
+		base.items = overrides.items ?? ['First', 'Second', 'Third'];
+		base.options = [];
+	} else if (type === 'true_false') {
+		base.options = overrides.options ?? [];
+	} else {
+		base.options = overrides.options ?? ['Blue', 'Green', 'Red', 'Yellow'];
+		base.items = [];
+	}
+	return base;
+}
+
+export function makeArticleQuiz(
+	overrides: { questions?: any[]; summary?: any } = {}
+): Record<string, any> {
+	const questions = overrides.questions ?? [makeQuizQuestion()];
+	return {
+		questions,
+		summary: overrides.summary ?? { total: questions.length }
+	};
+}
+
+/** ArticleQuizScoreResult shape returned after POST /api/article/quiz. */
+export function makeQuizScoreResult(overrides: Record<string, any> = {}): Record<string, any> {
+	const total = overrides.total ?? 1;
+	const score = overrides.score ?? total;
+	return {
+		score,
+		total,
+		scorePercent: overrides.scorePercent ?? Math.round((score / Math.max(total, 1)) * 100),
+		results: overrides.results ?? [
+			{
+				correct: score >= total,
+				correct_answer_index: 0,
+				user_answer_index: 0
+			}
+		]
+	};
+}
+
 export function makeNotification(overrides: Record<string, any> = {}): Record<string, any> {
 	const id = overrides.id ?? `notif-${Math.random().toString(36).slice(2, 8)}`;
 	return {
@@ -289,6 +413,117 @@ export function makeChallenge(overrides: Record<string, any> = {}): Record<strin
 		status: overrides.status ?? 'pending',
 		created_at: overrides.created_at ?? Date.parse(FIXED_NOW),
 		...(overrides.accepted_at ? { accepted_at: overrides.accepted_at } : {})
+	};
+}
+
+// --- wave-2 widget / report / admin fixtures ---
+
+const MOOD_EMOJIS = ['😍', '😊', '🤔', '😐', '😟', '😤'] as const;
+
+/** MoodSnapshot returned by GET/POST /v2/mood/{topic}/{date} ({ counts, total, updated_at }). */
+export function makeMoodSnapshot(overrides: Record<string, any> = {}): Record<string, any> {
+	const counts: Record<string, number> = { ...(overrides.counts ?? {}) };
+	for (const e of MOOD_EMOJIS) if (typeof counts[e] !== 'number') counts[e] = 0;
+	const total =
+		typeof overrides.total === 'number'
+			? overrides.total
+			: Object.values(counts).reduce((a, b) => a + b, 0);
+	return {
+		counts,
+		total,
+		updated_at: overrides.updated_at ?? Date.parse(FIXED_NOW)
+	};
+}
+
+/** PollVote returned by POST /v2/users/current/poll (list items come from GET). */
+export function makePollVote(overrides: Record<string, any> = {}): Record<string, any> {
+	const options = overrides.options ?? ['Alone', 'With Friends', 'With Family'];
+	const optionIndex = overrides.option_index ?? 0;
+	const counts =
+		overrides.counts ?? options.map((_: string, i: number) => (i === optionIndex ? 3 : 1));
+	const total = counts.reduce((a: number, b: number) => a + b, 0);
+	return {
+		poll_id: overrides.poll_id ?? 'q-sample',
+		option_index: optionIndex,
+		option_text: overrides.option_text ?? options[optionIndex] ?? null,
+		question: overrides.question ?? 'Where do you do this most often?',
+		options,
+		voted_at: overrides.voted_at ?? Date.parse(FIXED_NOW),
+		aggregate: overrides.aggregate ?? {
+			counts,
+			total,
+			question: overrides.question ?? 'Where do you do this most often?',
+			options,
+			updated_at: overrides.updated_at ?? Math.floor(Date.parse(FIXED_NOW) / 1000)
+		}
+	};
+}
+
+/** Report returned by POST /v2/reports ({ report, deduped }). */
+export function makeReport(overrides: Record<string, any> = {}): Record<string, any> {
+	const id = overrides.id ?? `rpt-${Math.random().toString(36).slice(2, 8)}`;
+	return {
+		id,
+		content_type: overrides.content_type ?? 'prompt',
+		content_id: overrides.content_id ?? 'pmt-1',
+		reason: overrides.reason ?? 'spam',
+		description: overrides.description ?? '',
+		reporter_id: overrides.reporter_id ?? null,
+		source: overrides.source ?? 'user',
+		status: overrides.status ?? 'pending',
+		report_count: overrides.report_count ?? 1,
+		created_at: overrides.created_at ?? Date.parse(FIXED_NOW),
+		updated_at: overrides.updated_at ?? Date.parse(FIXED_NOW),
+		...overrides
+	};
+}
+
+/** Hydrated admin ReportListItem (report + preview + usernames). */
+export function makeReportListItem(overrides: Record<string, any> = {}): Record<string, any> {
+	return {
+		...makeReport(overrides),
+		content_preview: overrides.content_preview ?? 'A reported piece of content.',
+		reporter_username: overrides.reporter_username ?? 'reporter',
+		author_username: overrides.author_username ?? 'author'
+	};
+}
+
+/** AnalyticsSnapshot returned by GET /v2/admin/analytics?since&until. */
+export function makeAnalytics(overrides: Record<string, any> = {}): Record<string, any> {
+	return {
+		since: overrides.since ?? '2026-05-20T12:00:00.000Z',
+		until: overrides.until ?? FIXED_NOW,
+		by_country: overrides.by_country ?? [
+			{ dimensions: { clientCountryName: 'United States' }, sum: { requests: 4200 } },
+			{ dimensions: { clientCountryName: 'Canada' }, sum: { requests: 1100 } }
+		],
+		by_status: overrides.by_status ?? [
+			{ dimensions: { edgeResponseStatus: 200 }, sum: { requests: 5000 } },
+			{ dimensions: { edgeResponseStatus: 404 }, sum: { requests: 120 } }
+		],
+		top_paths: overrides.top_paths ?? [
+			{ dimensions: { clientRequestPath: '/' }, sum: { requests: 3000, bytes: 900000 } },
+			{ dimensions: { clientRequestPath: '/activities' }, sum: { requests: 800, bytes: 240000 } }
+		],
+		signup_funnel: overrides.signup_funnel ?? {
+			signup_views: 1000,
+			signups_completed: 250,
+			verifications_completed: 180
+		},
+		configured: overrides.configured ?? true
+	};
+}
+
+/** BlacklistEntry returned by GET /v2/admin/blacklist ({ entries: [...] }). */
+export function makeBlacklistEntry(overrides: Record<string, any> = {}): Record<string, any> {
+	const value = overrides.value ?? 'spammer';
+	return {
+		kind: overrides.kind ?? 'username',
+		value: value.toLowerCase(),
+		original_value: overrides.original_value ?? value,
+		reason: overrides.reason ?? 'Known abuser',
+		added_at: overrides.added_at ?? Date.parse(FIXED_NOW),
+		added_by: overrides.added_by ?? 'admin'
 	};
 }
 
