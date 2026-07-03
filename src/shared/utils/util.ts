@@ -46,7 +46,7 @@ export async function makeRequest<T>(
 	url: string,
 	token: string | null | undefined = null,
 	options: any = {}
-): Promise<{ success: boolean; data?: T; message?: string }> {
+): Promise<{ success: boolean; data?: T; message?: string; status?: number }> {
 	try {
 		const allowMessageResponse = options.allowMessageResponse === true;
 		const requestOptions = { ...options };
@@ -93,12 +93,17 @@ export async function makeRequest<T>(
 				}
 
 				// Handle regular JSON requests
+				let responseStatus = 0;
 				const data = await $fetch<T>(url, {
 					headers: {
 						...authHeaders,
 						...(requestOptions.headers ?? {})
 					},
 					ignoreResponseError: true,
+					// capture the http status so callers can tell a definitive 404 from a transient failure
+					onResponse({ response }) {
+						responseStatus = response.status;
+					},
 					...requestOptions
 				}).catch((error) => {
 					// Silently handle 404s - don't log or report
@@ -131,7 +136,8 @@ export async function makeRequest<T>(
 
 					// 404 - return silently without message
 					return {
-						success: false
+						success: false,
+						status: responseStatus
 					};
 				}
 
@@ -139,7 +145,8 @@ export async function makeRequest<T>(
 					return {
 						success: false,
 						data: data as any,
-						message: (data as any).message || `Error fetching ${key} from ${url}`
+						message: (data as any).message || `Error fetching ${key} from ${url}`,
+						status: responseStatus
 					};
 				}
 
@@ -207,7 +214,7 @@ export async function makeAPIRequest<T>(
 	url: string,
 	token: string | null | undefined = null,
 	options: any = {}
-): Promise<{ success: boolean; data?: T; message?: string }> {
+): Promise<{ success: boolean; data?: T; message?: string; status?: number }> {
 	const config = useRuntimeConfig();
 	return await makeRequest<T>(key, `${config.public.apiBaseUrl}${url}`, token, options);
 }
@@ -216,7 +223,7 @@ export async function makeClientAPIRequest<T>(
 	url: string,
 	token: string | null | undefined = null,
 	options: any = {}
-): Promise<{ success: boolean; data?: T; message?: string }> {
+): Promise<{ success: boolean; data?: T; message?: string; status?: number }> {
 	const config = useRuntimeConfig();
 	return await makeRequest<T>(null, `${config.public.apiBaseUrl}${url}`, token, options);
 }
