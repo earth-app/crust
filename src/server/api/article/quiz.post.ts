@@ -17,12 +17,14 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
+	const testId = getHeader(event, 'x-test-id');
 	const res = await $fetch(`${config.public.cloudBaseUrl}/v1/articles/quiz/submit`, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${config.adminApiKey}`,
 			Accept: 'application/json',
-			'Content-Type': 'application/json'
+			'Content-Type': 'application/json',
+			...(testId ? { 'x-test-id': testId } : {})
 		},
 		body: {
 			answers,

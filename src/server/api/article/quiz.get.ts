@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
 	}
 
 	const config = useRuntimeConfig();
+	const testId = getHeader(event, 'x-test-id');
 
 	try {
 		const res = await $fetch(
@@ -21,7 +22,8 @@ export default defineEventHandler(async (event) => {
 				method: 'GET',
 				headers: {
 					Authorization: `Bearer ${config.adminApiKey}`,
-					Accept: 'application/json'
+					Accept: 'application/json',
+					...(testId ? { 'x-test-id': testId } : {})
 				}
 			}
 		);
