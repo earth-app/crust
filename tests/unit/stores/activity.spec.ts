@@ -8,11 +8,12 @@ vi.mock('utils', async (io) => {
 	return {
 		...actual,
 		makeAPIRequest: vi.fn(),
-		makeClientAPIRequest: vi.fn()
+		makeClientAPIRequest: vi.fn(),
+		invalidateAPICache: vi.fn()
 	};
 });
 
-import { makeAPIRequest, makeClientAPIRequest } from 'utils';
+import { invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
 
 function stubActivities(...ids: string[]): Activity[] {
 	return ids.map((id) => ({ id }) as unknown as Activity);
@@ -186,6 +187,18 @@ describe('activity store fetchActivity', () => {
 		await store.fetchActivity('a1', true);
 		expect(makeAPIRequest).toHaveBeenCalledTimes(1);
 		expect((store.get('a1') as any).name).toBe('updated');
+	});
+
+	it('force invalidates the shared util apiCache', async () => {
+		const store = useActivityStore();
+		store.setActivities(stubActivities('a1'));
+		vi.mocked(makeAPIRequest).mockResolvedValue({
+			success: true,
+			data: { id: 'a1', name: 'updated' }
+		} as any);
+
+		await store.fetchActivity('a1', true);
+		expect(invalidateAPICache).toHaveBeenCalledWith('activity-a1');
 	});
 
 	it('dedupes concurrent fetches into one network call', async () => {

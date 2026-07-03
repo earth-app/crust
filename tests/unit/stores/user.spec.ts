@@ -4,9 +4,6 @@ import { isValidUser, useUserStore } from 'stores/user';
 import type { User } from 'types/user';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// mock the network layer (imported at module load from the utils alias). keep pure
-// helpers (valid, etc) real via the spread; paginatedAPIRequest is mocked too so the
-// event/submission fetches don't fan out through the real cache machinery
 vi.mock('utils', async (io) => {
 	const actual = await io<typeof import('utils')>();
 	return {
@@ -219,10 +216,23 @@ describe('user store', () => {
 			expect(makeAPIRequest).not.toHaveBeenCalled();
 		});
 
-		it('caches null (not-found) for a malformed payload on a non-self identifier', async () => {
+		it('does NOT cache not-found for an anon (no session) malformed non-self fetch — stays retryable', async () => {
 			const store = useUserStore();
-			setAuthUser(null);
-			// [] partial-serialization shape — valid() may pass but isValidUser rejects
+			setAuthUser(null); // no session token
+			// [] partial-serialization shape — an anon / not-yet-hydrated read must not poison
+			vi.mocked(makeAPIRequest).mockResolvedValue({ success: true, data: [] as any });
+
+			const res = await store.fetchUser('stranger');
+
+			expect(res).toBeNull();
+			expect(store.cache.has('stranger')).toBe(false);
+		});
+
+		it('caches not-found for an AUTHENTICATED non-self malformed payload', async () => {
+			const store = useUserStore();
+			const me = mkUser('me1', 'gregory');
+			const auth = setAuthUser(me);
+			auth.setSessionToken('tok');
 			vi.mocked(makeAPIRequest).mockResolvedValue({ success: true, data: [] as any });
 
 			const res = await store.fetchUser('stranger');
@@ -231,7 +241,7 @@ describe('user store', () => {
 			expect(store.cache.get('stranger')).toBeNull();
 		});
 
-		it('caches null on a failed (success:false) response', async () => {
+		it('does NOT cache a failed (success:false) response — transient, retryable', async () => {
 			const store = useUserStore();
 			setAuthUser(null);
 			vi.mocked(makeAPIRequest).mockResolvedValue({ success: false, message: 'not found' });
@@ -239,7 +249,20 @@ describe('user store', () => {
 			const res = await store.fetchUser('stranger');
 
 			expect(res).toBeNull();
-			expect(store.cache.get('stranger')).toBeNull();
+			expect(store.cache.has('stranger')).toBe(false);
+		});
+
+		it('recovers after a transient failure then a success (no poison)', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			const alice = mkUser('u1', 'alice');
+			vi.mocked(makeAPIRequest).mockResolvedValueOnce({ success: false, message: 'boom' });
+			vi.mocked(makeAPIRequest).mockResolvedValueOnce({ success: true, data: alice });
+
+			expect(await store.fetchUser('u1')).toBeNull();
+			// nothing poisoned -> the second call actually refetches and returns the real user
+			expect(await store.fetchUser('u1')).toEqual(alice);
+			expect(makeAPIRequest).toHaveBeenCalledTimes(2);
 		});
 
 		it('does NOT poison the cache with null for the self identifier on a malformed payload', async () => {
@@ -281,7 +304,7 @@ describe('user store', () => {
 			expect(store.cache.get('me1')).toEqual(me);
 		});
 
-		it('caches null when a NON-self fetch throws', async () => {
+		it('does NOT cache when a NON-self fetch throws — transient, retryable', async () => {
 			const store = useUserStore();
 			setAuthUser(null);
 			vi.mocked(makeAPIRequest).mockRejectedValue(new Error('network'));
@@ -289,7 +312,7 @@ describe('user store', () => {
 			const res = await store.fetchUser('stranger');
 
 			expect(res).toBeNull();
-			expect(store.cache.get('stranger')).toBeNull();
+			expect(store.cache.has('stranger')).toBe(false);
 		});
 
 		it('dedups concurrent unforced fetches onto one request', async () => {
@@ -311,7 +334,7 @@ describe('user store', () => {
 	});
 
 	describe('event / badge / points fetches handle failure as empty', () => {
-		it('fetchAttendingEvents stores [] on failure', async () => {
+		it('fetchAttendingEvents does NOT cache [] on failure (stays retryable)', async () => {
 			const store = useUserStore();
 			setAuthUser(null);
 			vi.mocked(paginatedAPIRequest).mockResolvedValue({ success: false, message: 'x' } as any);
@@ -319,7 +342,20 @@ describe('user store', () => {
 			const res = await store.fetchAttendingEvents('u1');
 
 			expect(res).toEqual([]);
-			expect(store.attendingEvents.get('u1')).toEqual([]);
+			expect(store.attendingEvents.has('u1')).toBe(false);
+		});
+
+		it('a list fetcher keeps last-known data on a transient failure', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			const events = [{ id: 'e1' }];
+			vi.mocked(paginatedAPIRequest).mockResolvedValueOnce({ success: true, data: events } as any);
+			expect(await store.fetchAttendingEvents('u1')).toEqual(events);
+
+			vi.mocked(paginatedAPIRequest).mockResolvedValueOnce({ success: false, message: 'x' } as any);
+			// failure returns the last-known list rather than blanking it to []
+			expect(await store.fetchAttendingEvents('u1')).toEqual(events);
+			expect(store.attendingEvents.get('u1')).toEqual(events);
 		});
 
 		it('fetchHostingEvents stores the list on success', async () => {
@@ -334,7 +370,7 @@ describe('user store', () => {
 			expect(store.hostingEvents.get('u1')).toEqual(events);
 		});
 
-		it('fetchBadges stores [] on a failed response', async () => {
+		it('fetchBadges does NOT cache [] on a failed response (stays retryable)', async () => {
 			const store = useUserStore();
 			setAuthUser(null);
 			vi.mocked(makeAPIRequest).mockResolvedValue({ success: false, message: 'x' });
@@ -342,10 +378,10 @@ describe('user store', () => {
 			const res = await store.fetchBadges('u1');
 
 			expect(res).toEqual([]);
-			expect(store.badges.get('u1')).toEqual([]);
+			expect(store.badges.has('u1')).toBe(false);
 		});
 
-		it('fetchPoints returns [0, []] and stores zeros on failure', async () => {
+		it('fetchPoints returns [0, []] on failure without caching zeros (stays retryable)', async () => {
 			const store = useUserStore();
 			setAuthUser(null);
 			vi.mocked(makeAPIRequest).mockResolvedValue({ success: false, message: 'x' });
@@ -354,8 +390,8 @@ describe('user store', () => {
 
 			expect(pts).toBe(0);
 			expect(history).toEqual([]);
-			expect(store.points.get('u1')).toBe(0);
-			expect(store.pointsHistory.get('u1')).toEqual([]);
+			expect(store.points.has('u1')).toBe(false);
+			expect(store.pointsHistory.has('u1')).toBe(false);
 		});
 
 		it('fetchPoints stores the returned points + history on success', async () => {
@@ -381,6 +417,22 @@ describe('user store', () => {
 			// no network for any of these
 			expect(paginatedAPIRequest).not.toHaveBeenCalled();
 			expect(makeAPIRequest).not.toHaveBeenCalled();
+		});
+
+		it('a falsy identifier never writes to any per-user map', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			await store.fetchAttendingEvents('');
+			await store.fetchHostingEvents('');
+			await store.fetchBadges('');
+			await store.fetchEventSubmissions('');
+			await store.fetchPoints('');
+			expect(store.attendingEvents.has('')).toBe(false);
+			expect(store.hostingEvents.has('')).toBe(false);
+			expect(store.badges.has('')).toBe(false);
+			expect(store.eventSubmissions.has('')).toBe(false);
+			expect(store.points.has('')).toBe(false);
+			expect(store.pointsHistory.has('')).toBe(false);
 		});
 	});
 
@@ -435,6 +487,37 @@ describe('user store', () => {
 			const res = await store.fetchUserQuest('');
 			expect(res).toBeNull();
 			expect(store.quest.has('')).toBe(false);
+		});
+
+		it('does NOT clobber a known quest on a transient failure (force refetch)', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			const active = {
+				questId: 'q1',
+				quest: { id: 'q1', steps: [] },
+				currentStepIndex: 0,
+				completed: false,
+				progress: []
+			};
+			store.quest.set('u1', active as any);
+			vi.mocked(makeAPIRequest).mockResolvedValue({ success: false, message: 'boom' });
+
+			// force bypasses the cache early-return so the failure branch runs
+			const res = await store.fetchUserQuest('u1', true);
+
+			expect(res).toEqual(active);
+			expect(store.quest.get('u1')).toEqual(active);
+		});
+
+		it('settles a first-ever fetch to null when the quest endpoint fails', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			vi.mocked(makeAPIRequest).mockResolvedValue({ success: false, message: 'boom' });
+
+			const res = await store.fetchUserQuest('u1');
+
+			expect(res).toBeNull();
+			expect(store.quest.get('u1')).toBeNull();
 		});
 	});
 
@@ -561,6 +644,68 @@ describe('user store', () => {
 
 			expect(store.quest.get('u1')).toEqual(active);
 			expect(store.questHistory.get('u1')?.has('q1')).toBeFalsy();
+		});
+	});
+
+	describe('fetchQuestHistory merge (dedup + freshness)', () => {
+		it('keeps the freshest entry by completedAt across overlapping pages', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			vi.mocked(makeAPIRequest).mockResolvedValueOnce({
+				success: true,
+				data: { history: { q1: { questId: 'q1', quest: { id: 'q1' }, completedAt: 100 } } }
+			} as any);
+			await store.fetchQuestHistory('u1', { page: 1 });
+
+			// page 2 re-includes q1 with a newer completedAt -> newer wins
+			vi.mocked(makeAPIRequest).mockResolvedValueOnce({
+				success: true,
+				data: { history: { q1: { questId: 'q1', quest: { id: 'q1' }, completedAt: 200 } } }
+			} as any);
+			await store.fetchQuestHistory('u1', { page: 2 });
+
+			expect(store.questHistory.get('u1')?.get('q1')?.completedAt).toBe(200);
+			expect(store.questHistory.get('u1')?.size).toBe(1);
+		});
+
+		it('does not let an older re-fetched page overwrite a newer cached entry', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			vi.mocked(makeAPIRequest).mockResolvedValueOnce({
+				success: true,
+				data: { history: { q1: { questId: 'q1', quest: { id: 'q1' }, completedAt: 200 } } }
+			} as any);
+			await store.fetchQuestHistory('u1', { page: 1 });
+
+			vi.mocked(makeAPIRequest).mockResolvedValueOnce({
+				success: true,
+				data: { history: { q1: { questId: 'q1', quest: { id: 'q1' }, completedAt: 100 } } }
+			} as any);
+			await store.fetchQuestHistory('u1', { page: 2 });
+
+			expect(store.questHistory.get('u1')?.get('q1')?.completedAt).toBe(200);
+		});
+
+		it('carries forward lazy-loaded progress when a lean refresh lacks it', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			const seeded = new Map();
+			seeded.set('q1', {
+				questId: 'q1',
+				quest: { id: 'q1' },
+				completedAt: 100,
+				progress: [{ type: 't' }]
+			});
+			store.questHistory.set('u1', seeded as any);
+
+			// a lean list refresh returns the same quest WITHOUT progress
+			vi.mocked(makeAPIRequest).mockResolvedValueOnce({
+				success: true,
+				data: { history: { q1: { questId: 'q1', quest: { id: 'q1' }, completedAt: 100 } } }
+			} as any);
+			await store.fetchQuestHistory('u1', { force: true });
+
+			expect(store.questHistory.get('u1')?.get('q1')?.progress).toEqual([{ type: 't' }]);
 		});
 	});
 

@@ -12,11 +12,17 @@ vi.mock('utils', async (io) => {
 		makeAPIRequest: vi.fn(),
 		makeClientAPIRequest: vi.fn(),
 		makeServerRequest: vi.fn(),
-		paginatedAPIRequest: vi.fn()
+		paginatedAPIRequest: vi.fn(),
+		invalidateAPICache: vi.fn()
 	};
 });
 
-import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from 'utils';
+import {
+	invalidateAPICache,
+	makeAPIRequest,
+	makeClientAPIRequest,
+	paginatedAPIRequest
+} from 'utils';
 
 // minimal well-formed event: id + host with an id is all isValidEvent checks
 function makeEvent(id: string, extra: Partial<Event> = {}): Event {
@@ -289,6 +295,18 @@ describe('event store fetchEvent', () => {
 		await store.fetchEvent('e1', true);
 		expect(makeAPIRequest).toHaveBeenCalledTimes(1);
 		expect((store.get('e1') as any).attendee_count).toBe(7);
+	});
+
+	it('force invalidates the shared util apiCache so a stale body is not replayed', async () => {
+		const store = useEventStore();
+		store.setEvents([makeEvent('e1')]);
+		vi.mocked(makeAPIRequest).mockResolvedValue({
+			success: true,
+			data: makeEvent('e1', { is_attending: true } as Partial<Event>)
+		} as any);
+
+		await store.fetchEvent('e1', true);
+		expect(invalidateAPICache).toHaveBeenCalledWith('event-e1');
 	});
 
 	it('dedupes concurrent fetches into one network call', async () => {
