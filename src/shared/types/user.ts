@@ -138,12 +138,7 @@ export type BadgeMasteryStatus = {
 };
 
 export type BadgeMasteryError =
-	| 'locked'
-	| 'conflict'
-	| 'ai_failed'
-	| 'exempt'
-	| 'cap_reached'
-	| 'unknown';
+	'locked' | 'conflict' | 'ai_failed' | 'exempt' | 'cap_reached' | 'unknown';
 
 export type MasteryListItem = {
 	badge_id: string;
@@ -311,11 +306,7 @@ export interface QuestStepContextProps {
 }
 
 export type QuestStepMigrationReason =
-	| 'type_changed'
-	| 'params_changed'
-	| 'step_removed'
-	| 'alt_removed'
-	| 'quest_deleted';
+	'type_changed' | 'params_changed' | 'step_removed' | 'alt_removed' | 'quest_deleted';
 
 export type QuestStepMigrationInfo = {
 	from: QuestStepType; // old step type at this position

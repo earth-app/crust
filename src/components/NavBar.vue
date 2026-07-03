@@ -301,8 +301,7 @@ onMounted(() => {
 
 	if (typeof window !== 'undefined') {
 		const ric = (window as any).requestIdleCallback as
-			| ((cb: IdleRequestCallback, opts?: IdleRequestOptions) => number)
-			| undefined;
+			((cb: IdleRequestCallback, opts?: IdleRequestOptions) => number) | undefined;
 		if (ric) ric(() => run(), { timeout: 2_000 });
 		else setTimeout(run, 0);
 	}

@@ -18,8 +18,7 @@ type ValidMetadataResult = {
 };
 
 type MetadataResult =
-	| ValidMetadataResult
-	| { doc: InternetArchiveSearch['response']['docs'][number]; metadata: null };
+	ValidMetadataResult | { doc: InternetArchiveSearch['response']['docs'][number]; metadata: null };
 
 async function fetchMetadataWithConcurrency(
 	docs: InternetArchiveSearch['response']['docs'],

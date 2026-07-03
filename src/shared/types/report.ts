@@ -1,10 +1,5 @@
 export type ContentType =
-	| 'prompt'
-	| 'prompt_response'
-	| 'article'
-	| 'event'
-	| 'event_image'
-	| 'user';
+	'prompt' | 'prompt_response' | 'article' | 'event' | 'event_image' | 'user';
 
 export type ReportReason =
 	| 'hate_speech'

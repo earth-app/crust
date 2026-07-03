@@ -66,10 +66,7 @@ export type ArticleQuizQuestion = {
 // submit only the canonical fields (correct_answer / correct_answers / items)
 // and the server fills these in on read
 type DerivedAnswerFields =
-	| 'correct_answer_index'
-	| 'correct_answer_indices'
-	| 'is_true'
-	| 'is_false';
+	'correct_answer_index' | 'correct_answer_indices' | 'is_true' | 'is_false';
 
 // distributive so Omit applies to each union branch (otherwise keyof T collapses
 // to the keys common to every branch and we lose the discriminated payload)

@@ -26,8 +26,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 	const scheduleIdle = (cb: () => void) => {
 		if (typeof window === 'undefined') return;
 		const ric = (window as any).requestIdleCallback as
-			| ((cb: IdleRequestCallback, opts?: IdleRequestOptions) => number)
-			| undefined;
+			((cb: IdleRequestCallback, opts?: IdleRequestOptions) => number) | undefined;
 		if (ric) ric(() => cb(), { timeout: 2_000 });
 		else setTimeout(cb, 0);
 	};

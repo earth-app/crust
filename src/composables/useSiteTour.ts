@@ -1,10 +1,5 @@
 export type SiteTourStepActionType =
-	| 'click'
-	| 'focus'
-	| 'scroll'
-	| 'wait'
-	| 'set-value'
-	| 'dispatch-event';
+	'click' | 'focus' | 'scroll' | 'wait' | 'set-value' | 'dispatch-event';
 
 export type SiteTourStepAction = {
 	type: SiteTourStepActionType;

@@ -288,8 +288,7 @@ function deferIdle(run: () => void, timeout = 1_500) {
 		return;
 	}
 	const ric = (window as any).requestIdleCallback as
-		| ((cb: IdleRequestCallback, opts?: IdleRequestOptions) => number)
-		| undefined;
+		((cb: IdleRequestCallback, opts?: IdleRequestOptions) => number) | undefined;
 	if (ric) ric(() => run(), { timeout });
 	else setTimeout(run, 0);
 }

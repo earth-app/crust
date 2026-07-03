@@ -17,8 +17,7 @@ export type LoginResult =
 	| { success: false; message: string; retryAfter?: number };
 
 export type VerifyNewIPLoginResult =
-	| { success: true; message: string }
-	| { success: false; message: string; retryAllowed: boolean };
+	{ success: true; message: string } | { success: false; message: string; retryAllowed: boolean };
 
 function isLoginVerificationRequired(
 	response: LoginResponse | LoginVerificationRequired

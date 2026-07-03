@@ -143,9 +143,7 @@ export type User = {
 	account: {
 		account_type: typeof com.earthapp.account.AccountType.prototype.name;
 		visibility: typeof com.earthapp.Visibility.prototype.name;
-		field_privacy: {
-			/* Privacy settings */
-		};
+		field_privacy: { /* Privacy settings */ };
 	};
 	// ...
 };
