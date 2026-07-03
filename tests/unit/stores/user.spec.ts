@@ -252,6 +252,18 @@ describe('user store', () => {
 			expect(store.cache.has('stranger')).toBe(false);
 		});
 
+		it('caches null for a definitive 404 (success:false, no message) so not-found renders', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			// makeRequest returns success:false with NO message for a real 404
+			vi.mocked(makeAPIRequest).mockResolvedValue({ success: false } as any);
+
+			const res = await store.fetchUser('ghost');
+
+			expect(res).toBeNull();
+			expect(store.cache.get('ghost')).toBeNull();
+		});
+
 		it('recovers after a transient failure then a success (no poison)', async () => {
 			const store = useUserStore();
 			setAuthUser(null);
