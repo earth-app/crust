@@ -206,6 +206,46 @@ describe('auth store', () => {
 			expect(store.currentUser).toEqual(user);
 		});
 
+		it('on a malformed 2xx payload preserves a previously-loaded user', async () => {
+			const store = useAuthStore();
+			store.setSessionToken('tok');
+			const user = mkUser();
+			vi.stubGlobal('$fetch', vi.fn().mockResolvedValue(user));
+			await store.fetchCurrentUser();
+
+			// a forced refetch returns a partial/malformed body (e.g. native transport hiccup)
+			vi.stubGlobal('$fetch', vi.fn().mockResolvedValue({ id: 'u1' }));
+			const result = await store.fetchCurrentUser(true);
+
+			// the good session is kept, not blanked
+			expect(result).toEqual(user);
+			expect(store.currentUser).toEqual(user);
+		});
+
+		it('parses a string-body payload (transport returned JSON text)', async () => {
+			const store = useAuthStore();
+			store.setSessionToken('tok');
+			const user = mkUser();
+			vi.stubGlobal('$fetch', vi.fn().mockResolvedValue(JSON.stringify(user)));
+
+			const result = await store.fetchCurrentUser();
+
+			expect(result).toEqual(user);
+			expect(store.currentUser).toEqual(user);
+		});
+
+		it('unwraps a { data } envelope payload', async () => {
+			const store = useAuthStore();
+			store.setSessionToken('tok');
+			const user = mkUser();
+			vi.stubGlobal('$fetch', vi.fn().mockResolvedValue({ data: user }));
+
+			const result = await store.fetchCurrentUser();
+
+			expect(result).toEqual(user);
+			expect(store.currentUser).toEqual(user);
+		});
+
 		it('returns the cached user without refetching when not forced', async () => {
 			const store = useAuthStore();
 			store.setSessionToken('tok');
