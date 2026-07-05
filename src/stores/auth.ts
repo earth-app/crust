@@ -143,13 +143,25 @@ export const useAuthStore = defineStore('auth', () => {
 					}
 				});
 
-				if (!isValidUser(response)) {
-					console.warn('Malformed /v2/users/current payload — leaving currentUser null');
-					currentUser.value = null;
+				let user: unknown = response;
+				if (typeof user === 'string') {
+					try {
+						user = JSON.parse(user);
+					} catch {
+						user = null;
+					}
+				}
+				if (!isValidUser(user) && isValidUser((user as { data?: unknown })?.data)) {
+					user = (user as { data: User }).data;
+				}
+
+				if (!isValidUser(user)) {
+					console.warn('Malformed /v2/users/current payload — keeping existing currentUser');
+					if (!hadCurrentUser) currentUser.value = null;
 					return;
 				}
 
-				currentUser.value = response;
+				currentUser.value = user;
 				// Slide cookie expiration on successful auth reads.
 				setSessionToken(sessionToken.value);
 			} catch (error: any) {
