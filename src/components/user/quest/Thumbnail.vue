@@ -13,12 +13,12 @@
 						v-if="completedCount > 0"
 						class="text-sm"
 					>
-						{{ completedCount }} / {{ quest.steps.length }} completed</span
+						{{ completedCount }} / {{ quest.steps?.length ?? 0 }} completed</span
 					>
 					<span
 						v-else
 						class="text-sm underline opacity-80"
-						>{{ quest.steps.length }} steps</span
+						>{{ quest.steps?.length ?? 0 }} steps</span
 					>
 
 					<span class="text-sm underline opacity-80">{{ comma(fullReward) }} points</span>
@@ -155,7 +155,7 @@ const completed = computed(() => {
 	if (!props.quest) return false;
 	if (props.completedAt) return true;
 
-	return completedCount.value >= props.quest.steps.length;
+	return completedCount.value >= (props.quest.steps?.length ?? 0);
 });
 
 const i18n = useI18n();

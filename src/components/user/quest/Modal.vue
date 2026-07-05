@@ -103,7 +103,7 @@
 					<UserQuestChallengeBanner
 						:quest-id="quest.id"
 						:your-completed-steps="completedStepCount"
-						:total-steps="quest.steps.length"
+						:total-steps="quest.steps?.length ?? 0"
 					/>
 
 					<div

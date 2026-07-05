@@ -855,7 +855,7 @@ watch(
 
 const { startTour } = useSiteTour();
 
-const hasAltStepGroup = computed(() => props.quest.steps.some((s) => Array.isArray(s)));
+const hasAltStepGroup = computed(() => (props.quest?.steps ?? []).some((s) => Array.isArray(s)));
 
 const timelineTour = computed<SiteTourStep[]>(() => [
 	{
