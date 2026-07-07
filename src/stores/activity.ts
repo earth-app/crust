@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { Activity } from 'types/activity';
-import { invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
+import { classifyItemFetch, invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
 import { reactive, ref } from 'vue';
 import { useAuthStore } from './auth';
 
@@ -80,14 +80,22 @@ export const useActivityStore = defineStore('activity', () => {
 					authStore.sessionToken
 				);
 
-				if (valid(res)) {
-					cache.set(id, res.data);
-				} else {
+				const isActivityShape = (v: unknown): v is Activity =>
+					!!v && typeof v === 'object' && !Array.isArray(v);
+				const outcome = classifyItemFetch<Activity>(res, isActivityShape);
+				if (outcome.kind === 'valid') {
+					cache.set(id, outcome.value);
+				} else if (outcome.kind === 'not_found') {
 					cache.set(id, null);
+				} else {
+					// transient (network / 5xx) — keep a previously-cached good value, allow retry; only
+					// fall to not-found when there's nothing good to preserve so the ui never spins forever
+					if (!cache.get(id)) cache.set(id, null);
 					if (res.message) console.warn(`Failed to fetch activity ${id}:`, res.message);
 				}
 			} catch (error) {
-				cache.set(id, null);
+				// thrown = transient; preserve last-good, resolve to not-found only if empty
+				if (!cache.get(id)) cache.set(id, null);
 				console.warn(`Failed to fetch activity ${id}:`, error);
 			} finally {
 				loading.delete(id);

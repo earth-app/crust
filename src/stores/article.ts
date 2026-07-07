@@ -6,7 +6,7 @@ import type {
 	ArticleQuizScoreResult
 } from 'types/article';
 import type { User } from 'types/user';
-import { invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
+import { classifyItemFetch, invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
 import { reactive } from 'vue';
 import { useAuthStore } from './auth';
 
@@ -166,19 +166,23 @@ export const useArticleStore = defineStore('article', () => {
 					authStore.sessionToken
 				);
 
-				if (valid(res) && isValidArticle(res.data)) {
+				const outcome = classifyItemFetch<Article>(res, isValidArticle);
+				if (outcome.kind === 'valid') {
 					evictOldestIfNeeded();
-					cache.set(id, res.data);
-				} else {
+					cache.set(id, outcome.value);
+				} else if (outcome.kind === 'not_found') {
 					cache.set(id, null);
-					if (valid(res)) {
+					if (valid(res))
 						console.warn(`Malformed article payload for ${id} — treating as not found`);
-					} else if (res.message) {
-						console.warn(`Failed to fetch article ${id}:`, res.message);
-					}
+				} else {
+					// transient (network / 5xx) — keep a previously-cached good value, allow retry; only
+					// fall to not-found when there's nothing good to preserve so the ui never spins forever
+					if (!cache.get(id)) cache.set(id, null);
+					if (res.message) console.warn(`Failed to fetch article ${id}:`, res.message);
 				}
 			} catch (error) {
-				cache.set(id, null);
+				// thrown = transient; preserve last-good, resolve to not-found only if empty
+				if (!cache.get(id)) cache.set(id, null);
 				console.warn(`Failed to fetch article ${id}:`, error);
 			} finally {
 				loading.delete(id);

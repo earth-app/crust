@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import type { Event, EventImageSubmission } from 'types/event';
 import type { User } from 'types/user';
 import {
+	classifyItemFetch,
 	invalidateAPICache,
 	makeAPIRequest,
 	makeClientAPIRequest,
@@ -132,22 +133,25 @@ export const useEventStore = defineStore('event', () => {
 					authStore.sessionToken
 				);
 
-				if (valid(res) && isValidEvent(res.data)) {
+				const outcome = classifyItemFetch<Event>(res, isValidEvent);
+				if (outcome.kind === 'valid') {
 					evictOldestIfNeeded();
-					cache.set(id, res.data);
-				} else {
+					cache.set(id, outcome.value);
+				} else if (outcome.kind === 'not_found') {
+					// API returned 200 with a bad shape (e.g. host: [] from mantle's anon-stripped
+					// serializeUser) or a real 404. Treat as not-found so downstream components
+					// never see a half-built event.
 					cache.set(id, null);
-					if (valid(res)) {
-						// API returned 200 with a payload, but the shape is bad (e.g. host: []
-						// from mantle's anon-stripped serializeUser). Treat as not-found so
-						// downstream components never see a half-built event.
-						console.warn(`Malformed event payload for ${id} — treating as not found`);
-					} else if (res.message) {
-						console.warn(`Failed to fetch event ${id}:`, res.message);
-					}
+					if (valid(res)) console.warn(`Malformed event payload for ${id} — treating as not found`);
+				} else {
+					// transient (network / 5xx) — keep a previously-cached good value, allow retry; only
+					// fall to not-found when there's nothing good to preserve so the ui never spins forever
+					if (!cache.get(id)) cache.set(id, null);
+					if (res.message) console.warn(`Failed to fetch event ${id}:`, res.message);
 				}
 			} catch (error) {
-				cache.set(id, null);
+				// thrown = transient; preserve last-good, resolve to not-found only if empty
+				if (!cache.get(id)) cache.set(id, null);
 				console.warn(`Failed to fetch event ${id}:`, error);
 			} finally {
 				loading.delete(id);

@@ -2,7 +2,7 @@ import { com } from '@earth-app/ocean';
 import { defineStore } from 'pinia';
 import type { Prompt, PromptResponse } from 'types/prompts';
 import type { User } from 'types/user';
-import { makeClientAPIRequest } from 'utils';
+import { classifyItemFetch, makeClientAPIRequest } from 'utils';
 import { reactive } from 'vue';
 import { useAuthStore } from './auth';
 
@@ -106,19 +106,23 @@ export const usePromptStore = defineStore('prompt', () => {
 			try {
 				const res = await makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`);
 
-				if (valid(res) && isValidPrompt(res.data)) {
+				const outcome = classifyItemFetch<Prompt>(res, isValidPrompt);
+				if (outcome.kind === 'valid') {
 					evictOldestIfNeeded();
-					cache.set(id, res.data);
-				} else {
+					cache.set(id, outcome.value);
+				} else if (outcome.kind === 'not_found') {
 					cache.set(id, null);
-					if (valid(res)) {
+					if (valid(res))
 						console.warn(`Malformed prompt payload for ${id} — treating as not found`);
-					} else if (res.message) {
-						console.warn(`Failed to fetch prompt ${id}:`, res.message);
-					}
+				} else {
+					// transient (network / 5xx) — keep a previously-cached good value, allow retry; only
+					// fall to not-found when there's nothing good to preserve so the ui never spins forever
+					if (!cache.get(id)) cache.set(id, null);
+					if (res.message) console.warn(`Failed to fetch prompt ${id}:`, res.message);
 				}
 			} catch (error) {
-				cache.set(id, null);
+				// thrown = transient; preserve last-good, resolve to not-found only if empty
+				if (!cache.get(id)) cache.set(id, null);
 				console.warn(`Failed to fetch prompt ${id}:`, error);
 			} finally {
 				loading.delete(id);
