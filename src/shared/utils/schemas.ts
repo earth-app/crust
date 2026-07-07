@@ -2,7 +2,7 @@ import * as z from 'zod';
 
 export const usernameSchema = z
 	.string()
-	.regex(/^\S*$/, 'Username Cannot Contain Spaces')
+	.regex(/^\S*$/, 'Username cannot contain spaces')
 	.min(3, 'Must be at least 3 characters')
 	.max(30, 'Must be at most 30 characters')
 	.regex(
