@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
-import { useUser } from '~/composables/useUser';
+import { useAuth, useUser } from '~/composables/useUser';
 import { useUserStore } from '~/stores/user';
 
 // the moderation gate uses the test-build signature hook, so no model mocking is needed here
@@ -161,5 +161,34 @@ describe('useUser() badges reactivity + fresh fetch', () => {
 		await fetchBadges();
 
 		expect(spy).toHaveBeenCalledWith('alice', false);
+	});
+});
+
+describe('useAuth().fetchCurrentJourney missing-id guard', () => {
+	beforeEach(() => {
+		setActivePinia(createPinia());
+	});
+
+	it('returns a non-success result (never a fake count:0) when the id is empty', async () => {
+		const serverRequest = vi.fn();
+		const { fetchCurrentJourney } = useAuth(serverRequest as any);
+
+		const res = await fetchCurrentJourney('article', '');
+
+		expect(res.success).toBe(false);
+		expect((res as any).data?.count).toBeUndefined();
+		// short-circuits before any network call
+		expect(serverRequest).not.toHaveBeenCalled();
+	});
+
+	it('hits the server (and can return a real count) once an id is present', async () => {
+		const serverRequest = vi.fn().mockResolvedValue({ success: true, data: { count: 7 } });
+		const { fetchCurrentJourney } = useAuth(serverRequest as any);
+
+		const res = await fetchCurrentJourney('article', 'user-1');
+
+		expect(serverRequest).toHaveBeenCalledTimes(1);
+		expect(res.success).toBe(true);
+		expect((res as any).data.count).toBe(7);
 	});
 });

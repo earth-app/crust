@@ -49,11 +49,11 @@ describe('usernameSchema', () => {
 		expect(usernameSchema.safeParse('johndoe ').success).toBe(false);
 	});
 
-	it('surfaces the "Username Cannot Contain Spaces" message first for a spaced username', () => {
+	it('surfaces the "Username cannot contain spaces" message first for a spaced username', () => {
 		const res = usernameSchema.safeParse('john doe');
 		expect(res.success).toBe(false);
 		if (!res.success) {
-			expect(res.error.issues[0]?.message).toBe('Username Cannot Contain Spaces');
+			expect(res.error.issues[0]?.message).toBe('Username cannot contain spaces');
 		}
 	});
 });
