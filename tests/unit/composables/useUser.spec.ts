@@ -109,3 +109,57 @@ describe('useUser() quest fetch identifier-change guard', () => {
 		expect(res.size).toBe(0);
 	});
 });
+
+describe('useUser() badges reactivity + fresh fetch', () => {
+	beforeEach(() => {
+		setActivePinia(createPinia());
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it('badges is empty until the id resolves, then reflects the resolved user list', () => {
+		const store = useUserStore();
+		const id = ref<string | undefined>(undefined);
+		const { badges } = useUser(id);
+
+		// list already cached under alice, but there is no resolved id yet -> empty
+		store.badges.set('alice', [{ id: 'b1', granted: true } as any]);
+		expect(badges.value).toEqual([]);
+
+		// id resolves late -> the computed re-tracks and surfaces alice's badges
+		id.value = 'alice';
+		expect(badges.value).toEqual([{ id: 'b1', granted: true }]);
+	});
+
+	it('reacts when the store map is populated after the id is already set', () => {
+		const store = useUserStore();
+		const { badges } = useUser('alice');
+		expect(badges.value).toEqual([]);
+
+		// a late fetch writes into the reactive map -> computed updates, no remount
+		store.badges.set('alice', [{ id: 'b2', granted: true } as any]);
+		expect(badges.value).toEqual([{ id: 'b2', granted: true }]);
+	});
+
+	it('fetchBadges(true) threads force through to the store', async () => {
+		const store = useUserStore();
+		const spy = vi.spyOn(store, 'fetchBadges').mockResolvedValue([]);
+
+		const { fetchBadges } = useUser('alice');
+		await fetchBadges(true);
+
+		expect(spy).toHaveBeenCalledWith('alice', true);
+	});
+
+	it('fetchBadges() defaults force to false', async () => {
+		const store = useUserStore();
+		const spy = vi.spyOn(store, 'fetchBadges').mockResolvedValue([]);
+
+		const { fetchBadges } = useUser('alice');
+		await fetchBadges();
+
+		expect(spy).toHaveBeenCalledWith('alice', false);
+	});
+});
