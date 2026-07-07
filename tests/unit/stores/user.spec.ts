@@ -467,6 +467,34 @@ describe('user store', () => {
 		});
 	});
 
+	describe('fetchBadges force refresh', () => {
+		it('unforced fetch uses the per-user LRU cache key', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			vi.mocked(makeAPIRequest).mockResolvedValue({ success: true, data: [] as any });
+
+			await store.fetchBadges('u1');
+
+			expect(vi.mocked(makeAPIRequest).mock.calls[0][0]).toBe('user-u1-badges');
+			expect(vi.mocked(makeAPIRequest).mock.calls[0][1]).toBe('/v2/users/u1/badges');
+		});
+
+		it('force=true passes a null cache key so a newly-granted badge is not masked', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			const fresh = [{ id: 'b1', granted: true }];
+			vi.mocked(makeAPIRequest).mockResolvedValue({ success: true, data: fresh as any });
+
+			const res = await store.fetchBadges('u1', true);
+
+			expect(res).toEqual(fresh);
+			expect(store.badges.get('u1')).toEqual(fresh);
+			// null key => makeRequest bypasses the shared apiCache (no stale replay)
+			expect(vi.mocked(makeAPIRequest).mock.calls[0][0]).toBeNull();
+			expect(vi.mocked(makeAPIRequest).mock.calls[0][1]).toBe('/v2/users/u1/badges');
+		});
+	});
+
 	describe('fetchUserQuest + normalizeQuestState', () => {
 		it('stores null for a quest payload missing questId/quest (normalized away)', async () => {
 			const store = useUserStore();
@@ -922,6 +950,61 @@ describe('user store', () => {
 
 			// let the detached fan-out promises settle so they don't leak past the test
 			await new Promise((r) => setTimeout(r, 0));
+		});
+
+		it('preserves impact points at the last-known value during the refetch (no flash of 0)', async () => {
+			const store = useUserStore();
+			stubFanoutFailure();
+			setAuthUser(mkUser('me1', 'gregory'));
+			store.points.set('me1', 1500);
+			store.pointsHistory.set('me1', [{ reason: 'quest', difference: 100 } as any]);
+
+			store.invalidateSelf();
+
+			// clearing the value here flashed the UI to `|| 0` before the network response landed
+			expect(store.points.get('me1')).toBe(1500);
+			expect(store.pointsHistory.get('me1')).toHaveLength(1);
+
+			// a failed refetch keeps last-known rather than blanking it
+			await new Promise((r) => setTimeout(r, 0));
+			expect(store.points.get('me1')).toBe(1500);
+		});
+
+		it('preserves badges + attending/hosting events + submissions during the refetch', async () => {
+			const store = useUserStore();
+			stubFanoutFailure();
+			setAuthUser(mkUser('me1', 'gregory'));
+			store.badges.set('me1', [{ id: 'b1' } as any]);
+			store.attendingEvents.set('me1', [{ id: 'e1' } as any]);
+			store.hostingEvents.set('me1', [{ id: 'e2' } as any]);
+			store.eventSubmissions.set('me1', [{ id: 's1' } as any]);
+
+			store.invalidateSelf();
+
+			expect(store.badges.get('me1')).toHaveLength(1);
+			expect(store.attendingEvents.get('me1')).toHaveLength(1);
+			expect(store.hostingEvents.get('me1')).toHaveLength(1);
+			expect(store.eventSubmissions.get('me1')).toHaveLength(1);
+
+			await new Promise((r) => setTimeout(r, 0));
+		});
+
+		it('still overwrites points with the fresh value once the refetch resolves', async () => {
+			const store = useUserStore();
+			setAuthUser(mkUser('me1', 'gregory'));
+			store.points.set('me1', 1500);
+			// only the points endpoint returns a fresh total; everything else fails cleanly
+			vi.mocked(paginatedAPIRequest).mockResolvedValue({ success: false, message: 'x' } as any);
+			vi.mocked(makeAPIRequest).mockImplementation((key: string) =>
+				String(key).includes('-points')
+					? (Promise.resolve({ success: true, data: { points: 1600, history: [] } }) as any)
+					: (Promise.resolve({ success: false, message: 'x' }) as any)
+			);
+
+			store.invalidateSelf();
+			await new Promise((r) => setTimeout(r, 0));
+
+			expect(store.points.get('me1')).toBe(1600);
 		});
 	});
 });
