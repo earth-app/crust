@@ -6,6 +6,9 @@ import { extractServerMessage } from './errors';
 
 const requestQueue = new Map<string, Promise<any>>();
 
+// one retry with a small backoff on a transient (network / 5xx) GET failure
+const RETRY_BACKOFF_MS = 150;
+
 // LRU cache for API responses to prevent memory leaks. Disabled in test mode
 // so that mock overrides (which can change response shape between tests) are
 // always honored; otherwise the long-lived dev server's module-level cache
@@ -40,6 +43,65 @@ const evictOldestCacheEntry = () => {
 		if (firstKey) apiCache.delete(firstKey);
 	}
 };
+
+// parse a body that arrived as an unparsed json string; leaves plain text / already-parsed
+// values untouched. only attempts strings that actually look like json
+function parseIfJsonString(value: unknown): unknown {
+	if (typeof value !== 'string') return value;
+	const trimmed = value.trim();
+	if (!trimmed) return value;
+	const first = trimmed[0];
+	const looksJson =
+		first === '{' ||
+		first === '[' ||
+		first === '"' ||
+		trimmed === 'null' ||
+		trimmed === 'true' ||
+		trimmed === 'false';
+	if (!looksJson) return value;
+	try {
+		return JSON.parse(trimmed);
+	} catch {
+		return value;
+	}
+}
+
+export function isHttpResponseEnvelope(v: unknown): v is { data: unknown } {
+	if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
+	const obj = v as Record<string, unknown>;
+	if (!('data' in obj)) return false;
+	const transportKeys = new Set(['data', 'status', 'headers', 'url']);
+	const keys = Object.keys(obj);
+	const hasTransportSibling = keys.some((k) => k !== 'data' && transportKeys.has(k));
+	const onlyTransportKeys = keys.every((k) => transportKeys.has(k));
+	return hasTransportSibling && onlyTransportKeys;
+}
+
+export function normalizeResponseBody<T = any>(raw: unknown): T {
+	let body: unknown = parseIfJsonString(raw);
+	if (isHttpResponseEnvelope(body)) {
+		body = parseIfJsonString((body as { data: unknown }).data);
+	}
+	return body as T;
+}
+
+export type ItemFetchOutcome<T> =
+	{ kind: 'valid'; value: T } | { kind: 'not_found' } | { kind: 'transient' };
+
+// classify a single-item fetch so cache guards can tell a definitive miss (200-but-malformed
+// or 404 -> cache null, renders not-found) from a transient failure (network / 5xx / auth ->
+// keep last-good, allow retry). pure + exported for unit tests
+export function classifyItemFetch<T>(
+	res: { success?: boolean; data?: unknown; message?: string; status?: number } | undefined,
+	isValid: (v: unknown) => v is T
+): ItemFetchOutcome<T> {
+	if (res && valid(res) && isValid(res.data)) return { kind: 'valid', value: res.data };
+	// 200 with a bad shape, or an explicit 404, is a real miss
+	if (res?.status === 404) return { kind: 'not_found' };
+	if (res && valid(res)) return { kind: 'not_found' };
+	// no usable data and not a 404 -> transient
+	return { kind: 'transient' };
+}
 
 export async function makeRequest<T>(
 	key: string | null,
@@ -92,35 +154,57 @@ export async function makeRequest<T>(
 					};
 				}
 
-				// Handle regular JSON requests
+				// Handle regular JSON requests. retry once on a transient GET failure
+				// (network throw / 5xx / 408) with a small backoff; mutations never retry
+				// so a 500 can't double-submit
+				const method = (requestOptions.method || 'GET').toString().toUpperCase();
+				const isRetriable = method === 'GET';
 				let responseStatus = 0;
-				const data = await $fetch<T>(url, {
-					headers: {
-						...authHeaders,
-						...(requestOptions.headers ?? {})
-					},
-					ignoreResponseError: true,
-					// capture the http status so callers can tell a definitive 404 from a transient failure
-					onResponse({ response }) {
-						responseStatus = response.status;
-					},
-					...requestOptions
-				}).catch((error) => {
-					// Silently handle 404s - don't log or report
-					const errorStr = error.toString();
-					if (errorStr.includes('404')) {
-						throw {
-							is404: true,
-							toString: () => '404'
-						};
-					}
+				let data: any;
+				let caught: { is404?: boolean; message?: string; error?: any; toString(): string } | null =
+					null;
 
-					throw {
-						message: `Error fetching ${key} from ${url}: ${error}`,
-						error,
-						toString: () => error.toString()
-					};
-				});
+				for (let attempt = 1; attempt <= 2; attempt++) {
+					responseStatus = 0;
+					caught = null;
+					data = await $fetch<T>(url, {
+						headers: {
+							...authHeaders,
+							...(requestOptions.headers ?? {})
+						},
+						ignoreResponseError: true,
+						// capture the http status so callers can tell a definitive 404 from a transient failure
+						onResponse({ response }) {
+							responseStatus = response.status;
+						},
+						...requestOptions
+					}).catch((error) => {
+						// Silently handle 404s - don't log or report
+						const errorStr = error.toString();
+						if (errorStr.includes('404')) {
+							caught = { is404: true, toString: () => '404' };
+							return undefined;
+						}
+
+						caught = {
+							message: `Error fetching ${key} from ${url}: ${error}`,
+							error,
+							toString: () => error.toString()
+						};
+						return undefined;
+					});
+
+					// normalize a native string / { data } envelope body so callers get the intended shape
+					if (data !== undefined && data !== null) data = normalizeResponseBody<T>(data);
+
+					const isTransient =
+						(!!caught && !(caught as any).is404) || responseStatus === 408 || responseStatus >= 500;
+					if (!isRetriable || !isTransient || attempt === 2) break;
+					await new Promise((resolve) => setTimeout(resolve, RETRY_BACKOFF_MS));
+				}
+
+				// a network error that wasn't a 404 -> surface as failure (post-retry)
+				if (caught && !(caught as any).is404) throw caught;
 
 				// handle '204 No Content' as success with no data
 				if (!data || data === null || data === undefined) {
@@ -466,6 +550,7 @@ type ValidResponse<T = any> = {
 	success: true;
 	data: NonNullable<T>;
 	message?: never;
+	status?: never;
 };
 
 export const QUEST_DELAY_REDUCTION_BY_RANK: Record<string, number> = {
@@ -496,6 +581,7 @@ export function valid<T>(
 		success?: boolean;
 		data?: T;
 		message?: string;
+		status?: number;
 	},
 	checkMessage: boolean = true
 ): res is ValidResponse<T> {
