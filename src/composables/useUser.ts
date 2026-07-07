@@ -586,10 +586,10 @@ export function useUser(
 		return !resolvedIdentifier ? [] : userStore.badges.get(resolvedIdentifier) || [];
 	});
 	const grantedBadges = computed(() => badges.value.filter((b) => b.granted));
-	const fetchBadges = async () => {
+	const fetchBadges = async (force: boolean = false) => {
 		const resolvedIdentifier = currentIdentifier();
 		if (!resolvedIdentifier) return [];
-		return await userStore.fetchBadges(resolvedIdentifier);
+		return await userStore.fetchBadges(resolvedIdentifier, force);
 	};
 
 	const eventSubmissions = computed(() => {
@@ -813,7 +813,8 @@ export function useQuests() {
 			.map((questId) => userStore.questsCache.get(questId))
 			.filter((quest): quest is Quest => quest !== undefined);
 	});
-	const fetchQuest = async (questId: string) => await userStore.fetchQuest(questId);
+	const fetchQuest = async (questId: string, force: boolean = false) =>
+		await userStore.fetchQuest(questId, force);
 	const fetchQuests = async () => await userStore.fetchQuestsList();
 
 	const getStepIcon = (step: string) => {
@@ -2327,7 +2328,9 @@ const pollBadgeUnlockOnce = async () => {
 	if (!uid) return;
 	try {
 		const userStore = useUserStore();
-		const fetched = await userStore.fetchBadges(uid);
+		// force past the LRU cache; the poll exists to catch grants that landed while
+		// the ws was offline, so a stale cached list would defeat its whole purpose
+		const fetched = await userStore.fetchBadges(uid, true);
 		ingestBadgeUnlockSnapshot(fetched);
 	} catch (err) {
 		console.warn('badge-unlock polling fallback failed:', err);
