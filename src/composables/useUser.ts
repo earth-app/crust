@@ -223,7 +223,7 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 	};
 
 	const fetchCurrentJourney = async (identifier: string, id: string) => {
-		if (!id) return { success: true, data: { count: 0 } };
+		if (!id) return { success: false as const };
 
 		return await serverRequest<{ count: number; lastWrite?: number }>(
 			`journey-${identifier}`,
