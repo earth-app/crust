@@ -66,28 +66,34 @@
 						title="Success Notification"
 						size="20"
 					/>
-					<UiPulseRing
+					<button
 						v-if="isFriendSource && !notification.read"
-						:active="!prefersReducedMotion"
-						:color="type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'"
-						class="mx-2"
+						type="button"
+						title="Mark as Read"
+						aria-label="Mark as Read"
+						class="flex items-center justify-center size-11 -my-2 bg-transparent border-0 p-0 hover:cursor-pointer"
+						@click="markAsRead"
 					>
-						<span
-							class="inline-block size-3 bg-blue-500 rounded-full hover:cursor-pointer"
-							title="Mark as Read"
-							@click="markAsRead"
-						></span>
-					</UiPulseRing>
-					<div
+						<UiPulseRing
+							:active="!prefersReducedMotion"
+							:color="type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'"
+							class="pointer-events-none"
+						>
+							<span class="inline-block size-3 bg-blue-500 rounded-full"></span>
+						</UiPulseRing>
+					</button>
+					<button
 						v-else-if="!notification.read"
-						class="mx-2"
+						type="button"
+						title="Mark as Read"
+						aria-label="Mark as Read"
+						class="flex items-center justify-center size-11 -my-2 bg-transparent border-0 p-0 hover:cursor-pointer"
+						@click="markAsRead"
 					>
 						<span
-							:class="['inline-block size-3 rounded-full hover:cursor-pointer', unreadDotClass]"
-							title="Mark as Read"
-							@click="markAsRead"
+							:class="['inline-block size-3 rounded-full pointer-events-none', unreadDotClass]"
 						></span>
-					</div>
+					</button>
 					<UIcon
 						v-if="additional"
 						name="mdi:delete"
