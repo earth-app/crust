@@ -40,10 +40,11 @@ test.describe('RapidFlash widget', () => {
 		await expect(page.getByRole('button', { name: /Start Round/i })).toHaveCount(0, {
 			timeout: 8_000
 		});
-		// default pool includes "Biome"
-		await expect(page.getByRole('button', { name: /Biome/i }).first()).toBeVisible({
-			timeout: 8_000
-		});
+
+		const poolTerm = /Biome|Pollinator|Watershed|Compost|Mycelium|Canopy/i;
+		await expect
+			.poll(() => page.getByRole('button', { name: poolTerm }).count(), { timeout: 8_000 })
+			.toBeGreaterThanOrEqual(4);
 	});
 });
 

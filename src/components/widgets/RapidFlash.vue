@@ -73,7 +73,7 @@
 				block
 				class="justify-start text-left text-xs"
 				@click="pick('def', i)"
-				>{{ item.term }}</UButton
+				>{{ item.def }}</UButton
 			>
 		</div>
 		<div
