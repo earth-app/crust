@@ -130,6 +130,18 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 const state = ref<OnboardingState | null>(null);
 const loading = ref(false);
 const fetched = ref(false);
+const error = ref(false);
+// tracks the resolved user id so the module-level singleton resets across users
+const lastUserId = ref<string | null>(null);
+
+// coerce a server payload into a safe shape so watchers' .includes can't throw
+function normalizeState(s: OnboardingState): OnboardingState {
+	return {
+		...s,
+		completed_steps: Array.isArray(s?.completed_steps) ? s.completed_steps : [],
+		interests: Array.isArray(s?.interests) ? s.interests : []
+	};
+}
 
 export function useOnboarding() {
 	const authStore = useAuthStore();
@@ -138,7 +150,11 @@ export function useOnboarding() {
 	const isComplete = computed(() => {
 		if (!state.value) return false;
 		if (state.value.finished_at) return true;
-		return ONBOARDING_CHECKLIST.every((s) => state.value!.completed_steps.includes(s.id));
+		// optional steps (e.g. generate_avatar) never block completion; their done-state
+		// is derived live in the checklist so they must not gate the whole card
+		return ONBOARDING_CHECKLIST.filter((s) => !s.optional).every((s) =>
+			state.value!.completed_steps.includes(s.id)
+		);
 	});
 
 	const isDismissed = computed(() => Boolean(state.value?.dismissed_at));
@@ -151,6 +167,18 @@ export function useOnboarding() {
 		return { done, total: ONBOARDING_CHECKLIST.length };
 	});
 
+	// flat getters the dashboard progress card can read without deriving them itself
+	const completedCount = computed(() => progress.value.done);
+	const totalSteps = computed(() => progress.value.total);
+
+	// clear the cross-user singleton so User B never inherits User A's state
+	const reset = () => {
+		state.value = null;
+		fetched.value = false;
+		error.value = false;
+		lastUserId.value = null;
+	};
+
 	const nextStep = computed(() => {
 		if (!state.value) return ONBOARDING_CHECKLIST[0];
 		return (
@@ -160,7 +188,13 @@ export function useOnboarding() {
 	});
 
 	const fetchState = async (force = false) => {
-		if (!user.value) return;
+		const uid = user.value?.id;
+		if (!uid) return;
+		// resolved user changed - drop the previous user's cached state before fetching
+		if (lastUserId.value !== uid) {
+			reset();
+			lastUserId.value = uid;
+		}
 		if (fetched.value && !force) return;
 		loading.value = true;
 		try {
@@ -169,9 +203,16 @@ export function useOnboarding() {
 				authStore.sessionToken
 			);
 			if (valid(res)) {
-				state.value = res.data.state;
+				state.value = normalizeState(res.data.state);
 				fetched.value = true;
+				error.value = false;
+			} else {
+				// keep any prior state; flag error so the UI can offer a retry
+				error.value = true;
 			}
+		} catch (e) {
+			console.warn('Failed to fetch onboarding state:', e);
+			error.value = true;
 		} finally {
 			loading.value = false;
 		}
@@ -196,7 +237,17 @@ export function useOnboarding() {
 				}
 			);
 			if (valid(res)) {
-				state.value = res.data.state;
+				const returned = normalizeState(res.data.state);
+				if (!state.value) {
+					state.value = returned;
+				} else {
+					// merge: union server steps with local so an out-of-order resolve
+					// between two concurrent completeStep calls can't drop a step
+					const union = Array.from(
+						new Set([...state.value.completed_steps, ...returned.completed_steps, step])
+					);
+					state.value = { ...state.value, ...returned, completed_steps: union };
+				}
 				return true;
 			}
 			return false;
@@ -220,7 +271,7 @@ export function useOnboarding() {
 				}
 			);
 			if (valid(res)) {
-				state.value = res.data.state;
+				state.value = normalizeState(res.data.state);
 				return true;
 			}
 			return false;
@@ -230,17 +281,23 @@ export function useOnboarding() {
 		}
 	};
 
-	const dismiss = async () => {
-		if (!user.value) return;
+	// resolves true only when the server confirms the dismiss so callers can toast honestly
+	const dismiss = async (): Promise<boolean> => {
+		if (!user.value) return false;
 		try {
 			const res = await makeClientAPIRequest<{ state: OnboardingState }>(
 				`/v2/users/current/onboarding/dismiss`,
 				authStore.sessionToken,
 				{ method: 'POST' }
 			);
-			if (valid(res)) state.value = res.data.state;
+			if (valid(res)) {
+				state.value = normalizeState(res.data.state);
+				return true;
+			}
+			return false;
 		} catch (e) {
 			console.warn('Failed to dismiss onboarding:', e);
+			return false;
 		}
 	};
 
@@ -248,13 +305,17 @@ export function useOnboarding() {
 		state,
 		loading,
 		fetched,
+		error,
 		fetchState,
+		reset,
 		completeStep,
 		setPersona,
 		dismiss,
 		isComplete,
 		isDismissed,
 		progress,
+		completedCount,
+		totalSteps,
 		nextStep
 	};
 }

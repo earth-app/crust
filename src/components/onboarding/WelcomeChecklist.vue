@@ -98,6 +98,25 @@
 			</li>
 		</ul>
 	</div>
+
+	<div
+		v-else-if="showError"
+		id="welcome-checklist-error"
+		class="rounded-2xl border border-primary/40 bg-elevated p-5 max-w-2xl mx-auto text-center"
+	>
+		<UIcon
+			name="mdi:cloud-alert-outline"
+			class="size-6 text-muted mx-auto mb-2"
+		/>
+		<p class="text-sm text-muted mb-3">We couldn't load your welcome checklist.</p>
+		<UButton
+			size="sm"
+			:loading="onboarding.loading.value"
+			@click="retry"
+		>
+			Retry
+		</UButton>
+	</div>
 </template>
 
 <script setup lang="ts">
@@ -259,6 +278,19 @@ const show = computed(() => {
 	return true;
 });
 
+// surface a retry instead of silently vanishing when the first fetch fails
+const showError = computed(
+	() =>
+		Boolean(user.value) &&
+		onboarding.error.value &&
+		!onboarding.state.value &&
+		!onboarding.isDismissed.value
+);
+
+function retry() {
+	void onboarding.fetchState(true);
+}
+
 function stepCompleted(id: string) {
 	return onboarding.state.value?.completed_steps.includes(id as any) ?? false;
 }
@@ -361,12 +393,34 @@ const emit = defineEmits<{
 	(event: 'open-persona'): void;
 }>();
 
+async function dismiss() {
+	const ok = await onboarding.dismiss();
+	if (ok) {
+		toast.add({
+			title: 'Checklist Hidden',
+			icon: 'mdi:eye-off-outline',
+			color: 'success',
+			duration: 4000
+		});
+	} else {
+		toast.add({
+			title: 'Could Not Hide Checklist',
+			description: 'Please try again in a moment.',
+			icon: 'mdi:alert-circle',
+			color: 'error',
+			duration: 6000
+		});
+	}
+}
+
 const menuItems = computed(() => [
 	[
 		{
 			label: 'Hide Checklist',
 			icon: 'mdi:eye-off-outline',
-			onSelect: () => onboarding.dismiss()
+			onSelect: () => {
+				void dismiss();
+			}
 		}
 	]
 ]);

@@ -34,10 +34,9 @@ describe('useOnboarding', () => {
 		setActivePinia(createPinia());
 		vi.clearAllMocks();
 		useAuthStore().currentUser = { id: 'u1' } as any;
-		// module-level singleton state — reset between tests
+		// module-level singleton state — reset between tests (clears state/fetched/error/lastUserId)
 		const ob = useOnboarding();
-		ob.state.value = null;
-		ob.fetched.value = false;
+		ob.reset();
 		ob.loading.value = false;
 	});
 
@@ -184,15 +183,145 @@ describe('useOnboarding', () => {
 	});
 
 	describe('dismiss', () => {
-		it('marks the onboarding dismissed', async () => {
+		it('returns true and marks the onboarding dismissed on success', async () => {
 			(makeClientAPIRequest as any).mockResolvedValue(
 				ok({ state: stateOf({ dismissed_at: 999 }) })
 			);
 			const ob = useOnboarding();
 
-			await ob.dismiss();
-
+			expect(await ob.dismiss()).toBe(true);
 			expect(ob.isDismissed.value).toBe(true);
+		});
+
+		it('returns false and stays undismissed when the request fails', async () => {
+			(makeClientAPIRequest as any).mockResolvedValue(fail());
+			const ob = useOnboarding();
+			ob.state.value = stateOf();
+
+			expect(await ob.dismiss()).toBe(false);
+			expect(ob.isDismissed.value).toBe(false);
+		});
+	});
+
+	describe('fetchState failure', () => {
+		it('keeps prior state and flags error on a failed refetch', async () => {
+			(makeClientAPIRequest as any).mockResolvedValueOnce(
+				ok({ state: stateOf({ completed_steps: ['welcome'] }) })
+			);
+			const ob = useOnboarding();
+			await ob.fetchState();
+			expect(ob.error.value).toBe(false);
+
+			(makeClientAPIRequest as any).mockResolvedValueOnce(fail());
+			await ob.fetchState(true);
+
+			expect(ob.error.value).toBe(true);
+			// prior state is preserved, not wiped
+			expect(ob.state.value?.completed_steps).toContain('welcome');
+		});
+
+		it('flags error (and stays retryable) when the request throws', async () => {
+			const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			(makeClientAPIRequest as any).mockRejectedValueOnce(new Error('net'));
+			const ob = useOnboarding();
+			await ob.fetchState();
+			expect(ob.error.value).toBe(true);
+
+			// a retry that succeeds clears the error
+			(makeClientAPIRequest as any).mockResolvedValueOnce(ok({ state: stateOf() }));
+			await ob.fetchState(true);
+			expect(ob.error.value).toBe(false);
+			spy.mockRestore();
+		});
+
+		it('coerces a malformed payload to safe arrays so watchers cannot throw', async () => {
+			(makeClientAPIRequest as any).mockResolvedValue(
+				ok({
+					state: {
+						user_id: 'u1',
+						started_at: 1,
+						finished_at: null,
+						dismissed_at: null,
+						updated_at: 1
+					}
+				})
+			);
+			const ob = useOnboarding();
+			await ob.fetchState();
+
+			expect(ob.state.value?.completed_steps).toEqual([]);
+			expect(ob.state.value?.interests).toEqual([]);
+			expect(ob.progress.value).toEqual({ done: 0, total: TOTAL });
+		});
+	});
+
+	describe('cross-user reset', () => {
+		it('drops the previous user state so User B never inherits User A', async () => {
+			(makeClientAPIRequest as any).mockResolvedValue(
+				ok({ state: stateOf({ user_id: 'u1', dismissed_at: 111 }) })
+			);
+			const ob = useOnboarding();
+			await ob.fetchState();
+			expect(ob.isDismissed.value).toBe(true);
+
+			// user B signs in
+			useAuthStore().currentUser = { id: 'u2' } as any;
+			(makeClientAPIRequest as any).mockResolvedValue(ok({ state: stateOf({ user_id: 'u2' }) }));
+			await ob.fetchState();
+
+			expect(ob.state.value?.user_id).toBe('u2');
+			expect(ob.isDismissed.value).toBe(false);
+		});
+	});
+
+	describe('completeStep merge', () => {
+		it('unions out-of-order concurrent completions so no step is dropped', async () => {
+			let resolveA!: (v: unknown) => void;
+			let resolveB!: (v: unknown) => void;
+			(makeClientAPIRequest as any)
+				.mockImplementationOnce(() => new Promise((r) => (resolveA = r)))
+				.mockImplementationOnce(() => new Promise((r) => (resolveB = r)));
+			const ob = useOnboarding();
+			ob.state.value = stateOf({ completed_steps: [] });
+
+			const pA = ob.completeStep('first_activity');
+			const pB = ob.completeStep('first_friend');
+
+			// B resolves first, then A resolves last with a snapshot missing first_friend
+			resolveB(ok({ state: stateOf({ completed_steps: ['first_friend'] }) }));
+			await pB;
+			resolveA(ok({ state: stateOf({ completed_steps: ['first_activity'] }) }));
+			await pA;
+
+			expect(ob.state.value?.completed_steps).toContain('first_activity');
+			expect(ob.state.value?.completed_steps).toContain('first_friend');
+		});
+	});
+
+	describe('isComplete ignores the optional avatar row', () => {
+		it('is complete when all required steps are done even without generate_avatar', async () => {
+			const required = STEP_IDS.filter((id) => id !== 'generate_avatar');
+			(makeClientAPIRequest as any).mockResolvedValue(
+				ok({ state: stateOf({ completed_steps: required }) })
+			);
+			const ob = useOnboarding();
+			await ob.fetchState();
+
+			expect(ob.state.value?.completed_steps).not.toContain('generate_avatar');
+			expect(ob.isComplete.value).toBe(true);
+		});
+	});
+
+	describe('flat progress getters', () => {
+		it('exposes completedCount and totalSteps for the dashboard card', async () => {
+			(makeClientAPIRequest as any).mockResolvedValue(
+				ok({ state: stateOf({ completed_steps: ['welcome', 'pick_interests'] }) })
+			);
+			const ob = useOnboarding();
+			await ob.fetchState();
+
+			expect(ob.completedCount.value).toBe(2);
+			expect(ob.totalSteps.value).toBe(TOTAL);
 		});
 	});
 });
