@@ -41,6 +41,21 @@ describe('usernameSchema', () => {
 		expect(usernameSchema.safeParse('jöhn').success).toBe(false);
 		expect(usernameSchema.safeParse('john@x').success).toBe(false);
 	});
+
+	it('rejects any whitespace (space, tab, leading/trailing)', () => {
+		expect(usernameSchema.safeParse('john doe').success).toBe(false);
+		expect(usernameSchema.safeParse('john\tdoe').success).toBe(false);
+		expect(usernameSchema.safeParse(' johndoe').success).toBe(false);
+		expect(usernameSchema.safeParse('johndoe ').success).toBe(false);
+	});
+
+	it('surfaces the "Username Cannot Contain Spaces" message first for a spaced username', () => {
+		const res = usernameSchema.safeParse('john doe');
+		expect(res.success).toBe(false);
+		if (!res.success) {
+			expect(res.error.issues[0]?.message).toBe('Username Cannot Contain Spaces');
+		}
+	});
 });
 
 describe('passwordSchema', () => {
