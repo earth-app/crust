@@ -904,13 +904,13 @@ export const useUserStore = defineStore('user', () => {
 		// 5) refetch everything fresh. fire-and-forget so this stays non-blocking
 		// from the auth plugin watcher. Each fetch handles its own loading + errors.
 		void fetchUser(u.id, true);
-		void fetchBadges(u.id);
+		void fetchBadges(u.id, true);
 		void fetchPoints(u.id);
 		void fetchAttendingEvents(u.id);
 		void fetchHostingEvents(u.id);
 		void fetchEventSubmissions(u.id);
-		void fetchUserQuest(u.id);
-		void fetchQuestHistory(u.id);
+		void fetchUserQuest(u.id, true);
+		void fetchQuestHistory(u.id, { force: true });
 		void fetchMasteryList(u.id);
 		void fetchQuestsList();
 	};
