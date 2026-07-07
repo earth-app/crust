@@ -83,6 +83,7 @@ const loadJourneys = async () => {
 		await Promise.all(
 			journeyTypes.map(async (type) => {
 				if (loadToken !== journeyLoadToken) return;
+				if (!props.user?.id) return;
 
 				// Fetch count
 				const countRes = await fetchCurrentJourney(type, props.user.id);

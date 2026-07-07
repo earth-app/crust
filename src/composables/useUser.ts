@@ -223,7 +223,7 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 	};
 
 	const fetchCurrentJourney = async (identifier: string, id: string) => {
-		if (!id) return { success: false as const };
+		if (!id) return { success: false as const, message: 'Missing id for fetchCurrentJourney' };
 
 		return await serverRequest<{ count: number; lastWrite?: number }>(
 			`journey-${identifier}`,
