@@ -53,7 +53,7 @@
 					/>
 				</div>
 				<span
-					class="text-xs text-muted tabular-nums w-10 text-right"
+					class="text-xs text-muted tabular-nums w-10 text-right whitespace-nowrap shrink-0"
 					:class="{ 'text-info font-semibold': myVote === emoji }"
 					>{{ percentages[emoji] }}%</span
 				>
