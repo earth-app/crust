@@ -313,9 +313,11 @@ watch(
 
 const allQuests = computed<Quest[]>(() => {
 	const merged = new Map<string, Quest>();
-	for (const q of quests.value ?? []) merged.set(q.id, q);
+	// drop malformed entries (a quest with no id) so the search filter can't throw on
+	// `.id.toLowerCase()` and take down the whole list
+	for (const q of quests.value ?? []) if (q?.id) merged.set(q.id, q);
 	for (const entry of questHistory.value.values()) {
-		if (entry.quest && !merged.has(entry.quest.id)) merged.set(entry.quest.id, entry.quest);
+		if (entry?.quest?.id && !merged.has(entry.quest.id)) merged.set(entry.quest.id, entry.quest);
 	}
 	return Array.from(merged.values());
 });
@@ -343,12 +345,12 @@ const completedQuests = computed(() =>
 const searchResults = computed<Quest[]>(() => {
 	const term = trimmedSearch.value.toLowerCase();
 	if (!term) return [];
-	return allQuests.value.filter(
-		(q) =>
-			q.id.toLowerCase().includes(term) ||
-			q.title.toLowerCase().includes(term) ||
-			q.description.toLowerCase().includes(term)
-	);
+	return allQuests.value.filter((q) => {
+		const id = q.id?.toLowerCase() ?? '';
+		const title = q.title?.toLowerCase() ?? '';
+		const description = q.description?.toLowerCase() ?? '';
+		return id.includes(term) || title.includes(term) || description.includes(term);
+	});
 });
 
 // quest tours
