@@ -94,7 +94,8 @@ async function finishEditing() {
 				const toast = useToast();
 				toast.add({
 					title: 'Error',
-					description: 'Invalid value provided.',
+					// onFinish may hand back a specific reason; fall back to the generic copy
+					description: typeof result === 'string' ? result : 'Invalid value provided.',
 					color: 'error',
 					icon: 'mdi:alert-circle',
 					duration: 3000
