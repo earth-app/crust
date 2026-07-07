@@ -70,24 +70,31 @@
 						{{ step.description }}
 					</p>
 				</div>
-				<UButton
-					v-if="!isDone(step.id) && step.id === nextStep?.id"
-					size="xs"
-					color="primary"
-					variant="solid"
-					@click="invoke(step)"
+				<div
+					v-if="showActions(step)"
+					class="flex flex-col items-end gap-1 shrink-0"
 				>
-					{{ step.cta }}
-				</UButton>
-				<UButton
-					v-else-if="!isDone(step.id)"
-					size="xs"
-					color="neutral"
-					variant="ghost"
-					@click="invoke(step)"
-				>
-					{{ step.cta }}
-				</UButton>
+					<UButton
+						size="xs"
+						:color="step.id === nextStep?.id ? 'primary' : 'neutral'"
+						:variant="step.id === nextStep?.id ? 'solid' : 'ghost'"
+						:loading="isBusy(step)"
+						:disabled="isBusy(step)"
+						@click="invoke(step)"
+					>
+						{{ ctaLabel(step) }}
+					</UButton>
+					<UButton
+						v-if="step.optional && !isDone(step.id) && !stepCompleted(step.id)"
+						size="xs"
+						color="neutral"
+						variant="link"
+						:disabled="isBusy(step)"
+						@click="skipStep(step)"
+					>
+						Skip
+					</UButton>
+				</div>
 			</li>
 		</ul>
 	</div>
@@ -97,9 +104,23 @@
 import { ONBOARDING_CHECKLIST } from '~/composables/useOnboarding';
 
 const onboarding = useOnboarding();
-const { user } = useAuth();
+const { user, regenerateAvatar, fetchUser } = useAuth();
 const router = useRouter();
 const tours = useSiteTour();
+const toast = useToast();
+const avatarStore = useAvatarStore();
+
+const generatingAvatar = ref(false);
+
+// canonical "has a custom avatar" signal: mantle2 always emits the profile_photo
+// endpoint url, so the truth is whether the avatar actually loaded bytes (a 404
+// default placeholder lands in the store's failedUrls, never in the cache)
+const avatarUrl = computed(() => user.value?.account?.avatar_url);
+const hasCustomAvatar = computed(() => {
+	const url = avatarUrl.value;
+	if (!url || !(url.startsWith('http://') || url.startsWith('https://'))) return false;
+	return avatarStore.has(url);
+});
 
 onMounted(() => {
 	if (user.value) onboarding.fetchState();
@@ -135,6 +156,21 @@ watch(
 			!onboarding.state.value.completed_steps.includes('first_activity')
 		) {
 			onboarding.completeStep('first_activity');
+		}
+	},
+	{ immediate: true }
+);
+// persist generate_avatar server-side once the user actually has a custom avatar;
+// the row's done-state is still derived from hasCustomAvatar so it re-opens if lost
+watch(
+	hasCustomAvatar,
+	(has) => {
+		if (
+			has &&
+			onboarding.state.value &&
+			!onboarding.state.value.completed_steps.includes('generate_avatar')
+		) {
+			onboarding.completeStep('generate_avatar');
 		}
 	},
 	{ immediate: true }
@@ -223,8 +259,31 @@ const show = computed(() => {
 	return true;
 });
 
-function isDone(id: string) {
+function stepCompleted(id: string) {
 	return onboarding.state.value?.completed_steps.includes(id as any) ?? false;
+}
+
+function isDone(id: string) {
+	// generate_avatar is done only while the user actually has a custom avatar, so it
+	// stays an outstanding to-do (and re-opens if the avatar is ever lost); a skip
+	// still records server-side for overall progress but does not mark the row done
+	if (id === 'generate_avatar') return hasCustomAvatar.value;
+	return stepCompleted(id);
+}
+
+function isBusy(step: (typeof ONBOARDING_CHECKLIST)[number]) {
+	return step.id === 'generate_avatar' && generatingAvatar.value;
+}
+
+// generate_avatar keeps its CTA after completion so users can freely re-roll;
+// every other step hides its action once done
+function showActions(step: (typeof ONBOARDING_CHECKLIST)[number]) {
+	return !isDone(step.id) || step.id === 'generate_avatar';
+}
+
+function ctaLabel(step: (typeof ONBOARDING_CHECKLIST)[number]) {
+	if (step.id === 'generate_avatar' && isDone(step.id)) return 'Regenerate Avatar';
+	return step.cta;
 }
 
 function invoke(step: (typeof ONBOARDING_CHECKLIST)[number]) {
@@ -237,12 +296,64 @@ function invoke(step: (typeof ONBOARDING_CHECKLIST)[number]) {
 		emit('open-persona');
 		return;
 	}
+	if (step.id === 'generate_avatar') {
+		void generateAvatar();
+		return;
+	}
 	if (step.completeOnClick) {
 		void onboarding.completeStep(step.id);
 	}
 	if (step.link) {
 		router.push(step.link);
 		return;
+	}
+}
+
+async function skipStep(step: (typeof ONBOARDING_CHECKLIST)[number]) {
+	if (isBusy(step)) return;
+	await onboarding.completeStep(step.id);
+}
+
+async function generateAvatar() {
+	if (generatingAvatar.value) return;
+
+	generatingAvatar.value = true;
+
+	try {
+		const res = await regenerateAvatar();
+		if (valid(res) && res.data instanceof Blob) {
+			const remoteUrl = user.value?.account?.avatar_url;
+			if (remoteUrl && (remoteUrl.startsWith('http://') || remoteUrl.startsWith('https://'))) {
+				avatarStore.clear(remoteUrl);
+				// cache-bust for fresh bytes on profile surfaces, plus reprime the base
+				// url so the has-avatar signal flips and the step auto-completes
+				avatarStore.preloadAvatar(
+					`${remoteUrl}${remoteUrl.includes('?') ? '&' : '?'}v=${Date.now()}`
+				);
+				avatarStore.preloadAvatar(remoteUrl);
+			}
+			// refresh the auth-store user so the new avatar propagates app-wide
+			await fetchUser(true);
+			toast.add({
+				title: 'Avatar Generated',
+				description: 'Your profile photo has been generated from your name and activities.',
+				icon: 'mdi:image-refresh',
+				color: 'success',
+				duration: 5000
+			});
+			// completion is now derived: the hasCustomAvatar watcher persists the step
+		} else {
+			toast.add({
+				title: 'Avatar Generation Failed',
+				description: res.message || 'Avatar generation failed - please try again.',
+				icon: 'mdi:alert-circle',
+				color: 'error',
+				duration: 7000
+			});
+		}
+	} finally {
+		// belt-and-suspenders: clear the spinner even if the user navigates away
+		generatingAvatar.value = false;
 	}
 }
 

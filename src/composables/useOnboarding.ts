@@ -4,6 +4,7 @@ export type OnboardingStepId =
 	| 'welcome'
 	| 'pick_interests'
 	| 'first_activity'
+	| 'generate_avatar'
 	| 'first_prompt_response'
 	| 'first_article_read'
 	| 'first_quest_started'
@@ -33,6 +34,9 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 	cta: string;
 	// when true, clicking the CTA marks the step done immediately
 	completeOnClick?: boolean;
+	// optional steps can be skipped without doing the action; they still tick
+	// off (skip counts as done) so the checklist can reach 100%
+	optional?: boolean;
 }> = [
 	{
 		id: 'welcome',
@@ -56,6 +60,14 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 		link: '/activities',
 		mLink: '/tabs/discover?tab=activity',
 		cta: 'Browse Activities'
+	},
+	{
+		id: 'generate_avatar',
+		title: 'Generate Your Avatar',
+		description: 'Roll a one-of-a-kind AI profile photo from your name. Re-roll any time.',
+		icon: 'mdi:image-auto-adjust',
+		cta: 'Generate Avatar',
+		optional: true
 	},
 	{
 		id: 'first_quest_started',
