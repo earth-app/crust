@@ -13,6 +13,42 @@ export const isValidUser = (u: unknown): u is User => {
 	return typeof usr.id === 'string' && !!usr.id && typeof usr.username === 'string';
 };
 
+// native CapacitorHttp can hand back a string body or a { data } envelope for larger
+// payloads; coerce both so a validated submit is never misread as a failure
+export const coerceQuestUpdateResult = (
+	raw: unknown
+): { message: string; completed: boolean; validated: boolean } | null => {
+	let data: unknown = raw;
+	if (typeof data === 'string') {
+		const trimmed = data.trim();
+		if (!trimmed) return null;
+		try {
+			data = JSON.parse(trimmed);
+		} catch {
+			return null;
+		}
+	}
+	// unwrap a { data: {...} } envelope only when the outer object isn't already the result
+	if (
+		data &&
+		typeof data === 'object' &&
+		!('validated' in data) &&
+		typeof (data as { data?: unknown }).data === 'object' &&
+		(data as { data?: unknown }).data !== null
+	) {
+		data = (data as { data: unknown }).data;
+	}
+	if (!data || typeof data !== 'object') return null;
+	const obj = data as Record<string, unknown>;
+	if (!('validated' in obj) && !('completed' in obj) && !('message' in obj)) return null;
+	const truthy = (v: unknown) => v === true || v === 'true' || v === 1;
+	return {
+		message: typeof obj.message === 'string' ? obj.message : '',
+		completed: truthy(obj.completed),
+		validated: truthy(obj.validated)
+	};
+};
+
 export const useUserStore = defineStore('user', () => {
 	const cache = reactive(new Map<string, User | null>());
 	const loading = reactive(new Set<string>());
@@ -368,12 +404,14 @@ export const useUserStore = defineStore('user', () => {
 		return hostingEvents.get(identifier) ?? [];
 	};
 
-	const fetchBadges = async (identifier: string): Promise<UserBadge[]> => {
+	const fetchBadges = async (identifier: string, force: boolean = false): Promise<UserBadge[]> => {
 		// never cache under a falsy identifier (poisons the empty key)
 		if (!identifier) return [];
 		const authStore = useAuthStore();
+		// force bypasses the LRU api cache so a newly-granted badge shows immediately
+		// (recent-badges showcase) instead of replaying a stale list until app restart
 		const res = await makeAPIRequest<UserBadge[]>(
-			`user-${identifier}-badges`,
+			force ? null : `user-${identifier}-badges`,
 			`/v2/users/${identifier}/badges`,
 			authStore.sessionToken
 		);
@@ -588,19 +626,32 @@ export const useUserStore = defineStore('user', () => {
 			body: stepResponse
 		});
 
-		if (!res.success || !res.data) {
+		if (!res.success) {
 			return {
-				message: res.data?.message || res.message || 'Failed to update quest',
+				message: res.message || 'Failed to update quest',
 				completed: false,
 				validated: false
 			};
 		}
 
-		if (res.data.validated) {
-			applyLocalQuestProgress(identifier, stepResponse, res.data.completed);
+		const parsed = coerceQuestUpdateResult(res.data);
+		if (!parsed) {
+			const fallbackMessage =
+				res.data && typeof res.data === 'object' && typeof (res.data as any).message === 'string'
+					? (res.data as any).message
+					: res.message;
+			return {
+				message: fallbackMessage || 'Failed to update quest',
+				completed: false,
+				validated: false
+			};
 		}
 
-		return res.data;
+		if (parsed.validated) {
+			applyLocalQuestProgress(identifier, stepResponse, parsed.completed);
+		}
+
+		return parsed;
 	};
 
 	const endQuest = async (identifier: string): Promise<{ message: string }> => {
@@ -651,7 +702,9 @@ export const useUserStore = defineStore('user', () => {
 			items: QuestHistoryEntry[];
 			history: { [questId: string]: QuestHistoryEntry };
 		}>(
-			`user-${identifier}-quest-history-${qs || 'all'}`,
+			// force bypasses the LRU api cache so pull-to-refresh / refresh actually re-fetches
+			// instead of replaying a stale cached list with no network round trip
+			opts.force ? null : `user-${identifier}-quest-history-${qs || 'all'}`,
 			`/v2/users/${identifier}/quest/history${qs ? `?${qs}` : ''}`,
 			authStore.sessionToken
 		);
@@ -728,10 +781,11 @@ export const useUserStore = defineStore('user', () => {
 		return [];
 	};
 
-	const fetchQuest = async (questId: string): Promise<Quest | null> => {
+	const fetchQuest = async (questId: string, force: boolean = false): Promise<Quest | null> => {
 		const authStore = useAuthStore();
 		const res = await makeAPIRequest<Quest>(
-			`quest-${questId}`,
+			// force bypasses the LRU so a lean/poisoned cached entry can't wedge the detail page
+			force ? null : `quest-${questId}`,
 			`/v2/users/quests?id=${questId}`,
 			authStore.sessionToken
 		);
@@ -820,14 +874,11 @@ export const useUserStore = defineStore('user', () => {
 			}
 		}
 
-		// 2) wipe every per-user state map under every identifier form
+		// 2) invalidate api caches so the refetch below hits the network, but DON'T eagerly clear
+		// the value maps -- deleting mid-refetch flashes the UI to 0/empty (the `points` computed
+		// falls back to `|| 0`); each fetch overwrites on success and keeps last-known on failure.
+		// quest keeps its delete since fetchUserQuest short-circuits on `has` without force.
 		for (const id of ids) {
-			attendingEvents.delete(id);
-			hostingEvents.delete(id);
-			badges.delete(id);
-			eventSubmissions.delete(id);
-			points.delete(id);
-			pointsHistory.delete(id);
 			quest.delete(id);
 			questHistory.delete(id);
 
