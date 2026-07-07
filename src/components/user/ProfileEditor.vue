@@ -22,6 +22,11 @@
 				icon="material-symbols:refresh"
 				:loading="avatarLoading"
 				class="w-44 font-semibold text-center"
+				:class="
+					showAvatarRing
+						? 'ring-2! ring-primary/70! ring-offset-2! ring-offset-transparent! animate-pulse! hover:ring-4! hover:ring-primary!'
+						: ''
+				"
 				@click="regenerateProfilePhoto"
 			>
 				Regenerate Avatar
@@ -526,6 +531,7 @@
 <script setup lang="ts">
 import { com } from '@earth-app/ocean';
 import { extractServerMessage } from 'errors';
+import { usernameSchema } from 'schemas';
 import { OAUTH_PROVIDERS, type User } from 'types/user';
 import { capitalizeFully } from 'utils';
 import type { InputTypeHTMLAttribute } from 'vue';
@@ -671,6 +677,14 @@ function sanitize(obj: User['account']): Partial<User['account']> {
 async function updateUser() {
 	if (user.value) {
 		if (!changed.value) return true;
+
+		// validate the username before the PATCH; the returned string surfaces in the
+		// EditableValue error toast (spaces get the specific "no spaces" message first)
+		const uname = user.value.account.username?.trim() ?? '';
+		const unameResult = usernameSchema.safeParse(uname);
+		if (!unameResult.success) {
+			return unameResult.error.issues[0]?.message || 'Invalid username.';
+		}
 
 		const res = await updateAccount(sanitize(user.value.account));
 		if (!res.success) {
@@ -902,6 +916,16 @@ function bumpCelebrate(cosmeticKey: string) {
 const hasOwnAvatar = computed(() => {
 	const url = user.value?.account?.avatar_url;
 	return !!url && (url.startsWith('http://') || url.startsWith('https://'));
+});
+
+// draw an attention ring on Regenerate until the user has a custom avatar; a 404
+// (default earth-app placeholder) lands in the store's failedUrls, so ring only
+// once we KNOW there is no avatar (never flashes on for users who have one)
+const showAvatarRing = computed(() => {
+	if (avatarLoading.value) return false;
+	const url = user.value?.account?.avatar_url;
+	if (!url || !(url.startsWith('http://') || url.startsWith('https://'))) return true;
+	return avatarStore.hasFailed(url);
 });
 
 // kick off the self-preview fetch when the modal opens for a new cosmetic
