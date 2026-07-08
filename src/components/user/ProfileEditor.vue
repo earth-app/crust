@@ -434,6 +434,7 @@
 							:key="provider"
 							:provider="provider"
 							:linked="user.account.linked_providers.includes(provider)"
+							context="link"
 							class="mx-2"
 						/>
 					</div>
