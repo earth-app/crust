@@ -279,6 +279,7 @@
 
 			<UAlert
 				v-if="submitError"
+				data-testid="submit-error"
 				color="error"
 				variant="soft"
 				icon="i-lucide-triangle-alert"
