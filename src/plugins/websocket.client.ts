@@ -100,6 +100,10 @@ export default defineNuxtPlugin((nuxtApp) => {
 			};
 
 			const connect = async (userId: string, token: string | null) => {
+				// falsy token would post "Bearer null" to the ticket route (-> 401);
+				// wait for the token-watch below to reconnect once it hydrates
+				if (!token) return;
+
 				let wsUrl: string;
 				if (isSky) {
 					// sky carries no cloud config — fetch the ticket + resolved ws url through crust
@@ -304,8 +308,8 @@ export default defineNuxtPlugin((nuxtApp) => {
 			};
 
 			const stopWatch = watch(
-				user,
-				(currentUser) => {
+				[user, () => authStore.sessionToken],
+				([currentUser, token]) => {
 					if (!currentUser) {
 						disconnect();
 						return;
@@ -316,10 +320,14 @@ export default defineNuxtPlugin((nuxtApp) => {
 						disconnect();
 					}
 
+					// sky cold-launch restores `user` before the token hydrates; connecting
+					// now ships "Bearer null" — wait for a real token (this re-fires on it)
+					if (typeof token !== 'string' || token.length === 0) return;
+
 					if (!ws && !reconnectTimer) {
 						connectedUserId = currentUser.id;
 						reconnectAttempts = 0;
-						attemptConnect(currentUser.id, authStore.sessionToken);
+						attemptConnect(currentUser.id, token);
 					}
 				},
 				{ immediate: true }
