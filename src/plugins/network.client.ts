@@ -14,7 +14,7 @@ export default defineNuxtPlugin(() => {
 		try {
 			const authStore = useAuthStore();
 			const out = await makeClientAPIRequest(
-				`/v2/users/current/notifications/${encodeURIComponent(id)}/read`,
+				`/v2/users/current/notifications/${encodeURIComponent(id)}/mark_read`,
 				authStore.sessionToken,
 				{ method: 'POST' }
 			);

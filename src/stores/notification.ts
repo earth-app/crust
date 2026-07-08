@@ -92,11 +92,21 @@ export const useNotificationStore = defineStore('notification', () => {
 
 	const markRead = async (id: string) => {
 		const authStore = useAuthStore();
-		const res = await makeClientAPIRequest<void>(
-			`/v2/users/current/notifications/${id}/mark_read`,
-			authStore.sessionToken,
-			{ method: 'POST' }
-		);
+		const url = `/v2/users/current/notifications/${id}/mark_read`;
+		let res = await makeClientAPIRequest<void>(url, authStore.sessionToken, { method: 'POST' });
+
+		// self-heal a stale/expired session token: re-sync + refetch the user, then retry once.
+		// if it's still a 401 the token is truly dead — hard logout so the app prompts re-auth.
+		if (!res.success && res.status === 401) {
+			await authStore.syncSessionToken();
+			const user = await authStore.fetchCurrentUser(true);
+			if (user && authStore.sessionToken) {
+				res = await makeClientAPIRequest<void>(url, authStore.sessionToken, { method: 'POST' });
+			}
+			if (!res.success && res.status === 401) {
+				authStore.logout();
+			}
+		}
 
 		if (res.success) {
 			const notification = notifications.value.find((n) => n.id === id);

@@ -135,6 +135,7 @@
 </template>
 
 <script setup lang="ts">
+import { extractServerMessage } from 'errors';
 import { DateTime } from 'luxon';
 import { trimString } from 'utils';
 import UiAnimatedGradientBorder from '~/components/ui/AnimatedGradientBorder.vue';
@@ -174,14 +175,27 @@ async function markAsRead() {
 	);
 	if (outcome.queued) return;
 	if (outcome.executed && outcome.result && !outcome.result.success) {
-		console.error('Failed to mark notification as read:', outcome.result.message);
+		const res = outcome.result;
+		console.error('Failed to mark notification as read:', res.message);
 		const toast = useToast();
-		toast.add({
-			title: 'Error',
-			description: outcome.result.message || 'Failed to mark notification as read.',
-			icon: 'mdi:alert-circle',
-			color: 'error'
-		});
+		if (res.status === 401) {
+			// the store already ran the self-heal + logout; guide the user to re-auth rather
+			// than surfacing the raw "invalid or expired session token"
+			toast.add({
+				title: 'Session Expired',
+				description: 'Your session expired. Please sign in again.',
+				icon: 'mdi:login-variant',
+				color: 'warning',
+				duration: 6000
+			});
+		} else {
+			toast.add({
+				title: 'Error',
+				description: extractServerMessage(res.message, 'Failed to mark notification as read.'),
+				icon: 'mdi:alert-circle',
+				color: 'error'
+			});
+		}
 	}
 }
 
