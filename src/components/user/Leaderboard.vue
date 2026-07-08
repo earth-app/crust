@@ -41,7 +41,7 @@
 		<UTable
 			v-else
 			:columns="columns"
-			:data="data"
+			:data="visibleRows"
 			:loading="loading"
 			class="w-full"
 		/>
@@ -98,6 +98,13 @@ type Row = {
 
 const data = ref<Row[]>([]);
 const loading = ref(true);
+
+// hide 0-streak entries in friends/circle streak boards; points + global stay unfiltered
+const visibleRows = computed(() =>
+	scope.value !== 'global' && metric.value !== 'points'
+		? data.value.filter((row) => row.value > 0)
+		: data.value
+);
 
 let bindingScope: EffectScope | null = null;
 let fetchCurrent: ((limit: number) => Promise<void>) | null = null;
