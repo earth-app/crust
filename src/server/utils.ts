@@ -521,3 +521,10 @@ export function constructIASearch(
 
 	return `https://archive.org/advancedsearch.php?${params.toString()}&rows=20&output=json`;
 }
+
+export function resolveAccountRank(
+	user: { account?: { account_type?: string | null } | null } | null | undefined
+): string | undefined {
+	const accountType = user?.account?.account_type;
+	return typeof accountType === 'string' ? accountType.toLowerCase() : undefined;
+}
