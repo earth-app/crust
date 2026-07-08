@@ -344,10 +344,9 @@ export function useClientModeration() {
 	async function checkImage(input: Blob | File | string): Promise<ModerationVerdict> {
 		if (!import.meta.client) return ALLOW;
 		try {
-			// deterministic e2e hook (inert in production) — exercises the block path
 			if (moderationTestMode) {
 				const seeded = await testSignatureVerdict(input);
-				if (seeded) return seeded;
+				return seeded ?? ALLOW;
 			}
 			return await withTimeout(runImageCheck(input), ALLOW);
 		} catch {
