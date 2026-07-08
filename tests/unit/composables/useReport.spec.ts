@@ -243,6 +243,15 @@ describe('useClientModeration › test-build signature hook', () => {
 		// signature present, but the hook is inert → real (clean) path runs
 		expect(await checkImage(pngFile(['EARTHAPP_MOD_NSFW bytes']))).toEqual({ allowed: true });
 	});
+
+	it('allows a non-seeded image in test builds without running the model', async () => {
+		setTestBuild(true);
+		const { checkImage } = useClientModeration();
+		// no signature -> test builds must NOT run real nsfwjs (it can't fetch its model under e2e
+		// network blocking and would burn the full timeout on every image submit); allow immediately
+		expect(await checkImage(pngFile(['just some plain bytes']))).toEqual({ allowed: true });
+		expect(mockClassify).not.toHaveBeenCalled();
+	});
 });
 
 const ok = <T>(data: T) => ({ success: true as const, data });
