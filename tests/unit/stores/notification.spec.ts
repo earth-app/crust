@@ -231,6 +231,94 @@ describe('notification store', () => {
 		});
 	});
 
+	describe('markRead 401 self-heal', () => {
+		it('re-syncs, refetches, and retries once — succeeding without logging out', async () => {
+			const auth = authed('tok');
+			const store = useNotificationStore();
+			store.notifications = [note('a', false)];
+			store.cache.set('a', store.notifications[0]!);
+			store.unreadCount = 1;
+
+			vi.mocked(makeClientAPIRequest)
+				.mockResolvedValueOnce({
+					success: false,
+					status: 401,
+					message: 'Invalid or expired session token'
+				})
+				.mockResolvedValueOnce({ success: true });
+
+			const syncSpy = vi.spyOn(auth, 'syncSessionToken').mockResolvedValue('tok2');
+			const fetchSpy = vi.spyOn(auth, 'fetchCurrentUser').mockImplementation(async () => {
+				auth.sessionToken = 'tok2'; // refreshed token
+				return { id: 'me', username: 'me' } as any;
+			});
+			const logoutSpy = vi.spyOn(auth, 'logout');
+
+			const res = await store.markRead('a');
+
+			expect(syncSpy).toHaveBeenCalled();
+			expect(fetchSpy).toHaveBeenCalledWith(true);
+			// original call + one retry after re-auth
+			expect(makeClientAPIRequest).toHaveBeenCalledTimes(2);
+			expect(logoutSpy).not.toHaveBeenCalled();
+			expect(res.success).toBe(true);
+			expect(store.notifications[0]!.read).toBe(true);
+			expect(store.unreadCount).toBe(0);
+		});
+
+		it('hard-logs-out when the token is still dead after re-auth', async () => {
+			const auth = authed('tok');
+			const store = useNotificationStore();
+			store.notifications = [note('a', false)];
+			store.unreadCount = 1;
+
+			vi.mocked(makeClientAPIRequest).mockResolvedValue({
+				success: false,
+				status: 401,
+				message: 'Invalid or expired session token'
+			});
+
+			vi.spyOn(auth, 'syncSessionToken').mockResolvedValue(null);
+			vi.spyOn(auth, 'fetchCurrentUser').mockImplementation(async () => {
+				auth.sessionToken = null; // token confirmed dead
+				return null;
+			});
+			const logoutSpy = vi.spyOn(auth, 'logout');
+
+			const res = await store.markRead('a');
+
+			// no retry once the token is gone
+			expect(makeClientAPIRequest).toHaveBeenCalledTimes(1);
+			expect(logoutSpy).toHaveBeenCalled();
+			expect(res.success).toBe(false);
+			// optimistic state untouched on failure
+			expect(store.notifications[0]!.read).toBe(false);
+			expect(store.unreadCount).toBe(1);
+		});
+
+		it('does not self-heal on a non-401 failure', async () => {
+			const auth = authed('tok');
+			const store = useNotificationStore();
+			store.notifications = [note('a', false)];
+			store.unreadCount = 1;
+
+			vi.mocked(makeClientAPIRequest).mockResolvedValue({
+				success: false,
+				status: 500,
+				message: 'server error'
+			});
+			const syncSpy = vi.spyOn(auth, 'syncSessionToken');
+			const logoutSpy = vi.spyOn(auth, 'logout');
+
+			const res = await store.markRead('a');
+
+			expect(syncSpy).not.toHaveBeenCalled();
+			expect(logoutSpy).not.toHaveBeenCalled();
+			expect(makeClientAPIRequest).toHaveBeenCalledTimes(1);
+			expect(res.success).toBe(false);
+		});
+	});
+
 	describe('markUnread', () => {
 		it('flips read off and increments the unread count', async () => {
 			authed();
