@@ -117,7 +117,34 @@ const myVote = ref<MoodEmoji | null>(null);
 const loading = ref(false);
 const sparkleTrigger = ref(0);
 const errorMessage = ref<string | null>(null);
-const showResults = computed(() => hasVoted.value || myVote.value !== null);
+const done = ref(false);
+const showResults = computed(() => done.value || hasVoted.value || myVote.value !== null);
+
+// mirrors useMood's internal guard key (mood_voted:<normalized-topic>:<utc-date>) so this
+// component can read/refresh the same per-day latch it can't import
+function votedKeyForToday(topic: string): string {
+	const d = new Date();
+	const date = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+	return `mood_voted:${topic.trim().toLowerCase()}:${date}`;
+}
+
+function readLatch(): boolean {
+	if (!import.meta.client) return false;
+	try {
+		return window.localStorage.getItem(votedKeyForToday(props.topic)) !== null;
+	} catch {
+		return false;
+	}
+}
+
+function persistLatch() {
+	if (!import.meta.client) return;
+	try {
+		window.localStorage.setItem(votedKeyForToday(props.topic), String(Date.now()));
+	} catch {
+		// no localStorage; the in-memory latch still holds for this mount
+	}
+}
 
 const percentages = computed<Record<MoodEmoji, number>>(() => {
 	const counts = snapshot.value?.counts;
@@ -131,7 +158,7 @@ const percentages = computed<Record<MoodEmoji, number>>(() => {
 });
 
 async function onVote(emoji: MoodEmoji) {
-	if (loading.value || hasVoted.value) return;
+	if (loading.value || done.value || hasVoted.value) return;
 	loading.value = true;
 	errorMessage.value = null;
 
@@ -140,6 +167,8 @@ async function onVote(emoji: MoodEmoji) {
 
 	if (res.success) {
 		myVote.value = emoji;
+		done.value = true;
+		persistLatch();
 		sparkleTrigger.value++;
 		emit('complete', { emoji });
 		toast.add({
@@ -149,26 +178,27 @@ async function onVote(emoji: MoodEmoji) {
 			color: 'info',
 			duration: 4500
 		});
+	} else if (res.error?.toLowerCase().includes('already')) {
+		// already recorded today (device guard or a backend 409); latch to results and
+		// self-heal the guard so the buttons don't come back on the next remount
+		done.value = true;
+		persistLatch();
 	} else {
 		errorMessage.value = res.error ?? 'Could not record your mood.';
-		// "already voted from this device" is informational, not a toast-worthy error
-		if (!res.error?.toLowerCase().includes('already')) {
-			toast.add({
-				title: 'Could Not Record Mood',
-				description: errorMessage.value,
-				icon: 'mdi:alert-circle',
-				color: 'error',
-				duration: 6000
-			});
-		}
+		toast.add({
+			title: 'Could Not Record Mood',
+			description: errorMessage.value,
+			icon: 'mdi:alert-circle',
+			color: 'error',
+			duration: 6000
+		});
 	}
 }
 
 onMounted(async () => {
-	if (import.meta.client && hasVoted.value) {
-		// no stored emoji from the prior session, so we just leave myVote null
-		// and let the bars highlight without a per-user winner
-	}
+	// hydrate the reactive latch from the persisted per-day guard so a same-day remount
+	// stays in the results state (myVote stays null - no stored winner from a prior session)
+	if (readLatch()) done.value = true;
 	await fetchSnapshot();
 });
 </script>
