@@ -82,13 +82,14 @@
 <script setup lang="ts">
 type JourneyType = 'article' | 'prompt' | 'event';
 
-const { user: currentUser } = useAuth();
-
+const { user: currentUser, fetchCurrentJourney, fetchCurrentJourneyRank } = useAuth();
 const props = defineProps<{
 	user: User;
 }>();
+const userId = computed(() => props.user?.id);
 
-const { fetchCurrentJourney, fetchCurrentJourneyRank } = useAuth();
+const { quest, fetchUserQuest } = useUser(userId);
+
 const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
 const ROWS: { type: JourneyType; label: string; icon: string }[] = [
@@ -136,6 +137,7 @@ const rows = computed(() =>
 // quest-funnel: nudge when any streak is about to die or user has nothing going yet
 const showQuestCta = computed(() => {
 	if (!currentUser || props.user.id !== currentUser.value?.id) return false;
+	if (quest.value !== null) return false; // hide button if user already has a quest
 	const anyExpiring = rows.value.some((r) => r.expiringSoon);
 	const allZero = rows.value.every((r) => r.count === 0);
 	return anyExpiring || allZero;
@@ -193,6 +195,7 @@ function onJourneyUpdated(ev: Event) {
 
 onMounted(() => {
 	void loadAll();
+	void fetchUserQuest();
 	if (import.meta.client) {
 		window.addEventListener('earth-app:journey-updated', onJourneyUpdated);
 		tickHandle = setInterval(() => {
