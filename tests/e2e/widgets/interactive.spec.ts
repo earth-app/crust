@@ -28,10 +28,90 @@ test.describe('MicroQuiz widget', () => {
 	});
 });
 
+// 4 activities with clear, distinct descriptions -> a full real-activity round after filtering
+const RANDOM_ACTIVITIES = [
+	{
+		id: 'rf-1',
+		name: 'Kayaking',
+		description: 'Kayaking is a paddling sport on open water.',
+		types: ['SPORT'],
+		aliases: [],
+		fields: {}
+	},
+	{
+		id: 'rf-2',
+		name: 'Origami',
+		description: 'Origami is the art of folding paper into shapes.',
+		types: ['ART'],
+		aliases: [],
+		fields: {}
+	},
+	{
+		id: 'rf-3',
+		name: 'Birdwatching',
+		description: 'Birdwatching means observing wild birds in nature.',
+		types: ['NATURE'],
+		aliases: [],
+		fields: {}
+	},
+	{
+		id: 'rf-4',
+		name: 'Pottery',
+		description: 'Pottery is shaping clay into vessels and firing it.',
+		types: ['CREATIVE'],
+		aliases: [],
+		fields: {}
+	}
+];
+
 test.describe('RapidFlash widget', () => {
-	test('start reveals the term/definition grid', async ({ asUser, page, testId }) => {
+	test('pulls real activities from the API and shows their names after Start Round', async ({
+		asUser,
+		page,
+		testId,
+		mockApi
+	}) => {
+		skipIfIntegration('widget harness + mocked activities endpoint');
+		await asUser();
+		// the slot over-fetches /v2/activities/random(8); return 4 clean activities so the real pool wins
+		await mockApi.set({
+			method: 'GET',
+			path: '/v2/activities/random',
+			body: RANDOM_ACTIVITIES,
+			once: false
+		});
+		await openHarness(page, harness('RapidFlash', testId));
+
+		await expect(page.getByText(/Rapid Flash Match/i)).toBeVisible({ timeout: 15_000 });
+		await page.getByRole('button', { name: /Start Round/i }).click();
+		await expect(page.getByRole('button', { name: /Start Round/i })).toHaveCount(0, {
+			timeout: 8_000
+		});
+
+		// the terms column now renders the real activity names, not the hardcoded DEFAULT_POOL
+		for (const name of ['Kayaking', 'Origami', 'Birdwatching', 'Pottery']) {
+			await expect(page.getByRole('button', { name: new RegExp(name, 'i') }).first()).toBeVisible({
+				timeout: 8_000
+			});
+		}
+	});
+
+	test('falls back to the default pool when the activities endpoint fails', async ({
+		asUser,
+		page,
+		testId,
+		mockApi
+	}) => {
 		skipIfIntegration('widget harness is a mock-only test page');
 		await asUser();
+		// force the random endpoint to fail so the slot falls back to the widget's DEFAULT_POOL
+		await mockApi.set({
+			method: 'GET',
+			path: '/v2/activities/random',
+			status: 404,
+			body: { message: 'Not Found' },
+			once: false
+		});
 		await openHarness(page, harness('RapidFlash', testId));
 
 		await expect(page.getByText(/Rapid Flash Match/i)).toBeVisible({ timeout: 15_000 });
