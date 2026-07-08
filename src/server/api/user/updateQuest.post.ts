@@ -1,10 +1,15 @@
-import { cloudErrorMessage, ensureLoggedIn, parseUserAgent } from '~/server/utils';
+import {
+	cloudErrorMessage,
+	ensureLoggedIn,
+	parseUserAgent,
+	resolveAccountRank
+} from '~/server/utils';
 
 export default defineEventHandler(async (event) => {
 	const user = await ensureLoggedIn(event);
 	const config = useRuntimeConfig();
 
-	const rank = user.account.account_type.toLowerCase();
+	const rank = resolveAccountRank(user);
 
 	const ua = event.node.req.headers['user-agent'];
 	if (!ua) {
@@ -14,8 +19,8 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
-	const latitude = parseFloat(event.node.req.headers['X-Latitude']?.toString() || '0');
-	const longitude = parseFloat(event.node.req.headers['X-Longitude']?.toString() || '0');
+	const latitude = parseFloat(getRequestHeader(event, 'X-Latitude') || '0');
+	const longitude = parseFloat(getRequestHeader(event, 'X-Longitude') || '0');
 
 	const device = {
 		latitude,
@@ -60,29 +65,43 @@ export default defineEventHandler(async (event) => {
 		}
 	}
 
-	const res = await $fetch<{ message: string; completed: boolean; validated: boolean }>(
-		`${config.public.cloudBaseUrl}/v1/users/quests/progress/${user.id}/update`,
-		{
-			method: 'PATCH',
-			timeout: 20_000,
-			headers: {
-				Authorization: `Bearer ${config.adminApiKey}`,
-				Accept: 'application/json'
-			},
-			body: {
-				device,
-				response,
-				rank
-			},
-			onResponseError: (ctx) => {
-				const message = cloudErrorMessage(ctx.response._data);
-				throw createError({
-					data: ctx.response._data,
-					statusCode: ctx.response.status,
-					statusMessage: message || `Failed to update quest: ${ctx.response.statusText}`
-				});
+	try {
+		const res = await $fetch<{ message: string; completed: boolean; validated: boolean }>(
+			`${config.public.cloudBaseUrl}/v1/users/quests/progress/${user.id}/update`,
+			{
+				method: 'PATCH',
+				timeout: 20_000,
+				headers: {
+					Authorization: `Bearer ${config.adminApiKey}`,
+					Accept: 'application/json'
+				},
+				body: {
+					device,
+					response,
+					rank
+				},
+				onResponseError: (ctx) => {
+					const message = cloudErrorMessage(ctx.response._data);
+					throw createError({
+						data: ctx.response._data,
+						statusCode: ctx.response.status,
+						statusMessage: message || `Failed to update quest: ${ctx.response.statusText}`
+					});
+				}
 			}
+		);
+		return res;
+	} catch (error) {
+		if (
+			error &&
+			typeof error === 'object' &&
+			typeof (error as { statusCode?: unknown }).statusCode === 'number'
+		) {
+			throw error;
 		}
-	);
-	return res;
+		throw createError({
+			statusCode: 502,
+			statusMessage: 'Quest update failed to reach the quest service'
+		});
+	}
 });
