@@ -53,6 +53,21 @@ export async function stubQuestUpdate(
 	});
 }
 
+export async function stubQuestUpdateError(
+	mockApi: MockClient,
+	userId: string,
+	opts: { status?: number; message?: string } = {}
+): Promise<void> {
+	await mockApi.set({
+		backend: 'cloud',
+		method: 'PATCH',
+		path: `^/v1/users/quests/progress/${escapeRe(userId)}/update$`,
+		status: opts.status ?? 500,
+		body: { message: opts.message ?? 'Internal Server Error' },
+		once: false
+	});
+}
+
 /** Wait for the harness store to finish seeding the active quest. */
 export async function waitForHarnessReady(page: Page): Promise<void> {
 	await expect(page.getByTestId('harness-ready')).toHaveText('ready', { timeout: 15_000 });
