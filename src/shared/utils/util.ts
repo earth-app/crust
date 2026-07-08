@@ -350,7 +350,14 @@ export async function makeServerRequest<T>(
 
 		return {
 			success: false,
-			message: extractServerMessage(error, 'An error occurred while fetching server data.')
+			message: extractServerMessage(error, 'An error occurred while fetching server data.'),
+			// surface the HTTP status so callers can distinguish server (5xx) from client (4xx) failures
+			status:
+				typeof error?.status === 'number'
+					? error.status
+					: typeof error?.statusCode === 'number'
+						? error.statusCode
+						: undefined
 		};
 	}
 }

@@ -290,6 +290,7 @@
 </template>
 
 <script setup lang="ts">
+import { extractServerMessage } from 'errors';
 import { DateTime } from 'luxon';
 
 const celebration = useQuestCelebration();
@@ -315,10 +316,7 @@ const emit = defineEmits<{
 
 const { user, avatar128 } = useAuth(props.serverRequest || makeServerRequest);
 const userId = computed(() => user.value?.id);
-const { quest: activeQuest, updateQuest } = useUser(
-	userId,
-	props.serverRequest || makeServerRequest
-);
+const { quest: activeQuest } = useUser(userId, props.serverRequest || makeServerRequest);
 const { lat, lng, fetchLocation } = useQuestGeolocation();
 
 function formatReadTime(totalSeconds: number): string {
@@ -429,11 +427,50 @@ onMounted(() => {
 	}
 });
 
+// wrap the server request so a failed step submit exposes its HTTP status
+function createStatusTrackingRequest() {
+	const base = props.serverRequest || makeServerRequest;
+	const state = { failed: false, status: null as number | null };
+	async function request<T>(
+		key: string | null,
+		suburl: string,
+		token: string | null | undefined = null,
+		options: any = {}
+	) {
+		const res = await base<T>(key, suburl, token, options);
+		state.failed = !res.success;
+		state.status = res.success ? null : ((res as { status?: number }).status ?? null);
+		return res;
+	}
+	return { request, state };
+}
+
+// descriptive, reassuring failure copy keyed off the HTTP status
+function describeSubmitFailure(
+	res: { message: string },
+	state: { failed: boolean; status: number | null },
+	validationFallback: string
+): string {
+	// server (5xx) or transport (no response) failure: reassure the user nothing was lost
+	if (state.failed && (state.status === null || state.status >= 500)) {
+		const code = state.status;
+		return `The server had a problem saving this step${
+			code ? ` (error ${code})` : ''
+		}. Your progress wasn't lost - please try again in a moment.`;
+	}
+
+	// 4xx client errors + HTTP-200 validation misses: surface the server's short reason
+	return extractServerMessage(res.message, validationFallback);
+}
+
 async function submitPhoto(file: File) {
 	// guard against duplicate dispatch if the user double-clicks before we set submitting
 	if (submitting.value) return;
 	submitting.value = true;
 	submitError.value = '';
+
+	const tracker = createStatusTrackingRequest();
+	const { updateQuest } = useUser(userId, tracker.request);
 
 	try {
 		const dataUrl = await fileToDataUrl(file);
@@ -461,11 +498,14 @@ async function submitPhoto(file: File) {
 			await new Promise((r) => setTimeout(r, 900));
 			emit('submitted');
 		} else {
-			submitError.value = res.message || 'Validation failed. Please retake the photo.';
+			submitError.value = describeSubmitFailure(
+				res,
+				tracker.state,
+				'Validation failed. Please retake the photo.'
+			);
 		}
 	} catch (e: any) {
-		submitError.value =
-			e?.data?.message || e?.statusMessage || e?.message || 'Submission failed. Please try again.';
+		submitError.value = extractServerMessage(e, 'Submission failed. Please try again.');
 	} finally {
 		submitting.value = false;
 	}
