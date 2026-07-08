@@ -1,5 +1,6 @@
 export default defineEventHandler(async (event) => {
 	try {
+		const config = useRuntimeConfig();
 		const query = getQuery(event);
 		const { provider } = query;
 
@@ -13,7 +14,7 @@ export default defineEventHandler(async (event) => {
 		}
 
 		try {
-			await $fetch(`https://api.earth-app.com/v2/users/oauth/${provider}`, {
+			await $fetch(`${config.public.apiBaseUrl}/v2/users/oauth/${provider}`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: `Bearer ${sessionToken}`
