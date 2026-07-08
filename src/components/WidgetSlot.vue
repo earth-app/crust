@@ -16,6 +16,8 @@
 </template>
 
 <script setup lang="ts">
+import { trimString } from 'utils';
+
 type ActivityContext = { id: string; name: string; types?: readonly ActivityType[] };
 
 const props = withDefaults(
@@ -157,6 +159,67 @@ function buildRapidFlashPool(types: readonly ActivityType[] | null | undefined):
 	return merged;
 }
 
+function escapeRegExp(s: string): string {
+	return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// first sentence (else a short slice) with the activity name stripped/masked so a def never reveals its term
+function shortDef(description: string, name: string): string | null {
+	let d = description.trim();
+	if (!d) return null;
+	const sentence = d.match(/^.*?[.!?](?=\s|$)/);
+	d = sentence ? sentence[0]!.trim() : trimString(d, 65);
+	const term = name.trim();
+	if (term) {
+		const escaped = escapeRegExp(term);
+		d = d.replace(new RegExp(`^${escaped}\\s+(?:is|are|refers to|means)\\b[:,]?\\s*`, 'i'), '');
+		d = d.replace(new RegExp(escaped, 'ig'), '___').trim();
+	}
+	return d.length > 0 ? d : null;
+}
+
+// map random activities into rapid-flash pairs; drop empty/duplicate terms and defs
+function buildRealPool(
+	activities: readonly { name?: string | null; description?: string | null }[]
+): Pair[] {
+	const pairs: Pair[] = [];
+	const seenTerms = new Set<string>();
+	const seenDefs = new Set<string>();
+	for (const a of activities) {
+		const term = (a?.name ?? '').trim();
+		const rawDesc = (a?.description ?? '').trim();
+		if (!term || !rawDesc) continue;
+		const def = shortDef(rawDesc, term);
+		if (!def) continue;
+		const termKey = term.toLowerCase();
+		const defKey = def.toLowerCase();
+		if (seenTerms.has(termKey) || seenDefs.has(defKey)) continue;
+		seenTerms.add(termKey);
+		seenDefs.add(defKey);
+		pairs.push({ term, def });
+	}
+	return pairs;
+}
+
+// only RapidFlash needs live activities; every other kind skips the fetch
+const activitiesApi = props.kind === 'RapidFlash' ? useActivities() : null;
+const realPool = ref<Pair[] | null>(null);
+
+async function loadRealPool() {
+	if (!activitiesApi) return;
+	try {
+		const res = await activitiesApi.fetchRandom(8);
+		if (res.success && Array.isArray(res.data)) {
+			const pool = buildRealPool(res.data);
+			realPool.value = pool.length >= 4 ? pool : null;
+		}
+	} catch {
+		realPool.value = null;
+	}
+}
+
+onMounted(loadRealPool);
+
 const LEADERBOARD_TYPES = ['article', 'prompt', 'event'] as const;
 
 // activity-aware question pools. each variant slots the activity name in. pick is deterministic
@@ -279,6 +342,14 @@ const extraProps = computed<Record<string, unknown>>(() => {
 				out.ctaSubtitle = `Themed to ${name}. Tap when you’re ready — the timer only starts after you do.`;
 			}
 		}
+	}
+
+	// real activities from the API take priority over the activity-typed pool; a full round of
+	// >=4 replaces whatever the type-table produced (and fills no-activity slots too)
+	if (props.kind === 'RapidFlash' && realPool.value && realPool.value.length >= 4) {
+		out.pool = realPool.value;
+		out.ctaTitle = 'Match 4 activities to their descriptions';
+		delete out.ctaSubtitle;
 	}
 
 	return out;
