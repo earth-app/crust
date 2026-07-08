@@ -1,29 +1,5 @@
 import { exchangeCodeForToken } from '~/server/utils';
-
-function parseState(state: string): {
-	provider: OAuthProvider | null;
-	source: OAuthSource;
-	context: OAuthContext | null;
-	mobileSessionToken: string | null;
-} {
-	const [providerPart, sourcePart, contextPart, ...rest] = state.split(':');
-	const provider = OAUTH_PROVIDERS.includes(providerPart as OAuthProvider)
-		? (providerPart as OAuthProvider)
-		: null;
-	const source: OAuthSource = sourcePart === 'mobile' ? 'mobile' : 'web';
-	const context =
-		contextPart === 'login' ||
-		contextPart === 'signup' ||
-		contextPart === 'link' ||
-		contextPart === 'reauth'
-			? contextPart
-			: null;
-	// Mobile clients (e.g. sky) can't rely on cookies inside SFSafariViewController,
-	// so they may append their session token as a 4th colon-separated segment.
-	const tokenPart = rest.join(':').trim();
-	const mobileSessionToken = source === 'mobile' && tokenPart ? tokenPart : null;
-	return { provider, source, context, mobileSessionToken };
-}
+import { classifyWebOAuth, parseState } from '~/shared/utils/oauth';
 
 function safeHeader(event: any, name: string, value: unknown) {
 	let str: string;
@@ -209,7 +185,7 @@ export default defineEventHandler(async (event) => {
 			}
 
 			try {
-				await $fetch(`https://api.earth-app.com/v2/users/current/reauth/oauth`, {
+				await $fetch(`${config.public.apiBaseUrl}/v2/users/current/reauth/oauth`, {
 					method: 'POST',
 					headers: {
 						Authorization: `Bearer ${sessionToken}`
@@ -243,8 +219,16 @@ export default defineEventHandler(async (event) => {
 		const referralCode =
 			referralCookie && /^[0-9A-HJKMNP-TV-Z]{6}$/.test(referralCookie) ? referralCookie : undefined;
 
+		// login vs link is decided by INTENT (state context), not by a stale cookie;
+		// isNewUser is irrelevant to isLinking so a placeholder is safe here
+		const { wantsLink, isLinking } = classifyWebOAuth({
+			stateContext,
+			hasSessionToken: !!sessionToken,
+			isNewUser: false
+		});
+
 		const response = await $fetch<{ session_token: string; user: any }>(
-			`https://api.earth-app.com/v2/users/oauth/${provider}?is_linking=${isLoggedIn}`,
+			`${config.public.apiBaseUrl}/v2/users/oauth/${provider}?is_linking=${isLinking}`,
 			{
 				method: 'POST',
 				body: {
@@ -271,7 +255,10 @@ export default defineEventHandler(async (event) => {
 		const isNewUser = event.context.oauthStatus === 201;
 		const userHandoff = encodeUserHandoff(response.user);
 
-		if (isNewUser || !isLoggedIn) {
+		// a login/signup ALWAYS gets the fresh session_token + oauth_user handoff so the
+		// client hydrates currentUser directly (kills the stuck-Loading /v2/users/current path);
+		// only a genuine link keeps the existing session untouched
+		if (isNewUser || !wantsLink) {
 			setCookie(event, 'session_token', response.session_token, {
 				sameSite: 'none',
 				secure: true,
@@ -300,18 +287,18 @@ export default defineEventHandler(async (event) => {
 			});
 		}
 
-		let successParam: string | null = null;
-		if (isNewUser) successParam = 'oauth_signup';
-		else {
-			successParam = isLoggedIn ? 'oauth_linked' : null;
-		}
+		// login now emits a real `oauth_login` success (never null) so the client can toast it;
+		// `oauth_linked` is reserved for an actual link
+		const { successParam } = classifyWebOAuth({
+			stateContext,
+			hasSessionToken: !!sessionToken,
+			isNewUser
+		});
 
-		if (successParam)
-			return sendRedirect(
-				event,
-				`/profile?success=${successParam}&provider=${provider}&force_refresh=true`
-			);
-		else return sendRedirect(event, `/profile?provider=${provider}&force_refresh=true`);
+		return sendRedirect(
+			event,
+			`/profile?success=${successParam}&provider=${provider}&force_refresh=true`
+		);
 	} catch (error: any) {
 		console.error('OAuth error:', error);
 

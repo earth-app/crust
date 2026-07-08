@@ -5,7 +5,10 @@
 				:icon="icon"
 				color="primary"
 				:variant="linked ? 'solid' : 'outline'"
-				@click="() => handleOauth(provider)"
+				:data-testid="`oauth-${provider}`"
+				:aria-label="ariaLabel"
+				:title="ariaLabel"
+				@click="handleOauth"
 				:disabled="linked"
 			/>
 		</div>
@@ -27,6 +30,9 @@ const toast = useToast();
 const props = defineProps<{
 	provider: OAuthProvider;
 	linked?: boolean;
+	// login vs signup vs link — encoded into the OAuth `state` so the callback
+	// classifies by intent, not by whatever session cookie happens to exist
+	context?: OAuthContext;
 }>();
 
 const icon = computed(() => {
@@ -48,8 +54,32 @@ const icon = computed(() => {
 	}
 });
 
-function handleOauth(provider: string) {
-	const authUrl = authLink(provider);
+const providerName = computed(() => {
+	switch (props.provider) {
+		case 'google':
+			return 'Google';
+		case 'microsoft':
+			return 'Microsoft';
+		case 'discord':
+			return 'Discord';
+		case 'github':
+			return 'GitHub';
+		case 'facebook':
+			return 'Facebook';
+		case 'apple':
+			return 'Apple';
+		default:
+			return props.provider;
+	}
+});
+
+// icon-only buttons need an accessible name (and a testable hook)
+const ariaLabel = computed(() =>
+	props.linked ? `${providerName.value} Connected` : `Continue with ${providerName.value}`
+);
+
+function handleOauth() {
+	const authUrl = authLink(props.provider, props.context ?? 'login');
 	navigateTo(authUrl, { external: true });
 }
 

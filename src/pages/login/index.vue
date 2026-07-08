@@ -22,6 +22,7 @@
 				v-for="provider in OAUTH_PROVIDERS"
 				:key="provider"
 				:provider="provider"
+				context="login"
 			/>
 		</div>
 		<ClientOnly>
@@ -49,6 +50,7 @@ const toast = useToast();
 const route = useRoute();
 const router = useRouter();
 const redirectingAfterSubmit = ref(false);
+const wasAuthenticatedAtMount = Boolean(user.value);
 
 const { error, redirect } = route.query;
 if (error) {
@@ -101,23 +103,26 @@ if (error) {
 watch(
 	() => user.value,
 	(currentUser) => {
-		if (currentUser && !redirectingAfterSubmit.value) {
-			// honor the redirect query so already-logged-in users land where they intended
-			let target = '/';
-			if (redirect && typeof redirect === 'string' && redirect.startsWith('/')) {
-				target = redirect;
-			}
-			router.replace(target);
+		if (!currentUser || redirectingAfterSubmit.value) return;
+		redirectingAfterSubmit.value = true;
 
-			if (!error)
-				toast.add({
-					title: 'Already Logged In',
-					description: 'You are already logged in.',
-					icon: 'mdi:login-variant',
-					color: 'info',
-					duration: 3000
-				});
+		// honor the redirect query so already-logged-in users land where they intended
+		let target = '/';
+		if (redirect && typeof redirect === 'string' && redirect.startsWith('/')) {
+			target = redirect;
 		}
+		router.replace(target);
+
+		// only greet a genuinely-already-authed visit; a fresh login redirects silently so
+		// Form.vue's "Login Successful" stays the sole success toast (no double toast)
+		if (wasAuthenticatedAtMount && !error)
+			toast.add({
+				title: 'Already Logged In',
+				description: 'You are already logged in.',
+				icon: 'mdi:login-variant',
+				color: 'info',
+				duration: 3000
+			});
 	},
 	{ immediate: true }
 );

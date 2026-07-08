@@ -22,6 +22,7 @@
 				v-for="provider in OAUTH_PROVIDERS"
 				:key="provider"
 				:provider="provider"
+				context="signup"
 			/>
 		</div>
 		<ClientOnly>

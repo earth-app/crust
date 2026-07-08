@@ -44,6 +44,21 @@ watch(
 	{ immediate: true }
 );
 
+// the bounce watcher above only fires on `null`; a hung /v2/users/current leaves
+// currentUser === undefined forever (stuck on <Loading>). bail to /login after a
+// grace period so a stalled hydration can't wedge the profile screen.
+let loadingBailTimer: ReturnType<typeof setTimeout> | null = null;
+onMounted(() => {
+	loadingBailTimer = setTimeout(() => {
+		if (user.value === undefined) {
+			navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
+		}
+	}, 8000);
+});
+onBeforeUnmount(() => {
+	if (loadingBailTimer) clearTimeout(loadingBailTimer);
+});
+
 // Optimistically reflect a freshly linked/unlinked OAuth provider in the local
 // user object so the UI flips immediately, without waiting for mantle2's cache
 // to expire. We run after fetchUser() so the force_refresh fetch in
@@ -85,6 +100,15 @@ if (success) {
 				title: 'OAuth Connected',
 				description: 'Your OAuth provider has been successfully connected to your account.',
 				icon: 'mdi:account-plus',
+				color: 'success',
+				duration: 5000
+			});
+			break;
+		case 'oauth_login':
+			toast.add({
+				title: 'Signed In',
+				description: 'You are now signed in to your account.',
+				icon: 'mdi:login-variant',
 				color: 'success',
 				duration: 5000
 			});

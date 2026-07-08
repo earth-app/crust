@@ -7,6 +7,8 @@ export const useAuthStore = defineStore('auth', () => {
 	const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 	const RECENT_LOGOUT_SUPPRESSION_MS = 5000;
 	const LAST_LOGOUT_STORAGE_KEY = 'earth-app:last-logout-at';
+	// cap the /v2/users/current read so a hung request can't wedge hydration (mirrors useLogin)
+	const CURRENT_USER_REQUEST_TIMEOUT_MS = 30_000;
 
 	const currentUser = ref<User | null | undefined>(undefined);
 	const sessionToken = ref<string | null>(null);
@@ -140,7 +142,8 @@ export const useAuthStore = defineStore('auth', () => {
 					headers: {
 						Authorization: `Bearer ${sessionToken.value}`,
 						Accept: 'application/json'
-					}
+					},
+					timeout: CURRENT_USER_REQUEST_TIMEOUT_MS
 				});
 
 				let user: unknown = response;
