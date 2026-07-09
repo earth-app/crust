@@ -267,6 +267,7 @@ async function refresh() {
 	isRefreshing.value = true;
 	try {
 		await Promise.all([
+			fetchQuests(true),
 			fetchUserQuest(true),
 			fetchQuestHistory({
 				force: true,
@@ -297,7 +298,7 @@ watch(
 	() => user.value,
 	(newUser) => {
 		if (newUser) {
-			void fetchQuests();
+			void fetchQuests(true);
 			const wantsOpen = typeof route.query.open === 'string';
 			if (wantsOpen) void fetchUserQuest();
 			deferIdle(() => {

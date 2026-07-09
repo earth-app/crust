@@ -815,7 +815,7 @@ export function useQuests() {
 	});
 	const fetchQuest = async (questId: string, force: boolean = false) =>
 		await userStore.fetchQuest(questId, force);
-	const fetchQuests = async () => await userStore.fetchQuestsList();
+	const fetchQuests = async (force: boolean = false) => await userStore.fetchQuestsList(force);
 
 	const getStepIcon = (step: string) => {
 		switch (step) {
@@ -2160,7 +2160,7 @@ export function useDailyQuest() {
 	onMounted(() => {
 		refreshTapped();
 		// kick a fetch if the quests list hasn't been hydrated yet
-		if (quests.value === null) void fetchQuests();
+		if (quests.value === null) void fetchQuests(true);
 	});
 
 	// re-check the flag when the date rolls over mid-session

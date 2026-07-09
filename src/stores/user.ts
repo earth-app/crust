@@ -759,10 +759,10 @@ export const useUserStore = defineStore('user', () => {
 		return res.data;
 	};
 
-	const fetchQuestsList = async (): Promise<Quest[]> => {
+	const fetchQuestsList = async (force: boolean = false): Promise<Quest[]> => {
 		const authStore = useAuthStore();
 		const res = await makeAPIRequest<{ total: number; quests: Quest[] }>(
-			'quests',
+			force ? null : 'quests',
 			'/v2/users/quests',
 			authStore.sessionToken
 		);
@@ -912,7 +912,7 @@ export const useUserStore = defineStore('user', () => {
 		void fetchUserQuest(u.id, true);
 		void fetchQuestHistory(u.id, { force: true });
 		void fetchMasteryList(u.id);
-		void fetchQuestsList();
+		void fetchQuestsList(true);
 	};
 
 	const tryRecoverGeneratedMastery = async (

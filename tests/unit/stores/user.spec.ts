@@ -794,6 +794,28 @@ describe('user store', () => {
 			expect(quests).toEqual([]);
 			expect(store.questsList?.size).toBe(0);
 		});
+
+		it('refreshes with force and updates questsList + questsCache', async () => {
+			const store = useUserStore();
+			setAuthUser(null);
+			vi.mocked(makeAPIRequest).mockResolvedValue({
+				success: true,
+				data: { total: 1, quests: [{ id: 'q1' }] }
+			} as any);
+
+			await store.fetchQuestsList();
+
+			vi.mocked(makeAPIRequest).mockResolvedValue({
+				success: true,
+				data: { total: 2, quests: [{ id: 'q1' }, { id: 'q2' }] }
+			} as any);
+
+			const quests = await store.fetchQuestsList(true);
+
+			expect(quests.map((q: any) => q.id)).toEqual(['q1', 'q2']);
+			expect([...(store.questsList ?? [])]).toEqual(['q1', 'q2']);
+			expect(store.questsCache.get('q2')).toBeTruthy();
+		});
 	});
 
 	describe('clear', () => {
