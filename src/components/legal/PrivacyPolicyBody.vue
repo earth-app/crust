@@ -137,7 +137,7 @@
 		<p class="text-md mt-2 max-w-3xl">
 			<strong>With other users</strong>, according to your privacy settings. Information and content
 			you mark as public may be visible to anyone, including unauthenticated visitors, while
-			information you restrict is shown only to the people you allow (see Section 6).
+			information you restrict is shown only to the people you allow (see Section 7).
 		</p>
 		<p class="text-md mt-2 max-w-3xl">
 			<strong>For legal and safety reasons</strong>, when we believe in good faith that disclosure
@@ -157,7 +157,40 @@
 			assets, in which case we will continue to protect your information consistent with this
 			Privacy Policy and notify you of any material change in how it is handled.
 		</p>
-		<h1 class="text-2xl font-bold mt-4">6. Public Information and Your Privacy Controls</h1>
+		<h1 class="text-2xl font-bold mt-4">6. Payment and Billing Data</h1>
+		<p class="text-md mt-2 max-w-3xl">
+			When you purchase a paid subscription, your payment is handled by a third-party payment
+			processor, not by us. Subscriptions bought on our website are processed by Stripe, and
+			subscriptions bought in our mobile applications are processed by the Apple App Store or Google
+			Play. These processors are responsible for collecting and handling your card or
+			payment-account details under their own privacy policies and applicable payment-card security
+			standards.
+		</p>
+		<p class="text-md mt-2 max-w-3xl">
+			We deliberately limit the billing information we store. We keep your billing contact
+			information (such as your name and email address) and your subscription state (your tier,
+			subscription status, provider, current billing-period end date, whether you have scheduled a
+			cancellation, the price you agreed to, and the date and time you consented to auto-renewal),
+			along with the processor's customer and subscription reference identifiers so we can manage
+			your subscription.
+			<strong
+				>We never receive or store your card number, card brand, card security code (CVV), or
+				bank-account details;</strong
+			>
+			that information is held only by the payment processor. When you view or manage your payment
+			method, any limited card details shown (such as the card brand and last four digits) are
+			retrieved live from the processor and are not stored on our servers.
+		</p>
+		<p class="text-md mt-2 max-w-3xl">
+			We retain billing, invoice, tax, and auto-renewal consent records for as long as needed to
+			operate your subscription and, after it ends, for the period required by accounting, tax,
+			audit, and consumer-protection laws. Records of your express consent to auto-renewal are kept
+			for at least three years. Because Stripe processes payments on infrastructure located in the
+			United States, paying for a subscription involves an international transfer of the limited
+			billing data described above; that transfer is handled as described in the International Data
+			Transfers section below, using appropriate safeguards where required.
+		</p>
+		<h1 class="text-2xl font-bold mt-4">7. Public Information and Your Privacy Controls</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			You control how visible your account and content are. You can set your account to "Public,"
 			"Unlisted," or "Private," which determines whether your content is discoverable by everyone,
@@ -169,7 +202,7 @@
 			can be seen, copied, or shared by others, and we cannot guarantee the security of information
 			you choose to share.
 		</p>
-		<h1 class="text-2xl font-bold mt-4">7. Data Retention</h1>
+		<h1 class="text-2xl font-bold mt-4">8. Data Retention</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			We keep your account information for as long as your account is active and as needed to
 			provide the services. Some data is kept only for limited periods: onboarding state is retained
@@ -183,7 +216,7 @@
 			and may change as our services evolve. Residual copies may persist in backups for a limited
 			time and are overwritten in the normal course of operations.
 		</p>
-		<h1 class="text-2xl font-bold mt-4">8. Data Security</h1>
+		<h1 class="text-2xl font-bold mt-4">9. Data Security</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			We implement appropriate technical and organizational measures to protect your personal
 			information from unauthorized access, alteration, disclosure, or destruction. These include
@@ -192,7 +225,7 @@
 			internet or method of electronic storage is completely secure, and we cannot guarantee
 			absolute security. You are responsible for keeping your login credentials confidential.
 		</p>
-		<h1 class="text-2xl font-bold mt-4">9. International Data Transfers</h1>
+		<h1 class="text-2xl font-bold mt-4">10. International Data Transfers</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			We are based in the United States, and our services are operated using infrastructure located
 			in the United States and on the global networks of our service providers. If you access our
@@ -201,7 +234,7 @@
 			protection laws as your jurisdiction. Where required, we rely on appropriate safeguards for
 			such transfers, and by using our services you consent to this transfer and processing.
 		</p>
-		<h1 class="text-2xl font-bold mt-4">10. Your Rights and Choices</h1>
+		<h1 class="text-2xl font-bold mt-4">11. Your Rights and Choices</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			You can access and update most of your information directly within the services by editing
 			your profile and adjusting your privacy and notification settings, and you can delete your
@@ -237,7 +270,7 @@
 			>. We may need to verify your identity before responding, and we will respond within the time
 			required by applicable law.
 		</p>
-		<h1 class="text-2xl font-bold mt-4">11. Children's Privacy</h1>
+		<h1 class="text-2xl font-bold mt-4">12. Children's Privacy</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			Our services are not directed to children, and you must be at least 13 years old (or older
 			where required by your jurisdiction, such as 16 in parts of the European Economic Area) to
@@ -254,7 +287,7 @@
 			>
 			so we can take appropriate action.
 		</p>
-		<h1 class="text-2xl font-bold mt-4">12. Changes to This Privacy Policy</h1>
+		<h1 class="text-2xl font-bold mt-4">13. Changes to This Privacy Policy</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			We reserve the right to update or modify this Privacy Policy at any time. Any changes will be
 			effective immediately upon posting on our website, and we will update the "Last Updated" date
@@ -262,7 +295,7 @@
 			communication channels. Your continued use of our services after any such changes constitutes
 			your acceptance of the updated Privacy Policy.
 		</p>
-		<h1 class="text-2xl font-bold mt-4">13. Contact Us</h1>
+		<h1 class="text-2xl font-bold mt-4">14. Contact Us</h1>
 		<p class="text-md mt-2 max-w-3xl">
 			If you have any questions or concerns about this Privacy Policy or our data practices, please
 			contact us at

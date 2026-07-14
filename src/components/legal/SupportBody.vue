@@ -53,6 +53,11 @@
 				to="/privacy-policy"
 				class="text-blue-500 hover:underline"
 				>Privacy Policy</NuxtLink
+			>. For how billing, cancellation, and refunds work, see our
+			<NuxtLink
+				to="/refund-policy"
+				class="text-blue-500 hover:underline"
+				>Refund Policy</NuxtLink
 			>. You can delete your account at any time directly within the app: open Profile, tap Edit,
 			and choose Delete Account. Account deletion is self-service and removes your account along
 			with the content tied to it. If you need help with anything related to your account or
