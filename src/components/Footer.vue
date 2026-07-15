@@ -25,6 +25,7 @@
 				<NuxtLink to="/about">About</NuxtLink>
 				<NuxtLink to="/terms-of-service">Terms of Service</NuxtLink>
 				<NuxtLink to="/privacy-policy">Privacy Policy</NuxtLink>
+				<NuxtLink to="/refund-policy">Refund Policy</NuxtLink>
 				<NuxtLink to="/support">Support</NuxtLink>
 			</div>
 			<div class="flex space-x-3 mt-2 *:hover:opacity-70 *:transition-opacity *:duration-200">
