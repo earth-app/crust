@@ -1,0 +1,10 @@
+{
+	"extends": "../../.nuxt/tsconfig.app.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"types": ["node", "vitest/globals", "@nuxt/test-utils"]
+	},
+	"comment": "unit specs run in vitest's nuxt env, so they need the full Nuxt program (path aliases like stores/*, utils, schemas, types/* + ambient auto-imports) that the light tests/tsconfig.json intentionally drops; extend the generated app config (same one the root references for .vue) and re-add its ambient .d.ts, which our custom include would otherwise clobber",
+	"include": ["./**/*.ts", "../../.nuxt/nuxt.d.ts", "../../.nuxt/nuxt.node.d.ts"],
+	"exclude": ["../../node_modules"]
+}
