@@ -136,6 +136,8 @@ export default defineNuxtConfig({
 		'/tos': { redirect: '/terms-of-service' },
 		'/terms-of-service': { prerender: true },
 		'/privacy-policy': { prerender: true },
+		'/refund-policy': { prerender: true },
+		'/pricing': { prerender: true },
 
 		// Client-side only pages (auth, profiles, admin)
 		'/login': { ssr: false },
