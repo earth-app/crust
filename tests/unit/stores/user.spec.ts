@@ -475,8 +475,8 @@ describe('user store', () => {
 
 			await store.fetchBadges('u1');
 
-			expect(vi.mocked(makeAPIRequest).mock.calls[0][0]).toBe('user-u1-badges');
-			expect(vi.mocked(makeAPIRequest).mock.calls[0][1]).toBe('/v2/users/u1/badges');
+			expect(vi.mocked(makeAPIRequest).mock.calls[0]![0]).toBe('user-u1-badges');
+			expect(vi.mocked(makeAPIRequest).mock.calls[0]![1]).toBe('/v2/users/u1/badges');
 		});
 
 		it('force=true passes a null cache key so a newly-granted badge is not masked', async () => {
@@ -490,8 +490,8 @@ describe('user store', () => {
 			expect(res).toEqual(fresh);
 			expect(store.badges.get('u1')).toEqual(fresh);
 			// null key => makeRequest bypasses the shared apiCache (no stale replay)
-			expect(vi.mocked(makeAPIRequest).mock.calls[0][0]).toBeNull();
-			expect(vi.mocked(makeAPIRequest).mock.calls[0][1]).toBe('/v2/users/u1/badges');
+			expect(vi.mocked(makeAPIRequest).mock.calls[0]![0]).toBeNull();
+			expect(vi.mocked(makeAPIRequest).mock.calls[0]![1]).toBe('/v2/users/u1/badges');
 		});
 	});
 
@@ -1017,7 +1017,7 @@ describe('user store', () => {
 			store.points.set('me1', 1500);
 			// only the points endpoint returns a fresh total; everything else fails cleanly
 			vi.mocked(paginatedAPIRequest).mockResolvedValue({ success: false, message: 'x' } as any);
-			vi.mocked(makeAPIRequest).mockImplementation((key: string) =>
+			vi.mocked(makeAPIRequest).mockImplementation((key: string | null) =>
 				String(key).includes('-points')
 					? (Promise.resolve({ success: true, data: { points: 1600, history: [] } }) as any)
 					: (Promise.resolve({ success: false, message: 'x' }) as any)

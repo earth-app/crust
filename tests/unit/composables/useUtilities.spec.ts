@@ -282,7 +282,7 @@ describe('useLongPressDrag', () => {
 
 		window.dispatchEvent(pointerEvent('pointerup', { x: 50, y: 50 }));
 		expect(onCommit).toHaveBeenCalledTimes(1);
-		expect(onCommit.mock.calls[0][2]).toMatchObject({ moved: true, wasCancel: false });
+		expect(onCommit.mock.calls[0]![2]).toMatchObject({ moved: true, wasCancel: false });
 		expect(result.activePayload.value).toBeNull();
 		unmount();
 	});

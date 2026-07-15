@@ -44,7 +44,7 @@ describe('useOnboarding', () => {
 		it('reports zero done, the full total, and the first checklist step as next', () => {
 			const { progress, nextStep, isComplete, isDismissed } = useOnboarding();
 			expect(progress.value).toEqual({ done: 0, total: TOTAL });
-			expect(nextStep.value.id).toBe(STEP_IDS[0]);
+			expect(nextStep.value?.id).toBe(STEP_IDS[0]);
 			expect(isComplete.value).toBe(false);
 			expect(isDismissed.value).toBe(false);
 		});
@@ -68,7 +68,7 @@ describe('useOnboarding', () => {
 			expect(ob.fetched.value).toBe(true);
 			expect(ob.progress.value).toEqual({ done: 1, total: TOTAL });
 			// next step is the first not-yet-completed checklist entry
-			expect(ob.nextStep.value.id).toBe(STEP_IDS[1]);
+			expect(ob.nextStep.value?.id).toBe(STEP_IDS[1]);
 		});
 
 		it('skips a second fetch unless forced', async () => {

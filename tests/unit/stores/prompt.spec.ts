@@ -402,7 +402,7 @@ describe('prompt store prompt mutations', () => {
 			data: makePrompt('created')
 		} as any);
 
-		await store.createPrompt({ title: 'x' });
+		await store.createPrompt('x');
 		expect(store.get('created')?.id).toBe('created');
 	});
 
@@ -413,7 +413,7 @@ describe('prompt store prompt mutations', () => {
 			data: makePrompt('u1', { title: 'new' } as Partial<Prompt>)
 		} as any);
 
-		await store.updatePrompt({ id: 'u1' });
+		await store.updatePrompt('u1', 'new');
 		expect((store.get('u1') as any).title).toBe('new');
 	});
 
