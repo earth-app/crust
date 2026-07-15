@@ -36,6 +36,8 @@
 					<AdminReports v-else-if="item.value === 'reports'" />
 					<AdminMotd v-else-if="item.value === 'motd'" />
 					<AdminPolls v-else-if="item.value === 'polls'" />
+					<AdminTrialCodes v-else-if="item.value === 'trial-codes'" />
+					<AdminRefunds v-else-if="item.value === 'refunds'" />
 				</div>
 			</template>
 		</UTabs>
@@ -76,6 +78,8 @@ const tabs = [
 	{ label: 'Quests', icon: 'mdi:flag-checkered', value: 'quests' },
 	{ label: 'Reports', icon: 'mdi:flag-outline', value: 'reports' },
 	{ label: 'MOTD', icon: 'mdi:bullhorn', value: 'motd' },
-	{ label: 'Polls', icon: 'mdi:poll', value: 'polls' }
+	{ label: 'Polls', icon: 'mdi:poll', value: 'polls' },
+	{ label: 'Trial Codes', icon: 'mdi:ticket-percent', value: 'trial-codes' },
+	{ label: 'Refunds', icon: 'mdi:cash-refund', value: 'refunds' }
 ];
 </script>
