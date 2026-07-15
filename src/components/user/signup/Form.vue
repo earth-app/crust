@@ -85,12 +85,16 @@
 					to="/terms-of-service"
 					class="text-primary hover:underline"
 					>Terms of Service</NuxtLink
-				>
-				and
+				>,
 				<NuxtLink
 					to="/privacy-policy"
 					class="text-primary hover:underline"
 					>Privacy Policy</NuxtLink
+				>, and
+				<NuxtLink
+					to="/refund-policy"
+					class="text-primary hover:underline"
+					>Refund Policy</NuxtLink
 				>.
 			</p>
 
