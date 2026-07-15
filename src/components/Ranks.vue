@@ -9,7 +9,7 @@
 				'border-2 border-primary': highlighted === plan.title?.toUpperCase(),
 				'border-gray-300 light:border-gray-600': highlighted !== plan.title?.toUpperCase()
 			}"
-			v-bind="plan"
+			v-bind="pricingProps(plan)"
 		>
 			<template #button>
 				<slot
@@ -17,10 +17,23 @@
 					:button="plan.button"
 					:plan="plan"
 				>
-					<UButton
-						v-bind="plan.button"
-						block
-					/>
+					<ClientOnly>
+						<UButton
+							:label="getButtonLabel(plan.tier)"
+							:color="getButtonColor(plan.tier)"
+							:disabled="isDisabled(plan.tier)"
+							block
+							@click="emit('upgrade', plan)"
+						/>
+						<template #fallback>
+							<UButton
+								:label="getButtonLabel(plan.tier)"
+								:color="getButtonColor(plan.tier)"
+								disabled
+								block
+							/>
+						</template>
+					</ClientOnly>
 				</slot>
 			</template>
 		</UPricingPlan>
@@ -29,16 +42,30 @@
 
 <script setup lang="ts">
 import type { PricingPlanProps } from '@nuxt/ui';
+import type { AccountType } from 'types/user';
+
+type Plan = PricingPlanProps & { tier: AccountType };
 
 const props = defineProps<{
 	highlighted?: 'FREE' | 'PRO' | 'WRITER' | 'ORGANIZER';
 }>();
 
+const emit = defineEmits<{
+	upgrade: [plan: Plan];
+}>();
+
 const { user } = useAuth();
+
 const currentPlan = computed(() => {
 	if (!user.value) return 'FREE';
 	return user.value.account.account_type;
 });
+
+// strip our extra tier field so it does not fall through as a stray attribute
+function pricingProps(plan: Plan): PricingPlanProps {
+	const { tier: _tier, ...rest } = plan;
+	return rest;
+}
 
 onMounted(() => {
 	// scroll to highlighted plan if it exists
@@ -69,17 +96,21 @@ function getButtonColor(planType: string) {
 }
 
 function isDisabled(planType: string) {
-	if (!user.value) return false;
-	if (currentPlan.value === 'ADMINISTRATOR') return true; // admins cannot downgrade
-	if (currentPlan.value === planType) return true; // current plan cannot be selected
+	if (!user.value) return true; // must be logged in to purchase
+	if (planType === 'FREE') return true; // free tier is not purchasable
+	if (currentPlan.value === 'ADMINISTRATOR') return true; // admins do not purchase
 
-	// FIXME purcahsing plans is not yet implemented and currently handled over patreon
+	const order = ['FREE', 'PRO', 'WRITER', 'ORGANIZER', 'ADMINISTRATOR'];
+	const currentIndex = order.indexOf(currentPlan.value);
+	const planIndex = order.indexOf(planType);
 
-	return true;
+	// only a higher paid tier is selectable; current + lower stay disabled
+	return planIndex <= currentIndex;
 }
 
 // pricing plan lists
-const free: PricingPlanProps = {
+const free: Plan = {
+	tier: 'FREE',
 	title: 'Free',
 	description: 'Perfect for those just starting their journey',
 	price: '$0',
@@ -124,7 +155,8 @@ const free: PricingPlanProps = {
 	}
 };
 
-const pro: PricingPlanProps = {
+const pro: Plan = {
+	tier: 'PRO',
 	title: 'Pro',
 	description: 'For the dedicated adventurer looking to level up their experience',
 	price: '$5.99/mo',
@@ -177,7 +209,8 @@ const pro: PricingPlanProps = {
 	}
 };
 
-const writer: PricingPlanProps = {
+const writer: Plan = {
+	tier: 'WRITER',
 	title: 'Writer',
 	description: 'For the power user looking to create and share their own vision of adventure',
 	price: '$8.99/mo',
@@ -219,7 +252,8 @@ const writer: PricingPlanProps = {
 	}
 };
 
-const organizer: PricingPlanProps = {
+const organizer: Plan = {
+	tier: 'ORGANIZER',
 	title: 'Organizer',
 	description:
 		'For the visionary looking for control and customization to help others explore and connect',
@@ -265,5 +299,5 @@ const organizer: PricingPlanProps = {
 		color: getButtonColor('ORGANIZER')
 	}
 };
-const plans = [free, pro, writer, organizer];
+const plans: Plan[] = [free, pro, writer, organizer];
 </script>
