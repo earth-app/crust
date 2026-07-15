@@ -203,7 +203,7 @@
 						v-if="user"
 						:user="user"
 					/>
-					<Ranks highlighted="PRO" />
+					<PricingPlans highlighted="PRO" />
 				</div>
 			</template>
 		</UModal>

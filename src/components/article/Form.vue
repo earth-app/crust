@@ -156,7 +156,7 @@
 								v-if="user"
 								:user="user"
 							/>
-							<Ranks highlighted="ORGANIZER" />
+							<PricingPlans highlighted="ORGANIZER" />
 						</div>
 					</template>
 				</UModal>

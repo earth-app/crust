@@ -514,6 +514,8 @@
 			:email-verified="!!user.account?.email_verified"
 		/>
 
+		<UserSubscriptionSection v-if="isSelf" />
+
 		<UserEmailVerificationModal
 			ref="emailVerificationModal"
 			@verified="handleEmailVerified"

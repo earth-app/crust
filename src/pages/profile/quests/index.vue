@@ -117,7 +117,7 @@
 								v-if="user"
 								:user="user"
 							/>
-							<LazyRanks highlighted="PRO" />
+							<LazyPricingPlans highlighted="PRO" />
 						</div>
 					</template>
 				</UModal>
