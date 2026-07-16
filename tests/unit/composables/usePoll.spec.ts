@@ -1,7 +1,13 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { useAuthStore } from 'stores/auth';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { isValidPollId, sanitizePollId, usePoll } from '~/composables/usePoll';
+import {
+	POLL_VOTE_TTL_MS,
+	isPollVoteFresh,
+	isValidPollId,
+	sanitizePollId,
+	usePoll
+} from '~/composables/usePoll';
 
 // makeClientAPIRequest backs every poll endpoint; pure helpers stay real
 vi.mock('utils', async (io) => {
@@ -43,6 +49,31 @@ describe('isValidPollId', () => {
 		expect(isValidPollId('Mood')).toBe(false);
 		expect(isValidPollId('mood today')).toBe(false);
 		expect(isValidPollId('a'.repeat(65))).toBe(false);
+	});
+});
+
+describe('isPollVoteFresh', () => {
+	const NOW_MS = Date.UTC(2026, 6, 15, 12, 0, 0);
+	const NOW_S = Math.floor(NOW_MS / 1000);
+
+	it('uses a 24-hour window', () => {
+		expect(POLL_VOTE_TTL_MS).toBe(24 * 60 * 60 * 1000);
+	});
+
+	it('keeps a vote from within the last day (unix seconds)', () => {
+		expect(isPollVoteFresh(NOW_S - 60 * 60, POLL_VOTE_TTL_MS, NOW_MS)).toBe(true);
+		expect(isPollVoteFresh(NOW_S - (24 * 60 * 60 - 1), POLL_VOTE_TTL_MS, NOW_MS)).toBe(true);
+	});
+
+	it('expires a vote at or past the 24h boundary so the poll reopens', () => {
+		expect(isPollVoteFresh(NOW_S - 24 * 60 * 60, POLL_VOTE_TTL_MS, NOW_MS)).toBe(false);
+		expect(isPollVoteFresh(NOW_S - 3 * 24 * 60 * 60, POLL_VOTE_TTL_MS, NOW_MS)).toBe(false);
+	});
+
+	it('accepts a millisecond voted_at (unit drift guard) and rejects empty values', () => {
+		expect(isPollVoteFresh(NOW_MS - 60 * 60 * 1000, POLL_VOTE_TTL_MS, NOW_MS)).toBe(true);
+		expect(isPollVoteFresh(0, POLL_VOTE_TTL_MS, NOW_MS)).toBe(false);
+		expect(isPollVoteFresh(undefined, POLL_VOTE_TTL_MS, NOW_MS)).toBe(false);
 	});
 });
 
