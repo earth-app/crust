@@ -13,9 +13,15 @@ test.describe('Refund Policy page', () => {
 
 	test('renders the key money-back sections', async ({ page, gotoHydrated }) => {
 		await gotoHydrated('/refund-policy');
-		await expect(page.getByText(/14-Day Money-Back Guarantee/i)).toBeVisible();
-		await expect(page.getByText(/EU and UK Right of Withdrawal/i)).toBeVisible();
-		await expect(page.getByText(/Purchases Made Through Apple or Google/i)).toBeVisible();
+		// target the section headings (the phrases also recur in body prose, so a plain
+		// getByText resolves to multiple elements and trips strict mode)
+		await expect(page.getByRole('heading', { name: /14-Day Money-Back Guarantee/i })).toBeVisible();
+		await expect(
+			page.getByRole('heading', { name: /EU and UK Right of Withdrawal/i })
+		).toBeVisible();
+		await expect(
+			page.getByRole('heading', { name: /Purchases Made Through Apple or Google/i })
+		).toBeVisible();
 	});
 
 	test('is accessible to anonymous users', async ({ asAnonymous, page, gotoHydrated }) => {
