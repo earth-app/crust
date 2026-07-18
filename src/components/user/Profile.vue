@@ -184,6 +184,13 @@
 			/>
 		</div>
 		<div
+			v-if="isSelf"
+			class="w-80 sm:w-full max-w-3xl mt-4"
+			id="user-week"
+		>
+			<LazyUserWeeklyReflection hydrate-on-visible />
+		</div>
+		<div
 			class="flex flex-col items-center mt-12 w-full"
 			id="user-friends"
 		>
@@ -389,6 +396,7 @@ const toast = useToast();
 const { name: displayName, handle, hasFullName } = useDisplayName(() => props.user);
 const canChallenge = computed(() => !!props.user.is_friend && user.value?.id !== props.user.id);
 const canReport = computed(() => user.value?.id !== props.user.id);
+const isSelf = computed(() => !!user.value && user.value.id === props.user.id);
 
 const { block, unblock } = useBlocking();
 // block someone else's profile — never self, never an admin target
