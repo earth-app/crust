@@ -9,7 +9,12 @@ export default defineVitestConfig({
 			provider: 'v8',
 			reportsDirectory: 'coverage',
 			reporter: ['text', 'json', 'lcov'],
-			include: ['src/stores/**', 'src/composables/**', 'src/shared/**'],
+			include: [
+				'src/stores/**',
+				'src/composables/**',
+				'src/shared/**',
+				'src/components/admin/marketing/useMarketingExport.ts'
+			],
 			exclude: ['**/*.d.ts']
 		}
 	}
