@@ -1,4 +1,7 @@
 <template>
+	<ClientOnly>
+		<SessionIntentionNudge />
+	</ClientOnly>
 	<div class="flex flex-col">
 		<InfoCardGroup
 			v-if="user"
@@ -74,12 +77,23 @@
 		</div>
 	</div>
 
+	<ClientOnly>
+		<SessionBreather v-if="!showCaughtUp" />
+	</ClientOnly>
+
 	<div
 		v-if="isLoading"
 		class="flex justify-center py-4"
 	>
 		<Loading />
 	</div>
+
+	<ClientOnly>
+		<FeedCaughtUp
+			v-if="showCaughtUp && allActivities.length > 0"
+			@keep-browsing="onKeepBrowsing"
+		/>
+	</ClientOnly>
 
 	<div
 		ref="loadMoreRef"
@@ -101,6 +115,11 @@ setTitleSuffix('Activities');
 const { user, fetchRecommendedActivities } = useAuth();
 const { widgetForIndex } = useFeedWidgets();
 const toast = useToast();
+
+// finite-session end-state + push-to-offline engagement tracking (evidence base:
+// reference_engagement_psychology_evidence -> finite sessions, intention friction)
+const { showCaughtUp, increment: incrementCap, continueBrowsing } = useSessionCap('activities');
+const { recordEngagement } = useSessionIntention();
 
 const recommendedLoaded = ref(false);
 const recommendedActivities = ref<Activity[]>([]);
@@ -150,6 +169,9 @@ async function loadActivities() {
 			newItems[j] = temp!;
 		}
 		allActivities.value.push(...newItems);
+		// count what the user has seen toward the soft session cap + engagement gate
+		incrementCap(newItems.length);
+		recordEngagement(newItems.length);
 		hasMore.value = allActivities.value.length < res.data.total;
 		page.value++;
 	} else {
@@ -171,12 +193,20 @@ const loadMoreRef = ref<HTMLElement | null>(null);
 useIntersectionObserver(
 	loadMoreRef,
 	(entries) => {
-		if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value) {
+		// pause auto-load once the calm "all caught up" cue is showing; the first
+		// page still loads on mount so the page is never empty
+		if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value && !showCaughtUp.value) {
 			loadActivities();
 		}
 	},
 	{ rootMargin: '100px' }
 );
+
+// keep infinite scroll: opting back in resumes paging for the rest of the session
+function onKeepBrowsing() {
+	continueBrowsing();
+	void loadActivities();
+}
 
 onMounted(loadActivities);
 
