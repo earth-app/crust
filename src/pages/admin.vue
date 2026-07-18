@@ -3,7 +3,7 @@
 		v-if="user && user.is_admin"
 		class="container mx-auto px-4 py-6 max-w-6xl"
 	>
-		<div class="flex items-center justify-between mb-4">
+		<div class="flex items-center justify-between mb-8">
 			<div>
 				<h1 class="text-2xl font-bold">Admin Console</h1>
 				<p class="text-sm text-muted">Operational tools for @{{ user.username }}</p>
@@ -19,8 +19,13 @@
 		<UTabs
 			v-model="activeTab"
 			:items="tabs"
+			orientation="vertical"
 			variant="link"
 			class="w-full"
+			:ui="{
+				list: 'self-start',
+				content: 'self-start'
+			}"
 		>
 			<template #content="{ item }">
 				<div class="rounded-lg border border-default bg-default p-5 mt-2">
@@ -33,6 +38,7 @@
 					/>
 					<AdminActivities v-else-if="item.value === 'activities'" />
 					<AdminQuestManagement v-else-if="item.value === 'quests'" />
+					<AdminMarketing v-else-if="item.value === 'marketing'" />
 					<AdminReports v-else-if="item.value === 'reports'" />
 					<AdminMotd v-else-if="item.value === 'motd'" />
 					<AdminPolls v-else-if="item.value === 'polls'" />
@@ -76,6 +82,7 @@ const tabs = [
 	{ label: 'Content', icon: 'mdi:file-document-multiple', value: 'content' },
 	{ label: 'Activities', icon: 'mdi:tag-multiple', value: 'activities' },
 	{ label: 'Quests', icon: 'mdi:flag-checkered', value: 'quests' },
+	{ label: 'Marketing', icon: 'mdi:movie-open-play', value: 'marketing' },
 	{ label: 'Reports', icon: 'mdi:flag-outline', value: 'reports' },
 	{ label: 'MOTD', icon: 'mdi:bullhorn', value: 'motd' },
 	{ label: 'Polls', icon: 'mdi:poll', value: 'polls' },
