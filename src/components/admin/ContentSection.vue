@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col gap-3">
+	<div class="flex flex-col gap-3 min-h-screen">
 		<div class="flex items-start justify-between gap-3 flex-wrap">
 			<div>
 				<h2 class="text-xl font-semibold">Content Moderation</h2>
@@ -34,7 +34,7 @@
 			>
 		</div>
 
-		<div class="rounded-lg border border-default divide-y divide-default max-h-96 overflow-y-auto">
+		<div class="rounded-lg border border-default divide-y divide-default max-h-120 overflow-y-auto">
 			<div
 				v-if="!loading && items.length === 0"
 				class="p-4 text-center text-sm text-muted"
