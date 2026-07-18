@@ -1,17 +1,3 @@
-/**
- * Client for the mock backend control plane.
- *
- * Lets tests reach into the in-process mock server to:
- *   - register one-shot overrides for a (method, path, response) tuple
- *   - set the "current user" identity for a test
- *   - reset all overrides scoped to a test id
- *
- * Each test gets a fresh `MockClient` bound to a unique testId so parallel
- * workers do not bleed state. The X-Test-Id header is also stamped onto every
- * navigated request by the browser fixture, which the mock server reads to
- * match overrides.
- */
-
 import { CLOUD_PORT, MANTLE_PORT } from './mock-server';
 
 export type Backend = 'mantle' | 'cloud';
@@ -86,6 +72,30 @@ export class MockClient {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ user })
+		});
+	}
+
+	async setCircle(ownerUid: string, members: string[]): Promise<void> {
+		await fetch(`${baseUrl('mantle')}/__mock__/circle`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ ownerUid, members })
+		});
+	}
+
+	async seedExpedition(expedition: Record<string, any>): Promise<void> {
+		await fetch(`${baseUrl('mantle')}/__mock__/expedition`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ expedition })
+		});
+	}
+
+	async seedGarden(garden: Record<string, any>): Promise<void> {
+		await fetch(`${baseUrl('mantle')}/__mock__/garden`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ garden })
 		});
 	}
 

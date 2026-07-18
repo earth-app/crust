@@ -1,15 +1,3 @@
-/**
- * Mock data factories for E2E tests.
- *
- * Each factory accepts overrides so individual tests can customize state without
- * duplicating large object shapes. Identity values (id, username) are deterministic
- * but parameterizable so cross-page assertions stay stable.
- *
- * Types are intentionally loose (returns are JSON-only) so we don't have to
- * satisfy every field of frontend domain types. The frontend treats responses
- * as data shapes, not class instances.
- */
-
 export type AccountType = 'FREE' | 'PRO' | 'WRITER' | 'ORGANIZER' | 'ADMINISTRATOR';
 export type Visibility = 'PUBLIC' | 'PRIVATE' | 'UNLISTED' | 'MUTUAL' | 'CIRCLE';
 
@@ -524,6 +512,116 @@ export function makeBlacklistEntry(overrides: Record<string, any> = {}): Record<
 		reason: overrides.reason ?? 'Known abuser',
 		added_at: overrides.added_at ?? Date.parse(FIXED_NOW),
 		added_by: overrides.added_by ?? 'admin'
+	};
+}
+
+// --- v0.6.0: Curiosity Trails, Circles & Expeditions, Trailmarks ---
+
+/** A single trail step (underlying quest step + curiosity clue + awe reveal). */
+export function makeTrailStep(overrides: Record<string, any> = {}): Record<string, any> {
+	const type = overrides.type ?? 'describe_text';
+	return {
+		step: {
+			type,
+			description: overrides.description ?? 'Describe one thing you notice around you.',
+			// parameters[2] = min chars, parameters[3] = max chars for describe_text
+			parameters: overrides.parameters ?? [0, 0, 20, 800]
+		},
+		clue: overrides.clue ?? 'What hides in plain sight on this street?',
+		reveal:
+			overrides.reveal ?? 'The oldest tree on this block likely predates every building around it.'
+	};
+}
+
+/** A Curiosity Trail catalog entry. */
+export function makeTrail(overrides: Record<string, any> = {}): Record<string, any> {
+	const id = overrides.id ?? `trail-${Math.random().toString(36).slice(2, 8)}`;
+	return {
+		id,
+		title: overrides.title ?? 'Neighborhood Wonders',
+		theme: overrides.theme ?? 'nature',
+		description: overrides.description ?? 'A short walk that ends in a small moment of awe.',
+		icon: overrides.icon ?? 'mdi:map-marker-path',
+		rarity: overrides.rarity ?? 'normal',
+		steps: overrides.steps ?? [makeTrailStep()],
+		reward: overrides.reward ?? 15,
+		...(overrides.premium !== undefined ? { premium: overrides.premium } : {}),
+		...(overrides.seasonal !== undefined ? { seasonal: overrides.seasonal } : {})
+	};
+}
+
+/** The personal weekly Nature Minutes ring payload. */
+export function makeNatureMinutes(overrides: Record<string, any> = {}): Record<string, any> {
+	const minutes = overrides.minutes ?? 45;
+	return {
+		week: overrides.week ?? '2026-W29',
+		minutes,
+		target: overrides.target ?? 120,
+		best: overrides.best ?? minutes,
+		sources: overrides.sources ?? [],
+		updated_at: overrides.updated_at ?? FIXED_NOW
+	};
+}
+
+/** One member's contribution to a shared expedition (contribution, never a rank). */
+export function makeExpeditionContributor(
+	overrides: Record<string, any> = {}
+): Record<string, any> {
+	return {
+		uid: overrides.uid ?? 'test-user-1',
+		username: overrides.username ?? 'testuser',
+		contribution: overrides.contribution ?? 0,
+		...(overrides.last_contributed_at ? { last_contributed_at: overrides.last_contributed_at } : {})
+	};
+}
+
+/** A circle's shared Expedition. `ends_at` is anchored to real now so it reads as active. */
+export function makeExpedition(overrides: Record<string, any> = {}): Record<string, any> {
+	const id = overrides.id ?? `exp-${Math.random().toString(36).slice(2, 8)}`;
+	const contributors = overrides.contributors ?? [makeExpeditionContributor()];
+	const progress =
+		overrides.progress ?? contributors.reduce((s: number, c: any) => s + (c.contribution || 0), 0);
+	const days = overrides.days ?? 7;
+	return {
+		id,
+		owner_uid: overrides.owner_uid ?? 'test-user-1',
+		title: overrides.title ?? 'Weekend Woods Challenge',
+		goal: overrides.goal ?? 'nature_minutes',
+		target: overrides.target ?? 600,
+		progress,
+		contributors,
+		status: overrides.status ?? 'active',
+		starts_at: overrides.starts_at ?? new Date(Date.now() - 86_400_000).toISOString(),
+		ends_at: overrides.ends_at ?? new Date(Date.now() + days * 86_400_000).toISOString()
+	};
+}
+
+/** A single generative garden element. */
+export function makeGardenElement(overrides: Record<string, any> = {}): Record<string, any> {
+	return {
+		kind: overrides.kind ?? 'tree',
+		seed: overrides.seed ?? Math.floor(Math.random() * 1e9),
+		growth: overrides.growth ?? 0.6,
+		...(overrides.contributor_uid ? { contributor_uid: overrides.contributor_uid } : {})
+	};
+}
+
+/** The shared CircleGarden projection (grows from combined outdoor minutes). */
+export function makeGarden(overrides: Record<string, any> = {}): Record<string, any> {
+	const kinds = ['tree', 'flower', 'water', 'stone', 'creature', 'star'];
+	const count = overrides.elementCount ?? 24;
+	const elements =
+		overrides.elements ??
+		Array.from({ length: count }, (_, i) =>
+			makeGardenElement({ kind: kinds[i % kinds.length], seed: 1000 + i })
+		);
+	return {
+		owner_uid: overrides.owner_uid ?? 'test-user-1',
+		level: overrides.level ?? 5,
+		total_minutes: overrides.total_minutes ?? 640,
+		elements,
+		animated: overrides.animated ?? true,
+		updated_at: overrides.updated_at ?? FIXED_NOW
 	};
 }
 
