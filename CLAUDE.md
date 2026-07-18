@@ -50,12 +50,34 @@ journey leaderboards via a `type` query, not one route per metric).
 
 ## Backend Integration
 
-- The frontend proxies backend API requests (e.g. `/v2/*`) through server routes in `src/server/api/`.
 - Primary backend services to be aware of (other repos):
   - `earth-app/mantle2` - core API & business logic services (user, activities, prompts, articles)
   - `earth-app/cloud` - Cloud/edge services and any Cloudflare Worker–side integrations
 
 When changing API paths or response shapes, update shared types in `@earth-app/ocean` (if applicable) and validate with Zod schemas in `src/shared/utils/schemas.ts`.
+
+### Request routing rule (mantle2-direct vs Nitro-proxy)
+
+This is the vital architectural boundary; get it right every time.
+
+- **mantle2 (`/v2/*`) is called DIRECT from Pinia stores/composables** via `makeAPIRequest`
+  (cacheable GET) / `makeClientAPIRequest` (uncached POST/PATCH/DELETE) with
+  `useAuthStore().sessionToken`. `apiBaseUrl` is absolute, so the same store/composable works on
+  web AND native (sky). Do NOT route a mantle2 call through a Nitro `src/server/api/*` proxy.
+- **`src/server/api/*` (Nitro) + `makeServerRequest` exist ONLY to reach CLOUD with a server-side
+  secret** the browser must never see: `ADMIN_API_KEY` (cloud), or another API key (Google Maps,
+  Pixabay, Unsplash, YouTube, Internet Archive, etc.). Called from the client via
+  `makeServerRequest`.
+- **A Nitro route that merely forwards to mantle2 `/v2/*` is WRONG** — delete it and move the call
+  into the store/composable as a direct `makeAPIRequest`/`makeClientAPIRequest`. Prefer the
+  mantle2-direct path even when cloud exposes the same data (e.g. garden is `/v2/users/{id}/garden`,
+  which mantle2 proxies to cloud with proper user auth); keep a cloud-direct Nitro route only when
+  mantle2 genuinely does not expose the endpoint.
+- **serverRequest-injection (for the cloud/secret composables only).** A composable whose calls are
+  all mantle2-direct takes no `serverRequest` param and sky reuses it verbatim. A composable that
+  hits a crust cloud/secret Nitro route takes `serverRequest = makeServerRequest` as a default
+  param; sky passes its own `makeMServerRequest` (which calls the crust host's Nitro routes from
+  native). See `useActivity` (no param) vs `useActivityInfo` (param) for the exact shape.
 
 ## CI, Packaging & Publishing
 
