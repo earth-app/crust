@@ -109,7 +109,7 @@
 
 					<template #content>
 						<div class="flex flex-col p-4">
-							<span class="text-sm">Earn points through journies, badges, and quests!</span>
+							<span class="text-sm">Your impact grows through journies, badges, and quests!</span>
 							<span class="text-xs opacity-80"
 								>Impact Points go up as you engage with The Earth App and the world around
 								you.</span
