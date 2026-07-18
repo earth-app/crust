@@ -57,6 +57,12 @@
 					<template v-else>{{ row.countdown }} Left</template>
 				</div>
 
+				<span
+					v-if="row.isBest"
+					class="mt-1 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"
+					>Your Longest Yet</span
+				>
+
 				<UiSparkleBurst
 					:trigger="sparkleTriggers[idx] ?? 0"
 					color="warning"
@@ -92,6 +98,12 @@ const { quest, fetchUserQuest } = useUser(userId);
 
 const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
+const bests: Record<JourneyType, ReturnType<typeof usePersonalBest>> = {
+	article: usePersonalBest('journey:article'),
+	prompt: usePersonalBest('journey:prompt'),
+	event: usePersonalBest('journey:event')
+};
+
 const ROWS: { type: JourneyType; label: string; icon: string }[] = [
 	{ type: 'article', label: 'Articles', icon: 'mdi:newspaper' },
 	{ type: 'prompt', label: 'Prompts', icon: 'mdi:pencil' },
@@ -124,12 +136,14 @@ const rows = computed(() =>
 		const expiresAt = lw ? lw + STREAK_TTL_MS : 0;
 		const remaining = expiresAt - now.value;
 		const expiringSoon = counts[r.type] > 0 && remaining > 0 && remaining < WARN_THRESHOLD_MS;
+		const framing = bests[r.type].framing(counts[r.type]);
 		return {
 			...r,
 			count: counts[r.type],
 			rank: ranks[r.type],
 			countdown: formatRemaining(remaining),
-			expiringSoon
+			expiringSoon,
+			isBest: framing.isNewBest && counts[r.type] > 0
 		};
 	})
 );
@@ -163,6 +177,7 @@ async function loadOne(type: JourneyType, id: string) {
 	if (countRes && valid(countRes)) {
 		counts[type] = countRes.data.count ?? 0;
 		lastWrites[type] = countRes.data.lastWrite ?? 0;
+		bests[type].record(counts[type]);
 	}
 	if (rankRes && valid(rankRes) && 'rank' in rankRes.data) {
 		ranks[type] = rankRes.data.rank ?? 0;
@@ -182,6 +197,8 @@ function onJourneyUpdated(ev: Event) {
 	const prevCount = counts[detail.type];
 	counts[detail.type] = detail.count;
 	lastWrites[detail.type] = Date.now();
+	bests[detail.type].record(detail.count);
+
 	// only burst on a real increment so re-fetches don't fire confetti
 	if (detail.count > prevCount && !prefersReducedMotion.value) {
 		sparkleTriggers[idx] = (sparkleTriggers[idx] ?? 0) + 1;
