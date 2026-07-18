@@ -9,7 +9,8 @@ export default defineEventHandler(async (event) => {
 	const admin = await ensureAdministrator(event);
 	const body = await readBody<MarketingSceneInput>(event);
 
-	if (!body?.name || typeof body.name !== 'string' || !MARKETING_KINDS.includes(body.kind)) {
+	const allowedKinds: string[] = [...MARKETING_KINDS, 'garden'];
+	if (!body?.name || typeof body.name !== 'string' || !allowedKinds.includes(body.kind as string)) {
 		throw createError({
 			statusCode: 400,
 			statusMessage: 'A scene name and a valid kind are required'
