@@ -147,6 +147,96 @@ export const questChallengeViewSchema = z.object({
 export type QuestChallengeShape = z.infer<typeof questChallengeSchema>;
 export type QuestChallengeViewShape = z.infer<typeof questChallengeViewSchema>;
 
+export const trailStepShapeSchema = z
+	.object({
+		step: z.object({ type: z.string() }).loose(),
+		clue: z.string(),
+		reveal: z.string()
+	})
+	.loose();
+
+export const trailSchema = z
+	.object({
+		id: z.string().min(1),
+		title: z.string(),
+		steps: z.array(trailStepShapeSchema)
+	})
+	.loose();
+
+export const natureMinutesSchema = z
+	.object({
+		minutes: z.number(),
+		week: z.string()
+	})
+	.loose();
+
+export type TrailShape = z.infer<typeof trailSchema>;
+export type NatureMinutesShape = z.infer<typeof natureMinutesSchema>;
+
+// Trailmarks
+
+export const trailmarkGeoSchema = z
+	.object({
+		lat: z.number(),
+		lng: z.number()
+	})
+	.loose();
+
+export const trailmarkSchema = z
+	.object({
+		id: z.string().min(1),
+		note: z.string(),
+		geo: trailmarkGeoSchema
+	})
+	.loose();
+
+export type TrailmarkShape = z.infer<typeof trailmarkSchema>;
+
+// Circles & Expeditions + shared Garden
+
+export const expeditionContributorSchema = z
+	.object({
+		uid: z.string(),
+		username: z.string(),
+		contribution: z.number()
+	})
+	.loose();
+
+export const expeditionSchema = z
+	.object({
+		id: z.string().min(1),
+		title: z.string(),
+		goal: z.enum(['nature_minutes', 'trail_steps', 'quests']),
+		target: z.number(),
+		progress: z.number(),
+		contributors: z.array(expeditionContributorSchema),
+		status: z.string(),
+		ends_at: z.string()
+	})
+	.loose();
+
+export const gardenElementSchema = z
+	.object({
+		kind: z.string(),
+		seed: z.number(),
+		growth: z.number()
+	})
+	.loose();
+
+export const circleGardenSchema = z
+	.object({
+		owner_uid: z.string(),
+		level: z.number(),
+		total_minutes: z.number(),
+		elements: z.array(gardenElementSchema),
+		animated: z.boolean(),
+		updated_at: z.string()
+	})
+	.loose();
+
+export type ExpeditionShape = z.infer<typeof expeditionSchema>;
+export type CircleGardenShape = z.infer<typeof circleGardenSchema>;
+
 // Article Form
 
 export const articleSchema = z.object({
