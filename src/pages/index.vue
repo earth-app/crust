@@ -66,6 +66,33 @@
 					My Quests
 				</UButton>
 				<UButton
+					v-if="user"
+					icon="mdi:map-marker-path"
+					color="warning"
+					variant="soft"
+					@click="$router.push('/trails')"
+				>
+					My Trails
+				</UButton>
+				<UButton
+					v-if="user"
+					icon="mdi:map-marker-check-outline"
+					color="secondary"
+					variant="soft"
+					@click="$router.push('/trailmarks')"
+				>
+					My Trailmarks
+				</UButton>
+				<UButton
+					v-if="user"
+					icon="mdi:leaf-maple"
+					color="info"
+					variant="soft"
+					@click="$router.push('/circle')"
+				>
+					My Circle
+				</UButton>
+				<UButton
 					v-if="user && user.is_admin"
 					icon="mdi:cog-outline"
 					color="error"
@@ -79,20 +106,6 @@
 					variant="soft"
 					@click="$router.push('/about')"
 					>About Us</UButton
-				>
-				<UButton
-					icon="material-symbols:rule"
-					color="secondary"
-					variant="soft"
-					@click="$router.push('/terms-of-service')"
-					>Terms of Service</UButton
-				>
-				<UButton
-					icon="material-symbols:settings-account-box"
-					color="warning"
-					variant="soft"
-					@click="$router.push('/privacy-policy')"
-					>Privacy Policy</UButton
 				>
 			</div>
 
@@ -134,8 +147,8 @@
 					/>
 					<h2 class="text-lg font-semibold">Go on a Quest</h2>
 					<p class="text-sm text-muted">
-						Each activity has structured quests with steps, rewards, and a satisfying finish. Earn
-						Impact Points along the way.
+						Each activity has structured quests with steps, rewards, and a satisfying finish. Unlock
+						new things you can do along the way.
 					</p>
 				</div>
 				<div
