@@ -261,6 +261,30 @@ export default defineNuxtConfig({
 		appManifest: true,
 		checkOutdatedBuildInterval: 60_000
 	},
+	sitemap: {
+		exclude: [
+			'/admin',
+			'/login',
+			'/login/**',
+			'/signup',
+			'/verify-email',
+			'/change-password',
+			'/reset-password',
+			'/oauth/**',
+			'/profile',
+			'/profile/**',
+			'/invite/**',
+			'/subscription/**',
+			'/articles/new',
+			'/prompts/new',
+			'/__test__/**'
+		]
+	},
+	robots: {
+		// config is the source of truth; internal-only routes should never be crawled
+		mergeWithRobotsTxtPath: false,
+		disallow: ['/admin', '/oauth/', '/__test__/']
+	},
 	schemaOrg: {
 		identity: defineOrganization({
 			name: 'The Earth App',
