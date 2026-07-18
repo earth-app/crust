@@ -143,22 +143,31 @@
 			v-if="present"
 			class="fixed inset-0 z-9990 flex flex-col bg-default"
 		>
-			<div class="flex items-center justify-between p-3">
+			<div class="flex items-center justify-between gap-2 p-3">
 				<UBadge
 					color="primary"
 					variant="subtle"
 					icon="mdi:movie-open-play"
 					>{{ presentTitle || 'Preview' }}</UBadge
 				>
-				<UButton
-					icon="mdi:close"
-					color="neutral"
-					variant="soft"
-					@click="present = false"
-					>Close</UButton
-				>
+				<div class="flex items-center gap-2">
+					<AdminMarketingExportBar
+						:target="presentPreviewEl"
+						:filename="presentTitle || 'content-card'"
+					/>
+					<UButton
+						icon="mdi:close"
+						color="neutral"
+						variant="soft"
+						@click="present = false"
+						>Close</UButton
+					>
+				</div>
 			</div>
-			<div class="flex flex-1 items-center justify-center overflow-auto p-4">
+			<div
+				ref="presentPreviewEl"
+				class="flex flex-1 items-center justify-center overflow-auto p-4"
+			>
 				<slot name="preview" />
 			</div>
 		</div>
@@ -360,6 +369,7 @@ function clone<T>(value: T): T {
 }
 
 const present = ref(false);
+const presentPreviewEl = ref<HTMLElement | null>(null);
 useEventListener(document, 'keydown', (e: KeyboardEvent) => {
 	if (e.key === 'Escape' && present.value) {
 		e.preventDefault();

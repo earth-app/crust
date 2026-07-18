@@ -3,7 +3,7 @@
 		<Transition name="present-fade">
 			<div
 				v-if="modelValue"
-				class="present-backdrop fixed inset-0 z-[9990] flex flex-col items-center justify-center gap-6 p-6 overflow-auto"
+				class="present-backdrop fixed inset-0 z-9990 flex flex-col items-center justify-center gap-6 p-6 overflow-auto"
 				role="dialog"
 				aria-modal="true"
 				:aria-label="label || 'Preview'"
@@ -21,16 +21,24 @@
 						>{{ label }}</span
 					>
 				</div>
-				<UButton
-					icon="mdi:close"
-					color="neutral"
-					variant="soft"
-					class="absolute top-4 right-4"
-					aria-label="Exit Present Mode"
-					@click="close"
-					>Exit</UButton
+				<div class="absolute top-4 right-4 flex items-center gap-2">
+					<AdminMarketingExportBar
+						:target="previewEl"
+						:filename="label || 'people-preview'"
+					/>
+					<UButton
+						icon="mdi:close"
+						color="neutral"
+						variant="soft"
+						aria-label="Exit Present Mode"
+						@click="close"
+						>Exit</UButton
+					>
+				</div>
+				<div
+					ref="previewEl"
+					class="w-full max-w-2xl"
 				>
-				<div class="w-full max-w-2xl">
 					<slot />
 				</div>
 			</div>
@@ -47,6 +55,8 @@ const props = defineProps<{
 const emit = defineEmits<{
 	(event: 'update:modelValue', value: boolean): void;
 }>();
+
+const previewEl = ref<HTMLElement | null>(null);
 
 const close = () => emit('update:modelValue', false);
 
