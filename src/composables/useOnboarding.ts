@@ -72,7 +72,8 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 	{
 		id: 'first_quest_started',
 		title: 'Start Your First Quest',
-		description: 'Quests unify everything: short missions that earn points and badges.',
+		description:
+			'Quests unify everything: short missions that unlock badges and new things you can do.',
 		icon: 'mdi:flag-outline',
 		link: '/profile/quests',
 		mLink: '/tabs/quests',
