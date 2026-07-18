@@ -324,6 +324,39 @@ const groups = ref<CommandPaletteGroup<CommandPaletteItem>[]>([
 				onSelect: close
 			},
 			{
+				id: 'quests',
+				label: 'Quests',
+				suffix: 'Complete challenges and earn rewards',
+				icon: 'mdi:flag-checkered',
+				to: '/quests',
+				onSelect: close
+			},
+			{
+				id: 'trails',
+				label: 'Curiosity Trails',
+				suffix: 'Outdoor walks with a clue and a payoff',
+				icon: 'mdi:map-marker-path',
+				to: '/trails',
+				onSelect: close
+			},
+			{
+				id: 'circle',
+				label: 'Your Circle',
+				suffix: 'Shared expedition and garden',
+				icon: 'mdi:account-group',
+				to: '/circle',
+				auth: true,
+				onSelect: close
+			},
+			{
+				id: 'trailmarks',
+				label: 'Trailmarks',
+				suffix: 'Leave and find kind notes at a place',
+				icon: 'mdi:map-marker-radius-outline',
+				to: '/trailmarks',
+				onSelect: close
+			},
+			{
 				id: 'randomize',
 				label: "I'm Feeling Novel",
 				icon: 'mdi:dice-multiple',
