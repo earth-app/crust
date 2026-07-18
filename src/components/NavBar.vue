@@ -22,27 +22,46 @@
 			<div class="flex shrink-0 sm:ml-2">
 				<Discover />
 			</div>
-			<div class="hidden lg:flex items-center justify-start gap-3 xl:gap-6 min-w-0 ml-2 xl:ml-6">
-				<NuxtLink
-					to="/activities"
-					class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
-					>Activities</NuxtLink
-				>
-				<NuxtLink
-					to="/prompts"
-					class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
-					>Prompts</NuxtLink
-				>
-				<NuxtLink
-					to="/articles"
-					class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
-					>Articles</NuxtLink
-				>
-				<NuxtLink
-					to="/events"
-					class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
-					>Events</NuxtLink
-				>
+			<div class="hidden lg:flex xl:flex-col items-center justify-start min-w-0 ml-2 xl:ml-6">
+				<div class="flex items-center justify-start gap-3 xl:gap-6">
+					<NuxtLink
+						to="/activities"
+						class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
+						>Activities</NuxtLink
+					>
+					<NuxtLink
+						to="/prompts"
+						class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
+						>Prompts</NuxtLink
+					>
+					<NuxtLink
+						to="/articles"
+						class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
+						>Articles</NuxtLink
+					>
+					<NuxtLink
+						to="/events"
+						class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
+						>Events</NuxtLink
+					>
+				</div>
+				<div class="hidden text-primary/90 xl:flex items-center justify-start gap-3 xl:gap-6 mt-1">
+					<NuxtLink
+						to="/trails"
+						class="text-sm xl:text-base font-semibold hover:opacity-90 whitespace-nowrap"
+						>Trails</NuxtLink
+					>
+					<NuxtLink
+						to="/circle"
+						class="text-sm xl:text-base font-semibold hover:opacity-90 whitespace-nowrap"
+						>Circle</NuxtLink
+					>
+					<NuxtLink
+						to="/trailmarks"
+						class="text-sm xl:text-base font-semibold hover:opacity-90 whitespace-nowrap"
+						>Trailmarks</NuxtLink
+					>
+				</div>
 			</div>
 		</div>
 		<div class="ml-auto min-w-0 shrink-0">
@@ -257,6 +276,33 @@
 				size="xl"
 				icon="mdi:calendar-star"
 				>Events</UBadge
+			>
+		</NuxtLink>
+		<NuxtLink to="/trails">
+			<UBadge
+				variant="subtle"
+				color="success"
+				size="xl"
+				icon="mdi:map-marker-path"
+				>Trails</UBadge
+			>
+		</NuxtLink>
+		<NuxtLink to="/circle">
+			<UBadge
+				variant="subtle"
+				color="primary"
+				size="xl"
+				icon="mdi:account-group"
+				>Circle</UBadge
+			>
+		</NuxtLink>
+		<NuxtLink to="/trailmarks">
+			<UBadge
+				variant="subtle"
+				color="info"
+				size="xl"
+				icon="mdi:map-marker-radius-outline"
+				>Trailmarks</UBadge
 			>
 		</NuxtLink>
 	</nav>
