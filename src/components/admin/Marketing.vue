@@ -28,6 +28,7 @@
 					<AdminMarketingContentStudio v-if="item.value === 'content'" />
 					<AdminMarketingPeopleStudio v-else-if="item.value === 'people'" />
 					<AdminMarketingQuestStudio v-else-if="item.value === 'quests'" />
+					<AdminMarketingGardenStudio v-else-if="item.value === 'garden'" />
 				</div>
 			</template>
 		</UTabs>
@@ -40,6 +41,7 @@ const section = ref('content');
 const sections = [
 	{ label: 'Content', icon: 'mdi:cards-variant', value: 'content' },
 	{ label: 'People & Messages', icon: 'mdi:account-voice', value: 'people' },
-	{ label: 'Quests', icon: 'mdi:flag-checkered', value: 'quests' }
+	{ label: 'Quests', icon: 'mdi:flag-checkered', value: 'quests' },
+	{ label: 'Garden', icon: 'mdi:sprout', value: 'garden' }
 ];
 </script>

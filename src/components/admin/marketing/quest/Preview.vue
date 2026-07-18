@@ -112,8 +112,12 @@
 
 		<div
 			v-if="present"
-			class="fixed right-4 top-4 z-[100000] flex items-center gap-2"
+			class="fixed right-4 top-4 z-100000 flex items-center gap-2"
 		>
+			<AdminMarketingExportBar
+				:get-target="resolveModalNode"
+				:filename="quest?.title || 'quest-modal'"
+			/>
 			<UButton
 				icon="mdi:close"
 				color="neutral"
@@ -165,7 +169,21 @@ const props = defineProps<{
 
 const store = useUserStore();
 const { user } = useAuth();
+const celebration = useQuestCelebration();
 const uid = computed(() => user.value?.id);
+
+// resolve the teleported quest modal node at export time (largest open dialog = the
+// fullscreen quest modal) so the shared ExportBar can snapshot it
+function resolveModalNode(): HTMLElement | null {
+	if (!import.meta.client) return null;
+	const dialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"]'));
+	if (!dialogs.length) return null;
+	return dialogs.reduce((best, el) => {
+		const a = el.getBoundingClientRect();
+		const b = best.getBoundingClientRect();
+		return a.width * a.height > b.width * b.height ? el : best;
+	});
+}
 // the store's reactive quest maps satisfy the pure helpers' QuestStateMaps shape
 const maps = { quest: store.quest, questHistory: store.questHistory };
 
@@ -207,6 +225,7 @@ const modalCompletedAt = computed(() =>
 
 let snapshot: QuestStateSnapshot | null = null;
 let restoreWriteLock: (() => void) | null = null;
+let stopCelebrationGuard: (() => void) | null = null;
 const active = ref(false);
 
 function applyState(state: PreviewState) {
@@ -266,6 +285,19 @@ function activate() {
 			return result;
 		}
 	});
+	// a completed preview submission still calls triggerCelebration() from inside the real
+	// step components; catch the global celebration synchronously, suppress the app-wide
+	// points overlay, and reroute to the preview-local overlay (sync flush reverts open
+	// before default.vue's overlay ever paints, so preview never fires real success/points)
+	stopCelebrationGuard = watch(
+		celebration.open,
+		(isOpen) => {
+			if (!isOpen) return;
+			celebration.closeCelebration();
+			overlayOpen.value = true;
+		},
+		{ flush: 'sync' }
+	);
 	active.value = true;
 	applyState(previewState.value);
 	applyChallenge();
@@ -274,6 +306,9 @@ function activate() {
 function deactivate() {
 	if (!active.value) return;
 	teardownChallenge();
+	stopCelebrationGuard?.();
+	stopCelebrationGuard = null;
+	if (celebration.open.value) celebration.closeCelebration();
 	restoreWriteLock?.();
 	restoreWriteLock = null;
 	if (snapshot && uid.value) restoreQuestState(maps, uid.value, snapshot);
@@ -343,8 +378,14 @@ watch(
 	}
 );
 watch(open, (isOpen) => {
-	if (isOpen) activate();
-	else deactivate();
+	if (isOpen) {
+		activate();
+	} else {
+		deactivate();
+		// any modal close (header X, dismiss, esc, celebration) must return to the
+		// preview-controls card; present mode has nothing to show once the modal is gone
+		present.value = false;
+	}
 });
 
 onMounted(() => {
