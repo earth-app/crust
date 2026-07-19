@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia';
-import { natureMinutesSchema, trailSchema } from 'schemas';
+import { natureMinutesSchema, trailJournalEntrySchema, trailSchema } from 'schemas';
 import type {
 	NatureMinutes,
 	NatureMinutesSource,
 	Trail,
+	TrailJournalEntry,
 	TrailPledge,
-	TrailProgress
+	TrailReflection,
+	TrailRun
 } from 'types/trails';
 import { classifyItemFetch, invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
 import { reactive, ref } from 'vue';
@@ -13,14 +15,15 @@ import { useAuthStore } from './auth';
 
 // ~120 min/week target; personal, never compared
 export const NATURE_MINUTES_TARGET = 120;
-// optimistic per-step credit when the backend total isn't returned yet
-export const TRAIL_STEP_MINUTES = 15;
 
 // zod shape-guards at the store boundary; a bad shape caches as null, never corrupt ui
 const isValidTrail = (t: unknown): t is Trail => trailSchema.safeParse(t).success;
 
 const isValidNatureMinutes = (n: unknown): n is NatureMinutes =>
 	natureMinutesSchema.safeParse(n).success;
+
+const isValidJournalEntry = (e: unknown): e is TrailJournalEntry =>
+	trailJournalEntrySchema.safeParse(e).success;
 
 function isoWeekKey(date: Date = new Date()): string {
 	// iso-8601 week; used only as a client fallback key when the backend omits `week`
@@ -38,13 +41,15 @@ export const useTrailsStore = defineStore('trails', () => {
 	const loading = reactive(new Set<string>());
 	const fetchQueue = new Map<string, Promise<void>>();
 
-	// curiosity-gap run state (pledge + which awe reveals have unlocked); step
-	// completion itself rides the quest system, this only mirrors the trail overlay
-	const runs = reactive(new Map<string, TrailProgress>());
+	// standalone run state: the if-then pledge + accumulated presence, NO quest overlay
+	const runs = reactive(new Map<string, TrailRun>());
 
 	const listLoaded = ref(false);
 	// user-specific; never fetched at store setup (ssr-safe), filled client-side
 	const natureMinutes = ref<NatureMinutes | null>(null);
+	// the private reflection journal (most-recent first)
+	const journal = ref<TrailJournalEntry[]>([]);
+	const journalLoaded = ref(false);
 
 	const evictOldestIfNeeded = () => {
 		if (cache.size >= MAX_CACHE_SIZE) {
@@ -64,7 +69,7 @@ export const useTrailsStore = defineStore('trails', () => {
 	const list = (): Trail[] =>
 		Array.from(cache.values()).filter((t): t is Trail => t !== null && t !== undefined);
 
-	const getRun = (id: string): TrailProgress | undefined => runs.get(id);
+	const getRun = (id: string): TrailRun | undefined => runs.get(id);
 
 	// list responses shouldn't clobber a trail already loaded via its single fetch
 	const setTrails = (trails: Trail[]) => {
@@ -153,37 +158,119 @@ export const useTrailsStore = defineStore('trails', () => {
 		return cache.get(id) ?? null;
 	};
 
-	// accept: capture the if-then pledge (strongest behavior lever) and open the run overlay.
-	// the underlying quest run is started separately through the quest system by the caller.
-	const acceptTrail = (trail: Trail, pledge: TrailPledge): TrailProgress => {
-		const run: TrailProgress = {
+	// #region run lifecycle (start -> presence -> reflect, all standalone)
+
+	// begin a run: record the if-then pledge locally + best-effort persist to the backend.
+	// the run is a client-side flow; completion is the durable persistence point
+	const startRun = async (trail: Trail, pledge?: TrailPledge): Promise<TrailRun> => {
+		const run: TrailRun = {
 			trailId: trail.id,
-			currentStep: 0,
-			completed: false,
 			pledge,
 			startedAt: new Date().toISOString(),
-			stepRevealed: new Array(trail.steps.length).fill(false)
+			presenceMinutes: 0,
+			completed: false
 		};
 		runs.set(trail.id, run);
+
+		const authStore = useAuthStore();
+		try {
+			await makeClientAPIRequest(
+				`/v2/users/current/trails/${encodeURIComponent(trail.id)}/start`,
+				authStore.sessionToken,
+				{ method: 'POST', body: { pledge } }
+			);
+		} catch {
+			// non-fatal: the pledge still drives the local run and completion re-sends it
+		}
 		return run;
 	};
 
-	// unlock the awe reveal after a step completes; advances the run pointer
-	const revealStep = (id: string, index: number) => {
+	// accumulate unhurried minutes of presence onto the active run
+	const addPresence = (id: string, minutes: number) => {
 		const run = runs.get(id);
 		if (!run) return;
-		if (index >= 0 && index < run.stepRevealed.length) run.stepRevealed[index] = true;
-		run.currentStep = Math.max(run.currentStep, index + 1);
+		run.presenceMinutes = Math.max(0, run.presenceMinutes + Math.max(0, minutes));
 	};
 
-	const completeTrail = (id: string) => {
+	// finish a run: persist the private reflection + credit nature minutes, then update the
+	// journal + ring from the server echo (optimistic fallback keeps the ui responsive)
+	const completeRun = async (
+		id: string,
+		reflection: TrailReflection,
+		presenceMinutes?: number
+	): Promise<{ success: boolean; data?: TrailJournalEntry; message?: string }> => {
 		const run = runs.get(id);
+		const trail = cache.get(id) ?? null;
+		const minutes = Math.max(0, presenceMinutes ?? run?.presenceMinutes ?? 0);
+		const authStore = useAuthStore();
+		invalidateAPICache('trail-journal');
+		invalidateAPICache('nature-minutes-current');
+
+		const res = await makeClientAPIRequest<{
+			entry?: TrailJournalEntry;
+			natureMinutes?: NatureMinutes;
+		}>(`/v2/users/current/trails/${encodeURIComponent(id)}/complete`, authStore.sessionToken, {
+			method: 'POST',
+			body: { presenceMinutes: minutes, reflection }
+		});
+
 		if (run) run.completed = true;
+
+		// the server echo may carry a fresh nature-minutes total and/or a journal entry
+		const serverMinutes = valid(res) && !!res.data && isValidNatureMinutes(res.data.natureMinutes);
+		if (serverMinutes) natureMinutes.value = res.data!.natureMinutes!;
+		if (valid(res) && res.data && isValidJournalEntry(res.data.entry)) {
+			journal.value = [res.data.entry, ...journal.value];
+			return { success: true, data: res.data.entry };
+		}
+
+		// fallback: synthesize the journal entry; only bump the ring if the server didn't
+		const entry: TrailJournalEntry = {
+			trailId: id,
+			title: trail?.title ?? 'Trail',
+			practice: trail?.practice ?? 'sit_spot',
+			presenceMinutes: minutes,
+			reflection,
+			completedAt: new Date().toISOString()
+		};
+		journal.value = [entry, ...journal.value];
+		if (!serverMinutes)
+			bumpNatureMinutesLocal({ kind: 'trail', ref_id: id, minutes, at: entry.completedAt });
+		return { success: true, data: entry };
 	};
 
 	const clearRun = (id: string) => {
 		runs.delete(id);
 	};
+
+	// #endregion
+
+	// #region journal
+
+	const fetchJournal = async (force = false) => {
+		if (journalLoaded.value && !force) return { success: true as const, data: journal.value };
+		const authStore = useAuthStore();
+		if (force) invalidateAPICache('trail-journal');
+
+		const res = await makeAPIRequest<{ items?: TrailJournalEntry[] } | TrailJournalEntry[]>(
+			'trail-journal',
+			'/v2/users/current/trail-journal',
+			authStore.sessionToken
+		);
+
+		if (valid(res)) {
+			const raw = Array.isArray(res.data) ? res.data : (res.data.items ?? []);
+			journal.value = raw.filter(isValidJournalEntry);
+			journalLoaded.value = true;
+			return { success: true as const, data: journal.value };
+		}
+
+		return { success: false as const, message: res.message || 'Failed to load your journal.' };
+	};
+
+	// #endregion
+
+	// #region nature minutes
 
 	const fetchNatureMinutes = async (uid: string) => {
 		if (!uid) return { success: false as const, message: 'Missing user id.' };
@@ -214,6 +301,19 @@ export const useTrailsStore = defineStore('trails', () => {
 		};
 	}
 
+	// optimistic local bump so the ring still responds when the backend total isn't echoed
+	function bumpNatureMinutesLocal(source: NatureMinutesSource) {
+		const base = natureMinutes.value ?? emptyWeek();
+		const minutes = base.minutes + Math.max(0, source.minutes);
+		natureMinutes.value = {
+			...base,
+			minutes,
+			best: Math.max(base.best, minutes),
+			sources: [...base.sources, source],
+			updated_at: new Date().toISOString()
+		};
+	}
+
 	const creditNatureMinutes = async (uid: string, source: NatureMinutesSource) => {
 		if (!uid) return { success: false as const, message: 'Missing user id.' };
 		const authStore = useAuthStore();
@@ -230,18 +330,11 @@ export const useTrailsStore = defineStore('trails', () => {
 			return { success: true as const, data: res.data };
 		}
 
-		// optimistic bump so the ring still responds when the backend total isn't echoed
-		const base = natureMinutes.value ?? emptyWeek();
-		const minutes = base.minutes + Math.max(0, source.minutes);
-		natureMinutes.value = {
-			...base,
-			minutes,
-			best: Math.max(base.best, minutes),
-			sources: [...base.sources, source],
-			updated_at: new Date().toISOString()
-		};
-		return { success: true as const, data: natureMinutes.value };
+		bumpNatureMinutesLocal(source);
+		return { success: true as const, data: natureMinutes.value! };
 	};
+
+	// #endregion
 
 	const clear = () => {
 		cache.clear();
@@ -249,6 +342,8 @@ export const useTrailsStore = defineStore('trails', () => {
 		loading.clear();
 		listLoaded.value = false;
 		natureMinutes.value = null;
+		journal.value = [];
+		journalLoaded.value = false;
 	};
 
 	return {
@@ -256,6 +351,8 @@ export const useTrailsStore = defineStore('trails', () => {
 		runs,
 		listLoaded,
 		natureMinutes,
+		journal,
+		journalLoaded,
 		get,
 		has,
 		list,
@@ -264,10 +361,11 @@ export const useTrailsStore = defineStore('trails', () => {
 		upsertTrail,
 		fetchTrails,
 		fetchTrail,
-		acceptTrail,
-		revealStep,
-		completeTrail,
+		startRun,
+		addPresence,
+		completeRun,
 		clearRun,
+		fetchJournal,
 		fetchNatureMinutes,
 		creditNatureMinutes,
 		clear

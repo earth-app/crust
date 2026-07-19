@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { trailmarkSchema } from 'schemas';
 import type { Trailmark, TrailmarkCreateInput, TrailmarkQuery } from 'types/trailmarks';
-import { makeAPIRequest, makeClientAPIRequest } from 'utils';
+import { invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
 import { reactive, ref } from 'vue';
 import { useAuthStore } from './auth';
 
@@ -24,6 +24,8 @@ function nearbyKey(q: TrailmarkQuery): string {
 export const useTrailmarkStore = defineStore('trailmark', () => {
 	const cache = reactive(new Map<string, Trailmark>());
 	const nearbyCache = reactive(new Map<string, { ids: string[]; timestamp: number }>());
+	// trailmarks left as answers to a given prompt (id list per prompt)
+	const promptCache = reactive(new Map<string, string[]>());
 	// notes the current user has authored this session
 	const mine = ref<string[]>([]);
 
@@ -75,6 +77,37 @@ export const useTrailmarkStore = defineStore('trailmark', () => {
 		return { success: false as const, message: res.message || 'Failed to load nearby notes.' };
 	};
 
+	// trailmarks a given prompt has collected (surfaced as a 'from outside' section)
+	const forPrompt = (promptId: string): Trailmark[] =>
+		(promptCache.get(promptId) ?? []).map((id) => cache.get(id)).filter((m): m is Trailmark => !!m);
+
+	const fetchForPrompt = async (promptId: string, force = false) => {
+		if (!promptId) return { success: false as const, message: 'Missing prompt id.' };
+		if (!force && promptCache.has(promptId)) {
+			return { success: true as const, data: forPrompt(promptId) };
+		}
+		const authStore = useAuthStore();
+		const res = await makeAPIRequest<{ items?: Trailmark[] } | Trailmark[]>(
+			`prompt-trailmarks-${promptId}`,
+			`/v2/prompts/${encodeURIComponent(promptId)}/trailmarks`,
+			authStore.sessionToken
+		);
+
+		if (valid(res)) {
+			const items = (Array.isArray(res.data) ? res.data : (res.data.items ?? [])).filter(
+				isValidTrailmark
+			);
+			for (const m of items) upsert(m);
+			promptCache.set(
+				promptId,
+				items.map((m) => m.id)
+			);
+			return { success: true as const, data: items };
+		}
+
+		return { success: false as const, message: res.message || 'Failed to load trail notes.' };
+	};
+
 	const createTrailmark = async (input: TrailmarkCreateInput) => {
 		const authStore = useAuthStore();
 		const res = await makeClientAPIRequest<Trailmark>('/v2/trailmarks', authStore.sessionToken, {
@@ -87,6 +120,11 @@ export const useTrailmarkStore = defineStore('trailmark', () => {
 			if (!mine.value.includes(res.data.id)) mine.value = [res.data.id, ...mine.value];
 			// force the next nearby read to include the new note
 			nearbyCache.clear();
+			// a prompt-linked note refreshes that prompt's 'from outside' section
+			if (input.prompt_id) {
+				promptCache.delete(input.prompt_id);
+				invalidateAPICache(`prompt-trailmarks-${input.prompt_id}`);
+			}
 			return { success: true as const, data: res.data };
 		}
 
@@ -116,17 +154,21 @@ export const useTrailmarkStore = defineStore('trailmark', () => {
 	const clear = () => {
 		cache.clear();
 		nearbyCache.clear();
+		promptCache.clear();
 		mine.value = [];
 	};
 
 	return {
 		cache,
 		nearbyCache,
+		promptCache,
 		mine,
 		get,
 		upsert,
 		getNearbyCached,
 		fetchNearby,
+		forPrompt,
+		fetchForPrompt,
 		createTrailmark,
 		thankTrailmark,
 		hasThanked,
