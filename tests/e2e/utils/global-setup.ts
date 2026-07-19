@@ -107,6 +107,23 @@ export default async function globalSetup() {
 		return;
 	}
 
+	if (process.env.MOCK_DISABLED !== '1') {
+		try {
+			const html = await (await fetch(baseURL, { signal: AbortSignal.timeout(15_000) })).text();
+			if (!html.includes('127.0.0.1') && !html.includes('localhost')) {
+				throw new Error(
+					`[setup] ABORT: the server on ${baseURL} is NOT wired to the local mock backend ` +
+						'(no local api base found in its runtime payload). Refusing to run - a stale/foreign ' +
+						"server pointed at production would receive the suite's mutations (real signups!). Stop it " +
+						'so Playwright starts a fresh test server (reuseExistingServer is off for prod e2e).'
+				);
+			}
+		} catch (e) {
+			if (e instanceof Error && e.message.includes('ABORT')) throw e;
+			console.warn(`[setup] api-base safety check could not complete: ${(e as Error).message}`);
+		}
+	}
+
 	if (prodMode) {
 		// No per-route Vite compile in the prod bundle. Done.
 		return;
