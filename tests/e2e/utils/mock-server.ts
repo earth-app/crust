@@ -69,6 +69,8 @@ interface BackendState {
 	trails: Record<string, any>; // shared read-only catalog by id
 	trailmarks: TrailmarkRecord[];
 	natureMinutes: Record<string, any>; // uid -> NatureMinutes
+	trailJournal: Record<string, any[]>; // uid -> completed trail journal entries (newest first)
+	trailRuns: Record<string, any>; // `${uid}:${trailId}` -> active run
 	circleOwnerOf: Record<string, string>; // memberUid -> circle owner uid
 	expeditionByOwner: Record<string, any>; // ownerUid -> Expedition
 	gardenByOwner: Record<string, any>; // ownerUid -> CircleGarden
@@ -84,6 +86,7 @@ interface TrailmarkRecord {
 	note: string;
 	created_at: string;
 	thanks: string[]; // uids who have thanked (private to the author)
+	prompt_id?: string; // set when left as an answer to a daily prompt
 }
 
 function freshState(): BackendState {
@@ -153,6 +156,8 @@ function freshState(): BackendState {
 		trails: Object.fromEntries(trailDefs.map((t) => [t.id, t])),
 		trailmarks: [],
 		natureMinutes: {},
+		trailJournal: {},
+		trailRuns: {},
 		circleOwnerOf: {},
 		expeditionByOwner: {},
 		gardenByOwner: {},
@@ -173,9 +178,6 @@ function json(
 	body: any,
 	headers: Record<string, string> = {}
 ) {
-	// `Access-Control-Allow-Origin: *` together with `Allow-Credentials: true` is
-	// rejected by browsers. We echo the request origin (set by the caller via
-	// `_origin` header on the ServerResponse) so credentialed fetches still work.
 	const origin = (res as any)._reqOrigin || '*';
 	res.writeHead(status, {
 		'content-type': 'application/json; charset=utf-8',
@@ -246,10 +248,6 @@ function findUser(idOrUsername: string): any | undefined {
 	return Object.values(state.users).find((u: any) => u.username === idOrUsername);
 }
 
-// ---------------------------------------------------------------------------
-// v0.6.0 feature helpers (trails / trailmarks / circles cross-user state)
-// ---------------------------------------------------------------------------
-
 // great-circle distance in meters; deterministic (same as the crust composable)
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
 	const R = 6371000;
@@ -275,7 +273,8 @@ function serializeTrailmark(m: TrailmarkRecord, viewer: string | null) {
 		geo: m.geo,
 		note: m.note,
 		created_at: m.created_at,
-		thanked_by_me: !!viewer && m.thanks.includes(viewer)
+		thanked_by_me: !!viewer && m.thanks.includes(viewer),
+		...(m.prompt_id ? { prompt_id: m.prompt_id } : {})
 	};
 	if (viewer && viewer === m.author_uid) out.thanks_for_author = m.thanks.length;
 	return out;
@@ -319,10 +318,6 @@ function creditExpeditionAndGarden(uid: string, minutes: number) {
 	}
 	growGarden(owner, minutes);
 }
-
-// ---------------------------------------------------------------------------
-// Route table - mantle2 (/v2/*)
-// ---------------------------------------------------------------------------
 
 const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
 	// Health check
@@ -512,9 +507,6 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			json(res, 200, paginate(users, page, limit));
 		}
 	},
-
-	// --- v0.6.0: Curiosity Trails catalog (registered BEFORE the greedy single-user
-	// route so /v2/users/trails isn't mistaken for a username lookup) ---
 	{
 		method: 'GET',
 		pattern: /^\/v2\/users\/trails\/?$/,
@@ -537,8 +529,6 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			json(res, 200, trail);
 		}
 	},
-
-	// --- v0.6.0: Nature Minutes (personal weekly ring; grows the circle expedition too) ---
 	{
 		method: 'GET',
 		pattern: /^\/v2\/users\/([^/]+)\/nature-minutes\/?$/,
@@ -569,8 +559,76 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			json(res, 200, updated);
 		}
 	},
-
-	// --- v0.6.0: Circle expedition (shared goal; contributors from circle members) ---
+	{
+		method: 'POST',
+		pattern: /^\/v2\/users\/current\/trails\/([^/]+)\/start\/?$/,
+		handler: (_req, res, ctx) => {
+			const uid = currentUserId(ctx);
+			if (!uid) return unauthorized(res);
+			const trailId = decodeURIComponent(ctx.url.pathname.split('/')[5]!);
+			const run = {
+				trailId,
+				pledge: ctx.body?.pledge ?? undefined,
+				startedAt: new Date().toISOString(),
+				presenceMinutes: 0,
+				completed: false
+			};
+			state.trailRuns[`${uid}:${trailId}`] = run;
+			json(res, 201, run);
+		}
+	},
+	{
+		method: 'POST',
+		pattern: /^\/v2\/users\/current\/trails\/([^/]+)\/complete\/?$/,
+		handler: (_req, res, ctx) => {
+			const uid = currentUserId(ctx);
+			if (!uid) return unauthorized(res);
+			const trailId = decodeURIComponent(ctx.url.pathname.split('/')[5]!);
+			const minutes = Math.max(0, Math.min(180, Number(ctx.body?.presenceMinutes) || 0));
+			const reflection = ctx.body?.reflection ?? { at: new Date().toISOString() };
+			const trail = state.trails[trailId];
+			const cur =
+				state.natureMinutes[uid] ?? makeNatureMinutes({ minutes: 0, best: 0, sources: [] });
+			const total = (cur.minutes || 0) + minutes;
+			const natureMinutes = {
+				...cur,
+				minutes: total,
+				best: Math.max(cur.best || 0, total),
+				sources: [
+					...(cur.sources ?? []),
+					{ kind: 'trail', ref_id: trailId, minutes, at: reflection.at }
+				],
+				updated_at: new Date().toISOString()
+			};
+			state.natureMinutes[uid] = natureMinutes;
+			creditExpeditionAndGarden(uid, minutes);
+			const entry = {
+				trailId,
+				title: trail?.title ?? 'Trail',
+				practice: trail?.practice ?? 'sit_spot',
+				presenceMinutes: minutes,
+				reflection,
+				completedAt: new Date().toISOString()
+			};
+			(state.trailJournal[uid] ??= []).unshift(entry);
+			const run = {
+				...(state.trailRuns[`${uid}:${trailId}`] ?? { trailId, startedAt: entry.completedAt }),
+				presenceMinutes: minutes,
+				completed: true
+			};
+			state.trailRuns[`${uid}:${trailId}`] = run;
+			json(res, 200, { run, entry, natureMinutes });
+		}
+	},
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/current\/trail-journal\/?$/,
+		handler: (_req, res, ctx) => {
+			const uid = currentUserId(ctx);
+			if (!uid) return unauthorized(res);
+			json(res, 200, { items: state.trailJournal[uid] ?? [] });
+		}
+	},
 	{
 		method: 'GET',
 		pattern: /^\/v2\/users\/current\/expedition\/?$/,
@@ -614,10 +672,6 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			json(res, 201, exp);
 		}
 	},
-
-	// --- v0.6.0: shared circle garden (mantle2 /v2/users/{id}/garden with user auth; it proxies
-	// to cloud). resolves a member's own id to their circle owner's garden so every member sees
-	// the same one.
 	{
 		method: 'GET',
 		pattern: /^\/v2\/users\/([^/]+)\/garden\/?$/,
@@ -629,8 +683,6 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			json(res, 200, g);
 		}
 	},
-
-	// --- v0.6.0: counter-free Kudos (warm private notification to the recipient, no tally) ---
 	{
 		method: 'POST',
 		pattern: /^\/v2\/users\/([^/]+)\/kudos\/?$/,
@@ -684,8 +736,6 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			json(res, 204, '');
 		}
 	},
-
-	// --- v0.6.0: Trailmarks (place-based notes; thank is private to the author) ---
 	{
 		method: 'GET',
 		pattern: /^\/v2\/trailmarks\/?$/,
@@ -708,6 +758,12 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			if (!uid) return unauthorized(res);
 			const body = ctx.body ?? {};
 			if (!body?.note || !body?.geo) return json(res, 400, { message: 'note and geo required' });
+			// mock of the cloud sentiment gate: negative notes are gently rejected
+			if (/\b(hate|awful|terrible|worst|stupid)\b/i.test(String(body.note))) {
+				return json(res, 400, {
+					message: "Let's keep trailmarks kind and encouraging - try rephrasing."
+				});
+			}
 			const rec: TrailmarkRecord = {
 				id: `tm-${uid}-${state.trailmarks.length + 1}-${Math.random().toString(36).slice(2, 6)}`,
 				author_uid: uid,
@@ -715,7 +771,8 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 				geo: body.geo,
 				note: String(body.note).slice(0, 240),
 				created_at: new Date().toISOString(),
-				thanks: []
+				thanks: [],
+				...(body.prompt_id ? { prompt_id: String(body.prompt_id) } : {})
 			};
 			state.trailmarks.push(rec);
 			// author's own fresh note omits the private tally so the card reads "Your Note"
@@ -725,7 +782,8 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 				author_username: rec.author_username,
 				geo: rec.geo,
 				note: rec.note,
-				created_at: rec.created_at
+				created_at: rec.created_at,
+				...(rec.prompt_id ? { prompt_id: rec.prompt_id } : {})
 			});
 		}
 	},
@@ -753,6 +811,36 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 				})
 			);
 			json(res, 200, { success: true });
+		}
+	},
+	// the current user's circle members (other people), paginated {items,total}. drives the
+	// Members list + the expedition empty-circle guard. registered before the greedy user route
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/([^/]+)\/circle\/?$/,
+		handler: (_req, res, ctx) => {
+			const asked = decodeURIComponent(ctx.url.pathname.split('/')[3]!);
+			const self = asked === 'current' ? currentUserId(ctx) : asked;
+			if (!self) return unauthorized(res);
+			const owner = state.circleOwnerOf[self] ?? self;
+			const items = Object.keys(state.circleOwnerOf)
+				.filter((m) => state.circleOwnerOf[m] === owner && m !== self)
+				.map((uid) => state.users[uid])
+				.filter(Boolean);
+			json(res, 200, { items, total: items.length });
+		}
+	},
+	// trailmarks left as answers to a given prompt (the 'from outside' section)
+	{
+		method: 'GET',
+		pattern: /^\/v2\/prompts\/([^/]+)\/trailmarks\/?$/,
+		handler: (_req, res, ctx) => {
+			const viewer = currentUserId(ctx);
+			const promptId = decodeURIComponent(ctx.url.pathname.split('/')[3]!);
+			const items = state.trailmarks
+				.filter((m) => m.prompt_id === promptId)
+				.map((m) => serializeTrailmark(m, viewer));
+			json(res, 200, { items });
 		}
 	},
 
@@ -1183,9 +1271,6 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			});
 		}
 	},
-
-	// --- wave-2: reports ---
-	// POST create (anon allowed); GET admin list; PATCH admin action
 	{
 		method: 'POST',
 		pattern: /^\/v2\/reports\/?$/,
@@ -1244,8 +1329,6 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			});
 		}
 	},
-
-	// --- wave-2: admin analytics ---
 	{
 		method: 'GET',
 		pattern: /^\/v2\/admin\/analytics\/?$/,
@@ -1306,8 +1389,6 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			json(res, 204, '');
 		}
 	},
-
-	// --- wave-2: content delete (prompts + articles; events delete already above) ---
 	{
 		method: 'DELETE',
 		pattern: /^\/v2\/prompts\/[^/]+\/?$/,
@@ -1327,10 +1408,6 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 		}
 	}
 ];
-
-// ---------------------------------------------------------------------------
-// Route table - cloud (/v1/*, /ws/*)
-// ---------------------------------------------------------------------------
 
 const cloudRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
 	// Health
@@ -1525,10 +1602,6 @@ const cloudRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }> 
 		handler: (_req, res) => json(res, 200, { ticket: 'mock-ticket-123' })
 	}
 ];
-
-// ---------------------------------------------------------------------------
-// Control plane - /__mock__/*
-// ---------------------------------------------------------------------------
 
 const controlRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
 	{

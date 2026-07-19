@@ -515,38 +515,60 @@ export function makeBlacklistEntry(overrides: Record<string, any> = {}): Record<
 	};
 }
 
-// --- v0.6.0: Curiosity Trails, Circles & Expeditions, Trailmarks ---
-
-/** A single trail step (underlying quest step + curiosity clue + awe reveal). */
-export function makeTrailStep(overrides: Record<string, any> = {}): Record<string, any> {
-	const type = overrides.type ?? 'describe_text';
-	return {
-		step: {
-			type,
-			description: overrides.description ?? 'Describe one thing you notice around you.',
-			// parameters[2] = min chars, parameters[3] = max chars for describe_text
-			parameters: overrides.parameters ?? [0, 0, 20, 800]
-		},
-		clue: overrides.clue ?? 'What hides in plain sight on this street?',
-		reveal:
-			overrides.reveal ?? 'The oldest tree on this block likely predates every building around it.'
-	};
-}
-
-/** A Curiosity Trail catalog entry. */
+/** A Curiosity Trail catalog entry (a single qualitative practice + curiosity + reveal). */
 export function makeTrail(overrides: Record<string, any> = {}): Record<string, any> {
 	const id = overrides.id ?? `trail-${Math.random().toString(36).slice(2, 8)}`;
+	const practice = overrides.practice ?? 'sit_spot';
 	return {
 		id,
 		title: overrides.title ?? 'Neighborhood Wonders',
 		theme: overrides.theme ?? 'nature',
-		description: overrides.description ?? 'A short walk that ends in a small moment of awe.',
+		practice,
+		description:
+			overrides.description ?? 'A short, unhurried practice that ends in a small moment of awe.',
 		icon: overrides.icon ?? 'mdi:map-marker-path',
 		rarity: overrides.rarity ?? 'normal',
-		steps: overrides.steps ?? [makeTrailStep()],
-		reward: overrides.reward ?? 15,
+		curiosity: overrides.curiosity ?? 'What hides in plain sight on this street?',
+		duration: overrides.duration ?? 12,
+		reflectionPrompt:
+			overrides.reflectionPrompt ?? 'What did you notice that you would have walked past?',
+		reveal:
+			overrides.reveal ?? 'The oldest tree on this block likely predates every building around it.',
+		// cloud-authored presentation metadata, embedded on every real trail response
+		practiceMeta: overrides.practiceMeta ?? {
+			practice,
+			label: 'Sit Spot',
+			icon: 'mdi:meditation',
+			verb: 'sit',
+			cue: 'Find one spot, settle in, and let the place come to you.',
+			defaultMinutes: 12,
+			photos: false
+		},
 		...(overrides.premium !== undefined ? { premium: overrides.premium } : {}),
 		...(overrides.seasonal !== undefined ? { seasonal: overrides.seasonal } : {})
+	};
+}
+
+/** A private trail reflection (self-expression; never public). */
+export function makeTrailReflection(overrides: Record<string, any> = {}): Record<string, any> {
+	return {
+		at: overrides.at ?? FIXED_NOW,
+		note: overrides.note ?? 'The light through the leaves kept shifting.',
+		mood: overrides.mood ?? 'calm',
+		...(overrides.photoCount !== undefined ? { photoCount: overrides.photoCount } : {}),
+		sharedToGarden: overrides.sharedToGarden ?? true
+	};
+}
+
+/** One journal entry = a completed trail run. */
+export function makeTrailJournalEntry(overrides: Record<string, any> = {}): Record<string, any> {
+	return {
+		trailId: overrides.trailId ?? 'trail-1',
+		title: overrides.title ?? 'Neighborhood Wonders',
+		practice: overrides.practice ?? 'sit_spot',
+		presenceMinutes: overrides.presenceMinutes ?? 12,
+		reflection: overrides.reflection ?? makeTrailReflection(),
+		completedAt: overrides.completedAt ?? FIXED_NOW
 	};
 }
 
