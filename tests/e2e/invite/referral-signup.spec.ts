@@ -18,9 +18,18 @@ async function stubTurnstile(page: Page) {
 	);
 }
 
+async function guardLocalCreateOnly(page: Page) {
+	await page.route('**/v2/users/create', async (route: Route) => {
+		const host = new URL(route.request().url()).hostname;
+		if (host === '127.0.0.1' || host === 'localhost') return route.continue();
+		return route.abort('blockedbyclient');
+	});
+}
+
 test.describe('Referral consumption - ?ref plugin', () => {
-	test.beforeEach(async ({ asAnonymous }) => {
+	test.beforeEach(async ({ asAnonymous, page }) => {
 		await asAnonymous();
+		await guardLocalCreateOnly(page);
 	});
 
 	test('a valid ?ref persists the cookie and fires the click ping', async ({ page, mockApi }) => {
@@ -61,8 +70,9 @@ test.describe('Referral consumption - ?ref plugin', () => {
 });
 
 test.describe('Referral consumption - signup', () => {
-	test.beforeEach(async ({ asAnonymous }) => {
+	test.beforeEach(async ({ asAnonymous, page }) => {
 		await asAnonymous();
+		await guardLocalCreateOnly(page);
 	});
 
 	test('signup sends referral_code in the create body and clears the cookie', async ({
