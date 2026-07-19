@@ -27,6 +27,9 @@ comment) instead of creating a parallel file. Server proxy routes are grouped by
 resource too (e.g. `src/server/api/user/leaderboard.get.ts` serves points +
 journey leaderboards via a `type` query, not one route per metric).
 
+Section comments use `// #region <name>` ... `// #endregion` markers (editor-
+foldable, matches the mantle2/PHP style), NOT dashed dividers like `// ----- x`.
+
 ## Quick Map (Key files & folders)
 
 - `src/` - Application source (components, composables, pages, plugins, server)
