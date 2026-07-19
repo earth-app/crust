@@ -35,13 +35,19 @@
 			<section class="flex flex-col gap-3">
 				<div class="flex items-center justify-between">
 					<h2 class="text-sm font-semibold tracking-wide text-muted uppercase">Shared Garden</h2>
-					<UBadge
-						v-if="garden && garden.animated"
-						icon="mdi:sparkles"
-						color="primary"
-						variant="subtle"
-						>Living Garden</UBadge
+					<UTooltip
+						v-if="garden"
+						:text="garden.animated ? livingHelp : restingHelp"
+						:ui="{ text: 'whitespace-normal max-w-xs' }"
 					>
+						<UBadge
+							:icon="garden.animated ? 'mdi:sparkles' : 'mdi:sprout-outline'"
+							:color="garden.animated ? 'primary' : 'neutral'"
+							variant="subtle"
+							class="cursor-help"
+							>{{ garden.animated ? 'Living Garden' : 'Resting Garden' }}</UBadge
+						>
+					</UTooltip>
 				</div>
 				<ClientOnly>
 					<CircleGarden
@@ -69,6 +75,10 @@
 			</section>
 
 			<section>
+				<CircleMembers />
+			</section>
+
+			<section>
 				<CircleExpedition
 					:expedition="expedition"
 					:current-uid="currentUid"
@@ -88,6 +98,13 @@ const circles = useCircles();
 const store = useCirclesStore();
 
 const currentUid = computed(() => user.value?.id ?? '');
+
+// tooltip copy explaining how the shared garden is cared for + what "Living" means
+const livingHelp =
+	'Living Garden: it animates because your circle keeps getting outside. It grows with your combined Nature Minutes - run trails, contribute to your expedition, and spend time outdoors together. A quiet garden is a gentle nudge to take a walk.';
+const restingHelp =
+	"Resting Garden: it grows with your circle's combined Nature Minutes - more time outside means more trees, flowers, and life. Animations (the Living variant) turn on for active, growing circles.";
+
 const expedition = computed(() => (store.expedition === undefined ? null : store.expedition));
 const garden = computed(
 	() => (currentUid.value ? store.getGarden(currentUid.value) : null) ?? null

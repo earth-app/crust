@@ -13,8 +13,9 @@ describe('CircleGarden (render smoke)', () => {
 		});
 
 		expect(wrapper.find('canvas').exists()).toBe(true);
+		// aria-label now describes the living scene (growth level + element tallies)
 		expect(wrapper.find('canvas').attributes('aria-label')?.toLowerCase()).toContain(
-			'circle garden'
+			'shared garden'
 		);
 	});
 
@@ -30,5 +31,23 @@ describe('CircleGarden (render smoke)', () => {
 		const garden = deriveMockGarden({ ...emptyGardenScene(), elementCount: 0 });
 		const wrapper = await mountSuspended(Garden, { props: { garden } });
 		expect(wrapper.find('canvas').exists()).toBe(true);
+	});
+
+	// mounting runs relayout() -> layoutGarden + buildHitZones, so a rich, water-heavy,
+	// grown garden exercises the aquatic-river + far-hill + creature constraints end to end
+	it('mounts a grown, water-rich animated garden without throwing', async () => {
+		const garden = deriveMockGarden({
+			...emptyGardenScene(),
+			elementCount: 72,
+			level: 11,
+			animated: true,
+			seed: 20260719,
+			mix: { tree: 8, flower: 6, water: 6, stone: 3, creature: 5, star: 2 }
+		});
+		const wrapper = await mountSuspended(Garden, {
+			props: { garden, interactive: true, caption: 'Riverside' }
+		});
+		expect(wrapper.find('canvas').exists()).toBe(true);
+		expect(wrapper.text()).toContain('Riverside');
 	});
 });

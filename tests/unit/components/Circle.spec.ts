@@ -106,19 +106,55 @@ describe('CircleExpedition', () => {
 		expect(wrapper.text()).not.toMatch(/#\s*1|rank|leaderboard/i);
 	});
 
-	it('offers the start form when the circle has no expedition', async () => {
+	it('offers the start form when the circle has members but no expedition', async () => {
 		const wrapper = await mountSuspended(Expedition_, {
-			props: { expedition: null, canStart: true, currentUid: 'a' }
+			// circleSize > 1 => the circle has at least one other person
+			props: { expedition: null, canStart: true, currentUid: 'a', circleSize: 3 }
 		});
 		expect(wrapper.text()).toContain('Start an Expedition');
 		expect(wrapper.text()).toContain('Start Expedition');
+	});
+
+	it('gates the start behind an invite prompt when the circle is empty', async () => {
+		const wrapper = await mountSuspended(Expedition_, {
+			// no circleSize + no fetched members => a shared goal needs people first
+			props: { expedition: null, canStart: true, currentUid: 'a' }
+		});
+		expect(wrapper.text()).toContain('Invite Friends to Start');
+		expect(wrapper.text()).not.toContain('Start Expedition');
+	});
+
+	it('nudges when the default target is very high for a small circle', async () => {
+		// default target 600, circleSize 1 nature -> ambitiousAt 360 -> ambitious nudge
+		const wrapper = await mountSuspended(Expedition_, {
+			props: { expedition: null, canStart: true, currentUid: 'a', circleSize: 1 }
+		});
+		expect(wrapper.text()).toContain('This Looks Ambitious!');
+	});
+
+	it('encourages a higher goal when the target is low for a big circle', async () => {
+		// default target 600 < circleSize 30 * 30 = 900 -> low nudge
+		const wrapper = await mountSuspended(Expedition_, {
+			props: { expedition: null, canStart: true, currentUid: 'a', circleSize: 30 }
+		});
+		expect(wrapper.text()).toContain('You Can Do Better!');
+	});
+
+	it('stays quiet when the target sits in a healthy band', async () => {
+		// circleSize 5 nature: healthy band [150, 1800) contains the default 600
+		const wrapper = await mountSuspended(Expedition_, {
+			props: { expedition: null, canStart: true, currentUid: 'a', circleSize: 5 }
+		});
+		expect(wrapper.text()).not.toContain('This Looks Ambitious!');
+		expect(wrapper.text()).not.toContain('You Can Do Better!');
 	});
 });
 
 describe('CirclePanel', () => {
 	it('renders the header and the signed-out prompt without a user', async () => {
 		const wrapper = await mountSuspended(Panel);
-		expect(wrapper.text()).toContain('Your Circle');
+		// panel now leads with the shared-garden framing
+		expect(wrapper.text()).toContain('My Shared Garden');
 		expect(wrapper.text()).toContain('Sign In');
 	});
 });

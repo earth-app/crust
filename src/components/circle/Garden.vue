@@ -20,7 +20,8 @@
 			>
 			<span
 				v-if="garden.animated && !reduced"
-				class="rounded-full bg-white/20 px-2 py-1 text-[10px] font-semibold tracking-wide text-white uppercase backdrop-blur-sm"
+				class="pointer-events-auto cursor-help rounded-full bg-white/20 px-2 py-1 text-[10px] font-semibold tracking-wide text-white uppercase backdrop-blur-sm"
+				title="Living Garden: it stays in motion while your circle keeps getting outside. Grow it with Nature Minutes - trails, expeditions, time outdoors together."
 				>Living</span
 			>
 		</div>
@@ -99,6 +100,8 @@ let effects: GardenEffect[] = [];
 // the creature pinned under a press-and-hold, and where the finger holds it
 let heldId: string | null = null;
 const heldPos = { x: 0, y: 0 };
+// where a creature was dropped; it stays there instead of snapping back to its seed spot
+const homes = new Map<string, { x: number; y: number }>();
 // live on-screen creature positions this frame, for pointer hit-testing
 const creaturePos = new Map<string, { x: number; y: number; r: number }>();
 interface HitZone {
@@ -163,9 +166,11 @@ function relayout() {
 	buildHitZones();
 	heldId = null;
 	creaturePos.clear();
+	homes.clear();
 }
 
-// static tap targets (trees drop leaves, water splashes, blooms shed petals)
+// static tap targets: trees drop leaves, blooms shed petals. water is NOT here - the whole
+// river band is the splash target (handled in onPointerDown), not the aquatic decor on it
 function buildHitZones() {
 	hitZones = [];
 	if (!layout) return;
@@ -174,12 +179,15 @@ function buildHitZones() {
 		if (el.kind === 'tree') {
 			const trunkH = el.size * 1.3 * (el.trunk || 1);
 			hitZones.push({ type: 'tree', x: el.x, y: el.y - trunkH * 0.7, r: el.size * 0.85, el });
-		} else if (el.kind === 'water') {
-			hitZones.push({ type: 'water', x: el.x, y: el.y, r: el.size, el });
 		} else if (el.kind === 'flower' && el.variant !== 'mushroom' && el.variant !== 'grass') {
 			hitZones.push({ type: 'flower', x: el.x, y: el.y - el.size * 0.7, r: el.size * 0.6, el });
 		}
 	}
+}
+
+// the drawn river band half-height (matches drawRiver's h); used to hit-test river taps
+function riverBandHalf(): number {
+	return Math.max(10, (cssH - (layout?.ground ?? cssH)) * 0.12);
 }
 
 // a closed blob curve through midpoints (smooth edges for ponds + rocks)
@@ -338,49 +346,70 @@ function drawGround() {
 
 function drawRiver(time: number, lively: boolean) {
 	if (!ctx || !layout || !layout.river) return;
+	const c = ctx;
 	const nf = sr.nightFactor;
 	const y = layout.riverY;
 	const h = Math.max(10, (cssH - layout.ground) * 0.12);
-	ctx.save();
-	const grad = ctx.createLinearGradient(0, y - h, 0, y + h);
-	grad.addColorStop(0, mixHex('#63b3ed', '#1e3a5f', nf));
-	grad.addColorStop(1, mixHex('#3182ce', '#132a44', nf));
-	ctx.fillStyle = grad;
 	// smooth banks: quadratic curves through midpoints, no hard corners
 	const top: Point[] = [];
 	const bot: Point[] = [];
 	for (let x = -20; x <= cssW + 20; x += 26)
 		top.push({ x, y: y - h + Math.sin(x * 0.02 + 0.6) * 4 });
 	for (let x = cssW + 20; x >= -20; x -= 26) bot.push({ x, y: y + h + Math.sin(x * 0.02) * 5 });
-	ctx.beginPath();
-	ctx.moveTo(top[0]!.x, top[0]!.y);
-	for (let i = 1; i < top.length - 1; i++) {
-		const m = { x: (top[i]!.x + top[i + 1]!.x) / 2, y: (top[i]!.y + top[i + 1]!.y) / 2 };
-		ctx.quadraticCurveTo(top[i]!.x, top[i]!.y, m.x, m.y);
-	}
-	ctx.lineTo(top[top.length - 1]!.x, top[top.length - 1]!.y);
-	ctx.lineTo(bot[0]!.x, bot[0]!.y);
-	for (let i = 1; i < bot.length - 1; i++) {
-		const m = { x: (bot[i]!.x + bot[i + 1]!.x) / 2, y: (bot[i]!.y + bot[i + 1]!.y) / 2 };
-		ctx.quadraticCurveTo(bot[i]!.x, bot[i]!.y, m.x, m.y);
-	}
-	ctx.lineTo(bot[bot.length - 1]!.x, bot[bot.length - 1]!.y);
-	ctx.closePath();
-	ctx.fill();
-	// flowing highlights drift left->right when the scene is alive
-	if (lively) {
-		ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-		ctx.lineWidth = 1.4;
+	const tracePath = () => {
+		c.beginPath();
+		c.moveTo(top[0]!.x, top[0]!.y);
+		for (let i = 1; i < top.length - 1; i++) {
+			const m = { x: (top[i]!.x + top[i + 1]!.x) / 2, y: (top[i]!.y + top[i + 1]!.y) / 2 };
+			c.quadraticCurveTo(top[i]!.x, top[i]!.y, m.x, m.y);
+		}
+		c.lineTo(top[top.length - 1]!.x, top[top.length - 1]!.y);
+		c.lineTo(bot[0]!.x, bot[0]!.y);
+		for (let i = 1; i < bot.length - 1; i++) {
+			const m = { x: (bot[i]!.x + bot[i + 1]!.x) / 2, y: (bot[i]!.y + bot[i + 1]!.y) / 2 };
+			c.quadraticCurveTo(bot[i]!.x, bot[i]!.y, m.x, m.y);
+		}
+		c.lineTo(bot[bot.length - 1]!.x, bot[bot.length - 1]!.y);
+		c.closePath();
+	};
+	c.save();
+	const grad = c.createLinearGradient(0, y - h, 0, y + h);
+	grad.addColorStop(0, mixHex('#63b3ed', '#1e3a5f', nf));
+	grad.addColorStop(1, mixHex('#3182ce', '#132a44', nf));
+	c.fillStyle = grad;
+	tracePath();
+	c.fill();
+	const winter = sr.season === 'winter';
+	// flowing highlights drift left->right when the scene is alive (open water only)
+	if (lively && !winter) {
+		c.strokeStyle = 'rgba(255,255,255,0.4)';
+		c.lineWidth = 1.4;
 		for (let k = 0; k < 3; k++) {
 			const phase = (time * 0.00008 + k * 0.33) % 1;
 			const hx = phase * (cssW + 40) - 20;
-			ctx.beginPath();
-			ctx.moveTo(hx, y - h * 0.3);
-			ctx.quadraticCurveTo(hx + 20, y, hx + 40, y + h * 0.2);
-			ctx.stroke();
+			c.beginPath();
+			c.moveTo(hx, y - h * 0.3);
+			c.quadraticCurveTo(hx + 20, y, hx + 40, y + h * 0.2);
+			c.stroke();
 		}
 	}
-	ctx.restore();
+	// winter freezes the river into an ice sheet with a few cracks
+	if (winter) {
+		c.fillStyle = 'rgba(226,240,253,0.6)';
+		tracePath();
+		c.fill();
+		c.strokeStyle = 'rgba(255,255,255,0.5)';
+		c.lineWidth = 1;
+		for (let k = 0; k < 3; k++) {
+			const cx = cssW * (0.2 + k * 0.3);
+			c.beginPath();
+			c.moveTo(cx, y - h * 0.6);
+			c.lineTo(cx + 18, y);
+			c.lineTo(cx - 8, y + h * 0.6);
+			c.stroke();
+		}
+	}
+	c.restore();
 }
 // #endregion
 
@@ -454,6 +483,29 @@ function drawTree(el: LaidElement, g: number, sway: number) {
 			ctx.lineTo(Math.cos(ang) * spread, cy + r * 0.3 + Math.sin(ang) * spread);
 			ctx.stroke();
 		}
+	}
+	// a mature leafy tree earns a bird's nest tucked into its crown
+	if (foliage && el.variant !== 'conifer' && g > 0.7 && hashSeed(el.seed, 'nest') % 4 === 0) {
+		const nx = -r * 0.45;
+		const ny = cy + r * 0.15;
+		const nr = Math.max(4, r * 0.32);
+		ctx.fillStyle = '#7c5a34';
+		ctx.beginPath();
+		ctx.ellipse(nx, ny, nr, nr * 0.6, 0, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.strokeStyle = shadeHex('#7c5a34', -18);
+		ctx.lineWidth = 1;
+		for (let i = 0; i < 3; i++) {
+			ctx.beginPath();
+			ctx.ellipse(nx, ny + i * 0.6, nr * (1 - i * 0.14), nr * 0.5, 0, Math.PI * 0.1, Math.PI * 0.9);
+			ctx.stroke();
+		}
+		// a couple of pale eggs
+		ctx.fillStyle = '#e6f0e2';
+		ctx.beginPath();
+		ctx.ellipse(nx - nr * 0.3, ny - nr * 0.12, nr * 0.22, nr * 0.3, 0, 0, Math.PI * 2);
+		ctx.ellipse(nx + nr * 0.25, ny - nr * 0.06, nr * 0.22, nr * 0.3, 0, 0, Math.PI * 2);
+		ctx.fill();
 	}
 	// winter snow rests on the crown / bare branches
 	if (sr.season === 'winter') {
@@ -551,50 +603,148 @@ function drawFlower(el: LaidElement, g: number, sway: number) {
 	ctx.restore();
 }
 
+// water elements are aquatic decorations on the single river (lilypad/cattail/frog/beaver dam)
 function drawWater(el: LaidElement, g: number, time: number, lively: boolean) {
 	if (!ctx) return;
-	const w = el.size * (1 + 0.6 * g);
-	const hh = el.size * 0.42 * (0.6 + 0.4 * g);
-	const seed = hashSeed(el.seed, 'pond');
-	ctx.save();
-	ctx.translate(el.x, el.y);
-	// soft feathered halo so ponds near the river read as one smooth body
-	ctx.save();
-	ctx.globalAlpha = 0.42;
-	ctx.fillStyle = mixHex(el.accent, '#dbeafe', 0.5);
-	traceSmoothClosed(blobPoints(seed, w * 1.1, hh * 1.16));
-	ctx.fill();
-	ctx.restore();
-	// smooth pond body (seeded blob, no sharp edges)
-	const grad = ctx.createLinearGradient(0, -hh, 0, hh);
-	grad.addColorStop(0, mixHex(el.accent, '#1e3a5f', sr.nightFactor));
-	grad.addColorStop(1, mixHex(el.color, '#132a44', sr.nightFactor));
-	ctx.fillStyle = grad;
-	traceSmoothClosed(blobPoints(seed, w, hh));
-	ctx.fill();
-	// faint rim light on the near edge
-	ctx.strokeStyle = `rgba(255,255,255,${0.12 + (1 - sr.nightFactor) * 0.12})`;
-	ctx.lineWidth = 1;
-	traceSmoothClosed(blobPoints(seed, w * 0.9, hh * 0.84));
-	ctx.stroke();
-	if (sr.season === 'winter') {
-		ctx.fillStyle = 'rgba(226,240,253,0.42)';
-		traceSmoothClosed(blobPoints(seed, w, hh));
-		ctx.fill();
+	const c = ctx;
+	const winter = sr.season === 'winter';
+	const s = el.size * (0.85 + 0.4 * g);
+	const bob = lively && !winter ? Math.sin(time * 0.002 + el.phase) * 1.5 : 0;
+	c.save();
+	c.translate(el.x, el.y + bob);
+	if (el.variant === 'cattail') drawCattail(c, s, winter, el.seed);
+	else if (el.variant === 'beaver_dam') drawBeaverDam(c, s, el.seed);
+	else if (el.variant === 'frog') drawFrog(c, s, winter, time, lively, el.phase);
+	else drawLilypad(c, s, winter, el.seed);
+	c.restore();
+}
+
+function drawLilypad(c: CanvasRenderingContext2D, s: number, winter: boolean, seed: number) {
+	const r = s * 0.95;
+	const rot = seedFloatLocal(seed, 'lp') * Math.PI;
+	// pad = ellipse with a wedge notch cut to the center
+	c.fillStyle = winter ? 'rgba(200,220,214,0.55)' : mixHex('#2f855a', '#276749', 0.35);
+	c.beginPath();
+	c.moveTo(0, 0);
+	c.ellipse(0, 0, r, r * 0.7, rot, 0.5, Math.PI * 2);
+	c.closePath();
+	c.fill();
+	c.strokeStyle = 'rgba(255,255,255,0.16)';
+	c.lineWidth = 0.8;
+	for (let i = 0; i < 4; i++) {
+		const a = rot + 0.7 + i * 0.5;
+		c.beginPath();
+		c.moveTo(0, 0);
+		c.lineTo(Math.cos(a) * r, Math.sin(a) * r * 0.7);
+		c.stroke();
 	}
-	if (lively && sr.season !== 'winter') {
-		ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-		ctx.lineWidth = 1;
-		for (let i = 1; i <= 2; i++) {
-			const rp = (time * 0.00045 + i * 0.5) % 1;
-			ctx.globalAlpha = (1 - rp) * 0.5;
-			ctx.beginPath();
-			ctx.ellipse(0, 0, w * rp, hh * rp, 0, 0, Math.PI * 2);
-			ctx.stroke();
+	// occasional lotus bloom (not in winter)
+	if (!winter && hashSeed(seed, 'lotus') % 3 === 0) {
+		c.fillStyle = '#f687b3';
+		for (let i = 0; i < 5; i++) {
+			c.save();
+			c.rotate((i / 5) * Math.PI * 2);
+			c.beginPath();
+			c.ellipse(0, -r * 0.24, r * 0.12, r * 0.28, 0, 0, Math.PI * 2);
+			c.fill();
+			c.restore();
 		}
-		ctx.globalAlpha = 1;
+		c.fillStyle = '#faf089';
+		c.beginPath();
+		c.arc(0, 0, r * 0.14, 0, Math.PI * 2);
+		c.fill();
 	}
-	ctx.restore();
+}
+
+function drawCattail(c: CanvasRenderingContext2D, s: number, winter: boolean, seed: number) {
+	const stalk = winter ? '#a8b0a0' : '#4a7c3f';
+	const head = winter ? '#8a7a5a' : '#7c4a1e';
+	for (let i = 0; i < 3; i++) {
+		const dx = (i - 1) * s * 0.4;
+		const hgt = s * (1.6 + seedFloatLocal(seed, `ch${i}`) * 0.6);
+		c.strokeStyle = stalk;
+		c.lineCap = 'round';
+		// a leaning blade
+		c.lineWidth = Math.max(1, s * 0.07);
+		c.beginPath();
+		c.moveTo(dx, 0);
+		c.quadraticCurveTo(dx - s * 0.4, -hgt * 0.5, dx - s * 0.15, -hgt * 0.92);
+		c.stroke();
+		// the stalk
+		c.lineWidth = Math.max(1.5, s * 0.1);
+		c.beginPath();
+		c.moveTo(dx, 0);
+		c.lineTo(dx, -hgt);
+		c.stroke();
+		// the sausage head (bare in deep winter on some)
+		if (!winter || i % 2 === 0) {
+			c.fillStyle = head;
+			c.beginPath();
+			c.ellipse(dx, -hgt * 0.8, s * 0.15, s * 0.48, 0, 0, Math.PI * 2);
+			c.fill();
+		}
+	}
+}
+
+function drawFrog(
+	c: CanvasRenderingContext2D,
+	s: number,
+	winter: boolean,
+	time: number,
+	lively: boolean,
+	phase: number
+) {
+	if (winter) return; // frogs hibernate in winter
+	const hop = lively ? Math.max(0, Math.sin(time * 0.003 + phase)) * s * 0.7 : 0;
+	const r = s * 0.5;
+	c.save();
+	c.translate(0, -hop);
+	c.fillStyle = '#48bb78';
+	c.beginPath();
+	c.ellipse(0, 0, r, r * 0.72, 0, 0, Math.PI * 2);
+	c.fill();
+	// eye bumps + pupils
+	c.beginPath();
+	c.arc(-r * 0.42, -r * 0.5, r * 0.28, 0, Math.PI * 2);
+	c.arc(r * 0.42, -r * 0.5, r * 0.28, 0, Math.PI * 2);
+	c.fill();
+	c.fillStyle = '#1a202c';
+	c.beginPath();
+	c.arc(-r * 0.42, -r * 0.55, r * 0.12, 0, Math.PI * 2);
+	c.arc(r * 0.42, -r * 0.55, r * 0.12, 0, Math.PI * 2);
+	c.fill();
+	// legs
+	c.strokeStyle = '#38a169';
+	c.lineWidth = Math.max(1.5, r * 0.22);
+	c.lineCap = 'round';
+	c.beginPath();
+	c.moveTo(-r * 0.6, r * 0.35);
+	c.lineTo(-r * 1.05, r * 0.6);
+	c.moveTo(r * 0.6, r * 0.35);
+	c.lineTo(r * 1.05, r * 0.6);
+	c.stroke();
+	c.restore();
+}
+
+function drawBeaverDam(c: CanvasRenderingContext2D, s: number, seed: number) {
+	c.strokeStyle = '#4a2f18';
+	c.lineWidth = 1;
+	for (let i = 0; i < 7; i++) {
+		const rng = seedFloatLocal(seed, `log${i}`);
+		const lx = (rng - 0.5) * s * 0.9;
+		const ly = (seedFloatLocal(seed, `ly${i}`) - 0.5) * s * 0.55;
+		const ang = (seedFloatLocal(seed, `la${i}`) - 0.5) * 1.3;
+		const ll = s * (0.5 + rng * 0.55);
+		c.save();
+		c.translate(lx, ly);
+		c.rotate(ang);
+		c.fillStyle = shadeHex('#6b4423', (i % 2) * 16 - 8);
+		c.beginPath();
+		c.ellipse(0, 0, ll / 2, s * 0.1, 0, 0, Math.PI * 2);
+		c.fill();
+		c.stroke();
+		c.restore();
+	}
 }
 
 function drawStone(el: LaidElement, g: number) {
@@ -772,8 +922,9 @@ function drawCreatureElement(el: LaidElement, time: number, lively: boolean) {
 	const s = el.size * (0.7 + 0.5 * el.growth);
 	const dir = hashSeed(el.seed, 'dir') % 2 === 0 ? 1 : -1;
 	const held = heldId === id;
-	// a held creature stops traveling and rests where the finger holds it
-	const drift = lively && !held;
+	const home = homes.get(id);
+	// held OR dropped-at-home creatures stop traveling; held follows the finger
+	const drift = lively && !held && !home;
 	let x: number;
 	let y: number;
 	if (variant === 'bird') {
@@ -791,6 +942,10 @@ function drawCreatureElement(el: LaidElement, time: number, lively: boolean) {
 		x = el.x;
 		y = el.y;
 	}
+	if (home) {
+		x = home.x;
+		y = home.y + (lively ? Math.sin(time * 0.003 + el.phase) * 3 : 0);
+	}
 	if (held) {
 		x = heldPos.x;
 		y = heldPos.y;
@@ -799,7 +954,7 @@ function drawCreatureElement(el: LaidElement, time: number, lively: boolean) {
 	if (variant === 'bird') drawBird(x, y, s, time, lively, el.phase);
 	else if (variant === 'dragonfly') drawDragonfly(x, y, s, time, lively, el.phase, dir);
 	else if (variant === 'firefly') drawFirefly(x, y, s, time, lively, el.phase);
-	else if (held) drawButterfly(el, time, lively, x, y);
+	else if (held || home) drawButterfly(el, time, lively, x, y);
 	else drawButterfly(el, time, lively);
 }
 
@@ -809,7 +964,8 @@ function drawAmbient(time: number, lively: boolean) {
 	for (const a of ambient) {
 		const id = 'amb-' + a.seed;
 		const held = heldId === id;
-		const travel = lively && !held ? time * 0.001 * a.speed * a.dir : 0;
+		const home = homes.get(id);
+		const travel = lively && !held && !home ? time * 0.001 * a.speed * a.dir : 0;
 		const nx = (((a.x + travel) % 1) + 1) % 1;
 		let x = nx * span - 40;
 		const baseY = a.y * cssH;
@@ -819,6 +975,10 @@ function drawAmbient(time: number, lively: boolean) {
 		else if (a.variant === 'dragonfly')
 			y = baseY + (lively ? Math.sin(time * 0.02 + a.phase) * 12 : 0);
 		else y = baseY + (lively ? Math.cos(time * 0.0021 + a.phase) * 10 : 0);
+		if (home) {
+			x = home.x;
+			y = home.y + (lively ? Math.sin(time * 0.003 + a.phase) * 3 : 0);
+		}
 		if (held) {
 			x = heldPos.x;
 			y = heldPos.y;
@@ -1063,6 +1223,12 @@ function onPointerDown(e: PointerEvent) {
 		root.value.setPointerCapture?.(e.pointerId);
 		return;
 	}
+	// the whole river band splashes when tapped (its aquatic decor is not individually tappable)
+	if (layout?.river && Math.abs(y - layout.riverY) < riverBandHalf()) {
+		if (effects.length >= MAX_GARDEN_INTERACTION_EFFECTS) effects.shift();
+		effects.push({ kind: 'splash', x, y, start: performance.now() });
+		return;
+	}
 	// otherwise the nearest static element responds
 	let zone: HitZone | null = null;
 	let zd = Infinity;
@@ -1084,6 +1250,8 @@ function onPointerMove(e: PointerEvent) {
 }
 
 function onPointerUp() {
+	// leave the creature where it was dropped instead of snapping back to its seed position
+	if (heldId) homes.set(heldId, { x: heldPos.x, y: heldPos.y });
 	heldId = null;
 }
 

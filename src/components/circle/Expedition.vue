@@ -150,12 +150,12 @@
 			</div>
 			<div>
 				<UButton
-					icon="mdi:rocket-launch-outline"
+					:icon="hasCircleMembers ? 'mdi:rocket-launch-outline' : 'mdi:account-plus-outline'"
 					color="primary"
 					:loading="starting"
-					:disabled="!form.title.trim() || starting"
+					:disabled="starting || (hasCircleMembers && !form.title.trim())"
 					@click="onStart"
-					>Start Expedition</UButton
+					>{{ hasCircleMembers ? 'Start Expedition' : 'Invite Friends to Start' }}</UButton
 				>
 			</div>
 		</div>
@@ -170,6 +170,29 @@
 			/>
 			<p class="text-sm text-muted">No active expedition yet.</p>
 		</div>
+
+		<UModal
+			v-model:open="showInviteModal"
+			title="Invite Your Circle First"
+		>
+			<template #body>
+				<div class="flex flex-col gap-4">
+					<p class="text-sm text-muted">
+						An expedition is a shared goal. Add a friend or two to your circle, then grow a garden
+						together.
+					</p>
+					<UserInviteFriend />
+					<UButton
+						variant="soft"
+						color="neutral"
+						icon="mdi:compass-outline"
+						block
+						@click="openDiscover"
+						>Find People to Follow</UButton
+					>
+				</div>
+			</template>
+		</UModal>
 	</div>
 </template>
 
@@ -193,6 +216,16 @@ const emit = defineEmits<{ (e: 'started', value: Expedition): void }>();
 const { start } = useExpedition();
 const { circle, fetchCircle } = useFriends();
 const toast = useToast();
+
+// a shared garden needs at least one other person; gate the start behind an invite prompt.
+// honor the circleSize prop (you + others) as a hint before the circle fetch resolves
+const showInviteModal = ref(false);
+const hasCircleMembers = computed(() => circle.value.length > 0 || (props.circleSize ?? 0) > 1);
+
+function openDiscover() {
+	showInviteModal.value = false;
+	if (import.meta.client) window.dispatchEvent(new Event('earth-app:open-discover'));
+}
 
 // prefer an explicit prop; otherwise size from the fetched circle (self + members)
 const effectiveCircleSize = computed(() =>
@@ -260,7 +293,13 @@ onMounted(() => {
 });
 
 async function onStart() {
-	if (!form.title.trim() || starting.value) return;
+	if (starting.value) return;
+	// an expedition is a shared goal - block it when the circle is empty and offer to invite
+	if (!hasCircleMembers.value) {
+		showInviteModal.value = true;
+		return;
+	}
+	if (!form.title.trim()) return;
 	starting.value = true;
 	const res = await start({
 		title: form.title.trim(),
