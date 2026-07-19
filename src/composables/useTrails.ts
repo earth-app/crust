@@ -1,13 +1,15 @@
 import { useAuthStore } from 'stores/auth';
-import { TRAIL_STEP_MINUTES, useTrailsStore } from 'stores/trails';
+import { useTrailsStore } from 'stores/trails';
 import type {
 	NatureMinutes,
 	NatureMinutesSource,
 	Trail,
+	TrailJournalEntry,
 	TrailPledge,
-	TrailResult
+	TrailReflection,
+	TrailResult,
+	TrailRun
 } from 'types/trails';
-import type { Quest } from 'types/user';
 
 // normalize the store's {success,message} into the neutral {success,data,error} envelope;
 // components own toasts, composables stay ui-side-effect free
@@ -22,6 +24,7 @@ export function useTrails() {
 
 	const trails = computed(() => store.list());
 	const natureMinutes = computed(() => store.natureMinutes);
+	const journal = computed(() => store.journal);
 
 	const fetchTrails = async (opts: { theme?: string; premium?: boolean } = {}) => {
 		const res = await store.fetchTrails(opts);
@@ -44,20 +47,27 @@ export function useTrails() {
 		return toResult<NatureMinutes>((await store.creditNatureMinutes(uid, source)) as any);
 	};
 
+	const fetchJournal = async (force = false): Promise<TrailResult<TrailJournalEntry[]>> => {
+		if (!resolveUid())
+			return { success: false, error: 'You must be signed in to see your journal.' };
+		return toResult<TrailJournalEntry[]>((await store.fetchJournal(force)) as any);
+	};
+
 	return {
 		trails,
 		natureMinutes,
+		journal,
 		fetchTrails,
 		fetchNatureMinutes,
-		creditNatureMinutes
+		creditNatureMinutes,
+		fetchJournal
 	};
 }
 
 export function useTrail(id: string) {
 	const store = useTrailsStore();
-	const { creditNatureMinutes } = useTrails();
 	// feed the finite "Your Week" self-monitoring reflection (Hunt 2018)
-	const { recordCuriosity, recordQuestDone } = useWeeklyReflection();
+	const { recordCuriosity } = useWeeklyReflection();
 
 	// three-state: undefined = loading, null = not found, Trail = loaded
 	const trail = computed(() => store.get(id));
@@ -73,51 +83,29 @@ export function useTrail(id: string) {
 
 	if (!store.has(id)) fetch();
 
-	// synthetic Quest so the reused quest Timeline / step components can drive a trail run
-	// unchanged (trail run = quest run with the same id); alt-step groups aren't used by trails
-	const asQuest = computed<Quest | null>(() => {
-		const t = trail.value;
-		if (!t) return null;
-		return {
-			id: t.id,
-			title: t.title,
-			description: t.description,
-			icon: t.icon,
-			rarity: t.rarity,
-			steps: t.steps.map((s) => s.step),
-			reward: t.reward,
-			premium: t.premium
-		};
-	});
-
-	const accept = (pledge: TrailPledge): TrailResult<void> => {
+	// begin a run with the if-then pledge (the strongest behavior lever)
+	const start = async (pledge?: TrailPledge): Promise<TrailResult<TrailRun>> => {
 		const t = trail.value;
 		if (!t) return { success: false, error: 'Trail not loaded.' };
-		if (!pledge.when || !pledge.when.trim()) {
+		if (pledge && (!pledge.when || !pledge.when.trim())) {
 			return { success: false, error: 'Add a "when" so your pledge has a trigger.' };
 		}
-		store.acceptTrail(t, pledge);
-		return { success: true };
+		const r = await store.startRun(t, pledge);
+		return { success: true, data: r };
 	};
 
-	// unlock a step's awe reveal + optimistically credit Nature Minutes for the outdoor time
-	const completeStep = async (index: number) => {
-		store.revealStep(id, index);
-		// each awe reveal is a "moment of wonder" for the weekly reflection
+	// accumulate unhurried minutes of presence during the practice
+	const addPresence = (minutes: number) => store.addPresence(id, minutes);
+
+	// finish with the private reflection; credits nature minutes + writes the journal
+	const complete = async (
+		reflection: TrailReflection,
+		presenceMinutes?: number
+	): Promise<TrailResult<TrailJournalEntry>> => {
+		const res = await store.completeRun(id, reflection, presenceMinutes);
+		// a finished trail is a moment of wonder for the weekly reflection
 		recordCuriosity(1);
-		return await creditNatureMinutes({
-			kind: 'trail_step',
-			ref_id: `${id}:${index}`,
-			minutes: TRAIL_STEP_MINUTES,
-			at: new Date().toISOString()
-		});
-	};
-
-	const complete = () => {
-		store.completeTrail(id);
-		// a finished trail is a completed quest for the weekly reflection
-		recordQuestDone(1);
-		return { success: true as const };
+		return res.success ? { success: true, data: res.data } : { success: false, error: res.message };
 	};
 
 	const reset = () => store.clearRun(id);
@@ -125,10 +113,9 @@ export function useTrail(id: string) {
 	return {
 		trail,
 		run,
-		asQuest,
 		fetch,
-		accept,
-		completeStep,
+		start,
+		addPresence,
 		complete,
 		reset
 	};
