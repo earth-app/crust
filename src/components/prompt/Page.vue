@@ -46,6 +46,51 @@
 			</div>
 			<USeparator class="my-4 mx-3 w-4/5" />
 		</div>
+
+		<div class="flex flex-col gap-2 w-3/5 min-w-100 my-2">
+			<div class="flex items-center justify-between gap-2">
+				<div class="flex items-center gap-2">
+					<UIcon
+						name="mdi:map-marker-radius-outline"
+						class="size-5 text-primary"
+					/>
+					<h3 class="font-semibold">From Outside</h3>
+					<UBadge
+						v-if="promptTrailmarks.length"
+						color="primary"
+						variant="subtle"
+						size="xs"
+						>{{ promptTrailmarks.length }}</UBadge
+					>
+				</div>
+				<UButton
+					size="sm"
+					variant="soft"
+					color="primary"
+					icon="mdi:map-marker-plus-outline"
+					:disabled="!user"
+					@click="outsideOpen = true"
+					>Answer From Outside</UButton
+				>
+			</div>
+			<p
+				v-if="!promptTrailmarks.length"
+				class="text-sm opacity-60"
+			>
+				No one has answered this from a trail yet. Head outside and leave the first.
+			</p>
+			<div
+				v-else
+				class="flex flex-col gap-2"
+			>
+				<TrailmarkCard
+					v-for="m in promptTrailmarks"
+					:key="m.id"
+					:mark="m"
+				/>
+			</div>
+		</div>
+
 		<div class="flex flex-col items-center justify-center min-w-100 w-3/5 my-8">
 			<div
 				v-for="(response, i) in responses"
@@ -76,6 +121,18 @@
 			</p>
 		</div>
 
+		<UModal
+			v-model:open="outsideOpen"
+			title="Answer From Outside"
+		>
+			<template #body>
+				<TrailmarkComposer
+					:prompt-id="prompt.id"
+					@created="onOutsideCreated"
+				/>
+			</template>
+		</UModal>
+
 		<ClientOnly>
 			<SiteTour
 				:steps="promptTour"
@@ -105,6 +162,23 @@ const props = defineProps<{
 
 const posting = ref(false);
 const newResponse = ref('');
+
+// trailmark answers left for this prompt from outside (a distinct 'from outside' section)
+const { fetchForPrompt, forPrompt } = useTrailmarks();
+const outsideOpen = ref(false);
+const promptTrailmarks = computed(() => forPrompt(props.prompt.id));
+
+function onOutsideCreated() {
+	outsideOpen.value = false;
+	void fetchForPrompt(props.prompt.id, true);
+	toast.add({
+		title: 'Answer Left Outside',
+		description: 'It now shows under this prompt.',
+		icon: 'mdi:map-marker-check-outline',
+		color: 'success',
+		duration: 3000
+	});
+}
 
 const emailGate = useEmailGate();
 
@@ -184,6 +258,7 @@ onMounted(async () => {
 	hasMore.value = true;
 
 	await loadResponses();
+	void fetchForPrompt(props.prompt.id);
 });
 
 // prompt tour
