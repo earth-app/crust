@@ -1,7 +1,17 @@
 // shared contract for the admin Marketing studio (preview-only content emulation)
 
 export type MarketingKind =
-	'activity' | 'event' | 'prompt' | 'article' | 'user' | 'quest' | 'notification' | 'motd';
+	| 'activity'
+	| 'event'
+	| 'prompt'
+	| 'article'
+	| 'user'
+	| 'quest'
+	| 'notification'
+	| 'motd'
+	| 'garden'
+	| 'trail'
+	| 'trailmark';
 
 export type MarketingSource = 'manual' | 'live' | 'ai';
 
@@ -13,7 +23,10 @@ export const MARKETING_KINDS: MarketingKind[] = [
 	'user',
 	'quest',
 	'notification',
-	'motd'
+	'motd',
+	'garden',
+	'trail',
+	'trailmark'
 ];
 
 // a saved, reloadable mock scene for repeat marketing recordings
