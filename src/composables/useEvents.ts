@@ -8,6 +8,7 @@ import {
 } from 'types/event';
 import type { User } from 'types/user';
 import { makeAPIRequest, makeClientAPIRequest, makeServerRequest } from 'utils';
+import { getCurrentPosition, isNativePlatform } from '~/shared/utils/geoPermission';
 
 export function useEvents(serverRequest: typeof makeServerRequest = makeServerRequest) {
 	const authStore = useAuthStore();
@@ -430,22 +431,15 @@ export function useGeocoding(serverRequest: typeof makeServerRequest = makeServe
 	const longitude = useState<number | null>('user-longitude', () => null);
 
 	const retrieveLocation = () => {
-		if (typeof window === 'undefined') return;
-		const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
-			.Capacitor;
-		if (cap?.isNativePlatform?.()) return;
-
-		if (navigator.geolocation) {
-			navigator.geolocation.getCurrentPosition(
-				(position) => {
-					latitude.value = position.coords.latitude;
-					longitude.value = position.coords.longitude;
-				},
-				(error) => {
-					console.error('Error retrieving location:', error);
-				}
-			);
-		}
+		if (typeof window === 'undefined' || isNativePlatform()) return;
+		getCurrentPosition()
+			.then((position) => {
+				latitude.value = position.coords.latitude;
+				longitude.value = position.coords.longitude;
+			})
+			.catch((error) => {
+				console.error('Error retrieving location:', error);
+			});
 	};
 
 	if (latitude.value === null || longitude.value === null) {

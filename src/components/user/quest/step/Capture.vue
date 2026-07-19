@@ -363,12 +363,7 @@ async function injectExif(dataUrl: string, width: number, height: number): Promi
 
 	// Attempt to attach GPS coordinates - silently skip if unavailable or denied
 	try {
-		const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
-			navigator.geolocation.getCurrentPosition(resolve, reject, {
-				timeout: 3000,
-				maximumAge: 60_000
-			})
-		);
+		const pos = await getCurrentPosition({ timeout: 3000, maximumAge: 60_000 });
 		const { latitude, longitude, altitude } = pos.coords;
 		exifObj.GPS = {
 			[piexif.GPSIFD.GPSLatitudeRef]: latitude >= 0 ? 'N' : 'S',

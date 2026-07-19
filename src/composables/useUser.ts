@@ -16,6 +16,7 @@ import {
 	type User
 } from 'types/user';
 import type { MaybeRefOrGetter } from 'vue';
+import { getCurrentPosition, isNativePlatform } from '~/shared/utils/geoPermission';
 
 // #region visited site
 
@@ -1651,19 +1652,9 @@ export function useQuestGeolocation() {
 	const error = ref<string | null>(null);
 
 	const fetchLocation = () => {
-		if (typeof window === 'undefined') return;
-
-		const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
-			.Capacitor;
-		if (cap?.isNativePlatform?.()) return;
-
-		if (!navigator.geolocation) {
-			error.value = 'Geolocation is not supported by your browser.';
-			return;
-		}
-
-		navigator.geolocation.getCurrentPosition(
-			(position) => {
+		if (typeof window === 'undefined' || isNativePlatform()) return;
+		getCurrentPosition()
+			.then((position) => {
 				lat.value = position.coords.latitude;
 				lng.value = position.coords.longitude;
 				alt.value = position.coords.altitude;
@@ -1671,13 +1662,12 @@ export function useQuestGeolocation() {
 				altAccuracy.value = position.coords.altitudeAccuracy;
 				speed.value = position.coords.speed;
 				error.value = null;
-			},
-			(err) => {
+			})
+			.catch((err) => {
 				error.value =
-					err.message ||
+					err?.message ||
 					'Unable to retrieve your location. Please allow location access and try again.';
-			}
-		);
+			});
 	};
 
 	return {

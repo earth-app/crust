@@ -630,16 +630,7 @@ async function requestQuestPermissions(
 				const s = await navigator.mediaDevices.getUserMedia({ audio: true });
 				s.getTracks().forEach((t) => t.stop());
 			} else if (perm === 'location') {
-				await new Promise<void>((resolve, reject) => {
-					if (!navigator.geolocation) {
-						reject(new Error('Geolocation is not supported by this browser.'));
-						return;
-					}
-					navigator.geolocation.getCurrentPosition(
-						() => resolve(),
-						(err) => reject(err)
-					);
-				});
+				await getCurrentPosition();
 			}
 		} catch {
 			return { ok: false, failed: perm };
