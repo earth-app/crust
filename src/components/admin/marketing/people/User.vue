@@ -271,18 +271,6 @@
 <script setup lang="ts">
 import { useAuthStore } from 'stores/auth';
 import { makeAPIRequest, valid } from 'utils';
-import type { MockUserForm, Persona } from '~/shared/utils/marketingPeople';
-import {
-	emptyUserForm,
-	makeMockBadges,
-	makeMockUser,
-	MOCK_ACCOUNT_TYPES,
-	PERSONA_PRESETS,
-	personaToForm,
-	pickPersona,
-	RARITIES,
-	userToForm
-} from '~/shared/utils/marketingPeople';
 import type { MarketingScene, MarketingSource } from '../../../../shared/types/marketing';
 
 const props = defineProps<{

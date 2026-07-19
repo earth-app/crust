@@ -198,14 +198,6 @@
 </template>
 
 <script setup lang="ts">
-import type { MockNotificationForm } from '~/shared/utils/marketingPeople';
-import {
-	emptyNotificationForm,
-	makeMockNotification,
-	NOTIFICATION_PRESETS,
-	NOTIFICATION_TYPES,
-	notificationToastOptions
-} from '~/shared/utils/marketingPeople';
 import type { MarketingScene, MarketingSource } from '../../../../shared/types/marketing';
 
 const props = defineProps<{

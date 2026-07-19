@@ -115,8 +115,6 @@
 </template>
 
 <script setup lang="ts">
-import type { MockMotdForm } from '~/shared/utils/marketingPeople';
-import { emptyMotdForm, MOTD_PRESETS, normalizeMotdForm } from '~/shared/utils/marketingPeople';
 import type { MarketingScene, MarketingSource } from '../../../../shared/types/marketing';
 
 const props = defineProps<{

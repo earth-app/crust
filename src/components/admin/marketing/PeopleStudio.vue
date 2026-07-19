@@ -59,11 +59,6 @@
 </template>
 
 <script setup lang="ts">
-import type {
-	MockMotdForm,
-	MockNotificationForm,
-	MockUserForm
-} from '~/shared/utils/marketingPeople';
 import type { MarketingScene, MarketingStudioProps } from '../../../shared/types/marketing';
 
 const props = defineProps<MarketingStudioProps>();

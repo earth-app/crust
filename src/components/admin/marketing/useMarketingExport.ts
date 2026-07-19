@@ -123,10 +123,36 @@ export const DEFAULT_MAX_DIMENSION = 640;
 
 // animation-length bounds for animated exports (gif / apng)
 export const MIN_DURATION_MS = 2000;
-export const MAX_DURATION_MS = 10000;
+export const MAX_DURATION_MS = 15000;
 export const DEFAULT_DURATION_MS = 4000;
-// hard cap so a long capture can never balloon the frame buffer
-export const MAX_CAPTURE_FRAMES = 120;
+// hard cap so a long capture can never balloon the frame buffer (15s * 12fps)
+export const MAX_CAPTURE_FRAMES = 180;
+
+// #region export resolution
+
+export interface ResolutionPreset {
+	label: string;
+	width: number;
+	height: number;
+	// output scale from the ~640-wide base (drives pixelRatio for static + frame maxDimension)
+	scale: number;
+}
+
+// the garden preview is a ~640x350 scene; keep that by default, scale up to a 3K poster
+export const RESOLUTION_PRESETS: ResolutionPreset[] = [
+	{ label: 'Original (640 x 350)', width: 640, height: 350, scale: 1 },
+	{ label: 'HD (1280 x 700)', width: 1280, height: 700, scale: 2 },
+	{ label: '2K (1920 x 1050)', width: 1920, height: 1050, scale: 3 },
+	{ label: '3K (2880 x 1575)', width: 2880, height: 1575, scale: 4.5 }
+];
+export const DEFAULT_RESOLUTION_SCALE = 1;
+export const RESOLUTION_BASE_WIDTH = 640;
+
+// clamp a requested scale into the supported range (original .. 3K)
+export function clampResolutionScale(scale: number): number {
+	if (!Number.isFinite(scale)) return DEFAULT_RESOLUTION_SCALE;
+	return Math.max(1, Math.min(4.5, scale));
+}
 
 export function clampDurationMs(ms: number): number {
 	if (Number.isNaN(ms)) return DEFAULT_DURATION_MS;
@@ -288,9 +314,16 @@ export async function renderStaticBlob(
 	return dataUrlToBlob(await htmlToImage.toPng(node, base));
 }
 
+export function toImageData(frame: CapturedFrame): ImageData {
+	if (typeof ImageData !== 'undefined') {
+		return new ImageData(new Uint8ClampedArray(frame.data), frame.width, frame.height);
+	}
+	return frame as unknown as ImageData;
+}
+
 export async function encodeGif(
 	frames: CapturedFrame[],
-	opts: Pick<ExportOptions, 'fps' | 'quality'> = {}
+	opts: Pick<ExportOptions, 'fps' | 'quality' | 'onProgress'> = {}
 ): Promise<Blob> {
 	const { default: GIF } = await import('gif.js');
 	// build the worker from source so encoding stays self-contained (no external asset / CSP)
@@ -310,11 +343,12 @@ export async function encodeGif(
 	});
 	const delay = frameDelayMs(opts.fps);
 	for (const frame of frames) {
-		// runtime frames are real ImageData; gif.js consumes them directly
-		gif.addFrame(frame as unknown as ImageData, { delay, copy: true });
+		// re-wrap as real ImageData so gif.js accepts the frame (see toImageData)
+		gif.addFrame(toImageData(frame), { delay, copy: true });
 	}
 
 	return await new Promise<Blob>((resolve, reject) => {
+		gif.on('progress', (ratio: number) => opts.onProgress?.(ratio));
 		gif.on('finished', (blob: Blob) => {
 			URL.revokeObjectURL(workerScript);
 			resolve(blob);
@@ -329,7 +363,7 @@ export async function encodeGif(
 
 export async function encodeApng(
 	frames: CapturedFrame[],
-	opts: Pick<ExportOptions, 'fps'> = {}
+	opts: Pick<ExportOptions, 'fps' | 'onProgress'> = {}
 ): Promise<Blob> {
 	const UPNG = (await import('upng-js')).default;
 	const first = frames[0];
@@ -338,13 +372,15 @@ export async function encodeApng(
 	const delays = frames.map(() => frameDelayMs(opts.fps));
 	// cnum 0 = lossless full-color apng
 	const png = UPNG.encode(buffers, first.width, first.height, 0, delays);
+	// upng encodes in one synchronous shot; report a single completion tick
+	opts.onProgress?.(1);
 	return new Blob([png], { type: 'image/png' });
 }
 
 export async function encodeAnimatedBlob(
 	frames: CapturedFrame[],
 	format: 'gif' | 'apng',
-	opts: Pick<ExportOptions, 'fps' | 'quality'> = {}
+	opts: Pick<ExportOptions, 'fps' | 'quality' | 'onProgress'> = {}
 ): Promise<Blob> {
 	return format === 'gif' ? encodeGif(frames, opts) : encodeApng(frames, opts);
 }
@@ -374,21 +410,48 @@ export function triggerDownload(blob: Blob, filename: string, deps: DownloadDeps
 
 // #region composable
 
+export type ExportPhase = 'idle' | 'capturing' | 'encoding' | 'rendering' | 'done';
+
+export interface ExportRunDeps {
+	captureFrames?: typeof captureCanvasFrames;
+	encodeAnimated?: typeof encodeAnimatedBlob;
+	renderStatic?: typeof renderStaticBlob;
+	download?: typeof triggerDownload;
+}
+
+// frame capture is the first 60% of the bar; encoding / rendering fills the rest
+const CAPTURE_SHARE = 0.6;
+
 export function useMarketingExport() {
 	const exporting: Ref<boolean> = ref(false);
 	const progress: Ref<number> = ref(0);
+	const phase: Ref<ExportPhase> = ref('idle');
+	// current / total captured frames (drives the "Frame N/Total" counter)
+	const frame: Ref<number> = ref(0);
+	const frameTotal: Ref<number> = ref(0);
 
 	function formatsFor(animated: boolean): ExportFormatMeta[] {
 		return exportFormatMetas(animated);
 	}
 
-	async function exportAsset(opts: ExportOptions): Promise<MarketingResult<void>> {
+	async function exportAsset(
+		opts: ExportOptions,
+		deps: ExportRunDeps = {}
+	): Promise<MarketingResult<void>> {
 		if (!import.meta.client)
 			return { success: false, error: 'Export is only available in the browser.' };
 		if (exporting.value) return { success: false, error: 'An export is already in progress.' };
 
+		const capture = deps.captureFrames ?? captureCanvasFrames;
+		const encodeAnimated = deps.encodeAnimated ?? encodeAnimatedBlob;
+		const renderStatic = deps.renderStatic ?? renderStaticBlob;
+		const download = deps.download ?? triggerDownload;
+
 		exporting.value = true;
 		progress.value = 0;
+		frame.value = 0;
+		frameTotal.value = 0;
+		phase.value = 'idle';
 		try {
 			const node = resolveExportNode(opts);
 			const filename = exportFilename(opts.filename ?? 'marketing-asset', opts.format);
@@ -397,23 +460,39 @@ export function useMarketingExport() {
 			if (isAnimatedFormat(opts.format)) {
 				const canvas = resolveCanvas(node, opts);
 				if (!canvas) throw new Error('No animated canvas was found to export.');
-				const frames = await captureCanvasFrames(canvas, {
+				const fps = Math.max(1, opts.fps ?? DEFAULT_FPS);
+				frameTotal.value =
+					opts.durationMs != null
+						? framesForDuration(opts.durationMs, fps)
+						: Math.max(1, Math.floor(opts.frames ?? DEFAULT_FRAMES));
+
+				phase.value = 'capturing';
+				const frames = await capture(canvas, {
 					frames: opts.frames,
 					fps: opts.fps,
 					durationMs: opts.durationMs,
 					maxDimension: opts.maxDimension,
 					onProgress: (r) => {
-						progress.value = r * 0.7;
+						progress.value = r * CAPTURE_SHARE;
+						frame.value = Math.round(r * frameTotal.value);
 						opts.onProgress?.(r);
 					}
 				});
-				blob = await encodeAnimatedBlob(frames, opts.format as 'gif' | 'apng', {
+
+				phase.value = 'encoding';
+				blob = await encodeAnimated(frames, opts.format as 'gif' | 'apng', {
 					fps: opts.fps,
-					quality: opts.quality
+					quality: opts.quality,
+					// encoding fills the remaining bar after capture
+					onProgress: (r) => {
+						progress.value = CAPTURE_SHARE + r * (1 - CAPTURE_SHARE);
+					}
 				});
 			} else {
 				if (!node) throw new Error('No preview element was found to export.');
-				blob = await renderStaticBlob(node, opts.format as 'svg' | 'png' | 'jpg', {
+				phase.value = 'rendering';
+				progress.value = 0.15;
+				blob = await renderStatic(node, opts.format as 'svg' | 'png' | 'jpg', {
 					pixelRatio: opts.pixelRatio,
 					backgroundColor: opts.backgroundColor,
 					quality: opts.quality
@@ -421,14 +500,16 @@ export function useMarketingExport() {
 			}
 
 			progress.value = 1;
-			triggerDownload(blob, filename);
+			phase.value = 'done';
+			download(blob, filename);
 			return { success: true };
 		} catch (e) {
+			phase.value = 'idle';
 			return { success: false, error: e instanceof Error ? e.message : 'Export failed.' };
 		} finally {
 			exporting.value = false;
 		}
 	}
 
-	return { exporting, progress, formatsFor, exportAsset };
+	return { exporting, progress, phase, frame, frameTotal, formatsFor, exportAsset };
 }

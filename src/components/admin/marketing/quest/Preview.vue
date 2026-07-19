@@ -157,7 +157,7 @@
 import { useUserStore } from 'stores/user';
 import type { Ref } from 'vue';
 
-// Quest / QuestChallengeView / QuestProgressEntry / QuestStateSnapshot and the marketingQuest
+// Quest / QuestChallengeView / QuestProgressEntry / QuestStateSnapshot and the marketing
 // helpers are auto-imported (shared/*); the ambient Quest keeps the defineProps macro resolver
 // off the ~/shared alias, matching the pattern user/quest/Modal.vue already relies on
 type PreviewState = 'not_started' | 'in_progress' | 'completed';
