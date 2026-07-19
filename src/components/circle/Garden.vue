@@ -1085,14 +1085,16 @@ function easeOut(t: number): number {
 	return 1 - Math.pow(1 - t, 3);
 }
 
-function render(now: number) {
+function render(now: number, exportMode = false) {
 	if (!ctx || !layout) return;
 	if (!startTime) startTime = now;
 	const time = now - startTime;
 
 	const motion = !reduced.value;
 	const lively = motion && props.garden.animated;
-	const bloom = motion ? easeOut(Math.min(1, time / 1400)) : 1;
+
+	// a one-off export draws the fully-settled scene (bloom = 1) and never reschedules
+	const bloom = motion && !exportMode ? easeOut(Math.min(1, time / 1400)) : 1;
 	const winter = sr.season === 'winter';
 
 	ctx.clearRect(0, 0, cssW, cssH);
@@ -1148,16 +1150,19 @@ function render(now: number) {
 
 	if (lively) {
 		for (const p of particles) {
-			if (winter) p.y += (p.speed / 60) * (1 + bloom);
-			else p.y -= (p.speed / 60) * (1 + bloom);
-			const px = p.x + Math.sin(time * 0.001 + p.phase) * p.drift;
-			if (winter && p.y > cssH + 4) {
-				p.y = -4;
-				p.x = Math.random() * cssW;
-			} else if (!winter && p.y < -4) {
-				p.y = cssH + 4;
-				p.x = Math.random() * cssW;
+			// only the live loop advances particles; a one-off export just snapshots them
+			if (!exportMode) {
+				if (winter) p.y += (p.speed / 60) * (1 + bloom);
+				else p.y -= (p.speed / 60) * (1 + bloom);
+				if (winter && p.y > cssH + 4) {
+					p.y = -4;
+					p.x = Math.random() * cssW;
+				} else if (!winter && p.y < -4) {
+					p.y = cssH + 4;
+					p.x = Math.random() * cssW;
+				}
 			}
+			const px = p.x + Math.sin(time * 0.001 + p.phase) * p.drift;
 			ctx.globalAlpha = 0.35 + (Math.sin(time * 0.004 + p.phase) * 0.5 + 0.5) * 0.5;
 			ctx.fillStyle = p.hue;
 			ctx.beginPath();
@@ -1167,8 +1172,45 @@ function render(now: number) {
 		ctx.globalAlpha = 1;
 	}
 
-	if (motion) raf = requestAnimationFrame(render);
+	if (motion && !exportMode) raf = requestAnimationFrame(render);
 }
+
+async function exportBlob(format: 'png' | 'jpg' | 'svg' = 'png', scale = 1): Promise<Blob> {
+	if (!import.meta.client || !layout) throw new Error('Garden is not ready to export.');
+	const s = Math.max(1, Math.min(6, scale));
+	const off = document.createElement('canvas');
+	off.width = Math.max(1, Math.round(cssW * s));
+	off.height = Math.max(1, Math.round(cssH * s));
+	const octx = off.getContext('2d');
+	if (!octx) throw new Error('Could not create an export canvas.');
+	octx.setTransform(s, 0, 0, s, 0, 0);
+	// draw one settled frame into the offscreen ctx, then restore the live target
+	const savedCtx = ctx;
+	ctx = octx;
+	try {
+		render(performance.now(), true);
+	} finally {
+		ctx = savedCtx;
+	}
+	if (format === 'svg') {
+		const png = off.toDataURL('image/png');
+		const svg =
+			`<svg xmlns="http://www.w3.org/2000/svg" width="${off.width}" height="${off.height}" ` +
+			`viewBox="0 0 ${off.width} ${off.height}"><image href="${png}" x="0" y="0" ` +
+			`width="${off.width}" height="${off.height}"/></svg>`;
+		return new Blob([svg], { type: 'image/svg+xml' });
+	}
+	const mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
+	return await new Promise<Blob>((resolve, reject) => {
+		off.toBlob(
+			(blob) => (blob ? resolve(blob) : reject(new Error('Export encoding failed.'))),
+			mime,
+			format === 'jpg' ? 0.95 : undefined
+		);
+	});
+}
+
+defineExpose({ exportBlob });
 // #endregion
 
 // #region interaction + lifecycle
