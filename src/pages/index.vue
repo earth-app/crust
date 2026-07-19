@@ -90,7 +90,7 @@
 					variant="soft"
 					@click="$router.push('/circle')"
 				>
-					My Circle
+					My Garden
 				</UButton>
 				<UButton
 					v-if="user && user.is_admin"
