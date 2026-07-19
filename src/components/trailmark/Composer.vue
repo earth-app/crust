@@ -2,14 +2,19 @@
 	<div class="flex flex-col gap-3 p-4 rounded-xl border border-primary/25 bg-primary/5">
 		<div class="flex items-center gap-2">
 			<UIcon
-				name="mdi:message-plus-outline"
+				:name="promptId ? 'mdi:comment-quote-outline' : 'mdi:message-plus-outline'"
 				class="size-5 text-primary"
 			/>
-			<h3 class="font-semibold text-base">Leave a Note</h3>
+			<h3 class="font-semibold text-base">
+				{{ promptId ? 'Answer From Where You Are' : 'Leave a Note' }}
+			</h3>
 		</div>
 		<p class="text-sm opacity-75">
-			Leave something kind for the next person who passes this spot. Notes are gently checked before
-			they post.
+			{{
+				promptId
+					? "Answer today's prompt from outside. Your note is left at this spot and shared under the prompt. Notes are gently checked before they post."
+					: 'Leave something kind for the next person who passes this spot. Notes are gently checked before they post.'
+			}}
 		</p>
 
 		<UTextarea
@@ -72,6 +77,11 @@
 </template>
 
 <script setup lang="ts">
+const props = defineProps<{
+	// when set, the note is also surfaced under this prompt as a 'from outside' answer
+	promptId?: string;
+}>();
+
 const emit = defineEmits<{
 	created: [id: string];
 }>();
@@ -97,7 +107,8 @@ async function post() {
 				lng: lng.value as number,
 				...(place.value.trim() ? { place_label: place.value.trim() } : {})
 			},
-			note: note.value
+			note: note.value,
+			...(props.promptId ? { prompt_id: props.promptId } : {})
 		});
 
 		if (res.success && res.data) {

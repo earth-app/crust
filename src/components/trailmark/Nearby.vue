@@ -18,8 +18,26 @@
 
 		<TrailmarkComposer @created="onCreated" />
 
+		<UAlert
+			v-if="permView.blocked"
+			color="warning"
+			variant="subtle"
+			:icon="permView.icon"
+			:title="permView.label"
+			:description="permView.description"
+			:actions="[
+				{
+					label: 'Re-check Location',
+					color: 'warning',
+					variant: 'solid',
+					icon: 'mdi:refresh',
+					onClick: refreshLocation
+				}
+			]"
+		/>
+
 		<div
-			v-if="!locationReady && !locationError"
+			v-else-if="!locationReady && !locationError"
 			class="flex flex-col items-center gap-2 py-10 text-center opacity-70"
 		>
 			<UIcon
@@ -27,6 +45,14 @@
 				class="size-8 motion-safe:animate-pulse"
 			/>
 			<p class="text-sm">Finding Your Location...</p>
+			<UButton
+				variant="ghost"
+				size="sm"
+				color="neutral"
+				icon="mdi:refresh"
+				@click="refreshLocation"
+				>Re-check Location</UButton
+			>
 		</div>
 
 		<UAlert
@@ -36,7 +62,15 @@
 			icon="mdi:map-marker-alert-outline"
 			title="Location Needed"
 			:description="locationError"
-			:actions="[{ label: 'Try Again', color: 'warning', variant: 'solid', onClick: locate }]"
+			:actions="[
+				{
+					label: 'Re-check Location',
+					color: 'warning',
+					variant: 'solid',
+					icon: 'mdi:refresh',
+					onClick: refreshLocation
+				}
+			]"
 		/>
 
 		<div
@@ -78,6 +112,7 @@
 <script setup lang="ts">
 const { nearby, loading, fetchNearby } = useTrailmarks();
 const { lat, lng, error: locationError, fetchLocation } = useQuestGeolocation();
+const { state: permState, view: permView, recheck: recheckPermission } = useGeoPermission();
 
 const radiusOptions = [
 	{ label: '250 m', value: 250 },
@@ -103,12 +138,24 @@ function locate() {
 	fetchLocation();
 }
 
+// re-read the live permission, then attempt a fix; works even without the Permissions
+// API since getCurrentPosition itself triggers the browser prompt
+async function refreshLocation() {
+	await recheckPermission();
+	locate();
+}
+
 function onCreated() {
 	void load(true);
 }
 
 watch([lat, lng], () => void load());
 watch(radius, () => void load(true));
+
+// granting in the browser flips the permission live; grab a fix automatically once allowed
+watch(permState, (s) => {
+	if (s === 'granted' && !locationReady.value) locate();
+});
 
 onMounted(() => {
 	fetchLocation();
