@@ -56,7 +56,7 @@ export default defineConfig<ConfigOptions>({
 			? 'test -f .output/server/index.mjs || bun run build:test && bun run start:test'
 			: 'bun run dev:test',
 		url: BASE_URL,
-		reuseExistingServer: !isCI,
+		reuseExistingServer: !isCI && !prodServer,
 		timeout: prodServer ? 360_000 : 240_000,
 		stdout: 'pipe',
 		stderr: 'pipe'
