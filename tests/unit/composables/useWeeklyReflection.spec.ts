@@ -4,10 +4,6 @@ import type { NatureMinutes, NatureMinutesSource } from 'types/trails';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { isoWeekKey, useWeeklyReflection } from '~/composables/useWeeklyReflection';
 
-// calm, finite "Your Week" self-monitoring reflection. minutes-outside come from
-// the trails store; quests/curiosity from a per-week localStorage bucket. no e2e
-// drives the bucket math, week rollover, or the server-derived wonder floor.
-
 function resetState() {
 	useState<number>('weekly-reflection-quests', () => 0).value = 0;
 	useState<number>('weekly-reflection-curiosity', () => 0).value = 0;
@@ -82,15 +78,15 @@ describe('useWeeklyReflection', () => {
 		expect(r.curiosityTouched.value).toBe(0);
 	});
 
-	it('takes the higher of the bucket and the server-derived trail-step floor', () => {
+	it('takes the higher of the bucket and the server-derived trail floor', () => {
 		const sources: NatureMinutesSource[] = [
-			{ kind: 'trail_step', minutes: 15, at: new Date().toISOString() },
-			{ kind: 'trail_step', minutes: 15, at: new Date().toISOString() },
+			{ kind: 'trail', minutes: 15, at: new Date().toISOString() },
+			{ kind: 'trail', minutes: 15, at: new Date().toISOString() },
 			{ kind: 'quest', minutes: 20, at: new Date().toISOString() }
 		];
 		useTrailsStore().natureMinutes = nature(0, sources);
 		const r = useWeeklyReflection();
-		// two trail_step sources -> wonder floor of 2, even with an empty bucket
+		// two trail sources -> wonder floor of 2, even with an empty bucket
 		expect(r.curiosityTouched.value).toBe(2);
 		expect(r.summaryLine.value).toBe('You showed up for your curiosity this week. That counts.');
 
