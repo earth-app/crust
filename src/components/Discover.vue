@@ -35,6 +35,18 @@ const router = useRouter();
 const viewport = useViewport();
 const open = ref(false);
 
+// let other surfaces (e.g. the empty-circle expedition prompt) open discover
+const openDiscoverHandler = () => {
+	open.value = true;
+};
+onMounted(() => {
+	if (import.meta.client) window.addEventListener('earth-app:open-discover', openDiscoverHandler);
+});
+onBeforeUnmount(() => {
+	if (import.meta.client)
+		window.removeEventListener('earth-app:open-discover', openDiscoverHandler);
+});
+
 const users = ref<CommandPaletteItem[]>([]);
 const usersLoading = ref(false);
 const activities = ref<CommandPaletteItem[]>([]);
