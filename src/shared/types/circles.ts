@@ -1,4 +1,4 @@
-export type ExpeditionGoal = 'nature_minutes' | 'trail_steps' | 'quests';
+export type ExpeditionGoal = 'nature_minutes' | 'trails' | 'quests';
 export type ExpeditionStatus = 'active' | 'complete' | 'expired';
 
 // per-member contribution to the shared goal; shown as contribution, never as a rank
@@ -72,4 +72,16 @@ export interface CircleResult<T = unknown> {
 	data?: T;
 	error?: string;
 	alreadySent?: boolean;
+}
+
+export type GardenSeason = 'spring' | 'summer' | 'autumn' | 'winter';
+export type GardenTimeOfDay = 'dawn' | 'day' | 'dusk' | 'night';
+
+export interface GardenRenderConfig {
+	season?: GardenSeason;
+	timeOfDay?: GardenTimeOfDay;
+	// 0..1 lunar phase (0/1 new, 0.5 full); omitted -> derived from the date
+	moonPhase?: number;
+	// optional viewer latitude for hemisphere-correct seasons (south flips)
+	latitude?: number;
 }
