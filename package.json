@@ -119,7 +119,7 @@
     "@types/gif.js": "^0.2.5",
     "@types/piexifjs": "^1.0.0",
     "@types/upng-js": "^2.1.5",
-    "@vitest/coverage-v8": "4.1.9",
+    "@vitest/coverage-v8": "4.1.10",
     "@vue/test-utils": "^2.4.11",
     "estree-walker": "3.0.3",
     "happy-dom": "^20.10.6",
