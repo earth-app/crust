@@ -2,7 +2,7 @@
 	<div class="relative flex flex-col items-center text-center gap-5 py-8 px-4 max-w-xl mx-auto">
 		<UiSparkleBurst
 			:trigger="burst"
-			:count="30"
+			:count="36"
 			color="warning"
 		/>
 
@@ -17,7 +17,7 @@
 		</div>
 
 		<div class="flex flex-col gap-2">
-			<h2 class="text-lg font-semibold">The Reveal</h2>
+			<h2 class="text-lg font-semibold">A Small Wonder</h2>
 			<p class="text-base opacity-90 wrap-break-word whitespace-pre-line">{{ reveal }}</p>
 		</div>
 
@@ -29,17 +29,27 @@
 				name="mdi:leaf"
 				class="size-4"
 			/>
-			<span>+{{ minutes }} Nature Minutes Credited</span>
+			<span>+{{ minutes }} Nature Minutes, just for being out there</span>
+		</div>
+
+		<div
+			v-if="personalBest"
+			class="flex items-center gap-2 text-sm text-primary"
+		>
+			<UIcon
+				name="mdi:trophy-outline"
+				class="size-4"
+			/>
+			<span>Your Longest Week Outside Yet</span>
 		</div>
 
 		<UButton
-			:color="last ? 'success' : 'primary'"
+			color="success"
 			size="lg"
-			:icon="last ? 'mdi:flag-checkered' : 'mdi:arrow-right'"
-			trailing
+			icon="mdi:flag-checkered"
 			class="mt-1"
-			@click="emit('next')"
-			>{{ last ? 'Finish Trail' : 'Next Step' }}</UButton
+			@click="emit('finish')"
+			>Finish</UButton
 		>
 	</div>
 </template>
@@ -49,13 +59,13 @@ withDefaults(
 	defineProps<{
 		reveal: string;
 		minutes?: number;
-		last?: boolean;
+		personalBest?: boolean;
 	}>(),
-	{ minutes: 0, last: false }
+	{ minutes: 0, personalBest: false }
 );
 
 const emit = defineEmits<{
-	next: [];
+	finish: [];
 }>();
 
 const burst = ref(0);

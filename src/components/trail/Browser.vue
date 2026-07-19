@@ -4,17 +4,27 @@
 			<div class="flex flex-col">
 				<h2 class="text-xl font-semibold">Curiosity Trails</h2>
 				<p class="text-sm opacity-70">
-					Themed walks that pull you outside with a clue and pay off with wonder.
+					One quiet outdoor practice at a time. Follow a curiosity outside, be present, and keep a
+					private record of what you notice.
 				</p>
 			</div>
 
-			<TrailNatureRing
-				v-if="natureMinutes"
-				:minutes="natureMinutes.minutes"
-				:target="natureMinutes.target"
-				:best="natureMinutes.best"
-				:size="72"
-			/>
+			<div class="flex items-center gap-3 shrink-0">
+				<UButton
+					variant="soft"
+					color="neutral"
+					icon="mdi:book-heart-outline"
+					@click="journalOpen = true"
+					>Journal</UButton
+				>
+				<TrailNatureRing
+					v-if="natureMinutes"
+					:minutes="natureMinutes.minutes"
+					:target="natureMinutes.target"
+					:best="natureMinutes.best"
+					:size="72"
+				/>
+			</div>
 		</div>
 
 		<div class="flex flex-wrap gap-2">
@@ -31,7 +41,7 @@
 
 		<div
 			v-if="loading && !filteredTrails.length"
-			class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4"
 		>
 			<USkeleton
 				v-for="n in 6"
@@ -42,13 +52,14 @@
 
 		<div
 			v-else-if="filteredTrails.length"
-			class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+			class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 w-full gap-4"
 		>
 			<TrailCard
 				v-for="trail in filteredTrails"
 				:key="trail.id"
 				:trail="trail"
 				@select="openTrail"
+				@preview="previewTrail"
 			/>
 		</div>
 
@@ -68,7 +79,11 @@
 			:key="activeTrail.id"
 			v-model:open="runnerOpen"
 			:trail="activeTrail"
+			:preview="previewMode"
+			@begin="previewMode = false"
 		/>
+
+		<TrailJournal v-model:open="journalOpen" />
 	</div>
 </template>
 
@@ -81,26 +96,42 @@ const themeOptions = [
 	{ value: 'nature', label: 'Nature' },
 	{ value: 'curiosity', label: 'Curiosity' },
 	{ value: 'creative', label: 'Creative' },
+	{ value: 'reflective', label: 'Reflective' },
 	{ value: 'mixed', label: 'Mixed' }
 ] as const;
 
 const activeTheme = ref<(typeof themeOptions)[number]['value']>('all');
+const journalOpen = ref(false);
 const loading = ref(false);
 
-const filteredTrails = computed(() =>
-	activeTheme.value === 'all'
-		? trails.value
-		: trails.value.filter((t) => t.theme === activeTheme.value)
-);
+// rarity-then-alphabetical, matching the quest/badge ordering
+const filteredTrails = computed(() => {
+	const base =
+		activeTheme.value === 'all'
+			? trails.value
+			: trails.value.filter((t) => t.theme === activeTheme.value);
+	return sortTrailsByRarity(base);
+});
 
 const activeTrail = ref<Trail | null>(null);
 const runnerOpen = ref(false);
+// preview opens the runner read-only (no pledge, no writes); begin starts the real run
+const previewMode = ref(false);
 
-function openTrail(id: string) {
+function open(id: string, preview: boolean) {
 	const trail = trails.value.find((t) => t.id === id) ?? null;
 	if (!trail) return;
 	activeTrail.value = trail;
+	previewMode.value = preview;
 	runnerOpen.value = true;
+}
+
+function openTrail(id: string) {
+	open(id, false);
+}
+
+function previewTrail(id: string) {
+	open(id, true);
 }
 
 onMounted(async () => {

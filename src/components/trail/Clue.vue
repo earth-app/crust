@@ -1,8 +1,6 @@
 <template>
 	<div class="flex flex-col items-center text-center gap-5 py-8 px-4 max-w-xl mx-auto">
-		<span class="text-xs uppercase tracking-widest opacity-60"
-			>Step {{ index }} of {{ total }}</span
-		>
+		<span class="text-xs uppercase tracking-widest opacity-60">A Curious Invitation</span>
 
 		<div
 			class="flex items-center justify-center size-16 rounded-full bg-primary/10 text-primary motion-safe:animate-pulse"
@@ -13,34 +11,52 @@
 			/>
 		</div>
 
-		<div class="flex flex-col gap-2">
-			<h2 class="text-lg font-semibold">A Curious Clue</h2>
-			<p class="text-base opacity-90 wrap-break-word whitespace-pre-line">{{ clue }}</p>
+		<p class="text-lg opacity-90 wrap-break-word whitespace-pre-line">{{ curiosity }}</p>
+
+		<div class="flex flex-wrap items-center justify-center gap-3 text-sm opacity-70">
+			<span class="flex items-center gap-1">
+				<UIcon
+					:name="meta.icon"
+					class="size-4"
+				/>
+				{{ meta.label }}
+			</span>
+			<span class="flex items-center gap-1">
+				<UIcon
+					name="mdi:timer-sand"
+					class="size-4"
+				/>
+				~{{ targetMinutes }} min
+			</span>
 		</div>
 
-		<p class="text-sm opacity-60 max-w-md">
-			Head out and see for yourself. The answer reveals once you finish the step.
-		</p>
+		<p class="text-sm opacity-60 max-w-md">{{ meta.cue }}</p>
 
 		<UButton
 			color="primary"
 			size="lg"
-			icon="mdi:shoe-print"
+			:icon="preview ? 'mdi:map-marker-path' : 'mdi:hand-heart-outline'"
 			class="mt-1"
 			@click="emit('continue')"
-			>I'm Ready</UButton
+			>{{ preview ? 'Begin This Trail' : 'Make My Pledge' }}</UButton
 		>
 	</div>
 </template>
 
 <script setup lang="ts">
-defineProps<{
-	clue: string;
-	index: number;
-	total: number;
-}>();
+const props = withDefaults(
+	defineProps<{
+		curiosity: string;
+		practice: TrailPractice;
+		targetMinutes: number;
+		preview?: boolean;
+	}>(),
+	{ preview: false }
+);
 
 const emit = defineEmits<{
 	continue: [];
 }>();
+
+const meta = computed(() => trailPracticeMeta(props.practice));
 </script>

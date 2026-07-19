@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col w-full max-w-5xl mx-auto px-4 mt-24 sm:mt-6 pb-16">
+	<div class="flex flex-col w-full mx-auto px-12 mt-24 sm:mt-6 pb-16">
 		<TrailBrowser />
 	</div>
 </template>

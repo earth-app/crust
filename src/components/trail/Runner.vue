@@ -2,7 +2,7 @@
 	<UModal
 		v-model:open="isOpen"
 		class="min-w-full min-h-full"
-		:dismissible="!stepOpen"
+		:dismissible="dismissible"
 		:modal="true"
 		fullscreen
 	>
@@ -15,6 +15,14 @@
 				<div class="flex flex-col min-w-0">
 					<div class="flex items-center gap-2 flex-wrap">
 						<h1 class="font-semibold text-lg truncate">{{ trail.title }}</h1>
+						<UBadge
+							v-if="isPreview"
+							color="neutral"
+							variant="subtle"
+							size="sm"
+							icon="mdi:eye-outline"
+							>Preview</UBadge
+						>
 						<UBadge
 							color="primary"
 							variant="soft"
@@ -55,108 +63,101 @@
 		</template>
 
 		<template #body>
-			<div
-				class="h-full w-full overscroll-contain"
-				:class="stepOpen ? 'overflow-hidden' : 'overflow-y-auto'"
-			>
-				<Loading v-if="!asQuest" />
+			<div class="h-full w-full overflow-y-auto overscroll-contain">
+				<Loading v-if="!trail" />
+
+				<!-- read-only walkthrough; no pledge, no writes -->
+				<div
+					v-else-if="isPreview"
+					class="flex flex-col gap-4 max-w-xl mx-auto py-6 px-4"
+				>
+					<div class="flex items-start gap-2 p-3 rounded-lg border border-primary/25 bg-primary/5">
+						<UIcon
+							name="mdi:eye-outline"
+							class="size-5 text-primary shrink-0 mt-0.5"
+						/>
+						<p class="text-sm opacity-90 wrap-break-word">
+							You're previewing this trail. Begin it to make your pledge and head out.
+						</p>
+					</div>
+
+					<section class="flex flex-col gap-1">
+						<span class="text-xs uppercase tracking-widest opacity-60">The Invitation</span>
+						<p class="text-base opacity-90 whitespace-pre-line">{{ trail.curiosity }}</p>
+					</section>
+
+					<section class="flex items-center gap-3 text-sm opacity-80">
+						<span class="flex items-center gap-1">
+							<UIcon
+								:name="practiceMeta.icon"
+								class="size-4"
+							/>
+							{{ practiceMeta.label }}
+						</span>
+						<span class="flex items-center gap-1">
+							<UIcon
+								name="mdi:timer-sand"
+								class="size-4"
+							/>
+							~{{ targetMinutes }} min
+						</span>
+					</section>
+
+					<section class="flex flex-col gap-1">
+						<span class="text-xs uppercase tracking-widest opacity-60">You'll Reflect On</span>
+						<p class="text-sm opacity-80">{{ trail.reflectionPrompt }}</p>
+					</section>
+
+					<UButton
+						color="primary"
+						icon="mdi:map-marker-path"
+						block
+						@click="onBegin"
+						>Begin This Trail</UButton
+					>
+				</div>
 
 				<template v-else>
+					<TrailClue
+						v-if="phase === 'intro'"
+						:curiosity="trail.curiosity"
+						:practice="trail.practice"
+						:target-minutes="targetMinutes"
+						@continue="phase = 'pledge'"
+					/>
+
 					<TrailPledge
-						v-if="!hasPledge"
+						v-else-if="phase === 'pledge'"
 						:trail-title="trail.title"
 						@accept="onAccept"
 					/>
 
-					<template v-else>
-						<div
-							class="flex items-start gap-2 p-3 mb-2 rounded-lg border border-primary/25 bg-primary/5"
-						>
-							<UIcon
-								name="mdi:hand-heart"
-								class="size-5 text-primary shrink-0 mt-0.5"
-							/>
-							<p class="text-sm opacity-90 wrap-break-word">
-								Your Pledge: when {{ pledgeText }}, you set out on this trail.
-							</p>
-						</div>
+					<TrailPresence
+						v-else-if="phase === 'presence'"
+						:practice="trail.practice"
+						:target-minutes="targetMinutes"
+						@finish="onPresenceFinish"
+					/>
 
-						<UAlert
-							v-if="!isTrailActive && !allRevealed"
-							color="info"
-							variant="subtle"
-							icon="mdi:information-outline"
-							title="Begin Your Run"
-							description="Press Start below to begin the trail. Each step opens with a curious clue and ends with a reveal."
-							class="mb-2"
-						/>
+					<TrailReflect
+						v-else-if="phase === 'reflect'"
+						:reflection-prompt="trail.reflectionPrompt"
+						:practice="trail.practice"
+						:photo-count="photoCount"
+						@save="onReflectSave"
+					/>
 
-						<LazyUserQuestTimeline
-							:quest="asQuest"
-							:progress="mergedProgress"
-							@select-step="onSelectStep"
-						/>
-					</template>
+					<TrailReveal
+						v-else-if="phase === 'reveal'"
+						:reveal="trail.reveal"
+						:minutes="loggedMinutes"
+						:personal-best="personalBest"
+						@finish="isOpen = false"
+					/>
+
+					<Loading v-else />
 				</template>
 			</div>
-		</template>
-	</UModal>
-
-	<UModal
-		v-model:open="stepOpen"
-		:modal="true"
-		scrollable
-		class="md:min-w-160 lg:min-w-200"
-		@close="resetStep"
-	>
-		<template #header="{ close }">
-			<div class="flex items-center justify-between w-full px-1">
-				<div class="flex items-center gap-2">
-					<UIcon
-						v-if="openStep?.icon"
-						:name="openStep.icon"
-						class="size-5 text-primary"
-					/>
-					<span class="text-sm ml-2 font-medium truncate max-w-160">{{ phaseLabel }}</span>
-				</div>
-				<button
-					class="w-8 h-8 rounded-full border border-neutral-700 bg-neutral-900/60 flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-500 transition-all active:scale-95 shrink-0"
-					aria-label="Close"
-					@click="close"
-				>
-					<UIcon
-						name="i-lucide-x"
-						class="size-4"
-					/>
-				</button>
-			</div>
-		</template>
-		<template #body>
-			<TrailClue
-				v-if="phase === 'clue' && activeTrailStep"
-				:clue="activeTrailStep.clue"
-				:index="activeIndex + 1"
-				:total="trail.steps.length"
-				@continue="phase = 'act'"
-			/>
-
-			<LazyUserQuestStepSubmission
-				v-else-if="phase === 'act' && openStep"
-				:quest="asQuest"
-				:progress="mergedProgress"
-				:step="openStep"
-				@submitted="onStepSubmitted"
-			/>
-
-			<TrailReveal
-				v-else-if="phase === 'reveal' && activeTrailStep"
-				:reveal="activeTrailStep.reveal"
-				:minutes="stepMinutes"
-				:last="isLastStep"
-				@next="onRevealNext"
-			/>
-
-			<Loading v-else />
 		</template>
 	</UModal>
 
@@ -168,102 +169,70 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-	trail: Trail;
-	open: boolean;
-	progress?: (QuestProgressEntry | QuestProgressEntry[])[];
-}>();
+const props = withDefaults(
+	defineProps<{
+		trail: Trail;
+		open: boolean;
+		// read-only walkthrough: no pledge gate, no completion writes
+		preview?: boolean;
+	}>(),
+	{ preview: false }
+);
 
 const emit = defineEmits<{
 	'update:open': [value: boolean];
 	complete: [];
+	// user chose to start the real run from the preview
+	begin: [];
 }>();
 
+const isPreview = computed(() => props.preview);
+
 const store = useTrailsStore();
-// seed the store so the run/asQuest are available without an extra fetch
+// seed the store so the run is available without an extra fetch
 store.upsertTrail(props.trail);
 
-const { asQuest, run, accept, completeStep, complete } = useTrail(props.trail.id);
+const { start, addPresence, complete } = useTrail(props.trail.id);
 const { user } = useAuth();
 const userId = computed(() => user.value?.id);
-const { quest: activeQuest } = useUser(userId);
 const { natureMinutes, fetchNatureMinutes } = useTrails();
 const toast = useToast();
 
-const stepMinutes = TRAIL_STEP_MINUTES;
+type Phase = 'intro' | 'pledge' | 'presence' | 'reflect' | 'reveal';
+const phase = ref<Phase>('intro');
+const loggedMinutes = ref(0);
+const photoCount = ref(0);
+const personalBest = ref(false);
+const bestBefore = ref(0);
+const finaleBurst = ref(0);
 
 const isOpen = computed({
 	get: () => props.open,
 	set: (v) => emit('update:open', v)
 });
 
+// stay dismissible only when nothing is mid-practice, so a stray tap can't drop the run
+const dismissible = computed(
+	() => isPreview.value || phase.value === 'intro' || phase.value === 'reveal'
+);
+
+const practiceMeta = computed(() => trailPracticeMeta(props.trail.practice));
+const targetMinutes = computed(() => trailTargetMinutes(props.trail));
+
 const themeLabel = computed(
 	() =>
-		({ nature: 'Nature', curiosity: 'Curiosity', creative: 'Creative', mixed: 'Mixed' })[
-			props.trail.theme
-		] ?? 'Mixed'
+		({
+			nature: 'Nature',
+			curiosity: 'Curiosity',
+			creative: 'Creative',
+			reflective: 'Reflective',
+			mixed: 'Mixed'
+		})[props.trail.theme] ?? 'Mixed'
 );
 
-const hasPledge = computed(() => !!run.value?.pledge);
-const pledgeText = computed(() => {
-	const p = run.value?.pledge;
-	if (!p) return '';
-	return p.where ? `${p.when} at ${p.where}` : p.when;
-});
-
-// the underlying quest is live when its id matches this trail (trail run = quest run)
-const isTrailActive = computed(() => activeQuest.value?.questId === props.trail.id);
-const allRevealed = computed(() => !!run.value?.stepRevealed.every(Boolean));
-
-// stable synthetic progress: real backend progress wins; otherwise mirror the
-// trail run's revealed steps so the reused timeline advances as reveals unlock
-const mergedProgress = computed<(QuestProgressEntry | QuestProgressEntry[])[] | undefined>(() => {
-	const steps = props.trail.steps;
-	const revealed = run.value?.stepRevealed ?? [];
-	const base = run.value ? Date.parse(run.value.startedAt) || Date.now() : Date.now();
-	const any = props.progress || revealed.some(Boolean);
-	if (!any) return props.progress;
-
-	return steps.map((s, i) => {
-		const passed = props.progress?.[i];
-		if (passed) return passed;
-		if (revealed[i]) {
-			return { type: s.step.type, index: i, submittedAt: base + i } as QuestProgressEntry;
-		}
-		return undefined as unknown as QuestProgressEntry;
-	});
-});
-
-const stepOpen = ref(false);
-const phase = ref<'clue' | 'act' | 'reveal'>('clue');
-const activeIndex = ref(0);
-const openStep = ref<
-	| (QuestStep & {
-			icon: string;
-			completed: boolean;
-			index: number;
-			altIndex?: number;
-			isCurrentQuest: boolean;
-			isUnlocked: boolean;
-			data?: string;
-	  })
-	| null
->(null);
-const finaleBurst = ref(0);
-
-const activeTrailStep = computed<TrailStep | null>(
-	() => props.trail.steps[activeIndex.value] ?? null
-);
-const isLastStep = computed(() => activeIndex.value === props.trail.steps.length - 1);
-
-const phaseLabel = computed(() => {
-	if (phase.value === 'clue') return 'The Clue';
-	if (phase.value === 'reveal') return 'The Reveal';
-	return openStep.value?.description ?? 'The Step';
-});
-
-function onAccept(pledge: { when: string; where?: string }) {
-	const res = accept(pledge);
+async function onAccept(pledge: { when: string; where?: string }) {
+	bestBefore.value = natureMinutes.value?.best ?? 0;
+	const res = await start(pledge);
 	if (!res.success) {
 		toast.add({ title: 'Pledge Incomplete', description: res.error, color: 'warning' });
 		return;
@@ -275,60 +244,48 @@ function onAccept(pledge: { when: string; where?: string }) {
 		color: 'success',
 		duration: 3000
 	});
+	phase.value = 'presence';
 }
 
-function onSelectStep(step: NonNullable<typeof openStep.value>) {
-	if (!step) return;
-	activeIndex.value = step.index;
-	openStep.value = step;
-	phase.value = 'clue';
-	stepOpen.value = true;
+function onPresenceFinish(payload: { minutes: number; photoCount: number }) {
+	loggedMinutes.value = payload.minutes;
+	photoCount.value = payload.photoCount;
+	addPresence(payload.minutes);
+	phase.value = 'reflect';
 }
 
-async function onStepSubmitted() {
-	phase.value = 'reveal';
-	const res = await completeStep(activeIndex.value);
+async function onReflectSave(reflection: TrailReflection) {
+	const res = await complete(reflection, loggedMinutes.value);
 	if (!res.success) {
-		// reveal still shows; nature-minutes credit is best-effort (store bumps optimistically)
 		toast.add({
-			title: 'Saved Your Step',
+			title: 'Saved Your Reflection',
 			description: 'We could not sync Nature Minutes just now.',
 			color: 'warning',
 			duration: 3000
 		});
 	}
+	// a new weekly high once this credit lands (personal-best, never a rank)
+	personalBest.value =
+		(natureMinutes.value?.minutes ?? 0) > bestBefore.value && bestBefore.value > 0;
+	finaleBurst.value++;
+	emit('complete');
+	phase.value = 'reveal';
 }
 
-function onRevealNext() {
-	stepOpen.value = false;
-	phase.value = 'clue';
-	openStep.value = null;
-
-	if (allRevealed.value) {
-		complete();
-		finaleBurst.value++;
-		emit('complete');
-		toast.add({
-			title: 'Trail Complete!',
-			description: 'You followed your curiosity all the way through.',
-			icon: 'mdi:flag-checkered',
-			color: 'success',
-			duration: 4000
-		});
-	}
-}
-
-function resetStep() {
-	openStep.value = null;
-	phase.value = 'clue';
+// convert a preview into the real run; the parent flips preview off so the flow begins
+function onBegin() {
+	emit('begin');
+	phase.value = 'intro';
 }
 
 watch(
 	() => props.open,
 	(open) => {
 		if (!open) {
-			stepOpen.value = false;
-			resetStep();
+			phase.value = 'intro';
+			loggedMinutes.value = 0;
+			photoCount.value = 0;
+			personalBest.value = false;
 			return;
 		}
 		store.upsertTrail(props.trail);

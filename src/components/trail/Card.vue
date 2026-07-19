@@ -1,11 +1,17 @@
 <template>
 	<component
 		:is="rootComp"
-		class="rounded-xl"
+		class="rounded-xl h-full *:h-full min-w-70"
 		:thickness="highlight ? 2 : undefined"
+		:data-trail-id="trail.id"
 	>
 		<div
-			class="flex flex-col gap-3 p-4 h-full rounded-xl border border-neutral-200 dark:border-neutral-800 bg-default hover:border-primary/50 transition-colors"
+			class="flex flex-col gap-3 p-4 h-full rounded-xl border bg-default hover:border-primary/50 transition-all"
+			:class="
+				trail.premium
+					? 'border-warning/50 hover:border-warning/70'
+					: 'border-neutral-200 dark:border-neutral-800'
+			"
 		>
 			<div class="flex items-start gap-3">
 				<div
@@ -55,36 +61,47 @@
 
 			<UiCuriosityTeaser
 				:revealed="revealed"
-				:total="stepCount"
-				noun="Discovery"
+				:total="1"
+				noun="Wonder"
 				icon="mdi:map-marker-question-outline"
 				class="self-start"
 			/>
 
-			<div class="flex items-center justify-between mt-auto pt-1">
+			<div class="flex items-center justify-between gap-2 mt-auto pt-1">
 				<div class="flex items-center gap-3 text-xs opacity-70">
 					<span class="flex items-center gap-1">
 						<UIcon
-							name="mdi:flag-variant-outline"
+							:name="practiceMeta.icon"
 							class="size-3.5"
 						/>
-						{{ stepCount }} {{ stepCount === 1 ? 'Step' : 'Steps' }}
+						{{ practiceMeta.label }}
 					</span>
 					<span class="flex items-center gap-1">
 						<UIcon
-							name="mdi:leaf"
+							name="mdi:timer-sand"
 							class="size-3.5"
 						/>
-						+{{ trail.reward }}
+						~{{ targetMinutes }} min
 					</span>
 				</div>
-				<UButton
-					color="primary"
-					size="sm"
-					icon="mdi:map-marker-path"
-					@click="emit('select', trail.id)"
-					>Begin Trail</UButton
-				>
+				<div class="flex items-center gap-1 shrink-0">
+					<UButton
+						variant="soft"
+						color="info"
+						size="sm"
+						icon="mdi:eye-outline"
+						square
+						aria-label="Preview Trail"
+						@click.stop="emit('preview', trail.id)"
+					/>
+					<UButton
+						:color="trail.premium ? 'warning' : 'primary'"
+						size="sm"
+						icon="mdi:map-marker-path"
+						@click.stop="emit('select', trail.id)"
+						>Begin Trail</UButton
+					>
+				</div>
 			</div>
 		</div>
 	</component>
@@ -99,15 +116,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	select: [id: string];
+	preview: [id: string];
 }>();
 
 const trailsStore = useTrailsStore();
-const stepCount = computed(() => props.trail.steps?.length ?? 0);
-// curiosity-gap: how many awe reveals this trail still hides (Loewenstein info-gap)
-const revealed = computed(() => {
-	const run = trailsStore.getRun(props.trail.id);
-	return run ? run.stepRevealed.filter(Boolean).length : 0;
-});
+const practiceMeta = computed(() => trailPracticeMeta(props.trail.practice));
+const targetMinutes = computed(() => trailTargetMinutes(props.trail));
+// curiosity-gap: the single awe reveal stays hidden until the practice is done
+const revealed = computed(() => (trailsStore.getRun(props.trail.id)?.completed ? 1 : 0));
 
 // amazing/green trails earn the animated border; keep normal/rare calm
 const highlight = computed(
@@ -129,8 +145,12 @@ const rarityColor = computed(
 );
 const themeLabel = computed(
 	() =>
-		({ nature: 'Nature', curiosity: 'Curiosity', creative: 'Creative', mixed: 'Mixed' })[
-			props.trail.theme
-		] ?? 'Mixed'
+		({
+			nature: 'Nature',
+			curiosity: 'Curiosity',
+			creative: 'Creative',
+			reflective: 'Reflective',
+			mixed: 'Mixed'
+		})[props.trail.theme] ?? 'Mixed'
 );
 </script>
