@@ -9,8 +9,19 @@
 			:items="formatItems"
 			size="sm"
 			class="min-w-28"
+			:ui="{ content: 'z-9999' }"
 			:disabled="exporting"
 			aria-label="Export Format"
+		/>
+		<USelect
+			v-if="showDuration"
+			v-model="durationSec"
+			:items="durationItems"
+			size="sm"
+			class="min-w-20"
+			:ui="{ content: 'z-9999' }"
+			:disabled="exporting"
+			aria-label="Animation Length"
 		/>
 		<UButton
 			icon="mdi:tray-arrow-down"
@@ -26,7 +37,14 @@
 
 <script setup lang="ts">
 import type { ExportFormat } from './useMarketingExport';
-import { availableExportFormats, EXPORT_FORMATS, useMarketingExport } from './useMarketingExport';
+import {
+	availableExportFormats,
+	DEFAULT_DURATION_MS,
+	defaultExportFormat,
+	EXPORT_FORMATS,
+	isAnimatedFormat,
+	useMarketingExport
+} from './useMarketingExport';
 
 const props = withDefaults(
 	defineProps<{
@@ -43,8 +61,9 @@ const props = withDefaults(
 const toast = useToast();
 const { exporting, exportAsset } = useMarketingExport();
 
-const format = ref<ExportFormat>('png');
+const format = ref<ExportFormat>(defaultExportFormat(props.animated));
 
+// animated assets default to GIF (motion) with gif/apng listed first
 const formatItems = computed(() =>
 	availableExportFormats(props.animated).map((f) => ({
 		label: EXPORT_FORMATS[f].label,
@@ -53,11 +72,16 @@ const formatItems = computed(() =>
 	}))
 );
 
-// keep the selection valid when the animated flag flips gif/apng in or out
+// length control only matters for a frame-captured animated export
+const showDuration = computed(() => isAnimatedFormat(format.value));
+const durationSec = ref(Math.round(DEFAULT_DURATION_MS / 1000));
+const durationItems = [2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ({ label: `${n}s`, value: n }));
+
+// when the animated flag flips, reset to that mode's default (gif when animated, png otherwise)
 watch(
 	() => props.animated,
 	(animated) => {
-		if (!animated && EXPORT_FORMATS[format.value].animated) format.value = 'png';
+		format.value = defaultExportFormat(animated);
 	}
 );
 
@@ -67,7 +91,8 @@ async function run() {
 		format: format.value,
 		node,
 		canvasSelector: props.canvasSelector,
-		filename: props.filename
+		filename: props.filename,
+		durationMs: durationSec.value * 1000
 	});
 
 	if (res.success) {

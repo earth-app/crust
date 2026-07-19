@@ -66,11 +66,17 @@ export function isAnimatedFormat(format: ExportFormat): boolean {
 	return EXPORT_FORMATS[format].animated;
 }
 
-// static formats are always offered; gif/apng only when the asset can animate
+// static formats are always offered; when the asset can animate, gif/apng lead so the
+// motion-preserving choice is the obvious default
 export function availableExportFormats(animated: boolean): ExportFormat[] {
 	return animated
-		? [...STATIC_EXPORT_FORMATS, ...ANIMATED_EXPORT_FORMATS]
+		? [...ANIMATED_EXPORT_FORMATS, ...STATIC_EXPORT_FORMATS]
 		: [...STATIC_EXPORT_FORMATS];
+}
+
+// animated assets default to GIF (keeps the motion); static assets default to PNG
+export function defaultExportFormat(animated: boolean): ExportFormat {
+	return animated ? 'gif' : 'png';
 }
 
 export function exportFormatMetas(animated: boolean): ExportFormatMeta[] {
@@ -105,6 +111,8 @@ export interface ExportOptions {
 	// animated tuning
 	frames?: number;
 	fps?: number;
+	// capture window in ms; when set it overrides `frames` (frames = duration * fps)
+	durationMs?: number;
 	maxDimension?: number;
 	onProgress?: (ratio: number) => void;
 }
@@ -112,6 +120,25 @@ export interface ExportOptions {
 export const DEFAULT_FRAMES = 16;
 export const DEFAULT_FPS = 12;
 export const DEFAULT_MAX_DIMENSION = 640;
+
+// animation-length bounds for animated exports (gif / apng)
+export const MIN_DURATION_MS = 2000;
+export const MAX_DURATION_MS = 10000;
+export const DEFAULT_DURATION_MS = 4000;
+// hard cap so a long capture can never balloon the frame buffer
+export const MAX_CAPTURE_FRAMES = 120;
+
+export function clampDurationMs(ms: number): number {
+	if (Number.isNaN(ms)) return DEFAULT_DURATION_MS;
+	return Math.max(MIN_DURATION_MS, Math.min(MAX_DURATION_MS, Math.round(ms)));
+}
+
+// frame count that spans the requested duration at the given fps, capped
+export function framesForDuration(durationMs: number, fps: number): number {
+	const f = Math.max(1, fps);
+	const count = Math.round((clampDurationMs(durationMs) / 1000) * f);
+	return Math.max(1, Math.min(MAX_CAPTURE_FRAMES, count));
+}
 
 // #region node / canvas resolution (pure)
 
@@ -155,11 +182,15 @@ const defaultWait = (ms: number) => new Promise<void>((resolve) => setTimeout(re
 // maxDimension so gif/apng encoding stays fast. injecting `wait` keeps this unit-testable.
 export async function captureCanvasFrames(
 	canvas: HTMLCanvasElement,
-	opts: Pick<ExportOptions, 'frames' | 'fps' | 'maxDimension' | 'onProgress'> = {},
+	opts: Pick<ExportOptions, 'frames' | 'fps' | 'durationMs' | 'maxDimension' | 'onProgress'> = {},
 	deps: FrameCaptureDeps = {}
 ): Promise<CapturedFrame[]> {
-	const frames = Math.max(1, Math.floor(opts.frames ?? DEFAULT_FRAMES));
 	const fps = Math.max(1, opts.fps ?? DEFAULT_FPS);
+	// a chosen duration wins over a raw frame count so the capture spans the full window
+	const frames =
+		opts.durationMs != null
+			? framesForDuration(opts.durationMs, fps)
+			: Math.max(1, Math.floor(opts.frames ?? DEFAULT_FRAMES));
 	const delay = Math.round(1000 / fps);
 	const wait = deps.wait ?? defaultWait;
 
@@ -369,6 +400,7 @@ export function useMarketingExport() {
 				const frames = await captureCanvasFrames(canvas, {
 					frames: opts.frames,
 					fps: opts.fps,
+					durationMs: opts.durationMs,
 					maxDimension: opts.maxDimension,
 					onProgress: (r) => {
 						progress.value = r * 0.7;
