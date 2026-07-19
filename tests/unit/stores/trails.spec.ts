@@ -1,9 +1,20 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { useAuthStore } from 'stores/auth';
 import { useTrailsStore } from 'stores/trails';
-import type { NatureMinutes, Trail } from 'types/trails';
+import type {
+	NatureMinutes,
+	Trail,
+	TrailJournalEntry,
+	TrailPracticeMeta,
+	TrailReflection
+} from 'types/trails';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { computed, nextTick } from 'vue';
+import {
+	clearTrailPracticeMetaCache,
+	TRAIL_PRACTICE_META,
+	trailPracticeMeta
+} from '~/shared/utils/trails';
 
 // only the wire calls are stubbed; valid()/classifyItemFetch stay real
 vi.mock('utils', async (io) => {
@@ -23,19 +34,32 @@ function trail(id: string, extra: Partial<Trail> = {}): Trail {
 		id,
 		title: `Trail ${id}`,
 		theme: 'nature',
-		description: 'A short walk',
+		practice: 'sit_spot',
+		description: 'A quiet sit.',
 		icon: 'mdi:leaf',
 		rarity: 'normal',
-		steps: [
-			{
-				step: { type: 'take_photo_location', description: 'Photograph a tree', parameters: [] },
-				clue: 'What is older than it looks?',
-				reveal: 'That oak may be two centuries old.'
-			}
-		],
-		reward: 10,
+		curiosity: 'What settles when you do?',
+		duration: 12,
+		reflectionPrompt: 'What did you notice?',
+		reveal: 'A small wonder.',
 		...extra
 	} as Trail;
+}
+
+function reflection(extra: Partial<TrailReflection> = {}): TrailReflection {
+	return { at: new Date().toISOString(), ...extra };
+}
+
+function journalEntry(trailId: string, extra: Partial<TrailJournalEntry> = {}): TrailJournalEntry {
+	return {
+		trailId,
+		title: `Trail ${trailId}`,
+		practice: 'sit_spot',
+		presenceMinutes: 12,
+		reflection: reflection(),
+		completedAt: new Date().toISOString(),
+		...extra
+	};
 }
 
 function nature(minutes: number): NatureMinutes {
@@ -65,21 +89,21 @@ describe('trails store validation guard', () => {
 		expect(store.get('t1')?.id).toBe('t1');
 	});
 
-	it('rejects trails missing id / title / steps', () => {
+	it('rejects trails missing id / practice / curiosity / reveal', () => {
 		const store = useTrailsStore();
 		store.setTrails([
-			{ id: '', title: 'x', steps: [] } as unknown as Trail,
-			{ id: 'a', steps: [] } as unknown as Trail,
-			{ id: 'b', title: 't' } as unknown as Trail
+			{ id: '', title: 'x', practice: 'sit_spot', curiosity: 'c', reveal: 'r' } as unknown as Trail,
+			{ id: 'a', title: 't', curiosity: 'c', reveal: 'r' } as unknown as Trail, // no practice
+			{ id: 'b', title: 't', practice: 'sit_spot', reveal: 'r' } as unknown as Trail // no curiosity
 		]);
 		expect(store.cache.size).toBe(0);
 	});
 
 	it('does not let setTrails clobber an already-cached trail', () => {
 		const store = useTrailsStore();
-		store.upsertTrail(trail('t1', { reward: 99 }));
-		store.setTrails([trail('t1', { reward: 5 })]);
-		expect(store.get('t1')?.reward).toBe(99);
+		store.upsertTrail(trail('t1', { duration: 99 }));
+		store.setTrails([trail('t1', { duration: 5 })]);
+		expect(store.get('t1')?.duration).toBe(99);
 	});
 
 	it('still seeds trails not yet cached', () => {
@@ -87,6 +111,41 @@ describe('trails store validation guard', () => {
 		store.upsertTrail(trail('t1'));
 		store.setTrails([trail('t1'), trail('t2')]);
 		expect(store.has('t2')).toBe(true);
+	});
+});
+
+describe('trails store fills the cloud practiceMeta cache', () => {
+	// module-level cache; isolate so these don't bleed into other suites
+	beforeEach(() => clearTrailPracticeMetaCache());
+	afterEach(() => clearTrailPracticeMetaCache());
+
+	const cloudMeta: TrailPracticeMeta = {
+		practice: 'sit_spot',
+		label: 'Cloud Sit Spot',
+		icon: 'mdi:cloud',
+		verb: 'settle',
+		cue: 'Cloud-authored cue.',
+		defaultMinutes: 21,
+		photos: false
+	};
+
+	it('setTrails registers each valid trail practiceMeta from the response', () => {
+		const store = useTrailsStore();
+		expect(trailPracticeMeta('sit_spot')).toBe(TRAIL_PRACTICE_META.sit_spot);
+		store.setTrails([trail('t1', { practiceMeta: cloudMeta } as Partial<Trail>)]);
+		expect(trailPracticeMeta('sit_spot')).toBe(cloudMeta);
+	});
+
+	it('upsertTrail registers the embedded practiceMeta too', () => {
+		const store = useTrailsStore();
+		store.upsertTrail(trail('t1', { practiceMeta: cloudMeta } as Partial<Trail>));
+		expect(trailPracticeMeta('sit_spot').label).toBe('Cloud Sit Spot');
+	});
+
+	it('a trail without an embedded practiceMeta leaves the fallback in place', () => {
+		const store = useTrailsStore();
+		store.setTrails([trail('t1')]);
+		expect(trailPracticeMeta('sit_spot')).toBe(TRAIL_PRACTICE_META.sit_spot);
 	});
 });
 
@@ -179,10 +238,10 @@ describe('trails store fetchTrail', () => {
 	it('force invalidates the shared apiCache and refetches', async () => {
 		const store = useTrailsStore();
 		store.upsertTrail(trail('t1'));
-		vi.mocked(makeAPIRequest).mockResolvedValue(ok(trail('t1', { reward: 42 })) as any);
+		vi.mocked(makeAPIRequest).mockResolvedValue(ok(trail('t1', { duration: 42 })) as any);
 		await store.fetchTrail('t1', true);
 		expect(invalidateAPICache).toHaveBeenCalledWith('trail-t1');
-		expect(store.get('t1')?.reward).toBe(42);
+		expect(store.get('t1')?.duration).toBe(42);
 	});
 
 	it('dedupes concurrent fetches into one network call', async () => {
@@ -198,31 +257,177 @@ describe('trails store fetchTrail', () => {
 	});
 });
 
-describe('trails store run state', () => {
-	it('acceptTrail captures the pledge and seeds a reveal array', () => {
+// #region run lifecycle (start -> presence -> reflect, all standalone)
+
+describe('trails store run lifecycle', () => {
+	it('startRun records the pledge locally and fires the start POST', async () => {
 		const store = useTrailsStore();
-		const t = trail('t1');
-		const run = store.acceptTrail(t, { when: 'after lunch' });
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(undefined) as any);
+		const run = await store.startRun(trail('t1'), { when: 'after lunch', where: 'the park' });
+		expect(run.trailId).toBe('t1');
 		expect(run.pledge?.when).toBe('after lunch');
-		expect(run.stepRevealed).toEqual([false]);
-		expect(store.getRun('t1')?.currentStep).toBe(0);
+		expect(run.presenceMinutes).toBe(0);
+		expect(run.completed).toBe(false);
+		expect(store.getRun('t1')?.pledge?.where).toBe('the park');
+		const url = vi.mocked(makeClientAPIRequest).mock.calls[0][0] as string;
+		expect(url).toBe('/v2/users/current/trails/t1/start');
 	});
 
-	it('revealStep unlocks a reveal and advances the pointer', () => {
+	it('startRun keeps the local run even when the start POST fails', async () => {
 		const store = useTrailsStore();
-		store.acceptTrail(trail('t1'), { when: 'x' });
-		store.revealStep('t1', 0);
-		expect(store.getRun('t1')?.stepRevealed[0]).toBe(true);
-		expect(store.getRun('t1')?.currentStep).toBe(1);
+		vi.mocked(makeClientAPIRequest).mockRejectedValue(new Error('offline'));
+		const run = await store.startRun(trail('t1'));
+		expect(store.getRun('t1')).toBeTruthy();
+		expect(run.completed).toBe(false);
 	});
 
-	it('completeTrail marks the run complete and clearRun removes it', () => {
+	it('addPresence accumulates unhurried minutes and floors negative contributions', async () => {
 		const store = useTrailsStore();
-		store.acceptTrail(trail('t1'), { when: 'x' });
-		store.completeTrail('t1');
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(undefined) as any);
+		await store.startRun(trail('t1'));
+		store.addPresence('t1', 10);
+		store.addPresence('t1', 5);
+		expect(store.getRun('t1')?.presenceMinutes).toBe(15);
+		store.addPresence('t1', -100);
+		expect(store.getRun('t1')?.presenceMinutes).toBe(15);
+	});
+
+	it('addPresence is a no-op for an unknown run', () => {
+		const store = useTrailsStore();
+		store.addPresence('ghost', 10);
+		expect(store.getRun('ghost')).toBeUndefined();
+	});
+
+	it('completeRun writes the journal + ring from the server echo', async () => {
+		const store = useTrailsStore();
+		store.upsertTrail(trail('t1'));
+		const echo = { entry: journalEntry('t1', { presenceMinutes: 12 }), natureMinutes: nature(60) };
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(echo) as any);
+		await store.startRun(trail('t1'));
+
+		const res = await store.completeRun('t1', reflection(), 12);
+		expect(res.success).toBe(true);
+		expect(res.data?.trailId).toBe('t1');
+		expect(store.journal[0]?.trailId).toBe('t1');
+		expect(store.natureMinutes?.minutes).toBe(60);
 		expect(store.getRun('t1')?.completed).toBe(true);
+		expect(invalidateAPICache).toHaveBeenCalledWith('trail-journal');
+		expect(invalidateAPICache).toHaveBeenCalledWith('nature-minutes-current');
+		const url = vi.mocked(makeClientAPIRequest).mock.calls.at(-1)?.[0] as string;
+		expect(url).toBe('/v2/users/current/trails/t1/complete');
+	});
+
+	it('completeRun synthesizes an entry and bumps the ring when the server does not echo', async () => {
+		const store = useTrailsStore();
+		store.upsertTrail(trail('t1', { title: 'Sky Sit', practice: 'sky_watch' }));
+		vi.mocked(makeClientAPIRequest).mockResolvedValue({ success: true } as any);
+		await store.startRun(trail('t1'));
+
+		const res = await store.completeRun('t1', reflection({ note: 'lovely' }), 18);
+		expect(res.success).toBe(true);
+		expect(res.data?.title).toBe('Sky Sit');
+		expect(res.data?.practice).toBe('sky_watch');
+		expect(res.data?.presenceMinutes).toBe(18);
+		expect(store.journal[0]?.reflection.note).toBe('lovely');
+		expect(store.natureMinutes?.minutes).toBe(18);
+		// the optimistic credit is tagged as a trail source
+		expect(store.natureMinutes?.sources.at(-1)?.kind).toBe('trail');
+	});
+
+	it('completeRun ignores a malformed server echo and falls back optimistically', async () => {
+		const store = useTrailsStore();
+		store.upsertTrail(trail('t1'));
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(
+			ok({ entry: { trailId: 5, bad: true }, natureMinutes: { minutes: 'lots' } }) as any
+		);
+		const res = await store.completeRun('t1', reflection(), 9);
+		expect(res.success).toBe(true);
+		// bad entry dropped -> synthesized fallback entry
+		expect(res.data?.trailId).toBe('t1');
+		expect(res.data?.presenceMinutes).toBe(9);
+		// bad nature shape dropped -> optimistic bump only
+		expect(store.natureMinutes?.minutes).toBe(9);
+	});
+
+	it('completeRun defaults to the run presence minutes when none is passed', async () => {
+		const store = useTrailsStore();
+		store.upsertTrail(trail('t1'));
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(undefined) as any);
+		await store.startRun(trail('t1'));
+		store.addPresence('t1', 14);
+		vi.mocked(makeClientAPIRequest).mockResolvedValue({ success: true } as any);
+		const res = await store.completeRun('t1', reflection());
+		expect(res.data?.presenceMinutes).toBe(14);
+		expect(store.natureMinutes?.minutes).toBe(14);
+	});
+
+	it('clearRun removes the active run', async () => {
+		const store = useTrailsStore();
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(undefined) as any);
+		await store.startRun(trail('t1'));
 		store.clearRun('t1');
 		expect(store.getRun('t1')).toBeUndefined();
+	});
+});
+
+// #region journal
+
+describe('trails store fetchJournal', () => {
+	it('loads and stores a valid journal', async () => {
+		const store = useTrailsStore();
+		vi.mocked(makeAPIRequest).mockResolvedValue(
+			ok([journalEntry('t1'), journalEntry('t2')]) as any
+		);
+		const res = await store.fetchJournal();
+		expect(res.success).toBe(true);
+		expect(store.journal.map((e) => e.trailId)).toEqual(['t1', 't2']);
+		expect(store.journalLoaded).toBe(true);
+		const url = vi.mocked(makeAPIRequest).mock.calls[0][1] as string;
+		expect(url).toBe('/v2/users/current/trail-journal');
+	});
+
+	it('unwraps an { items } envelope', async () => {
+		const store = useTrailsStore();
+		vi.mocked(makeAPIRequest).mockResolvedValue(ok({ items: [journalEntry('t1')] }) as any);
+		await store.fetchJournal();
+		expect(store.journal.length).toBe(1);
+	});
+
+	it('filters malformed entries out via zod', async () => {
+		const store = useTrailsStore();
+		vi.mocked(makeAPIRequest).mockResolvedValue(
+			ok([journalEntry('good'), { trailId: '', bad: true }, null, 42]) as any
+		);
+		const res = await store.fetchJournal();
+		expect(res.success).toBe(true);
+		expect(store.journal.map((e) => e.trailId)).toEqual(['good']);
+	});
+
+	it('handles an empty journal', async () => {
+		const store = useTrailsStore();
+		vi.mocked(makeAPIRequest).mockResolvedValue(ok([]) as any);
+		const res = await store.fetchJournal();
+		expect(res.success).toBe(true);
+		expect(store.journal).toEqual([]);
+		expect(store.journalLoaded).toBe(true);
+	});
+
+	it('serves the cached journal until forced, then refetches', async () => {
+		const store = useTrailsStore();
+		vi.mocked(makeAPIRequest).mockResolvedValue(ok([journalEntry('t1')]) as any);
+		await store.fetchJournal();
+		await store.fetchJournal(); // journalLoaded -> served from state, no network
+		expect(makeAPIRequest).toHaveBeenCalledTimes(1);
+		await store.fetchJournal(true);
+		expect(makeAPIRequest).toHaveBeenCalledTimes(2);
+		expect(invalidateAPICache).toHaveBeenCalledWith('trail-journal');
+	});
+
+	it('returns a failure envelope when the journal request fails', async () => {
+		const store = useTrailsStore();
+		vi.mocked(makeAPIRequest).mockResolvedValue({ success: false, message: 'down' } as any);
+		const res = await store.fetchJournal();
+		expect(res.success).toBe(false);
 	});
 });
 
@@ -255,7 +460,7 @@ describe('trails store nature minutes', () => {
 		const store = useTrailsStore();
 		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(nature(45)) as any);
 		const res = await store.creditNatureMinutes('u1', {
-			kind: 'trail_step',
+			kind: 'trail',
 			minutes: 15,
 			at: new Date().toISOString()
 		});
@@ -268,7 +473,7 @@ describe('trails store nature minutes', () => {
 		const store = useTrailsStore();
 		vi.mocked(makeClientAPIRequest).mockResolvedValue({ success: false } as any);
 		await store.creditNatureMinutes('u1', {
-			kind: 'trail_step',
+			kind: 'trail',
 			minutes: 20,
 			at: new Date().toISOString()
 		});
@@ -290,21 +495,23 @@ describe('trails store zod shape-guard (malformed data)', () => {
 		expect(store.cache.size).toBe(0);
 	});
 
-	it('rejects a trail whose steps is not an array', () => {
+	it('rejects a trail whose practice is empty', () => {
 		const store = useTrailsStore();
-		store.setTrails([{ id: 't1', title: 'x', steps: 'nope' } as unknown as Trail]);
-		expect(store.has('t1')).toBe(false);
-	});
-
-	it('rejects a trail whose steps contain the wrong shape', () => {
-		const store = useTrailsStore();
-		store.setTrails([{ id: 't1', title: 'x', steps: [1, 2, 3] } as unknown as Trail]);
+		store.setTrails([trail('t1', { practice: '' as any })]);
 		expect(store.has('t1')).toBe(false);
 	});
 
 	it('rejects a trail with a null title', () => {
 		const store = useTrailsStore();
-		store.setTrails([{ id: 't1', title: null, steps: [] } as unknown as Trail]);
+		store.setTrails([
+			{
+				id: 't1',
+				title: null,
+				practice: 'sit_spot',
+				curiosity: 'c',
+				reveal: 'r'
+			} as unknown as Trail
+		]);
 		expect(store.has('t1')).toBe(false);
 	});
 
@@ -312,7 +519,13 @@ describe('trails store zod shape-guard (malformed data)', () => {
 		const store = useTrailsStore();
 		store.setTrails([
 			trail('good'),
-			{ id: 'bad', title: 5, steps: [] } as unknown as Trail,
+			{
+				id: 'bad',
+				title: 5,
+				practice: 'sit_spot',
+				curiosity: 'c',
+				reveal: 'r'
+			} as unknown as Trail,
 			null as unknown as Trail
 		]);
 		expect(store.has('good')).toBe(true);
@@ -322,13 +535,13 @@ describe('trails store zod shape-guard (malformed data)', () => {
 
 	it('upsertTrail ignores a malformed trail', () => {
 		const store = useTrailsStore();
-		store.upsertTrail({ id: '', title: 'x', steps: [] } as unknown as Trail);
+		store.upsertTrail({ id: '', title: 'x', practice: 'sit_spot' } as unknown as Trail);
 		expect(store.cache.size).toBe(0);
 	});
 
 	it('fetchTrail caches null on a 200-but-malformed body (definitive miss, not transient)', async () => {
 		const store = useTrailsStore();
-		vi.mocked(makeAPIRequest).mockResolvedValue(ok({ id: 't1', title: 'x', steps: 'bad' }) as any);
+		vi.mocked(makeAPIRequest).mockResolvedValue(ok({ id: 't1', title: 'x' }) as any);
 		const result = await store.fetchTrail('t1', false);
 		expect(result).toBeNull();
 		expect(store.has('t1')).toBe(true);
@@ -347,7 +560,7 @@ describe('trails store zod shape-guard (malformed data)', () => {
 		const store = useTrailsStore();
 		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok({ minutes: null }) as any);
 		const res = await store.creditNatureMinutes('u1', {
-			kind: 'trail_step',
+			kind: 'trail',
 			minutes: 12,
 			at: new Date().toISOString()
 		});
@@ -360,11 +573,11 @@ describe('trails store zod shape-guard (malformed data)', () => {
 describe('trails store transient vs not-found (classifyItemFetch)', () => {
 	it('keeps the last-good trail on a transient (5xx, no data) failure', async () => {
 		const store = useTrailsStore();
-		store.upsertTrail(trail('t1', { reward: 7 }));
+		store.upsertTrail(trail('t1', { duration: 7 }));
 		vi.mocked(makeAPIRequest).mockResolvedValue({ success: false, status: 500 } as any);
 		await store.fetchTrail('t1', true);
 		// transient failure must not clobber the cached entry with null
-		expect(store.get('t1')?.reward).toBe(7);
+		expect(store.get('t1')?.duration).toBe(7);
 	});
 
 	it('caches null only when there is no last-good entry and the failure is definitive', async () => {
@@ -413,6 +626,16 @@ describe('trails store envelope + reactivity', () => {
 		expect(count.value).toBe(0);
 	});
 
+	it('journal is reactive to a completed run', async () => {
+		const store = useTrailsStore();
+		const size = computed(() => store.journal.length);
+		expect(size.value).toBe(0);
+		vi.mocked(makeClientAPIRequest).mockResolvedValue({ success: true } as any);
+		await store.completeRun('t1', reflection(), 5);
+		await nextTick();
+		expect(size.value).toBe(1);
+	});
+
 	it('natureMinutes is reactive to a credit', async () => {
 		const store = useTrailsStore();
 		const minutes = computed(() => store.natureMinutes?.minutes ?? 0);
@@ -427,15 +650,19 @@ describe('trails store envelope + reactivity', () => {
 describe('trails store clear', () => {
 	afterEach(() => vi.clearAllMocks());
 
-	it('wipes cache, runs and nature minutes', () => {
+	it('wipes cache, runs, journal and nature minutes', async () => {
 		const store = useTrailsStore();
 		store.upsertTrail(trail('t1'));
-		store.acceptTrail(trail('t1'), { when: 'x' });
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(undefined) as any);
+		await store.startRun(trail('t1'));
 		store.natureMinutes = nature(10);
+		store.journal = [journalEntry('t1')];
 		store.clear();
 		expect(store.cache.size).toBe(0);
 		expect(store.getRun('t1')).toBeUndefined();
 		expect(store.natureMinutes).toBeNull();
+		expect(store.journal).toEqual([]);
+		expect(store.journalLoaded).toBe(false);
 		expect(store.listLoaded).toBe(false);
 	});
 });
