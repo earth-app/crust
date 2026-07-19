@@ -20,7 +20,7 @@ import {
 	pickPersona,
 	slugify,
 	userToForm
-} from '~/shared/utils/marketingPeople';
+} from '~/shared/utils/marketing';
 
 describe('marketingPeople helpers', () => {
 	describe('slugify', () => {

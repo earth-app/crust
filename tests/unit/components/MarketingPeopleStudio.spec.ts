@@ -2,17 +2,13 @@ import { mountSuspended } from '@nuxt/test-utils/runtime';
 import { describe, expect, it } from 'vitest';
 import PeopleStudio from '~/components/admin/marketing/PeopleStudio.vue';
 import type { MarketingScene } from '~/shared/types/marketing';
-import type {
-	MockMotdForm,
-	MockNotificationForm,
-	MockUserForm
-} from '~/shared/utils/marketingPeople';
+import type { MockMotdForm, MockNotificationForm, MockUserForm } from '~/shared/utils/marketing';
 import {
 	MOTD_PRESETS,
 	NOTIFICATION_PRESETS,
 	PERSONA_PRESETS,
 	personaToForm
-} from '~/shared/utils/marketingPeople';
+} from '~/shared/utils/marketing';
 
 const scene = <T>(kind: MarketingScene['kind'], payload: T): MarketingScene<T> => ({
 	id: `scene-${kind}`,

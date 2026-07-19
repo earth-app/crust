@@ -44,7 +44,7 @@ import {
 	toPreviewQuest,
 	type BuilderStep,
 	type QuestStateMaps
-} from '~/shared/utils/marketingQuest';
+} from '~/shared/utils/marketing';
 import { useUserStore } from '~/stores/user';
 
 // small helper - a valid preview quest with N single steps

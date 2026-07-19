@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { defineComponent, nextTick, ref } from 'vue';
 import Preview from '~/components/admin/marketing/quest/Preview.vue';
 import { useQuestCelebration } from '~/composables/useUser';
-import { PREVIEW_QUEST_ID } from '~/shared/utils/marketingQuest';
+import { PREVIEW_QUEST_ID } from '~/shared/utils/marketing';
 
 mockNuxtImport('useAuth', () => {
 	return () => ({ user: ref({ id: 'admin-1', account: { account_type: 'PRO' } }) });
