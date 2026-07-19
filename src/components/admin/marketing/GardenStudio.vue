@@ -5,6 +5,7 @@
 	>
 		<CircleGarden
 			:garden="derived"
+			:render="renderConfig"
 			:height="'min(70vh, 640px)'"
 			:caption="state.title"
 		/>
@@ -17,8 +18,8 @@
 		<div>
 			<h3 class="text-lg font-semibold">Garden Studio</h3>
 			<p class="mt-1 text-sm text-muted">
-				Grow a shared Circle Garden from mock contribution data, then record it fullscreen. Nothing
-				here is a real circle; the numbers only shape the scene.
+				Grow a Shared Garden from mock contribution data, then record it fullscreen. Nothing here is
+				a real circle; the numbers only shape the scene.
 			</p>
 		</div>
 
@@ -68,6 +69,7 @@
 					<CircleGarden
 						:key="replayKey"
 						:garden="derived"
+						:render="renderConfig"
 						:height="360"
 						:caption="state.title"
 					/>
@@ -114,6 +116,45 @@
 						<span class="text-xs text-muted">Particles, ripples, and twinkle</span>
 					</div>
 					<USwitch v-model="state.animated" />
+				</div>
+
+				<div class="flex flex-col gap-3 rounded-lg border border-default p-3">
+					<span class="text-xs font-semibold tracking-wide text-muted uppercase">Scene Light</span>
+					<div class="grid grid-cols-2 gap-3">
+						<UFormField label="Season">
+							<USelect
+								v-model="state.season"
+								:items="seasonItems"
+								size="sm"
+								class="w-full"
+							/>
+						</UFormField>
+						<UFormField label="Time of Day">
+							<USelect
+								v-model="state.timeOfDay"
+								:items="timeItems"
+								size="sm"
+								class="w-full"
+							/>
+						</UFormField>
+					</div>
+					<div class="flex items-center justify-between">
+						<div class="flex flex-col">
+							<span class="text-sm font-medium">Auto Moon</span>
+							<span class="text-xs text-muted">Phase from today's date</span>
+						</div>
+						<USwitch v-model="autoMoon" />
+					</div>
+					<UFormField
+						v-if="!autoMoon"
+						:label="`Moon Phase: ${moonLabel}`"
+					>
+						<USlider
+							v-model="moonSlider"
+							:min="0"
+							:max="100"
+						/>
+					</UFormField>
 				</div>
 
 				<div class="flex flex-col gap-2 rounded-lg border border-default p-3">
@@ -240,6 +281,7 @@
 						<CircleGarden
 							:key="`present-${replayKey}`"
 							:garden="derived"
+							:render="renderConfig"
 							:height="'100vh'"
 							:caption="state.title"
 							class="h-full w-full"
@@ -265,10 +307,38 @@ const presets = GARDEN_PRESETS;
 
 const state = reactive<GardenSceneState>(emptyGardenScene());
 const derived = computed(() => deriveMockGarden(state));
+const renderConfig = computed(() => sceneRenderConfig(state));
 
 const replayKey = ref(0);
 const present = ref(false);
 const presentGardenEl = ref<HTMLElement | null>(null);
+
+// #region scene-light controls (season / time-of-day / moon overrides)
+const titleCase = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+const seasonItems = [
+	{ label: 'Auto', value: 'auto' },
+	...GARDEN_SEASONS.map((s) => ({ label: titleCase(s), value: s }))
+];
+const timeItems = [
+	{ label: 'Auto', value: 'auto' },
+	...GARDEN_TIMES_OF_DAY.map((t) => ({ label: titleCase(t), value: t }))
+];
+
+const autoMoon = computed({
+	get: () => state.moonPhase == null,
+	set: (v: boolean) => {
+		if (v) state.moonPhase = null;
+		else if (state.moonPhase == null) state.moonPhase = 0.5;
+	}
+});
+const moonSlider = computed({
+	get: () => Math.round((state.moonPhase ?? 0) * 100),
+	set: (v: number) => {
+		state.moonPhase = v / 100;
+	}
+});
+const moonLabel = computed(() => moonPhaseName(state.moonPhase ?? 0));
+// #endregion
 
 function assign(next: GardenSceneState) {
 	state.title = next.title;
@@ -278,6 +348,9 @@ function assign(next: GardenSceneState) {
 	state.seed = next.seed;
 	state.animated = next.animated;
 	state.mix = { ...next.mix };
+	state.season = next.season ?? 'auto';
+	state.timeOfDay = next.timeOfDay ?? 'auto';
+	state.moonPhase = next.moonPhase ?? null;
 }
 
 function applyPreset(preset: { name: string; state: GardenSceneState }) {
@@ -290,6 +363,10 @@ function randomize() {
 	for (const kind of kinds) state.mix[kind] = Math.floor(Math.random() * 11);
 	// keep at least one kind so the scene never collapses to nothing
 	if (kinds.every((k) => state.mix[k] === 0)) state.mix.flower = 6;
+	// shuffle the light too so a recording jumps across seasons / times / moons
+	state.season = GARDEN_SEASONS[Math.floor(Math.random() * GARDEN_SEASONS.length)]!;
+	state.timeOfDay = GARDEN_TIMES_OF_DAY[Math.floor(Math.random() * GARDEN_TIMES_OF_DAY.length)]!;
+	state.moonPhase = Math.random();
 	replay();
 }
 
