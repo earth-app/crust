@@ -22,17 +22,14 @@ function trail(id: string, extra: Partial<Trail> = {}): Trail {
 		id,
 		title: `Trail ${id}`,
 		theme: 'nature',
-		description: 'A short walk',
+		practice: 'sit_spot',
+		description: 'A quiet sit.',
 		icon: 'mdi:leaf',
 		rarity: 'normal',
-		steps: [
-			{
-				step: { type: 'take_photo_location', description: 'Photograph a tree', parameters: [] },
-				clue: 'What is older than it looks?',
-				reveal: 'That oak may be two centuries old.'
-			}
-		],
-		reward: 10,
+		curiosity: 'What settles when you do?',
+		duration: 12,
+		reflectionPrompt: 'What did you notice?',
+		reveal: 'A small wonder.',
 		...extra
 	} as Trail;
 }
@@ -45,9 +42,19 @@ function authed() {
 	auth.currentUser = { id: 'u1' } as any;
 }
 
+// the weekly-reflection bucket is shared useState + localStorage; reset it per test so
+// the recordCuriosity side-effect from complete() is observed cleanly
+function resetWeekly() {
+	window.localStorage.clear();
+	useState<number>('weekly-reflection-quests', () => 0).value = 0;
+	useState<number>('weekly-reflection-curiosity', () => 0).value = 0;
+	useState<string | null>('weekly-reflection-week', () => null).value = null;
+}
+
 beforeEach(() => {
 	setActivePinia(createPinia());
 	vi.clearAllMocks();
+	resetWeekly();
 });
 
 describe('useTrails', () => {
@@ -92,67 +99,121 @@ describe('useTrails', () => {
 		expect(res.success).toBe(false);
 		expect(makeClientAPIRequest).not.toHaveBeenCalled();
 	});
+
+	it('fetchJournal requires a signed-in user', async () => {
+		const { fetchJournal } = useTrails();
+		const res = await fetchJournal();
+		expect(res.success).toBe(false);
+		expect(res.error).toMatch(/signed in/i);
+		expect(makeAPIRequest).not.toHaveBeenCalled();
+	});
+
+	it('fetchJournal returns the journal when authed', async () => {
+		authed();
+		vi.mocked(makeAPIRequest).mockResolvedValue(
+			ok([
+				{
+					trailId: 't1',
+					title: 'Trail t1',
+					practice: 'sit_spot',
+					presenceMinutes: 10,
+					completedAt: new Date().toISOString(),
+					reflection: { at: new Date().toISOString() }
+				}
+			]) as any
+		);
+		const { fetchJournal, journal } = useTrails();
+		const res = await fetchJournal();
+		expect(res.success).toBe(true);
+		expect(res.data?.length).toBe(1);
+		expect(journal.value.length).toBe(1);
+	});
 });
 
 describe('useTrail', () => {
-	it('projects the trail into a synthetic quest for the reused timeline', () => {
+	it('exposes the trail as a three-state computed', () => {
 		const store = useTrailsStore();
 		store.upsertTrail(trail('t1'));
-		const { asQuest } = useTrail('t1');
-		expect(asQuest.value?.id).toBe('t1');
-		// trail steps map down to their underlying quest steps
-		expect(asQuest.value?.steps.length).toBe(1);
-		expect((asQuest.value?.steps[0] as any).type).toBe('take_photo_location');
+		const { trail: t } = useTrail('t1');
+		expect(t.value?.id).toBe('t1');
 	});
 
-	it('accept rejects a pledge with no trigger', () => {
+	it('start rejects a pledge with no trigger', async () => {
 		const store = useTrailsStore();
 		store.upsertTrail(trail('t1'));
-		const { accept } = useTrail('t1');
-		const res = accept({ when: '   ' });
+		const { start } = useTrail('t1');
+		const res = await start({ when: '   ' });
 		expect(res.success).toBe(false);
+		expect(res.error).toMatch(/when/i);
 		expect(store.getRun('t1')).toBeUndefined();
 	});
 
-	it('accept captures a valid pledge and opens the run', () => {
+	it('start fails when the trail is not loaded', async () => {
 		const store = useTrailsStore();
-		store.upsertTrail(trail('t1'));
-		const { accept, run } = useTrail('t1');
-		const res = accept({ when: 'after breakfast', where: 'the park' });
-		expect(res.success).toBe(true);
-		expect(run.value?.pledge?.where).toBe('the park');
+		store.cache.set('missing', null);
+		const { start } = useTrail('missing');
+		const res = await start();
+		expect(res.success).toBe(false);
+		expect(res.error).toMatch(/not loaded/i);
 	});
 
-	it('completeStep reveals the awe payoff and credits nature minutes', async () => {
-		authed();
+	it('start captures a valid pledge and opens the run', async () => {
 		const store = useTrailsStore();
 		store.upsertTrail(trail('t1'));
-		vi.mocked(makeClientAPIRequest).mockResolvedValue(
-			ok({
-				week: '2026-W29',
-				minutes: 15,
-				target: 120,
-				best: 15,
-				sources: [],
-				updated_at: 'x'
-			}) as any
-		);
-
-		const { accept, completeStep } = useTrail('t1');
-		accept({ when: 'x' });
-		const res = await completeStep(0);
-
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(undefined) as any);
+		const { start, run } = useTrail('t1');
+		const res = await start({ when: 'after breakfast', where: 'the park' });
 		expect(res.success).toBe(true);
-		expect(store.getRun('t1')?.stepRevealed[0]).toBe(true);
+		expect(res.data?.pledge?.where).toBe('the park');
+		expect(run.value?.pledge?.when).toBe('after breakfast');
 		expect(makeClientAPIRequest).toHaveBeenCalled();
 	});
 
-	it('complete marks the run finished', () => {
+	it('start allows an empty pledge (no if-then trigger required)', async () => {
 		const store = useTrailsStore();
 		store.upsertTrail(trail('t1'));
-		const { accept, complete } = useTrail('t1');
-		accept({ when: 'x' });
-		complete();
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(undefined) as any);
+		const { start, run } = useTrail('t1');
+		const res = await start();
+		expect(res.success).toBe(true);
+		expect(run.value?.trailId).toBe('t1');
+	});
+
+	it('addPresence delegates to the store run', async () => {
+		const store = useTrailsStore();
+		store.upsertTrail(trail('t1'));
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(undefined) as any);
+		const { start, addPresence, run } = useTrail('t1');
+		await start();
+		addPresence(12);
+		expect(run.value?.presenceMinutes).toBe(12);
+	});
+
+	it('complete finishes the run, records a moment of curiosity, and returns the entry', async () => {
+		authed();
+		const store = useTrailsStore();
+		store.upsertTrail(trail('t1'));
+		// start + complete both hit the client wire; no server echo -> optimistic fallback
+		vi.mocked(makeClientAPIRequest).mockResolvedValue({ success: true } as any);
+		const { start, complete } = useTrail('t1');
+		await start({ when: 'after breakfast' });
+		const res = await complete({ at: new Date().toISOString(), note: 'peaceful' }, 15);
+		expect(res.success).toBe(true);
+		expect(res.data?.trailId).toBe('t1');
 		expect(store.getRun('t1')?.completed).toBe(true);
+		// a finished trail is a moment of wonder (recordCuriosity), never a quest
+		expect(useWeeklyReflection().curiosityTouched.value).toBe(1);
+		expect(useWeeklyReflection().questsDone.value).toBe(0);
+	});
+
+	it('reset clears the active run', async () => {
+		const store = useTrailsStore();
+		store.upsertTrail(trail('t1'));
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(undefined) as any);
+		const { start, reset, run } = useTrail('t1');
+		await start();
+		expect(run.value).toBeTruthy();
+		reset();
+		expect(run.value).toBeUndefined();
 	});
 });
