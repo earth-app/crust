@@ -95,6 +95,17 @@ export function useTrailmarks() {
 	const hasThanked = (id: string): boolean => store.hasThanked(id);
 	const get = (id: string): Trailmark | undefined => store.get(id);
 
+	// the 'from outside' notes a prompt has collected
+	const forPrompt = (promptId: string): Trailmark[] => store.forPrompt(promptId);
+
+	const fetchForPrompt = async (
+		promptId: string,
+		force = false
+	): Promise<TrailmarkResult<Trailmark[]>> => {
+		if (!promptId) return { success: false, error: 'Missing prompt id.' };
+		return toResult<Trailmark[]>(await store.fetchForPrompt(promptId, force));
+	};
+
 	return {
 		nearby,
 		mine,
@@ -105,6 +116,8 @@ export function useTrailmarks() {
 		leaveNote,
 		thank,
 		hasThanked,
-		get
+		get,
+		forPrompt,
+		fetchForPrompt
 	};
 }
