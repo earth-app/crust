@@ -29,6 +29,8 @@
 					<AdminMarketingPeopleStudio v-else-if="item.value === 'people'" />
 					<AdminMarketingQuestStudio v-else-if="item.value === 'quests'" />
 					<AdminMarketingGardenStudio v-else-if="item.value === 'garden'" />
+					<AdminMarketingTrailStudio v-else-if="item.value === 'trails'" />
+					<AdminMarketingTrailmarkStudio v-else-if="item.value === 'trailmarks'" />
 				</div>
 			</template>
 		</UTabs>
@@ -42,6 +44,8 @@ const sections = [
 	{ label: 'Content', icon: 'mdi:cards-variant', value: 'content' },
 	{ label: 'People & Messages', icon: 'mdi:account-voice', value: 'people' },
 	{ label: 'Quests', icon: 'mdi:flag-checkered', value: 'quests' },
-	{ label: 'Garden', icon: 'mdi:sprout', value: 'garden' }
+	{ label: 'Garden', icon: 'mdi:sprout', value: 'garden' },
+	{ label: 'Trails', icon: 'mdi:map-marker-path', value: 'trails' },
+	{ label: 'Trailmarks', icon: 'mdi:map-marker-radius-outline', value: 'trailmarks' }
 ];
 </script>
