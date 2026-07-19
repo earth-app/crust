@@ -3,13 +3,14 @@
 		<header class="flex flex-col gap-1">
 			<div class="flex items-center gap-2">
 				<UIcon
-					name="mdi:account-group-outline"
+					name="mdi:flower-tulip-outline"
 					class="text-2xl text-primary"
 				/>
-				<h1 class="text-2xl font-bold">Your Circle</h1>
+				<h1 class="text-2xl font-bold">My Shared Garden</h1>
 			</div>
 			<p class="text-sm text-muted">
-				Your close circle, one shared outdoor goal. Cheer each other on and watch your garden grow.
+				A garden you grow together with your circle of friends. Share one outdoor goal, cheer each
+				other on, and watch it come to life.
 			</p>
 		</header>
 
@@ -21,7 +22,7 @@
 				name="mdi:login-variant"
 				class="text-3xl text-muted"
 			/>
-			<p class="text-sm text-muted">Sign in to see your circle's expedition and garden.</p>
+			<p class="text-sm text-muted">Sign in to see your shared garden and expedition.</p>
 			<UButton
 				to="/login"
 				icon="mdi:login"

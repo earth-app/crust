@@ -132,6 +132,21 @@
 						class="w-full"
 					/>
 				</UFormField>
+
+				<div
+					v-if="guidance.level !== 'ok'"
+					class="flex items-start gap-2 text-xs sm:col-span-2"
+					:class="guidance.color === 'warning' ? 'text-warning' : 'text-info'"
+				>
+					<UIcon
+						:name="guidance.icon"
+						class="size-4 mt-0.5 shrink-0"
+					/>
+					<span class="text-wrap min-w-0">
+						<span class="font-semibold">{{ guidance.title }}</span>
+						<span class="opacity-80 ml-2"> {{ guidance.message }}</span>
+					</span>
+				</div>
 			</div>
 			<div>
 				<UButton
@@ -166,14 +181,23 @@ const props = withDefaults(
 		expedition?: Expedition | null;
 		currentUid?: string;
 		canStart?: boolean;
+		// circle member count (you + others); when omitted we derive it from the
+		// current user's circle so the goal guidance scales to the group
+		circleSize?: number;
 	}>(),
-	{ expedition: null, currentUid: '', canStart: true }
+	{ expedition: null, currentUid: '', canStart: true, circleSize: 0 }
 );
 
 const emit = defineEmits<{ (e: 'started', value: Expedition): void }>();
 
 const { start } = useExpedition();
+const { circle, fetchCircle } = useFriends();
 const toast = useToast();
+
+// prefer an explicit prop; otherwise size from the fetched circle (self + members)
+const effectiveCircleSize = computed(() =>
+	props.circleSize && props.circleSize > 0 ? props.circleSize : Math.max(1, circle.value.length + 1)
+);
 
 const goalMeta = computed(() =>
 	props.expedition
@@ -207,7 +231,7 @@ function barWidth(contribution: number): number {
 const color = (uid: string) => contributorColor(uid);
 const initial = (name: string) => (name?.trim()?.[0] ?? '?').toUpperCase();
 
-const goalOptions = (['nature_minutes', 'trail_steps', 'quests'] as ExpeditionGoal[]).map((g) => ({
+const goalOptions = (['nature_minutes', 'trails', 'quests'] as ExpeditionGoal[]).map((g) => ({
 	label: EXPEDITION_GOAL_META[g].label,
 	value: g
 }));
@@ -219,6 +243,21 @@ const form = reactive({
 });
 const goalOptionMeta = computed(() => EXPEDITION_GOAL_META[form.goal]);
 const starting = ref(false);
+
+// fun, non-blocking nudge when the target is very high or very low for the circle
+const guidance = computed(() =>
+	expeditionGoalGuidance({
+		goal: form.goal,
+		target: form.target,
+		circleSize: effectiveCircleSize.value,
+		days: form.days
+	})
+);
+
+// client-only; sizes the guidance to the real circle without blocking ssr
+onMounted(() => {
+	if (props.currentUid) void fetchCircle();
+});
 
 async function onStart() {
 	if (!form.title.trim() || starting.value) return;

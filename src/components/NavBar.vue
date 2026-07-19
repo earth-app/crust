@@ -54,7 +54,7 @@
 					<NuxtLink
 						to="/circle"
 						class="text-sm xl:text-base font-semibold hover:opacity-90 whitespace-nowrap"
-						>Circle</NuxtLink
+						>Shared Garden</NuxtLink
 					>
 					<NuxtLink
 						to="/trailmarks"
@@ -292,8 +292,8 @@
 				variant="subtle"
 				color="primary"
 				size="xl"
-				icon="mdi:account-group"
-				>Circle</UBadge
+				icon="mdi:flower-tulip"
+				>Shared Garden</UBadge
 			>
 		</NuxtLink>
 		<NuxtLink to="/trailmarks">
