@@ -2,10 +2,6 @@ import { actAs, makeActor, registerActors } from '../utils/feature-helpers';
 import { expect, skipIfIntegration, test } from '../utils/fixtures';
 import { makeExpedition, makeGarden } from '../utils/mock-data';
 
-// Circles & Expeditions: a close circle pursues one shared outdoor goal. The ring
-// grows from the COMBINED contribution of every member (contribution, never a rank),
-// the Garden grows from the combined minutes, and Kudos are counter-free - a one-tap
-// warm phrase that reaches the recipient privately with no tally anywhere.
 test.describe('Circles & Expeditions - shared goal, garden, counter-free kudos', () => {
 	test('members share one expedition + garden; kudos reaches the recipient counter-free', async ({
 		page,
@@ -47,12 +43,16 @@ test.describe('Circles & Expeditions - shared goal, garden, counter-free kudos',
 		// combined progress = (300 + 300) / 1000 = 60%
 		await expect(page.getByText('60%')).toBeVisible();
 		// both members appear in the shared-goal contribution list, framed as contribution
-		// (each with their minutes) and never as a rank/position
-		await expect(page.getByRole('listitem').filter({ hasText: alice.user.username })).toBeVisible();
-		await expect(page.getByRole('listitem').filter({ hasText: bob.user.username })).toBeVisible();
+		// (each with their minutes, not the members roster) and never as a rank/position
+		await expect(
+			page.getByRole('listitem').filter({ hasText: alice.user.username }).filter({ hasText: 'min' })
+		).toBeVisible();
+		await expect(
+			page.getByRole('listitem').filter({ hasText: bob.user.username }).filter({ hasText: 'min' })
+		).toBeVisible();
 		await expect(page.getByText(/#\s*1\b|1st place|Rank\b/i)).toHaveCount(0);
 		// the shared garden is grown, not the first-minutes empty state
-		await expect(page.getByText('Shared Garden')).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Shared Garden', exact: true })).toBeVisible();
 		await expect(page.getByText(/starts growing on your first outdoor minutes/i)).toHaveCount(0);
 
 		// --- Alice sends counter-free kudos to Bob ---
@@ -88,8 +88,10 @@ test.describe('Circles & Expeditions - shared goal, garden, counter-free kudos',
 		skipIfIntegration('drives circle/expedition mock state');
 
 		const alice = makeActor(testId, 'alice');
-		await registerActors(mockApi, alice);
-		await mockApi.setCircle(alice.user.id, [alice.user.id]);
+		const bob = makeActor(testId, 'bob');
+		await registerActors(mockApi, alice, bob);
+		// a circle with a member so the shared goal can actually start
+		await mockApi.setCircle(alice.user.id, [alice.user.id, bob.user.id]);
 		await actAs(context, mockApi, alice);
 
 		await gotoHydrated('/circle');
@@ -108,5 +110,31 @@ test.describe('Circles & Expeditions - shared goal, garden, counter-free kudos',
 		});
 		await expect(page.getByText('0%')).toBeVisible();
 		await expect(page.getByText(/starts growing on your first outdoor minutes/i)).toBeVisible();
+	});
+
+	test('an empty circle blocks the expedition start and prompts an invite', async ({
+		page,
+		context,
+		mockApi,
+		testId,
+		gotoHydrated
+	}) => {
+		skipIfIntegration('drives circle/expedition mock state');
+
+		const solo = makeActor(testId, 'solo');
+		await registerActors(mockApi, solo);
+		// a self-only circle has no other members: a shared goal needs people first
+		await mockApi.setCircle(solo.user.id, [solo.user.id]);
+		await actAs(context, mockApi, solo);
+
+		await gotoHydrated('/circle');
+		await expect(page.getByRole('heading', { name: 'Start an Expedition' })).toBeVisible({
+			timeout: 15000
+		});
+		// the start button flips to an invite prompt and opens the invite modal
+		const inviteStart = page.getByRole('button', { name: 'Invite Friends to Start' });
+		await expect(inviteStart).toBeVisible();
+		await inviteStart.click();
+		await expect(page.getByText('An expedition is a shared goal.')).toBeVisible({ timeout: 12000 });
 	});
 });
