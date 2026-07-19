@@ -11,6 +11,7 @@ import type {
 } from 'types/trails';
 import { classifyItemFetch, invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
 import { reactive, ref } from 'vue';
+import { registerTrailPracticeMeta } from '~/shared/utils/trails';
 import { useAuthStore } from './auth';
 
 // ~120 min/week target; personal, never compared
@@ -75,6 +76,8 @@ export const useTrailsStore = defineStore('trails', () => {
 	const setTrails = (trails: Trail[]) => {
 		for (const trail of trails) {
 			if (!isValidTrail(trail)) continue;
+			// fill the practice-meta cache from the cloud response (source of truth)
+			registerTrailPracticeMeta(trail);
 			if (cache.get(trail.id)) continue;
 			evictOldestIfNeeded();
 			cache.set(trail.id, trail);
@@ -83,6 +86,7 @@ export const useTrailsStore = defineStore('trails', () => {
 
 	const upsertTrail = (trail: Trail) => {
 		if (!isValidTrail(trail)) return;
+		registerTrailPracticeMeta(trail);
 		evictOldestIfNeeded();
 		cache.set(trail.id, trail);
 	};
