@@ -10,11 +10,12 @@ vi.mock('utils', async (io) => {
 	return {
 		...actual,
 		makeAPIRequest: vi.fn(),
-		makeClientAPIRequest: vi.fn()
+		makeClientAPIRequest: vi.fn(),
+		invalidateAPICache: vi.fn()
 	};
 });
 
-import { makeAPIRequest, makeClientAPIRequest } from 'utils';
+import { invalidateAPICache, makeAPIRequest, makeClientAPIRequest } from 'utils';
 
 function mark(id: string, extra: Partial<Trailmark> = {}): Trailmark {
 	return {
@@ -246,15 +247,106 @@ describe('trailmark store thank privacy + reactivity', () => {
 	});
 });
 
+describe('trailmark store fetchForPrompt / forPrompt', () => {
+	it('loads a prompt bucket and exposes it via forPrompt', async () => {
+		const store = useTrailmarkStore();
+		vi.mocked(makeAPIRequest).mockResolvedValue(ok([mark('m1'), mark('m2')]) as any);
+		const res = await store.fetchForPrompt('p1');
+		expect(res.success).toBe(true);
+		expect(store.forPrompt('p1').map((m) => m.id)).toEqual(['m1', 'm2']);
+		const url = vi.mocked(makeAPIRequest).mock.calls[0][1] as string;
+		expect(url).toBe('/v2/prompts/p1/trailmarks');
+	});
+
+	it('unwraps an { items } envelope', async () => {
+		const store = useTrailmarkStore();
+		vi.mocked(makeAPIRequest).mockResolvedValue(ok({ items: [mark('m1')] }) as any);
+		await store.fetchForPrompt('p1');
+		expect(store.forPrompt('p1').map((m) => m.id)).toEqual(['m1']);
+	});
+
+	it('filters malformed marks out of the prompt bucket', async () => {
+		const store = useTrailmarkStore();
+		vi.mocked(makeAPIRequest).mockResolvedValue(
+			ok([mark('good'), { id: 'bad', note: 1, geo: {} }, null]) as any
+		);
+		const res = await store.fetchForPrompt('p1');
+		expect((res as { data?: Trailmark[] }).data?.map((m) => m.id)).toEqual(['good']);
+		expect(store.forPrompt('p1').map((m) => m.id)).toEqual(['good']);
+	});
+
+	it('serves a cached bucket without refetching until forced', async () => {
+		const store = useTrailmarkStore();
+		vi.mocked(makeAPIRequest).mockResolvedValue(ok([mark('m1')]) as any);
+		await store.fetchForPrompt('p1');
+		await store.fetchForPrompt('p1');
+		expect(makeAPIRequest).toHaveBeenCalledTimes(1);
+		await store.fetchForPrompt('p1', true);
+		expect(makeAPIRequest).toHaveBeenCalledTimes(2);
+	});
+
+	it('short-circuits without a prompt id', async () => {
+		const store = useTrailmarkStore();
+		const res = await store.fetchForPrompt('');
+		expect(res.success).toBe(false);
+		expect(makeAPIRequest).not.toHaveBeenCalled();
+	});
+
+	it('returns a failure envelope when the prompt fetch fails', async () => {
+		const store = useTrailmarkStore();
+		vi.mocked(makeAPIRequest).mockResolvedValue({ success: false, message: 'nope' } as any);
+		const res = await store.fetchForPrompt('p1');
+		expect(res.success).toBe(false);
+	});
+
+	it('forPrompt returns an empty list for an unknown prompt', () => {
+		const store = useTrailmarkStore();
+		expect(store.forPrompt('nope')).toEqual([]);
+	});
+});
+
+describe('trailmark store createTrailmark prompt link', () => {
+	it('passes prompt_id through and invalidates the prompt bucket', async () => {
+		const store = useTrailmarkStore();
+		// seed a prompt bucket first
+		vi.mocked(makeAPIRequest).mockResolvedValue(ok([mark('old')]) as any);
+		await store.fetchForPrompt('p1');
+		expect(store.promptCache.has('p1')).toBe(true);
+
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(mark('new', { prompt_id: 'p1' })) as any);
+		const res = await store.createTrailmark({
+			geo: { lat: 1, lng: 2 },
+			note: 'hi',
+			prompt_id: 'p1'
+		});
+		expect(res.success).toBe(true);
+		// prompt_id forwarded in the request body
+		const body = vi.mocked(makeClientAPIRequest).mock.calls.at(-1)?.[2] as { body?: any };
+		expect(body?.body?.prompt_id).toBe('p1');
+		// bucket + util cache invalidated so the next read re-includes the new note
+		expect(store.promptCache.has('p1')).toBe(false);
+		expect(invalidateAPICache).toHaveBeenCalledWith('prompt-trailmarks-p1');
+	});
+
+	it('leaves the prompt cache alone for a non-prompt note', async () => {
+		const store = useTrailmarkStore();
+		vi.mocked(makeClientAPIRequest).mockResolvedValue(ok(mark('new')) as any);
+		await store.createTrailmark({ geo: { lat: 1, lng: 2 }, note: 'hi' });
+		expect(invalidateAPICache).not.toHaveBeenCalledWith('prompt-trailmarks-undefined');
+	});
+});
+
 describe('trailmark store clear', () => {
 	afterEach(() => vi.clearAllMocks());
 
-	it('wipes cache, nearby buckets and mine', () => {
+	it('wipes cache, nearby buckets, prompt buckets and mine', () => {
 		const store = useTrailmarkStore();
 		store.upsert(mark('m1'));
+		store.promptCache.set('p1', ['m1']);
 		store.clear();
 		expect(store.cache.size).toBe(0);
 		expect(store.nearbyCache.size).toBe(0);
+		expect(store.promptCache.size).toBe(0);
 		expect(store.mine.length).toBe(0);
 	});
 });
