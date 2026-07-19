@@ -251,6 +251,7 @@
 							:animated="state.animated"
 							canvas-selector="canvas"
 							:filename="state.title || 'circle-garden'"
+							:static-override="gardenStaticOverride"
 						/>
 						<UButton
 							icon="mdi:dice-5-outline"
@@ -280,6 +281,7 @@
 					>
 						<CircleGarden
 							:key="`present-${replayKey}`"
+							ref="presentGardenComp"
 							:garden="derived"
 							:render="renderConfig"
 							:height="'100vh'"
@@ -312,6 +314,20 @@ const renderConfig = computed(() => sceneRenderConfig(state));
 const replayKey = ref(0);
 const present = ref(false);
 const presentGardenEl = ref<HTMLElement | null>(null);
+// the garden component re-renders itself at the target scale for a CRISP high-res export
+// (a plain html-to-image capture of the canvas only interpolates its fixed backing store)
+const presentGardenComp = ref<{
+	exportBlob?: (format: 'svg' | 'png' | 'jpg', scale: number) => Promise<Blob>;
+} | null>(null);
+
+const gardenStaticOverride = async (
+	format: 'svg' | 'png' | 'jpg',
+	pixelRatio: number
+): Promise<Blob> => {
+	const g = presentGardenComp.value;
+	if (!g?.exportBlob) throw new Error('The garden is not ready to export yet.');
+	return g.exportBlob(format, pixelRatio);
+};
 
 // #region scene-light controls (season / time-of-day / moon overrides)
 const titleCase = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);

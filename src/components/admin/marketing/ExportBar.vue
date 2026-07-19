@@ -99,6 +99,8 @@ const props = withDefaults(
 		canvasSelector?: string;
 		filename?: string;
 		label?: string;
+		// a self-rendering source (e.g. the garden canvas) that produces a crisp static blob
+		staticOverride?: (format: 'svg' | 'png' | 'jpg', pixelRatio: number) => Promise<Blob> | Blob;
 	}>(),
 	{ animated: false, canvasSelector: 'canvas', filename: 'marketing-asset' }
 );
@@ -201,7 +203,8 @@ async function run() {
 			durationMs: durationSec.value * 1000,
 			// resolution: pixelRatio drives static (svg/png/jpg); maxDimension the animated frames
 			pixelRatio: resolutionScale.value,
-			maxDimension: Math.round(RESOLUTION_BASE_WIDTH * resolutionScale.value)
+			maxDimension: Math.round(RESOLUTION_BASE_WIDTH * resolutionScale.value),
+			staticOverride: props.staticOverride
 		});
 
 		if (res.success) {

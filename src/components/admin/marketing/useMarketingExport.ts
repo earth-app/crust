@@ -114,6 +114,9 @@ export interface ExportOptions {
 	// capture window in ms; when set it overrides `frames` (frames = duration * fps)
 	durationMs?: number;
 	maxDimension?: number;
+	// crisp static override (e.g. a canvas that re-renders itself at the target scale);
+	// when set, it produces the static blob instead of html-to-image on the node
+	staticOverride?: (format: 'svg' | 'png' | 'jpg', pixelRatio: number) => Promise<Blob> | Blob;
 	onProgress?: (ratio: number) => void;
 }
 
@@ -489,14 +492,20 @@ export function useMarketingExport() {
 					}
 				});
 			} else {
-				if (!node) throw new Error('No preview element was found to export.');
 				phase.value = 'rendering';
 				progress.value = 0.15;
-				blob = await renderStatic(node, opts.format as 'svg' | 'png' | 'jpg', {
-					pixelRatio: opts.pixelRatio,
-					backgroundColor: opts.backgroundColor,
-					quality: opts.quality
-				});
+				const staticFormat = opts.format as 'svg' | 'png' | 'jpg';
+				if (opts.staticOverride) {
+					// a self-rendering source (the garden canvas) produces the crisp high-res blob
+					blob = await opts.staticOverride(staticFormat, opts.pixelRatio ?? 1);
+				} else {
+					if (!node) throw new Error('No preview element was found to export.');
+					blob = await renderStatic(node, staticFormat, {
+						pixelRatio: opts.pixelRatio,
+						backgroundColor: opts.backgroundColor,
+						quality: opts.quality
+					});
+				}
 			}
 
 			progress.value = 1;
