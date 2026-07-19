@@ -147,19 +147,44 @@ export const questChallengeViewSchema = z.object({
 export type QuestChallengeShape = z.infer<typeof questChallengeSchema>;
 export type QuestChallengeViewShape = z.infer<typeof questChallengeViewSchema>;
 
-export const trailStepShapeSchema = z
-	.object({
-		step: z.object({ type: z.string() }).loose(),
-		clue: z.string(),
-		reveal: z.string()
-	})
-	.loose();
-
+// a standalone trail: one qualitative practice + a curiosity gap + an awe reveal
 export const trailSchema = z
 	.object({
 		id: z.string().min(1),
 		title: z.string(),
-		steps: z.array(trailStepShapeSchema)
+		practice: z.string().min(1),
+		curiosity: z.string(),
+		reveal: z.string()
+	})
+	.loose();
+
+export const trailReflectionSchema = z
+	.object({
+		at: z.string(),
+		note: z.string().optional(),
+		mood: z.string().optional(),
+		photoCount: z.number().optional(),
+		sharedToGarden: z.boolean().optional()
+	})
+	.loose();
+
+export const trailRunSchema = z
+	.object({
+		trailId: z.string().min(1),
+		startedAt: z.string(),
+		presenceMinutes: z.number(),
+		completed: z.boolean()
+	})
+	.loose();
+
+export const trailJournalEntrySchema = z
+	.object({
+		trailId: z.string().min(1),
+		title: z.string(),
+		practice: z.string().min(1),
+		presenceMinutes: z.number(),
+		completedAt: z.string(),
+		reflection: trailReflectionSchema
 	})
 	.loose();
 
@@ -171,6 +196,8 @@ export const natureMinutesSchema = z
 	.loose();
 
 export type TrailShape = z.infer<typeof trailSchema>;
+export type TrailRunShape = z.infer<typeof trailRunSchema>;
+export type TrailJournalEntryShape = z.infer<typeof trailJournalEntrySchema>;
 export type NatureMinutesShape = z.infer<typeof natureMinutesSchema>;
 
 // Trailmarks
@@ -206,7 +233,7 @@ export const expeditionSchema = z
 	.object({
 		id: z.string().min(1),
 		title: z.string(),
-		goal: z.enum(['nature_minutes', 'trail_steps', 'quests']),
+		goal: z.enum(['nature_minutes', 'trails', 'quests']),
 		target: z.number(),
 		progress: z.number(),
 		contributors: z.array(expeditionContributorSchema),
