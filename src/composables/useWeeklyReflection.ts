@@ -101,9 +101,9 @@ export function useWeeklyReflection() {
 
 	// server-tracked, this week; nature-minutes store is never fetched at ssr setup
 	const minutesOutside = computed(() => Math.max(0, trailsStore.natureMinutes?.minutes ?? 0));
-	// trail-step reveals credited this week, a real derived floor for "moments of wonder"
+	// finished trails credited this week, a real derived floor for "moments of wonder"
 	const revealsFromSources = computed(
-		() => (trailsStore.natureMinutes?.sources ?? []).filter((s) => s.kind === 'trail_step').length
+		() => (trailsStore.natureMinutes?.sources ?? []).filter((s) => s.kind === 'trail').length
 	);
 	// take the higher of the client bucket and the server-derived floor
 	const wonderCount = computed(() => Math.max(curiosityTouched.value, revealsFromSources.value));
