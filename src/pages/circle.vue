@@ -3,5 +3,5 @@
 </template>
 
 <script setup lang="ts">
-useHead({ title: 'Your Circle' });
+useHead({ title: 'My Shared Garden' });
 </script>
