@@ -113,3 +113,21 @@ describe('useTrailmarks.thank', () => {
 		expect(hasThanked('m1')).toBe(true);
 	});
 });
+
+describe('useTrailmarks.forPrompt / fetchForPrompt', () => {
+	it('rejects a missing prompt id without hitting the network', async () => {
+		const { fetchForPrompt } = useTrailmarks();
+		const res = await fetchForPrompt('');
+		expect(res.success).toBe(false);
+		expect(makeAPIRequest).not.toHaveBeenCalled();
+	});
+
+	it('fetches a prompt bucket and exposes it via forPrompt', async () => {
+		vi.mocked(makeAPIRequest).mockResolvedValue(ok([mark('m1', 1, 2), mark('m2', 3, 4)]) as any);
+		const { fetchForPrompt, forPrompt } = useTrailmarks();
+		const res = await fetchForPrompt('p1');
+		expect(res.success).toBe(true);
+		expect(res.data?.map((m) => m.id)).toEqual(['m1', 'm2']);
+		expect(forPrompt('p1').map((m) => m.id)).toEqual(['m1', 'm2']);
+	});
+});
