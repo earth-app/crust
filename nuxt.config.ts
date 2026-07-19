@@ -90,7 +90,10 @@ export default defineNuxtConfig({
 				'zod',
 				'obscenity',
 				'nsfwjs',
-				'tesseract.js'
+				'tesseract.js',
+				'html-to-image',
+				'gif.js',
+				'upng-js'
 			]
 		},
 		ssr: {
