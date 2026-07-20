@@ -858,6 +858,10 @@ export function useQuests() {
 				return 'mdi:map-marker-radius';
 			case 'scan_barcode':
 				return 'mdi:barcode';
+			case 'nature_minutes':
+				return 'mdi:leaf-maple';
+			case 'trailmarker_added':
+				return 'mdi:map-marker-check';
 			default:
 				return 'mdi:account';
 		}
