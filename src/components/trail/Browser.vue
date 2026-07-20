@@ -15,8 +15,8 @@
 			<div class="flex items-center gap-3 shrink-0">
 				<UButton
 					icon="mdi:progress-question"
-					color="neutral"
-					variant="ghost"
+					color="secondary"
+					variant="subtle"
 					aria-label="Replay Trails Tour"
 					@click="startTour('trails')"
 				/>

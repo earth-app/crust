@@ -23,8 +23,8 @@
 				</div>
 				<UButton
 					icon="mdi:progress-question"
-					color="neutral"
-					variant="ghost"
+					color="secondary"
+					variant="subtle"
 					size="sm"
 					aria-label="Replay Trailmarks Tour"
 					@click="startTour('trailmarks')"

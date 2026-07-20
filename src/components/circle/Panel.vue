@@ -15,8 +15,8 @@
 				<UButton
 					v-if="currentUid"
 					icon="mdi:progress-question"
-					color="neutral"
-					variant="ghost"
+					color="secondary"
+					variant="subtle"
 					aria-label="Replay Shared Garden Tour"
 					@click="startTour('shared-garden')"
 				/>
