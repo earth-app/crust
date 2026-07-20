@@ -5,11 +5,14 @@ export type OnboardingStepId =
 	| 'pick_interests'
 	| 'first_activity'
 	| 'generate_avatar'
+	| 'first_trail'
 	| 'first_prompt_response'
 	| 'first_article_read'
 	| 'first_quest_started'
 	| 'first_quest_completed'
 	| 'first_friend'
+	| 'first_trailmark'
+	| 'grow_shared_garden'
 	| 'verify_email'
 	| 'complete';
 
@@ -70,6 +73,16 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 		optional: true
 	},
 	{
+		id: 'first_trail',
+		title: 'Walk a Curiosity Trail',
+		description: 'Head outside and let a trail guide a few quiet minutes of noticing.',
+		icon: 'mdi:map-marker-path',
+		link: '/trails',
+		mLink: '/tabs/trails',
+		cta: 'Explore Trails',
+		completeOnClick: true
+	},
+	{
 		id: 'first_quest_started',
 		title: 'Start Your First Quest',
 		description:
@@ -116,6 +129,28 @@ export const ONBOARDING_CHECKLIST: ReadonlyArray<{
 		description: 'Other people are doing the same quests. Invite or follow.',
 		icon: 'mdi:account-multiple-plus-outline',
 		cta: 'Find Friends'
+	},
+	{
+		id: 'first_trailmark',
+		title: 'Leave a Trailmark',
+		description: 'Drop a short note of encouragement at a place for the next person to find.',
+		icon: 'mdi:map-marker-plus-outline',
+		link: '/trailmarks',
+		mLink: '/tabs/trailmarks',
+		cta: 'Open Trailmarks',
+		completeOnClick: true,
+		optional: true
+	},
+	{
+		id: 'grow_shared_garden',
+		title: 'Grow Your Shared Garden',
+		description: 'Your garden grows from the outdoor time you and your circle share.',
+		icon: 'mdi:sprout-outline',
+		link: '/circle',
+		mLink: '/tabs/circle',
+		cta: 'Visit Garden',
+		completeOnClick: true,
+		optional: true
 	},
 	{
 		id: 'verify_email',

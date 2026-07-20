@@ -324,4 +324,72 @@ describe('useOnboarding', () => {
 			expect(ob.totalSteps.value).toBe(TOTAL);
 		});
 	});
+
+	describe('curiosity-trails / trailmarks / shared-garden expansion steps', () => {
+		const byId = (id: OnboardingStepId) => ONBOARDING_CHECKLIST.find((s) => s.id === id);
+
+		it('adds the three new steps and grows the total to 13', () => {
+			expect(STEP_IDS).toContain('first_trail');
+			expect(STEP_IDS).toContain('first_trailmark');
+			expect(STEP_IDS).toContain('grow_shared_garden');
+			expect(TOTAL).toBe(13);
+		});
+
+		it('first_trail is a required completeOnClick step with web + native links', () => {
+			const s = byId('first_trail')!;
+			expect(s.title).toBe('Walk a Curiosity Trail');
+			expect(s.description).toBe(
+				'Head outside and let a trail guide a few quiet minutes of noticing.'
+			);
+			expect(s.icon).toBe('mdi:map-marker-path');
+			expect(s.link).toBe('/trails');
+			expect(s.mLink).toBe('/tabs/trails');
+			expect(s.cta).toBe('Explore Trails');
+			expect(s.completeOnClick).toBe(true);
+			expect(s.optional).toBeUndefined();
+		});
+
+		it('first_trailmark is an optional completeOnClick step', () => {
+			const s = byId('first_trailmark')!;
+			expect(s.title).toBe('Leave a Trailmark');
+			expect(s.icon).toBe('mdi:map-marker-plus-outline');
+			expect(s.link).toBe('/trailmarks');
+			expect(s.mLink).toBe('/tabs/trailmarks');
+			expect(s.cta).toBe('Open Trailmarks');
+			expect(s.completeOnClick).toBe(true);
+			expect(s.optional).toBe(true);
+		});
+
+		it('grow_shared_garden is an optional completeOnClick step', () => {
+			const s = byId('grow_shared_garden')!;
+			expect(s.title).toBe('Grow Your Shared Garden');
+			expect(s.icon).toBe('mdi:sprout-outline');
+			expect(s.link).toBe('/circle');
+			expect(s.mLink).toBe('/tabs/circle');
+			expect(s.cta).toBe('Visit Garden');
+			expect(s.completeOnClick).toBe(true);
+			expect(s.optional).toBe(true);
+		});
+
+		it('orders first_trail after the activity area and the social steps by first_friend', () => {
+			const idx = (id: OnboardingStepId) => STEP_IDS.indexOf(id);
+			expect(idx('first_trail')).toBeGreaterThan(idx('first_activity'));
+			expect(idx('first_trail')).toBeLessThan(idx('first_quest_started'));
+			expect(idx('first_trailmark')).toBeGreaterThan(idx('first_friend'));
+			expect(idx('grow_shared_garden')).toBeGreaterThan(idx('first_friend'));
+		});
+
+		it('optional expansion steps never gate overall completion', async () => {
+			const required = STEP_IDS.filter((id) => !byId(id)!.optional);
+			(makeClientAPIRequest as any).mockResolvedValue(
+				ok({ state: stateOf({ completed_steps: required }) })
+			);
+			const ob = useOnboarding();
+			await ob.fetchState();
+
+			expect(ob.state.value?.completed_steps).not.toContain('first_trailmark');
+			expect(ob.state.value?.completed_steps).not.toContain('grow_shared_garden');
+			expect(ob.isComplete.value).toBe(true);
+		});
+	});
 });
