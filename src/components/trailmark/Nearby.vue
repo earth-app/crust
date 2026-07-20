@@ -1,22 +1,49 @@
 <template>
 	<div class="flex flex-col gap-5 w-full">
 		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-			<div class="flex flex-col">
+			<div
+				id="trailmark-nearby"
+				class="flex flex-col"
+			>
 				<h2 class="text-xl font-semibold">Trailmarks Nearby</h2>
 				<p class="text-sm opacity-70">Short, kind notes left by people who stood where you are.</p>
 			</div>
 			<div class="flex items-center gap-2">
-				<span class="text-xs opacity-60">Within</span>
-				<USelect
-					v-model="radius"
-					:items="radiusOptions"
+				<div
+					id="trailmark-radius"
+					class="flex items-center gap-2"
+				>
+					<span class="text-xs opacity-60">Within</span>
+					<USelect
+						v-model="radius"
+						:items="radiusOptions"
+						size="sm"
+						class="w-28"
+					/>
+				</div>
+				<UButton
+					icon="mdi:progress-question"
+					color="neutral"
+					variant="ghost"
 					size="sm"
-					class="w-28"
+					aria-label="Replay Trailmarks Tour"
+					@click="startTour('trailmarks')"
 				/>
 			</div>
 		</div>
 
-		<TrailmarkComposer @created="onCreated" />
+		<div id="trailmark-composer">
+			<TrailmarkComposer @created="onCreated" />
+		</div>
+
+		<ClientOnly>
+			<SiteTour
+				:steps="trailmarksTour"
+				tour-id="trailmarks"
+				name="Trailmarks Tour"
+				:pulse="true"
+			/>
+		</ClientOnly>
 
 		<UAlert
 			v-if="permView.blocked"
@@ -113,6 +140,38 @@
 const { nearby, loading, fetchNearby } = useTrailmarks();
 const { lat, lng, error: locationError, fetchLocation } = useQuestGeolocation();
 const { state: permState, view: permView, recheck: recheckPermission } = useGeoPermission();
+const { startTour, startTourIfNew } = useSiteTour();
+
+// #region tour
+const trailmarksTour = computed<SiteTourStep[]>(() => [
+	{
+		id: 'trailmark-nearby',
+		title: 'Trailmarks Nearby',
+		description:
+			'Trailmarks are short, encouraging notes people leave at real places for whoever comes next. When one lifts you, you thank the note itself - never the person - so kindness stays quiet and pressure-free.',
+		footer: 'A small message from a stranger who stood right where you are.',
+		icon: 'mdi:map-marker-radius-outline',
+		waitFor: 'trailmark-nearby'
+	},
+	{
+		id: 'trailmark-composer',
+		title: 'Leave One From Here',
+		description:
+			'Write a brief, kind note tied to the spot you are standing in right now. Someone passing through later will find it exactly where you left it.',
+		footer: 'Keep it warm and welcoming - it is a gift to a stranger.',
+		icon: 'mdi:map-marker-plus-outline',
+		placement: 'bottom'
+	},
+	{
+		id: 'trailmark-radius',
+		title: 'Widen or Narrow Your Search',
+		description:
+			'Change how far out to look for notes. Tighten the radius for what is right around you, or widen it to discover marks a little further afield.',
+		footer: 'Explore close by, then reach further when you wander.',
+		icon: 'mdi:map-marker-distance'
+	}
+]);
+// #endregion
 
 const radiusOptions = [
 	{ label: '250 m', value: 250 },
@@ -159,5 +218,6 @@ watch(permState, (s) => {
 
 onMounted(() => {
 	fetchLocation();
+	startTourIfNew('trailmarks');
 });
 </script>
