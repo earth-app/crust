@@ -336,9 +336,36 @@ const welcomeTour = computed<SiteTourStep[]>(() => [
 		title: 'Your Content',
 		description:
 			"Every article and prompt response you publish lives here. It's your portfolio on the Earth App - and a great way for others to discover your perspective.",
-		footer: 'One last stop - the leaderboard.',
+		footer: 'A few newer places to explore next.',
 		anonymous: false,
 		icon: 'mdi:notebook-multiple'
+	},
+	{
+		id: 'nav-trails',
+		title: 'Curiosity Trails',
+		description:
+			'Trails are short outdoor practices: follow a curious clue outside, be present for a few minutes, then keep a private note of what you noticed. Every minute out there feeds your Nature Minutes.',
+		footer: 'Find Trails in the navigation bar.',
+		anonymous: false,
+		icon: 'mdi:map-marker-path'
+	},
+	{
+		id: 'nav-circle',
+		title: 'Your Shared Garden',
+		description:
+			'Grow a living garden together with your circle of friends. It flourishes from the outdoor time you all share - set one shared expedition goal and cheer each other on, never against each other.',
+		footer: 'Open Shared Garden from the navigation bar.',
+		anonymous: false,
+		icon: 'mdi:sprout-outline'
+	},
+	{
+		id: 'nav-trailmarks',
+		title: 'Trailmarks',
+		description:
+			'Leave a short, kind note at a place for the next person to find - and discover the ones others left near you. You thank the note, not the person.',
+		footer: 'One last stop - the leaderboard.',
+		anonymous: false,
+		icon: 'mdi:map-marker-plus-outline'
 	},
 	{
 		url: '/leaderboard',

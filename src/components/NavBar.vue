@@ -47,16 +47,19 @@
 				</div>
 				<div class="hidden text-primary/90 xl:flex items-center justify-start gap-3 xl:gap-6 mt-1">
 					<NuxtLink
+						id="nav-trails"
 						to="/trails"
 						class="text-sm xl:text-base font-semibold hover:opacity-90 whitespace-nowrap"
 						>Trails</NuxtLink
 					>
 					<NuxtLink
+						id="nav-circle"
 						to="/circle"
 						class="text-sm xl:text-base font-semibold hover:opacity-90 whitespace-nowrap"
 						>Shared Garden</NuxtLink
 					>
 					<NuxtLink
+						id="nav-trailmarks"
 						to="/trailmarks"
 						class="text-sm xl:text-base font-semibold hover:opacity-90 whitespace-nowrap"
 						>Trailmarks</NuxtLink
