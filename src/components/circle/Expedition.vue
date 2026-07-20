@@ -25,9 +25,14 @@
 			</div>
 
 			<div class="grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
-				<CircleRing :expedition="expedition" />
+				<div id="expedition-ring">
+					<CircleRing :expedition="expedition" />
+				</div>
 
-				<div class="flex flex-col gap-3">
+				<div
+					id="circle-kudos"
+					class="flex flex-col gap-3"
+				>
 					<span class="text-xs font-semibold tracking-wide text-muted uppercase"
 						>The Circle's Contribution</span
 					>
