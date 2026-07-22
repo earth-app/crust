@@ -25,7 +25,7 @@
 				aria-label="Animation Length"
 			/>
 			<USelect
-				v-model="resolutionScale"
+				v-model="resolution"
 				:items="resolutionItems"
 				size="sm"
 				class="min-w-36"
@@ -78,14 +78,24 @@
 </template>
 
 <script setup lang="ts">
-import type { ExportFormat } from './useMarketingExport';
+import type {
+	AnimatedFrameRequest,
+	CapturedFrame,
+	ExportFormat,
+	ExportResolutionMode
+} from './useMarketingExport';
 import {
 	availableExportFormats,
+	clampResolutionScale,
 	DEFAULT_DURATION_MS,
 	DEFAULT_RESOLUTION_SCALE,
 	defaultExportFormat,
 	EXPORT_FORMATS,
+	GARDEN_EXPORT_FPS,
 	isAnimatedFormat,
+	measureNodeSize,
+	NATURAL_RESOLUTION_PRESETS,
+	naturalExportDimensions,
 	RESOLUTION_BASE_WIDTH,
 	RESOLUTION_PRESETS,
 	useMarketingExport
@@ -99,10 +109,17 @@ const props = withDefaults(
 		canvasSelector?: string;
 		filename?: string;
 		label?: string;
+		// 'garden' locks the fixed 640x350 box; 'natural' scales the panel's own aspect
+		mode?: ExportResolutionMode;
 		// a self-rendering source (e.g. the garden canvas) that produces a crisp static blob
 		staticOverride?: (format: 'svg' | 'png' | 'jpg', pixelRatio: number) => Promise<Blob> | Blob;
+		// deterministic animated frames from the source itself (garden); when set, gif/apng use
+		// it instead of sampling the live canvas over wall-clock time
+		animatedFrameProvider?: (
+			req: AnimatedFrameRequest
+		) => Promise<CapturedFrame[]> | CapturedFrame[];
 	}>(),
-	{ animated: false, canvasSelector: 'canvas', filename: 'marketing-asset' }
+	{ animated: false, canvasSelector: 'canvas', filename: 'marketing-asset', mode: 'natural' }
 );
 
 const toast = useToast();
@@ -125,9 +142,29 @@ const durationSec = ref(Math.round(DEFAULT_DURATION_MS / 1000));
 // up to 15s now that the capture cap covers it (15s * 12fps = 180 frames)
 const durationItems = [2, 3, 4, 5, 6, 8, 10, 12, 15].map((n) => ({ label: `${n}s`, value: n }));
 
-// output resolution: original by default, scalable up to a 3K poster
-const resolutionScale = ref<number>(DEFAULT_RESOLUTION_SCALE);
-const resolutionItems = RESOLUTION_PRESETS.map((p) => ({ label: p.label, value: p.scale }));
+// output resolution: garden locks the fixed 640x350 box (value = scale); natural panels scale
+// their own aspect toward a longest-edge target (value = target px, 0 = original 1x)
+const isGarden = computed(() => props.mode === 'garden');
+const resolution = ref<number>(isGarden.value ? DEFAULT_RESOLUTION_SCALE : 0);
+const resolutionItems = computed(() =>
+	isGarden.value
+		? RESOLUTION_PRESETS.map((p) => ({ label: p.label, value: p.scale }))
+		: NATURAL_RESOLUTION_PRESETS.map((p) => ({ label: p.label, value: p.target ?? 0 }))
+);
+
+// pixelRatio + maxDimension per panel: garden keeps the fixed box, natural derives from the
+// node's real size (no garden box, aspect preserved, capped at ~3K on the longest edge)
+function resolveDimensions(node: HTMLElement | null): {
+	pixelRatio: number;
+	maxDimension: number | undefined;
+} {
+	if (isGarden.value) {
+		const scale = clampResolutionScale(resolution.value);
+		return { pixelRatio: scale, maxDimension: Math.round(RESOLUTION_BASE_WIDTH * scale) };
+	}
+	const { pixelRatio } = naturalExportDimensions(measureNodeSize(node), resolution.value || null);
+	return { pixelRatio, maxDimension: undefined };
+}
 
 // when the animated flag flips, reset to that mode's default (gif when animated, png otherwise)
 watch(
@@ -195,16 +232,22 @@ async function run() {
 	const node = props.target ?? props.getTarget?.() ?? null;
 	startEtaClock();
 	try {
+		// resolution: pixelRatio drives static (svg/png/jpg); maxDimension the animated frames
+		const { pixelRatio, maxDimension } = resolveDimensions(node);
+		// the garden renders its own deterministic frames, so it earns a smoother fps than the
+		// live-sample default; other animated canvases keep the default via undefined
+		const fps = isGarden.value && isAnimatedFormat(format.value) ? GARDEN_EXPORT_FPS : undefined;
 		const res = await exportAsset({
 			format: format.value,
 			node,
 			canvasSelector: props.canvasSelector,
 			filename: props.filename,
 			durationMs: durationSec.value * 1000,
-			// resolution: pixelRatio drives static (svg/png/jpg); maxDimension the animated frames
-			pixelRatio: resolutionScale.value,
-			maxDimension: Math.round(RESOLUTION_BASE_WIDTH * resolutionScale.value),
-			staticOverride: props.staticOverride
+			fps,
+			pixelRatio,
+			maxDimension,
+			staticOverride: props.staticOverride,
+			animatedFrameProvider: props.animatedFrameProvider
 		});
 
 		if (res.success) {

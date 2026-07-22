@@ -18,11 +18,18 @@ import {
 	frameDelayMs,
 	framesForDuration,
 	framesToRgbaBuffers,
+	GARDEN_EXPORT_FPS,
 	isAnimatedFormat,
+	loopFramePhases,
 	MAX_CAPTURE_FRAMES,
 	MAX_DURATION_MS,
+	measureNodeSize,
 	MIN_DURATION_MS,
+	NATURAL_RESOLUTION_PRESETS,
+	naturalExportDimensions,
 	renderStaticBlob,
+	RESOLUTION_BASE_WIDTH,
+	RESOLUTION_MAX_EDGE,
 	RESOLUTION_PRESETS,
 	resolveCanvas,
 	resolveExportNode,
@@ -457,7 +464,7 @@ describe('GIF export auto-download (regression)', () => {
 	});
 });
 
-describe('export resolution', () => {
+describe('export resolution (garden: fixed 640x350 box)', () => {
 	it('defaults to the original size and offers presets up to 3K', () => {
 		expect(DEFAULT_RESOLUTION_SCALE).toBe(1);
 		expect(RESOLUTION_PRESETS[0]).toMatchObject({ width: 640, height: 350, scale: 1 });
@@ -469,12 +476,213 @@ describe('export resolution', () => {
 		}
 	});
 
+	it('ties every garden preset to the 640x350 base times its scale', () => {
+		// this is exactly what GardenStudio still feeds Garden.exportBlob(format, scale)
+		for (const p of RESOLUTION_PRESETS) {
+			expect(p.width).toBe(Math.round(RESOLUTION_BASE_WIDTH * p.scale));
+			expect(p.height).toBe(Math.round(350 * p.scale));
+		}
+	});
+
 	it('clamps a requested scale into the original..3K range', () => {
 		expect(clampResolutionScale(1)).toBe(1);
 		expect(clampResolutionScale(0.2)).toBe(1);
 		expect(clampResolutionScale(10)).toBe(4.5);
 		expect(clampResolutionScale(3)).toBe(3);
 		expect(clampResolutionScale(Number.NaN)).toBe(DEFAULT_RESOLUTION_SCALE);
+	});
+});
+
+describe('export resolution (DOM panels: natural per-panel aspect)', () => {
+	it('offers Original + longest-edge targets up to 3K, not the garden box', () => {
+		expect(NATURAL_RESOLUTION_PRESETS[0]).toMatchObject({ label: 'Original', target: null });
+		const top = NATURAL_RESOLUTION_PRESETS[NATURAL_RESOLUTION_PRESETS.length - 1]!;
+		expect(top.target).toBe(2880);
+		expect(RESOLUTION_MAX_EDGE).toBe(2880);
+		// none of the natural presets carry the garden's 640x350 dimensions
+		for (const p of NATURAL_RESOLUTION_PRESETS) {
+			expect(p).not.toHaveProperty('width');
+			expect(p).not.toHaveProperty('height');
+		}
+	});
+
+	it('keeps the node at its natural size (1x) for Original, never the 640x350 box', () => {
+		// a portrait content card: Original must export it at its own 400x600, not 640x350
+		const dims = naturalExportDimensions({ width: 400, height: 600 }, null);
+		expect(dims.pixelRatio).toBe(1);
+		expect(dims).toMatchObject({ width: 400, height: 600, maxDimension: 600 });
+		// aspect preserved (no letterbox / transparent padding), and not the garden aspect
+		expect(dims.width / dims.height).toBeCloseTo(400 / 600, 5);
+		expect(dims.width).not.toBe(640);
+		expect(dims.height).not.toBe(350);
+	});
+
+	it('scales the longest edge up toward the target while preserving aspect', () => {
+		// 900x500 landscape card -> 2K target (1920 longest edge): pixelRatio 1920/900
+		const dims = naturalExportDimensions({ width: 900, height: 500 }, 1920);
+		expect(dims.pixelRatio).toBeCloseTo(1920 / 900, 5);
+		expect(dims.width).toBe(1920);
+		expect(dims.height).toBe(Math.round(500 * (1920 / 900)));
+		// same aspect as the source node (900/500), computed from natural size not the 640 base
+		expect(dims.width / dims.height).toBeCloseTo(900 / 500, 2);
+	});
+
+	it('picks the pixelRatio off the LONGEST edge for a portrait node', () => {
+		// 400x600 portrait -> HD (1280): the 600 height is the longest edge that must reach 1280
+		const dims = naturalExportDimensions({ width: 400, height: 600 }, 1280);
+		expect(dims.pixelRatio).toBeCloseTo(1280 / 600, 5);
+		expect(dims.height).toBe(1280);
+		expect(dims.maxDimension).toBe(1280);
+	});
+
+	it('never downscales a node already larger than the target', () => {
+		// 3000x1000 node with an HD target: keep 1x (never shrink a DOM panel)
+		const dims = naturalExportDimensions({ width: 3000, height: 1000 }, 1280);
+		expect(dims.pixelRatio).toBe(1);
+		expect(dims).toMatchObject({ width: 3000, height: 1000 });
+	});
+
+	it('caps the upscaled longest edge at ~3K even for a tiny node or huge target', () => {
+		const dims = naturalExportDimensions({ width: 100, height: 100 }, 2880);
+		expect(dims.maxDimension).toBe(2880);
+		expect(dims.width).toBe(2880);
+		// a target beyond the cap is still clamped to 3K on the longest edge
+		const over = naturalExportDimensions({ width: 100, height: 100 }, 9999);
+		expect(over.maxDimension).toBeLessThanOrEqual(RESOLUTION_MAX_EDGE);
+		expect(over.maxDimension).toBe(2880);
+	});
+
+	it('guards degenerate sizes to at least 1px', () => {
+		const dims = naturalExportDimensions({ width: 0, height: 0 }, null);
+		expect(dims).toMatchObject({ width: 1, height: 1, pixelRatio: 1 });
+	});
+
+	it('measureNodeSize reads a rect / offset box and floors at 1x1', () => {
+		expect(measureNodeSize(null)).toEqual({ width: 1, height: 1 });
+		const node = {
+			getBoundingClientRect: () => ({ width: 480, height: 270 })
+		} as unknown as HTMLElement;
+		expect(measureNodeSize(node)).toEqual({ width: 480, height: 270 });
+		// zero rect falls through to the offset box, then to the 1px floor
+		const empty = {
+			getBoundingClientRect: () => ({ width: 0, height: 0 }),
+			offsetWidth: 0,
+			offsetHeight: 0
+		} as unknown as HTMLElement;
+		expect(measureNodeSize(empty)).toEqual({ width: 1, height: 1 });
+	});
+});
+
+describe('seamless-loop frame phases (loopFramePhases)', () => {
+	it('spaces N phases evenly across [0,1) so the loop wraps with no jump', () => {
+		expect(loopFramePhases(4)).toEqual([0, 0.25, 0.5, 0.75]);
+		const phases = loopFramePhases(8);
+		expect(phases).toHaveLength(8);
+		expect(phases[0]).toBe(0);
+		// the last phase never reaches 1 (that frame would duplicate frame 0)
+		expect(phases[phases.length - 1]).toBeLessThan(1);
+		expect(phases[phases.length - 1]).toBe(7 / 8);
+		// the gap from the last frame back to 0 equals the inter-frame gap -> seamless
+		const step = phases[1]! - phases[0]!;
+		expect(1 - phases[phases.length - 1]!).toBeCloseTo(step, 10);
+		for (let i = 1; i < phases.length; i += 1) {
+			expect(phases[i]! - phases[i - 1]!).toBeCloseTo(step, 10);
+		}
+	});
+
+	it('always yields at least one phase and floors fractional counts', () => {
+		expect(loopFramePhases(1)).toEqual([0]);
+		expect(loopFramePhases(0)).toEqual([0]);
+		expect(loopFramePhases(-5)).toEqual([0]);
+		expect(loopFramePhases(3.9)).toEqual([0, 1 / 3, 2 / 3]);
+	});
+});
+
+describe('garden export fps', () => {
+	it('renders animated frames at a smoother-than-default fps that still fits the cap', () => {
+		expect(GARDEN_EXPORT_FPS).toBeGreaterThanOrEqual(20);
+		// even a max-length capture stays within the frame cap
+		expect(framesForDuration(MAX_DURATION_MS, GARDEN_EXPORT_FPS)).toBeLessThanOrEqual(
+			MAX_CAPTURE_FRAMES
+		);
+	});
+});
+
+describe('animated export via a deterministic frame provider', () => {
+	// the garden fix: gif/apng render deterministic, seamlessly-looping frames offscreen
+	// instead of sampling the live rAF canvas at uneven wall-clock phases
+	it('routes an animated export through the provider (no live canvas needed)', async () => {
+		const { exportAsset } = useMarketingExport();
+		const provider = vi.fn(async () => [frame(4, 4), frame(4, 4)]);
+		const captureFrames = vi.fn(async () => [frame()]);
+		const encodeAnimated = vi.fn(async () => new Blob(['g'], { type: 'image/gif' }));
+		const download = vi.fn();
+
+		// no `canvas`/`node`: the provider fully supplies the frames
+		const res = await exportAsset(
+			{
+				format: 'gif',
+				filename: 'Circle Garden',
+				durationMs: 4000,
+				fps: GARDEN_EXPORT_FPS,
+				maxDimension: 640,
+				pixelRatio: 2,
+				animatedFrameProvider: provider
+			},
+			{ captureFrames, encodeAnimated, download }
+		);
+
+		expect(res.success).toBe(true);
+		expect(provider).toHaveBeenCalledTimes(1);
+		// the live-sample path is bypassed entirely
+		expect(captureFrames).not.toHaveBeenCalled();
+		expect(download).toHaveBeenCalledTimes(1);
+		expect(download.mock.calls[0]![1]).toBe('circle-garden.gif');
+
+		const reqArg = provider.mock.calls[0]![0] as {
+			phases: number[];
+			fps: number;
+			maxDimension?: number;
+			scale?: number;
+		};
+		// 4s * 20fps = 80 evenly-spaced, seamless-loop phases
+		expect(reqArg.phases).toHaveLength(framesForDuration(4000, GARDEN_EXPORT_FPS));
+		expect(reqArg.phases).toEqual(loopFramePhases(framesForDuration(4000, GARDEN_EXPORT_FPS)));
+		expect(reqArg.fps).toBe(GARDEN_EXPORT_FPS);
+		expect(reqArg.maxDimension).toBe(640);
+		// pixelRatio (the garden resolution scale) is forwarded as the size hint
+		expect(reqArg.scale).toBe(2);
+	});
+
+	it('drives the progress bar + frame counter from the provider callback', async () => {
+		const { exportAsset, progress, phase, frame: frameRef, frameTotal } = useMarketingExport();
+		const res = await exportAsset(
+			{
+				format: 'gif',
+				durationMs: 3000,
+				fps: 10,
+				animatedFrameProvider: async (req) => {
+					// mid-render tick, then the frames
+					req.onProgress?.(0.5);
+					return [frame(), frame()];
+				}
+			},
+			{ encodeAnimated: async () => new Blob(['g'], { type: 'image/gif' }), download: vi.fn() }
+		);
+
+		expect(res.success).toBe(true);
+		// 3s * 10fps = 30 frames; a 0.5 tick maps into the 0..0.6 capture share
+		expect(frameTotal.value).toBe(30);
+		expect(frameRef.value).toBe(15);
+		expect(progress.value).toBe(1);
+		expect(phase.value).toBe('done');
+	});
+
+	it('still fails cleanly for a live-canvas animated export with no canvas + no provider', async () => {
+		const { exportAsset } = useMarketingExport();
+		const res = await exportAsset({ format: 'gif', node: document.createElement('div') });
+		expect(res.success).toBe(false);
+		expect(res.error).toMatch(/canvas/i);
 	});
 });
 

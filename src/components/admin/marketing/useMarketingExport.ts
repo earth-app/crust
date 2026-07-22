@@ -117,12 +117,18 @@ export interface ExportOptions {
 	// crisp static override (e.g. a canvas that re-renders itself at the target scale);
 	// when set, it produces the static blob instead of html-to-image on the node
 	staticOverride?: (format: 'svg' | 'png' | 'jpg', pixelRatio: number) => Promise<Blob> | Blob;
+	// deterministic animated source (e.g. the garden re-rendering each loop phase offscreen);
+	// when set, gif/apng use it instead of sampling the live canvas over wall-clock time
+	animatedFrameProvider?: (req: AnimatedFrameRequest) => Promise<CapturedFrame[]> | CapturedFrame[];
 	onProgress?: (ratio: number) => void;
 }
 
 export const DEFAULT_FRAMES = 16;
 export const DEFAULT_FPS = 12;
 export const DEFAULT_MAX_DIMENSION = 640;
+// garden animated exports render fresh frames (not live-sampled), so a higher fps stays cheap
+// and reads visibly smoother; 20fps * 15s = 300 still clamps to MAX_CAPTURE_FRAMES
+export const GARDEN_EXPORT_FPS = 20;
 
 // animation-length bounds for animated exports (gif / apng)
 export const MIN_DURATION_MS = 2000;
@@ -133,15 +139,21 @@ export const MAX_CAPTURE_FRAMES = 180;
 
 // #region export resolution
 
+// how a panel interprets the resolution selector: the garden locks a fixed 640x350 box, every
+// other (DOM) panel scales its OWN natural aspect toward a longest-edge target
+export type ExportResolutionMode = 'garden' | 'natural';
+
+// #region garden presets (fixed 640x350 box)
+
 export interface ResolutionPreset {
 	label: string;
 	width: number;
 	height: number;
-	// output scale from the ~640-wide base (drives pixelRatio for static + frame maxDimension)
+	// output scale from the ~640-wide garden base (garden pixelRatio + frame maxDimension)
 	scale: number;
 }
 
-// the garden preview is a ~640x350 scene; keep that by default, scale up to a 3K poster
+// the garden preview is a fixed ~640x350 scene; keep that by default, scale up to a 3K poster
 export const RESOLUTION_PRESETS: ResolutionPreset[] = [
 	{ label: 'Original (640 x 350)', width: 640, height: 350, scale: 1 },
 	{ label: 'HD (1280 x 700)', width: 1280, height: 700, scale: 2 },
@@ -151,10 +163,68 @@ export const RESOLUTION_PRESETS: ResolutionPreset[] = [
 export const DEFAULT_RESOLUTION_SCALE = 1;
 export const RESOLUTION_BASE_WIDTH = 640;
 
-// clamp a requested scale into the supported range (original .. 3K)
+// clamp a requested garden scale into the supported range (original .. 3K)
 export function clampResolutionScale(scale: number): number {
 	if (!Number.isFinite(scale)) return DEFAULT_RESOLUTION_SCALE;
 	return Math.max(1, Math.min(4.5, scale));
+}
+
+// #region natural presets (per-panel aspect)
+
+export interface NaturalResolutionPreset {
+	label: string;
+	// target longest edge in px; null keeps the node's natural size (1x)
+	target: number | null;
+}
+
+// DOM panels export at their OWN aspect; the preset only picks an upscale target for the
+// longest edge (Original = keep natural 1x) instead of forcing the garden's 640x350 box
+export const NATURAL_RESOLUTION_PRESETS: NaturalResolutionPreset[] = [
+	{ label: 'Original', target: null },
+	{ label: 'HD (~1280px)', target: 1280 },
+	{ label: '2K (~1920px)', target: 1920 },
+	{ label: '3K (~2880px)', target: 2880 }
+];
+
+// longest-edge ceiling so a natural upscale can never balloon past a ~3K poster
+export const RESOLUTION_MAX_EDGE = 2880;
+
+// natural-panel dimensioning: given a node's rendered size, pick a pixelRatio so its LONGEST
+// edge reaches `targetLongestEdge` (null = keep 1x), never below 1x, never past the 3K cap;
+// aspect is always preserved so nothing letterboxes / pads into the garden box
+export function naturalExportDimensions(
+	natural: { width: number; height: number },
+	targetLongestEdge: number | null
+): { pixelRatio: number; width: number; height: number; maxDimension: number } {
+	const w = Math.max(1, Math.round(natural.width || 0));
+	const h = Math.max(1, Math.round(natural.height || 0));
+	const longest = Math.max(w, h);
+	let pixelRatio: number;
+	if (!targetLongestEdge || targetLongestEdge <= 0) {
+		// original keeps the node's own pixels
+		pixelRatio = 1;
+	} else {
+		// upscale toward the target longest edge, never downscaling, never past the 3K cap
+		const target = Math.min(targetLongestEdge, RESOLUTION_MAX_EDGE);
+		pixelRatio = Math.max(1, target / longest);
+	}
+	return {
+		pixelRatio,
+		width: Math.round(w * pixelRatio),
+		height: Math.round(h * pixelRatio),
+		maxDimension: Math.round(longest * pixelRatio)
+	};
+}
+
+// measure a live DOM node's rendered size for natural export (rect first, then offset box)
+export function measureNodeSize(node: HTMLElement | null): { width: number; height: number } {
+	if (!node) return { width: 1, height: 1 };
+	const rect =
+		typeof node.getBoundingClientRect === 'function' ? node.getBoundingClientRect() : null;
+	return {
+		width: Math.max(1, rect?.width || node.offsetWidth || 1),
+		height: Math.max(1, rect?.height || node.offsetHeight || 1)
+	};
 }
 
 export function clampDurationMs(ms: number): number {
@@ -198,6 +268,30 @@ export interface CapturedFrame {
 	width: number;
 	height: number;
 	data: Uint8ClampedArray;
+}
+
+// what exportAsset hands a deterministic frame provider: the exact loop phases to render,
+// the playback fps, and the output-size hints. the provider returns one frame per phase
+export interface AnimatedFrameRequest {
+	// normalized loop phases in [0,1); N evenly-spaced phases form a seamless loop
+	phases: number[];
+	fps: number;
+	durationMs?: number;
+	// longest-edge ceiling for each rendered frame (keeps gif/apng small)
+	maxDimension?: number;
+	// output scale hint (e.g. the garden resolution preset); provider may use or ignore
+	scale?: number;
+	onProgress?: (ratio: number) => void;
+}
+
+// evenly-spaced normalized phases [0, 1/n, 2/n, ..., (n-1)/n]; the gap from the last phase
+// back to 0 equals the inter-frame gap, so rendering these N phases (with motion that is
+// periodic over the loop) wraps frame N-1 -> frame 0 with no jump
+export function loopFramePhases(count: number): number[] {
+	const n = Math.max(1, Math.floor(count));
+	const out: number[] = [];
+	for (let i = 0; i < n; i += 1) out.push(i / n);
+	return out;
 }
 
 export interface FrameCaptureDeps {
@@ -461,26 +555,44 @@ export function useMarketingExport() {
 
 			let blob: Blob;
 			if (isAnimatedFormat(opts.format)) {
-				const canvas = resolveCanvas(node, opts);
-				if (!canvas) throw new Error('No animated canvas was found to export.');
 				const fps = Math.max(1, opts.fps ?? DEFAULT_FPS);
-				frameTotal.value =
+				const total =
 					opts.durationMs != null
 						? framesForDuration(opts.durationMs, fps)
 						: Math.max(1, Math.floor(opts.frames ?? DEFAULT_FRAMES));
+				frameTotal.value = total;
 
 				phase.value = 'capturing';
-				const frames = await capture(canvas, {
-					frames: opts.frames,
-					fps: opts.fps,
-					durationMs: opts.durationMs,
-					maxDimension: opts.maxDimension,
-					onProgress: (r) => {
-						progress.value = r * CAPTURE_SHARE;
-						frame.value = Math.round(r * frameTotal.value);
-						opts.onProgress?.(r);
-					}
-				});
+				// shared capture-progress mapping for both the provider and the live-sample path
+				const onCaptureProgress = (r: number) => {
+					progress.value = r * CAPTURE_SHARE;
+					frame.value = Math.round(r * total);
+					opts.onProgress?.(r);
+				};
+
+				let frames: CapturedFrame[];
+				if (opts.animatedFrameProvider) {
+					// deterministic, seamlessly-looping frames rendered by the source itself
+					// (the garden re-draws each loop phase offscreen; no live-canvas sampling)
+					frames = await opts.animatedFrameProvider({
+						phases: loopFramePhases(total),
+						fps,
+						durationMs: opts.durationMs,
+						maxDimension: opts.maxDimension,
+						scale: opts.pixelRatio,
+						onProgress: onCaptureProgress
+					});
+				} else {
+					const canvas = resolveCanvas(node, opts);
+					if (!canvas) throw new Error('No animated canvas was found to export.');
+					frames = await capture(canvas, {
+						frames: opts.frames,
+						fps: opts.fps,
+						durationMs: opts.durationMs,
+						maxDimension: opts.maxDimension,
+						onProgress: onCaptureProgress
+					});
+				}
 
 				phase.value = 'encoding';
 				blob = await encodeAnimated(frames, opts.format as 'gif' | 'apng', {

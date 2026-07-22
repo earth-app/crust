@@ -249,9 +249,11 @@
 						<AdminMarketingExportBar
 							:target="presentGardenEl"
 							:animated="state.animated"
+							mode="garden"
 							canvas-selector="canvas"
 							:filename="state.title || 'circle-garden'"
 							:static-override="gardenStaticOverride"
+							:animated-frame-provider="gardenAnimatedFrames"
 						/>
 						<UButton
 							icon="mdi:dice-5-outline"
@@ -296,6 +298,8 @@
 </template>
 
 <script setup lang="ts">
+import type { AnimatedFrameRequest, CapturedFrame } from './useMarketingExport';
+
 // drives the Circle Garden canvas with mock data for marketing recordings; scene CRUD
 // rides useMarketingStudio under the 'garden' kind (ambient types only inside the macro)
 const props = defineProps<MarketingStudioProps<GardenSceneState>>();
@@ -318,6 +322,7 @@ const presentGardenEl = ref<HTMLElement | null>(null);
 // (a plain html-to-image capture of the canvas only interpolates its fixed backing store)
 const presentGardenComp = ref<{
 	exportBlob?: (format: 'svg' | 'png' | 'jpg', scale: number) => Promise<Blob>;
+	exportFrames?: (req: AnimatedFrameRequest) => Promise<CapturedFrame[]>;
 } | null>(null);
 
 const gardenStaticOverride = async (
@@ -327,6 +332,14 @@ const gardenStaticOverride = async (
 	const g = presentGardenComp.value;
 	if (!g?.exportBlob) throw new Error('The garden is not ready to export yet.');
 	return g.exportBlob(format, pixelRatio);
+};
+
+// deterministic, seamlessly-looping frames for a gif/apng export (the garden re-renders each
+// loop phase offscreen), replacing the choppy live-canvas wall-clock sampling
+const gardenAnimatedFrames = async (req: AnimatedFrameRequest): Promise<CapturedFrame[]> => {
+	const g = presentGardenComp.value;
+	if (!g?.exportFrames) throw new Error('The garden is not ready to export yet.');
+	return g.exportFrames(req);
 };
 
 // #region scene-light controls (season / time-of-day / moon overrides)
