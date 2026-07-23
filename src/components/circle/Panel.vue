@@ -98,6 +98,7 @@
 					:expedition="expedition"
 					:current-uid="currentUid"
 					:can-start="true"
+					:loading="!expeditionLoaded"
 					@started="onStarted"
 				/>
 			</section>
@@ -177,6 +178,9 @@ const restingHelp =
 	"Resting Garden: it grows with your circle's combined Nature Minutes - more time outside means more trees, flowers, and life. Animations (the Living variant) turn on for active, growing circles.";
 
 const expedition = computed(() => (store.expedition === undefined ? null : store.expedition));
+// undefined = not fetched yet; gate the expedition surface on a settled fetch so the
+// start form never flashes for a circle that actually has an active expedition
+const expeditionLoaded = computed(() => store.expedition !== undefined);
 const garden = computed(
 	() => (currentUid.value ? store.getGarden(currentUid.value) : null) ?? null
 );

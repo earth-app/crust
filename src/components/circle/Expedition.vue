@@ -92,6 +92,15 @@
 		</div>
 
 		<div
+			v-else-if="loading"
+			class="flex flex-col gap-4"
+			data-testid="expedition-loading"
+		>
+			<USkeleton class="h-6 w-48 rounded" />
+			<USkeleton class="h-24 w-full rounded-xl" />
+		</div>
+
+		<div
 			v-else-if="canStart"
 			class="flex flex-col gap-4"
 		>
@@ -212,8 +221,11 @@ const props = withDefaults(
 		// circle member count (you + others); when omitted we derive it from the
 		// current user's circle so the goal guidance scales to the group
 		circleSize?: number;
+		// true until the expedition fetch settles; shows a skeleton instead of flashing
+		// the start form before we know whether an active expedition exists
+		loading?: boolean;
 	}>(),
-	{ expedition: null, currentUid: '', canStart: true, circleSize: 0 }
+	{ expedition: null, currentUid: '', canStart: true, circleSize: 0, loading: false }
 );
 
 const emit = defineEmits<{ (e: 'started', value: Expedition): void }>();

@@ -106,6 +106,17 @@ describe('CircleExpedition', () => {
 		expect(wrapper.text()).not.toMatch(/#\s*1|rank|leaderboard/i);
 	});
 
+	it('shows a skeleton (not the start form) while the expedition fetch is unsettled', async () => {
+		// regression: before the fetch settles, Panel passes loading=true so the start form
+		// never flashes for a circle that actually has an active expedition
+		const wrapper = await mountSuspended(Expedition_, {
+			props: { expedition: null, canStart: true, currentUid: 'a', circleSize: 3, loading: true }
+		});
+		expect(wrapper.find('[data-testid="expedition-loading"]').exists()).toBe(true);
+		expect(wrapper.text()).not.toContain('Start an Expedition');
+		expect(wrapper.text()).not.toContain('Invite Friends to Start');
+	});
+
 	it('offers the start form when the circle has members but no expedition', async () => {
 		const wrapper = await mountSuspended(Expedition_, {
 			// circleSize > 1 => the circle has at least one other person

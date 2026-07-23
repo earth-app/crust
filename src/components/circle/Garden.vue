@@ -29,6 +29,13 @@
 </template>
 
 <script setup lang="ts">
+// type-only (erased at build) so this general component keeps zero runtime coupling to the
+// admin marketing module; it just describes the animated-export frame contract
+import type {
+	AnimatedFrameRequest,
+	CapturedFrame
+} from '~/components/admin/marketing/useMarketingExport';
+
 // generative canvas garden grown from a CircleGarden projection; deterministic seeded
 // layout, SSR-safe (drawing gated behind onMounted), reduced-motion aware, element +
 // particle + creature capped. season / time-of-day / moon are derived client-side from
@@ -90,6 +97,14 @@ let particles: {
 }[] = [];
 let ro: ResizeObserver | null = null;
 let startTime = 0;
+
+// #region export-loop state (deterministic seamless motion for animated gif/apng export)
+// when exportLoop is on, render derives time from exportPhase over exportLoopMs (a fixed
+// loop period) instead of wall-clock, so N evenly-spaced phases wrap into a seamless loop
+let exportLoop = false;
+let exportPhase = 0;
+let exportLoopMs = 6000;
+// #endregion
 
 // tap/hold interaction state (replaces the old pointer parallax warp)
 type GardenEffect =
@@ -385,7 +400,7 @@ function drawRiver(time: number, lively: boolean) {
 		c.strokeStyle = 'rgba(255,255,255,0.4)';
 		c.lineWidth = 1.4;
 		for (let k = 0; k < 3; k++) {
-			const phase = (time * 0.00008 + k * 0.33) % 1;
+			const phase = (time * loopHz(0.00008) + k * 0.33) % 1;
 			const hx = phase * (cssW + 40) - 20;
 			c.beginPath();
 			c.moveTo(hx, y - h * 0.3);
@@ -609,7 +624,7 @@ function drawWater(el: LaidElement, g: number, time: number, lively: boolean) {
 	const c = ctx;
 	const winter = sr.season === 'winter';
 	const s = el.size * (0.85 + 0.4 * g);
-	const bob = lively && !winter ? Math.sin(time * 0.002 + el.phase) * 1.5 : 0;
+	const bob = lively && !winter ? Math.sin(time * loopW(0.002) + el.phase) * 1.5 : 0;
 	c.save();
 	c.translate(el.x, el.y + bob);
 	if (el.variant === 'cattail') drawCattail(c, s, winter, el.seed);
@@ -695,7 +710,7 @@ function drawFrog(
 	phase: number
 ) {
 	if (winter) return; // frogs hibernate in winter
-	const hop = lively ? Math.max(0, Math.sin(time * 0.003 + phase)) * s * 0.7 : 0;
+	const hop = lively ? Math.max(0, Math.sin(time * loopW(0.003) + phase)) * s * 0.7 : 0;
 	const r = s * 0.5;
 	c.save();
 	c.translate(0, -hop);
@@ -794,7 +809,7 @@ function drawStar(el: LaidElement, time: number, lively: boolean) {
 	// stars only read against a dark sky; fade them out toward daytime
 	const vis = clamp01(sr.nightFactor * 1.4);
 	if (vis <= 0.02) return;
-	const tw = lively ? Math.sin(time * 0.003 + el.phase) * 0.5 + 0.5 : 0.8;
+	const tw = lively ? Math.sin(time * loopW(0.003) + el.phase) * 0.5 + 0.5 : 0.8;
 	const s = el.size;
 	ctx.save();
 	ctx.translate(el.x, el.y);
@@ -815,7 +830,7 @@ function drawStar(el: LaidElement, time: number, lively: boolean) {
 // #region creatures (element-driven + ambient)
 function drawBird(x: number, y: number, s: number, time: number, lively: boolean, phase: number) {
 	if (!ctx) return;
-	const flap = lively ? Math.sin(time * 0.012 + phase) * 0.5 + 0.5 : 0.6;
+	const flap = lively ? Math.sin(time * loopW(0.012) + phase) * 0.5 + 0.5 : 0.6;
 	ctx.save();
 	ctx.translate(x, y);
 	ctx.strokeStyle = sr.nightFactor > 0.5 ? '#0b1220' : '#334155';
@@ -851,7 +866,7 @@ function drawDragonfly(
 	ctx.moveTo(-s * 0.6, 0);
 	ctx.lineTo(s * 0.6, 0);
 	ctx.stroke();
-	const wf = lively ? Math.sin(time * 0.05 + phase) * 0.4 + 0.7 : 0.8;
+	const wf = lively ? Math.sin(time * loopW(0.05) + phase) * 0.4 + 0.7 : 0.8;
 	ctx.fillStyle = 'rgba(94,234,212,0.5)';
 	for (const wx of [-1, 1]) {
 		for (const wy of [-1, 1]) {
@@ -872,7 +887,7 @@ function drawFirefly(
 	phase: number
 ) {
 	if (!ctx) return;
-	const tw = lively ? Math.sin(time * 0.005 + phase) * 0.5 + 0.5 : 0.7;
+	const tw = lively ? Math.sin(time * loopW(0.005) + phase) * 0.5 + 0.5 : 0.7;
 	const r = Math.max(1.5, s * 0.2);
 	ctx.save();
 	ctx.translate(x, y);
@@ -893,12 +908,12 @@ function drawFirefly(
 function drawButterfly(el: LaidElement, time: number, lively: boolean, cx?: number, cy?: number) {
 	if (!ctx) return;
 	const s = el.size * (0.6 + 0.5 * el.growth);
-	const flap = lively ? Math.sin(time * 0.008 + el.phase) * 0.45 + 0.55 : 0.7;
+	const flap = lively ? Math.sin(time * loopW(0.008) + el.phase) * 0.45 + 0.55 : 0.7;
 	const pinned = cx !== undefined && cy !== undefined;
-	const bob = lively && !pinned ? Math.sin(time * 0.0016 + el.phase) * el.size * 0.5 : 0;
+	const bob = lively && !pinned ? Math.sin(time * loopW(0.0016) + el.phase) * el.size * 0.5 : 0;
 	ctx.save();
 	ctx.translate(pinned ? cx! : el.x, (pinned ? cy! : el.y) + bob);
-	ctx.rotate(lively && !pinned ? Math.sin(time * 0.001 + el.phase) * 0.18 : 0);
+	ctx.rotate(lively && !pinned ? Math.sin(time * loopW(0.001) + el.phase) * 0.18 : 0);
 	ctx.fillStyle = el.color;
 	ctx.globalAlpha = 0.92;
 	ctx.beginPath();
@@ -929,22 +944,22 @@ function drawCreatureElement(el: LaidElement, time: number, lively: boolean) {
 	let y: number;
 	if (variant === 'bird') {
 		const span = cssW + 80;
-		x = ((((el.x + (drift ? time * 0.04 * dir : 0)) % span) + span) % span) - 40;
-		y = el.y + (lively ? Math.sin(time * 0.002 + el.phase) * 4 : 0);
+		x = ((((el.x + (drift ? loopTravel(time, 0.04, span) * dir : 0)) % span) + span) % span) - 40;
+		y = el.y + (lively ? Math.sin(time * loopW(0.002) + el.phase) * 4 : 0);
 	} else if (variant === 'dragonfly') {
 		const span = cssW + 40;
-		x = ((((el.x + (drift ? time * 0.08 * dir : 0)) % span) + span) % span) - 20;
-		y = el.y + (lively ? Math.sin(time * 0.02 + el.phase) * 10 : 0);
+		x = ((((el.x + (drift ? loopTravel(time, 0.08, span) * dir : 0)) % span) + span) % span) - 20;
+		y = el.y + (lively ? Math.sin(time * loopW(0.02) + el.phase) * 10 : 0);
 	} else if (variant === 'firefly') {
-		x = el.x + (drift ? Math.sin(time * 0.0016 + el.phase) * 20 : 0);
-		y = el.y + (drift ? Math.cos(time * 0.0021 + el.phase) * 14 : 0);
+		x = el.x + (drift ? Math.sin(time * loopW(0.0016) + el.phase) * 20 : 0);
+		y = el.y + (drift ? Math.cos(time * loopW(0.0021) + el.phase) * 14 : 0);
 	} else {
 		x = el.x;
 		y = el.y;
 	}
 	if (home) {
 		x = home.x;
-		y = home.y + (lively ? Math.sin(time * 0.003 + el.phase) * 3 : 0);
+		y = home.y + (lively ? Math.sin(time * loopW(0.003) + el.phase) * 3 : 0);
 	}
 	if (held) {
 		x = heldPos.x;
@@ -965,19 +980,20 @@ function drawAmbient(time: number, lively: boolean) {
 		const id = 'amb-' + a.seed;
 		const held = heldId === id;
 		const home = homes.get(id);
-		const travel = lively && !held && !home ? time * 0.001 * a.speed * a.dir : 0;
+		const travel = lively && !held && !home ? time * loopHz(0.001 * a.speed) * a.dir : 0;
 		const nx = (((a.x + travel) % 1) + 1) % 1;
 		let x = nx * span - 40;
 		const baseY = a.y * cssH;
 		const s = 12 * a.scale;
 		let y: number;
-		if (a.variant === 'bird') y = baseY + (lively ? Math.sin(time * 0.002 + a.phase) * 5 : 0);
+		if (a.variant === 'bird')
+			y = baseY + (lively ? Math.sin(time * loopW(0.002) + a.phase) * 5 : 0);
 		else if (a.variant === 'dragonfly')
-			y = baseY + (lively ? Math.sin(time * 0.02 + a.phase) * 12 : 0);
-		else y = baseY + (lively ? Math.cos(time * 0.0021 + a.phase) * 10 : 0);
+			y = baseY + (lively ? Math.sin(time * loopW(0.02) + a.phase) * 12 : 0);
+		else y = baseY + (lively ? Math.cos(time * loopW(0.0021) + a.phase) * 10 : 0);
 		if (home) {
 			x = home.x;
-			y = home.y + (lively ? Math.sin(time * 0.003 + a.phase) * 3 : 0);
+			y = home.y + (lively ? Math.sin(time * loopW(0.003) + a.phase) * 3 : 0);
 		}
 		if (held) {
 			x = heldPos.x;
@@ -1085,10 +1101,32 @@ function easeOut(t: number): number {
 	return 1 - Math.pow(1 - t, 3);
 }
 
+// #region export-loop motion helpers (no-ops in the live loop; snap to whole cycles when capturing)
+// angular freq for sin/cos oscillators; >=1 whole cycle per loop so nothing freezes AND the
+// value at phase 1 equals phase 0 (seamless)
+function loopW(f: number): number {
+	if (!exportLoop) return f;
+	const cycles = Math.max(1, Math.round((f * exportLoopMs) / (2 * Math.PI)));
+	return (cycles * 2 * Math.PI) / exportLoopMs;
+}
+// rate for a linear phase used with a modulo wrap; whole cycles per loop (0 = holds position)
+function loopHz(f: number): number {
+	if (!exportLoop) return f;
+	return Math.round(f * exportLoopMs) / exportLoopMs;
+}
+// horizontal pixel travel for a span-wrapping creature; advances a whole number of spans
+// across the loop (0 when its natural speed barely moves it, so it hovers instead of zooming)
+function loopTravel(time: number, speed: number, span: number): number {
+	if (!exportLoop) return time * speed;
+	const loops = Math.round((speed * exportLoopMs) / span);
+	return exportPhase * span * loops;
+}
+// #endregion
+
 function render(now: number, exportMode = false) {
 	if (!ctx || !layout) return;
 	if (!startTime) startTime = now;
-	const time = now - startTime;
+	const time = exportLoop ? exportPhase * exportLoopMs : now - startTime;
 
 	const motion = !reduced.value;
 	const lively = motion && props.garden.animated;
@@ -1106,7 +1144,7 @@ function render(now: number, exportMode = false) {
 
 	for (const el of layout.elements) {
 		const g = clamp01(el.growth * bloom);
-		const sway = motion ? Math.sin(time * 0.001 + el.phase) * el.sway : 0;
+		const sway = motion ? Math.sin(time * loopW(0.001) + el.phase) * el.sway : 0;
 		const laid = el;
 
 		// far hill elements paint small + dim for depth
@@ -1146,9 +1184,11 @@ function render(now: number, exportMode = false) {
 	}
 
 	drawAmbient(time, lively);
-	drawEffects(now);
+	// tap-spawned bursts are transient and wall-clock-timed; skip them in a seamless capture
+	if (!exportLoop) drawEffects(now);
 
 	if (lively) {
+		const vRange = cssH + 8;
 		for (const p of particles) {
 			// only the live loop advances particles; a one-off export just snapshots them
 			if (!exportMode) {
@@ -1162,11 +1202,20 @@ function render(now: number, exportMode = false) {
 					p.x = Math.random() * cssW;
 				}
 			}
-			const px = p.x + Math.sin(time * 0.001 + p.phase) * p.drift;
-			ctx.globalAlpha = 0.35 + (Math.sin(time * 0.004 + p.phase) * 0.5 + 0.5) * 0.5;
+			// export-loop derives a deterministic, seamlessly-wrapping vertical position from
+			// the phase (>=1 full pass so pollen/snow keeps drifting) instead of the live y
+			let py = p.y;
+			if (exportLoop) {
+				const dist = (p.speed / 1000) * exportLoopMs;
+				const loops = Math.max(1, Math.round(dist / vRange));
+				const dir = winter ? 1 : -1;
+				py = ((((p.y + 4 + dir * exportPhase * vRange * loops) % vRange) + vRange) % vRange) - 4;
+			}
+			const px = p.x + Math.sin(time * loopW(0.001) + p.phase) * p.drift;
+			ctx.globalAlpha = 0.35 + (Math.sin(time * loopW(0.004) + p.phase) * 0.5 + 0.5) * 0.5;
 			ctx.fillStyle = p.hue;
 			ctx.beginPath();
-			ctx.arc(px, p.y, p.r, 0, Math.PI * 2);
+			ctx.arc(px, py, p.r, 0, Math.PI * 2);
 			ctx.fill();
 		}
 		ctx.globalAlpha = 1;
@@ -1210,7 +1259,72 @@ async function exportBlob(format: 'png' | 'jpg' | 'svg' = 'png', scale = 1): Pro
 	});
 }
 
-defineExpose({ exportBlob });
+// downscale to a longest-edge ceiling while preserving the scene aspect (keeps gif/apng small)
+function scaledFrameSize(w: number, h: number, maxDim: number): { width: number; height: number } {
+	const largest = Math.max(w, h);
+	if (!maxDim || largest <= maxDim)
+		return { width: Math.max(1, Math.round(w)), height: Math.max(1, Math.round(h)) };
+	const k = maxDim / largest;
+	return { width: Math.max(1, Math.round(w * k)), height: Math.max(1, Math.round(h * k)) };
+}
+
+// render one deterministic frame into a fresh offscreen canvas at the target size; loop=true
+// derives motion from the phase (seamless capture), loop=false snapshots one settled frame
+function renderExportFrame(
+	phase: number,
+	width: number,
+	height: number,
+	loop: boolean
+): CapturedFrame {
+	const off = document.createElement('canvas');
+	off.width = Math.max(1, width);
+	off.height = Math.max(1, height);
+	const octx = off.getContext('2d');
+	if (!octx) throw new Error('Could not create an export frame canvas.');
+	// scene coords are cssW x cssH; scale them into the (aspect-matched) frame
+	octx.setTransform(off.width / cssW, 0, 0, off.height / cssH, 0, 0);
+	const savedCtx = ctx;
+	ctx = octx;
+	exportLoop = loop;
+	exportPhase = phase;
+	try {
+		render(0, true);
+	} finally {
+		ctx = savedCtx;
+		exportLoop = false;
+	}
+	const img = octx.getImageData(0, 0, off.width, off.height);
+	return { width: off.width, height: off.height, data: img.data };
+}
+
+// deterministic animated-export frame provider: renders one seamlessly-looping frame per
+// requested phase, mirroring exportBlob's crisp offscreen re-render (no live-canvas sampling)
+async function exportFrames(req: AnimatedFrameRequest): Promise<CapturedFrame[]> {
+	if (!import.meta.client || !layout) throw new Error('Garden is not ready to export.');
+	const fps = Math.max(1, req.fps || 12);
+	const scale = Math.max(1, Math.min(6, req.scale ?? 1));
+	const maxDim = req.maxDimension ?? Math.round(cssW * scale);
+	const { width, height } = scaledFrameSize(cssW, cssH, maxDim);
+
+	// reduced motion (or a non-animated garden) exports a single settled frame, no loop
+	if (reduced.value || !props.garden.animated) {
+		const single = renderExportFrame(0, width, height, false);
+		req.onProgress?.(1);
+		return [single];
+	}
+
+	const phases = req.phases.length ? req.phases : [0];
+	// loop period = encoded playback length, so motion speed reads natural and wraps exactly
+	exportLoopMs = Math.max(1, phases.length * Math.round(1000 / fps));
+	const out: CapturedFrame[] = [];
+	for (let i = 0; i < phases.length; i += 1) {
+		out.push(renderExportFrame(phases[i]!, width, height, true));
+		req.onProgress?.((i + 1) / phases.length);
+	}
+	return out;
+}
+
+defineExpose({ exportBlob, exportFrames });
 // #endregion
 
 // #region interaction + lifecycle
