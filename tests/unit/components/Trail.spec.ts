@@ -123,6 +123,22 @@ describe('TrailBrowser', () => {
 		return wrapper;
 	}
 
+	it('shows the loading skeleton, never the empty state, before the fetch resolves', async () => {
+		let resolveFetch!: (v: any) => void;
+		vi.mocked(makeAPIRequest).mockReturnValue(new Promise((r) => (resolveFetch = r)) as never);
+		const wrapper = await mountSuspended(Browser);
+		await nextTick();
+
+		expect(wrapper.text()).not.toContain('No Trails Here Yet');
+		expect(wrapper.findAll('h3').length).toBe(0);
+
+		// settle the pending fetch (empty catalog) -> only now is the empty state allowed
+		resolveFetch({ success: true, data: [] });
+		await new Promise((r) => setTimeout(r, 0));
+		await nextTick();
+		expect(wrapper.text()).toContain('No Trails Here Yet');
+	});
+
 	it('renders cards in rarity-then-alphabetical order', async () => {
 		const wrapper = await mountBrowserWith([
 			trail('1', 'green', 'Zephyr'),

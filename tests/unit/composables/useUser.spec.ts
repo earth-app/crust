@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
-import { useAuth, useUser } from '~/composables/useUser';
+import { useAuth, useQuests, useUser } from '~/composables/useUser';
 import { useUserStore } from '~/stores/user';
 
 // the moderation gate uses the test-build signature hook, so no model mocking is needed here
@@ -190,5 +190,29 @@ describe('useAuth().fetchCurrentJourney missing-id guard', () => {
 		expect(serverRequest).toHaveBeenCalledTimes(1);
 		expect(res.success).toBe(true);
 		expect((res as any).data.count).toBe(7);
+	});
+});
+
+describe('useQuests().getStepIcon', () => {
+	beforeEach(() => setActivePinia(createPinia()));
+
+	it('maps the two v0.6.0 step types to their own icons', () => {
+		const { getStepIcon } = useQuests();
+		// nature_minutes + trailmarker_added must not fall through to the default account icon
+		expect(getStepIcon('nature_minutes')).toBe('mdi:leaf-maple');
+		expect(getStepIcon('trailmarker_added')).toBe('mdi:map-marker-check');
+	});
+
+	it('still maps a representative set of the existing step types', () => {
+		const { getStepIcon } = useQuests();
+		expect(getStepIcon('take_photo_location')).toBe('mdi:camera-marker');
+		expect(getStepIcon('respond_to_prompt')).toBe('mdi:comment-text');
+		expect(getStepIcon('article_read_time')).toBe('mdi:book-clock-outline');
+	});
+
+	it('falls back to the default icon for an unknown step type', () => {
+		const { getStepIcon } = useQuests();
+		expect(getStepIcon('some_future_step')).toBe('mdi:account');
+		expect(getStepIcon('')).toBe('mdi:account');
 	});
 });
