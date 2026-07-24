@@ -70,6 +70,75 @@ test.describe('Trailmarks - leave, find, thank across users', () => {
 		await expect(page.getByText('Someone Thanked Your Trailmark')).toBeVisible({ timeout: 15000 });
 	});
 
+	test('a discouraging note is gently rejected without leaking a raw error, keeping the draft', async ({
+		page,
+		context,
+		mockApi,
+		testId,
+		gotoHydrated
+	}) => {
+		skipIfIntegration('drives the mock sentiment gate');
+
+		const here = uniqueGeo(testId);
+		await grantGeolocation(context, here);
+
+		const alice = makeActor(testId, 'alice');
+		await registerActors(mockApi, alice);
+		await actAs(context, mockApi, alice);
+
+		await gotoHydrated('/trailmarks');
+		const composer = page.getByPlaceholder('You made it here. Take a breath and look up.');
+		await expect(composer).toBeVisible({ timeout: 15000 });
+
+		// a note the cloud sentiment gate rejects (mock rejects hate/awful/terrible/worst/stupid)
+		const meanNote = `this place is awful ${testId.slice(0, 8)}`;
+		await composer.fill(meanNote);
+		const postBtn = page.getByRole('button', { name: 'Post Note' });
+		await expect(postBtn).toBeEnabled({ timeout: 12000 });
+		await postBtn.click();
+
+		// the user sees the gentle, human rejection - never a raw "[400]" or an /api/ path.
+		// the copy renders in both the toast body and an aria-live mirror, so scope to the first
+		await expect(
+			page.getByText("Let's keep trailmarks kind and encouraging - try rephrasing.").first()
+		).toBeVisible({ timeout: 12000 });
+		await expect(page.getByText(/\[400\]|\[500\]/)).toHaveCount(0);
+		await expect(page.getByText(/\/v2\/trailmarks|\/api\//)).toHaveCount(0);
+
+		// the rejected note never posts (no card renders it), and the draft is preserved so it
+		// can be reworded (a textarea value is not text content, so getByText sees zero)
+		await expect(composer).toHaveValue(meanNote);
+		await expect(page.getByText(meanNote)).toHaveCount(0);
+	});
+
+	test('without location access the composer cannot post and guides the user', async ({
+		page,
+		context,
+		mockApi,
+		testId,
+		gotoHydrated
+	}) => {
+		skipIfIntegration('drives the geolocation-blocked trailmark state');
+
+		// deliberately do NOT grant geolocation: getCurrentPosition is denied
+		const alice = makeActor(testId, 'alice');
+		await registerActors(mockApi, alice);
+		await actAs(context, mockApi, alice);
+
+		await gotoHydrated('/trailmarks');
+		// the page still renders under ClientOnly
+		await expect(page.getByRole('heading', { name: 'Trailmarks Nearby' })).toBeVisible({
+			timeout: 15000
+		});
+
+		// with no location, posting is impossible and the composer never claims "Location Ready"
+		const composer = page.getByPlaceholder('You made it here. Take a breath and look up.');
+		await expect(composer).toBeVisible({ timeout: 12000 });
+		await composer.fill(`Trying to post without a fix ${testId.slice(0, 8)}`);
+		await expect(page.getByRole('button', { name: 'Post Note' })).toBeDisabled();
+		await expect(page.getByText('Location Ready')).toHaveCount(0);
+	});
+
 	test('a far-away note is not surfaced as nearby', async ({
 		page,
 		context,

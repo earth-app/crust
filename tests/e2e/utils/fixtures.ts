@@ -127,6 +127,17 @@ export const test = baseTest.extend<TestFixtures>({
 			});
 		}
 
+		await context.addInitScript(() => {
+			try {
+				window.localStorage.setItem(
+					'earth_app_completed_tours',
+					JSON.stringify(['trails', 'trailmarks', 'shared-garden'])
+				);
+			} catch {
+				// storage unavailable pre-navigation; harmless
+			}
+		});
+
 		await use(context);
 	},
 
