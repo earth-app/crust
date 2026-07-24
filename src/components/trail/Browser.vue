@@ -179,7 +179,7 @@ const themeOptions = [
 
 const activeTheme = ref<(typeof themeOptions)[number]['value']>('all');
 const journalOpen = ref(false);
-const loading = ref(false);
+const loading = ref(true);
 
 // rarity-then-alphabetical, matching the quest/badge ordering
 const filteredTrails = computed(() => {
