@@ -6,6 +6,9 @@ import {
 	type InternetArchiveItem,
 	type PixabayImage,
 	type PixabayVideo,
+	type StagedActivity,
+	type StagedActivityList,
+	type StagedActivityState,
 	type UnsplashImage,
 	type WikipediaSummary,
 	type YouTubeVideo
@@ -1062,3 +1065,56 @@ export function useActivityCards(serverRequest: typeof makeServerRequest = makeS
 
 	return { cards, loadRequestId, loadCardsForActivity, loadMore, hasMore, isLoadingMore };
 }
+
+// #region staged activities
+
+export function useStagedActivities() {
+	const authStore = useAuthStore();
+
+	const list = async (
+		state: StagedActivityState = 'pending',
+		page: number = 1,
+		limit: number = 50
+	) =>
+		makeAPIRequest<StagedActivityList>(
+			null,
+			`/v2/activities/staged?state=${state}&page=${page}&limit=${limit}`,
+			authStore.sessionToken
+		);
+
+	const mine = async (page: number = 1, limit: number = 25) =>
+		makeAPIRequest<StagedActivityList>(
+			null,
+			`/v2/activities/staged/mine?page=${page}&limit=${limit}`,
+			authStore.sessionToken
+		);
+
+	const submit = async (activity: Partial<Activity> & { note?: string }) =>
+		makeClientAPIRequest<StagedActivity>('/v2/activities/staged', authStore.sessionToken, {
+			method: 'POST',
+			body: activity
+		});
+
+	const approve = async (stagedId: number, notes?: string, force = false) =>
+		makeClientAPIRequest<StagedActivity>(
+			`/v2/activities/staged/${stagedId}/approve`,
+			authStore.sessionToken,
+			{ method: 'POST', body: { notes, force } }
+		);
+
+	const deny = async (stagedId: number, notes?: string) =>
+		makeClientAPIRequest<StagedActivity>(
+			`/v2/activities/staged/${stagedId}/deny`,
+			authStore.sessionToken,
+			{ method: 'POST', body: { notes } }
+		);
+
+	const withdraw = async (stagedId: number) =>
+		makeClientAPIRequest<void>(`/v2/activities/staged/${stagedId}`, authStore.sessionToken, {
+			method: 'DELETE'
+		});
+
+	return { list, mine, submit, approve, deny, withdraw };
+}
+
+// #endregion

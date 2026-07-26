@@ -13,7 +13,10 @@ import {
 	type LeaderboardScope,
 	type OAuthProvider,
 	type ReferralStats,
-	type User
+	type User,
+	type VerifiedPublisher,
+	type VerifiedPublisherList,
+	type VerifiedPublisherState
 } from 'types/user';
 import type { MaybeRefOrGetter } from 'vue';
 import { getCurrentPosition, isNativePlatform } from '~/shared/utils/geoPermission';
@@ -2592,3 +2595,44 @@ export function useFeedWidgets() {
 		seed
 	};
 }
+
+// #region verified publisher
+
+export function useVerifiedPublisher() {
+	const authStore = useAuthStore();
+
+	const status = async () =>
+		makeClientAPIRequest<VerifiedPublisher>(
+			'/v2/users/current/verified_publisher',
+			authStore.sessionToken
+		);
+
+	const apply = async (input: { reason: string; organization?: string; links?: string[] }) =>
+		makeClientAPIRequest<VerifiedPublisher>(
+			'/v2/users/current/verified_publisher',
+			authStore.sessionToken,
+			{ method: 'POST', body: input }
+		);
+
+	const listApplications = async (
+		state: VerifiedPublisherState = 'pending',
+		page: number = 1,
+		limit: number = 50
+	) =>
+		makeAPIRequest<VerifiedPublisherList>(
+			null,
+			`/v2/admin/verified_publishers?state=${state}&page=${page}&limit=${limit}`,
+			authStore.sessionToken
+		);
+
+	const review = async (userId: string, action: 'approve' | 'deny' | 'revoke', notes?: string) =>
+		makeClientAPIRequest<VerifiedPublisher>(
+			`/v2/admin/verified_publishers/${userId}`,
+			authStore.sessionToken,
+			{ method: 'PATCH', body: { action, notes } }
+		);
+
+	return { status, apply, listApplications, review };
+}
+
+// #endregion
