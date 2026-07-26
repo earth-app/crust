@@ -289,7 +289,7 @@ const organizer: Plan = {
 			icon: 'mdi:clipboard-list'
 		},
 		{
-			title: 'Verified creator status for publishing official activities',
+			title: 'Eligible to apply for verified creator status',
 			icon: 'mdi:shield-check'
 		}
 	],

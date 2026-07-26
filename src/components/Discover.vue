@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import type { CommandPaletteGroup, CommandPaletteItem } from '#ui/types';
+import { isVerifiedOwner } from 'types/user';
 
 const { user } = useAuth();
 const { fetchAll: fetchAllUsers } = useUsers();
@@ -195,8 +196,7 @@ function populate(searchTerm: string) {
 			const items = res.data;
 			prompts.value = items.map((prompt: any) => {
 				const owner = prompt.owner;
-				const type = owner.account.account_type;
-				const isChipShown = owner.is_admin || type === 'ORGANIZER';
+				const isChipShown = isVerifiedOwner(owner);
 
 				return {
 					id: `prompt-${prompt.id}`,
@@ -206,7 +206,7 @@ function populate(searchTerm: string) {
 						src: `${owner.account.avatar_url}?size=32`,
 						icon: 'mdi:lightbulb-outline',
 						chip: {
-							color: owner.is_admin ? 'error' : 'warning',
+							color: owner.is_admin ? 'error' : 'info',
 							ui: { root: isChipShown ? 'visible' : 'hidden' }
 						}
 					},
@@ -234,8 +234,7 @@ function populate(searchTerm: string) {
 			const items = res.data;
 			articles.value = items.map((article: any) => {
 				const owner = article.author;
-				const type = owner.account.account_type;
-				const isChipShown = owner.is_admin || type === 'ORGANIZER';
+				const isChipShown = isVerifiedOwner(owner);
 
 				return {
 					id: `article-${article.id}`,
@@ -248,7 +247,7 @@ function populate(searchTerm: string) {
 						src: `${owner.account.avatar_url}?size=32`,
 						icon: 'mdi:file-document-outline',
 						chip: {
-							color: owner.is_admin ? 'error' : 'warning',
+							color: owner.is_admin ? 'error' : 'info',
 							ui: { root: isChipShown ? 'visible' : 'hidden' }
 						}
 					},
@@ -277,8 +276,7 @@ function populate(searchTerm: string) {
 		if (items.length > 0) {
 			events.value = items.map((event: any) => {
 				const host = event.host;
-				const type = host?.account?.account_type;
-				const isChipShown = host?.is_admin || type === 'ORGANIZER';
+				const isChipShown = isVerifiedOwner(host);
 				const dateLabel = event.date
 					? new Date(event.date).toLocaleDateString(undefined, {
 							month: 'short',
@@ -295,7 +293,7 @@ function populate(searchTerm: string) {
 						src: host?.account?.avatar_url ? `${host.account.avatar_url}?size=32` : undefined,
 						icon: 'mdi:calendar',
 						chip: {
-							color: host?.is_admin ? 'error' : 'warning',
+							color: host?.is_admin ? 'error' : 'info',
 							ui: { root: isChipShown ? 'visible' : 'hidden' }
 						}
 					},
