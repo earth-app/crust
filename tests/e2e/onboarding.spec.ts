@@ -143,14 +143,9 @@ test.describe('Onboarding checklist (logged in)', () => {
 		const card = page.locator('#welcome-checklist');
 		await expect(card).toBeVisible({ timeout: 12_000 });
 
-		// the overflow (dots) menu is the first button in the card header. it is a
-		// LazyUDropdownMenu with hydrate-on-interaction="click", so the very first
-		// click can be swallowed by hydration and not open the menu - click again
-		// if the item isn't up yet (see the UX note in the deliverable).
 		const trigger = card.getByRole('button').first();
 		const item = page.getByRole('menuitem', { name: 'Hide Checklist' });
 		await trigger.click();
-		if (!(await item.isVisible().catch(() => false))) await trigger.click();
 		await item.click();
 
 		await expect(card).toBeHidden({ timeout: 8_000 });
