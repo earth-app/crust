@@ -1548,6 +1548,26 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 ];
 
 const cloudRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
+	{
+		method: 'POST',
+		pattern: /^\/v1\/admin\/activities\/discover\/?$/,
+		handler: (_req: any, res: any) => {
+			json(res, 200, {
+				staged: [],
+				candidates: ['bouldering', 'sea_kayaking'],
+				considered: 2,
+				dry_run: true,
+				funnel: {
+					raw: 900,
+					afterCatalog: 40,
+					afterGenre: 22,
+					afterSimilarity: 12,
+					selected: 2,
+					nextUp: ['kitesurfing']
+				}
+			});
+		}
+	},
 	// Health
 	{
 		method: 'GET',
