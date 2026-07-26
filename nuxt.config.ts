@@ -3,6 +3,8 @@ import { defineOrganization } from 'nuxt-schema-org/schema';
 import { defineNuxtConfig } from 'nuxt/config';
 import { fileURLToPath } from 'url';
 
+const unitTest = !!process.env.VITEST;
+
 export default defineNuxtConfig({
 	alias: {
 		types: fileURLToPath(new URL('./src/shared/types', import.meta.url)),
@@ -195,11 +197,9 @@ export default defineNuxtConfig({
 		'@nuxtjs/i18n',
 		'@nuxtjs/turnstile',
 		'nuxt-viewport',
-		'@nuxtjs/robots',
-		'@nuxtjs/sitemap',
+		...(unitTest ? [] : ['@nuxtjs/robots', '@nuxtjs/sitemap']),
 		'@nuxt/image',
-		'nuxt-schema-org',
-		'nuxt-api-shield',
+		...(unitTest ? [] : ['nuxt-schema-org', 'nuxt-api-shield']),
 		'@pinia/nuxt',
 		'@nuxt/hints',
 		'@vueuse/nuxt',

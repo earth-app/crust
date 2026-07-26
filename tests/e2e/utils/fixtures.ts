@@ -34,6 +34,20 @@ const INTEGRATION_SESSION_FILE = resolve(__dirname, '../../../.integration-sessi
 export const integrationMode = process.env.MOCK_DISABLED === '1';
 
 /**
+ * Every tour that auto-plays via `startTourIfNew(...)` on mount. Marking them
+ * all complete before the first navigation keeps the fixed-position SiteTour
+ * dim/tooltip layers from intercepting clicks mid-spec. Keep in sync with the
+ * `startTourIfNew` call sites in `src/`.
+ */
+export const AUTO_START_TOUR_IDS = [
+	'trails',
+	'trailmarks',
+	'shared-garden',
+	'verify-email',
+	'notifications'
+];
+
+/**
  * Integration-mode login helper: when `MOCK_DISABLED=1` is set, the test suite
  * is running against the real mantle2 backend booted by `e2e.yml`. That
  * backend is seeded by `startup.sh` with a single admin user (admin/admin).
@@ -110,11 +124,6 @@ export const test = baseTest.extend<TestFixtures>({
 			}
 		]);
 
-		// Block external network calls that slow tests down without changing
-		// observable behavior: Cloudflare Turnstile, Google Fonts, image CDN,
-		// YouTube embeds, Iconify CDN (we ship icons locally), Pixabay/Wikipedia
-		// thumbnails. They never resolve fast enough on a busy dev server to
-		// matter for assertions and they add 5-15s of variance per test.
 		await context.route(
 			/^https?:\/\/(challenges\.cloudflare\.com|fonts\.(?:googleapis|gstatic)\.com|api\.iconify\.design|cdn\.earth-app\.com|i\.ytimg\.com|www\.youtube\.com|pixabay\.com|upload\.wikimedia\.org|en\.wikipedia\.org)\//,
 			(route) => route.fulfill({ status: 204, body: '' })
@@ -127,16 +136,13 @@ export const test = baseTest.extend<TestFixtures>({
 			});
 		}
 
-		await context.addInitScript(() => {
+		await context.addInitScript((ids) => {
 			try {
-				window.localStorage.setItem(
-					'earth_app_completed_tours',
-					JSON.stringify(['trails', 'trailmarks', 'shared-garden'])
-				);
+				window.localStorage.setItem('earth_app_completed_tours', JSON.stringify(ids));
 			} catch {
 				// storage unavailable pre-navigation; harmless
 			}
-		});
+		}, AUTO_START_TOUR_IDS);
 
 		await use(context);
 	},
@@ -160,13 +166,6 @@ export const test = baseTest.extend<TestFixtures>({
 
 	mockApi: async ({ testId }, use) => {
 		const client = new MockClient(testId);
-		// Clear the Nitro server's in-memory apiCache (and request dedupe queue)
-		// so default mock data doesn't bleed across tests. Best-effort with a
-		// hard 3s timeout - under heavy CI load the dev server can pause for
-		// minutes on a single request, and we don't want the fixture setup to
-		// consume the whole test's 120s budget on this one call. The cache
-		// disable flag (`DISABLE_API_CACHE=1`) is the primary defense; this
-		// reset is a belt-and-suspenders.
 		try {
 			const ac = new AbortController();
 			const timer = setTimeout(() => ac.abort(), 3_000);
@@ -179,8 +178,7 @@ export const test = baseTest.extend<TestFixtures>({
 			// dev server may not be up yet on first test; non-fatal
 		}
 		await use(client);
-		// Same timeout discipline on teardown - never let cleanup block the
-		// next test if the dev server is wedged.
+
 		const ac = new AbortController();
 		const timer = setTimeout(() => ac.abort(), 3_000);
 		await client.reset({ signal: ac.signal }).catch(() => {});
@@ -198,14 +196,9 @@ export const test = baseTest.extend<TestFixtures>({
 	asUser: async ({ context, mockApi, testId }, use) => {
 		const fn = async (overrides: Record<string, any> = {}) => {
 			if (process.env.MOCK_DISABLED === '1') {
-				// Integration mode: hit real mantle2. We don't have a way to
-				// create arbitrary users on the fly, so log in as the seeded
-				// admin/admin account that `startup.sh` provisions. Most "logged
-				// in" tests just need *some* authenticated user.
 				return await loginAsRealAdmin(context, overrides);
 			}
-			// Mock mode: each test gets a unique user id + session token derived
-			// from its testId so parallel workers don't overwrite each other.
+
 			const sessionToken = `mock-token-${testId}`;
 			const user = makeUser({
 				id: overrides.id ?? `test-user-${testId.slice(0, 8)}`,
@@ -257,20 +250,6 @@ export const test = baseTest.extend<TestFixtures>({
 		await use(fn);
 	},
 
-	/**
-	 * Navigate and wait for Nuxt to finish hydrating AND the auth store to
-	 * resolve (`currentUser` no longer undefined). Most pages branch on
-	 * `user === null` (anonymous) vs `user` (logged in); asserting before the
-	 * auth fetch resolves causes flaky failures on a busy dev server.
-	 *
-	 * For routes that have ISR/SWR cache rules in `nuxt.config.ts`
-	 * (`/events/**`, `/articles/**`, `/prompts/**`, `/activities/**`, `/`)
-	 * we append a per-test cache-bust query (`_t={testId}`) so that an
-	 * earlier test's SSR HTML - rendered before this test's mock overrides
-	 * were in place - doesn't leak across tests. URL assertions in those
-	 * spec files use substring regexes that are tolerant of the trailing
-	 * query.
-	 */
 	gotoHydrated: async ({ page, testId }, use) => {
 		const cachedPath = (p: string) =>
 			/^\/$|^\/(events|articles|prompts|activities)(\/|$|\?)/.test(p);
@@ -281,9 +260,6 @@ export const test = baseTest.extend<TestFixtures>({
 				url = `${path}${sep}_t=${testId.slice(0, 12)}`;
 			}
 			await page.goto(url, { waitUntil: 'domcontentloaded' });
-			// Best-effort hydration wait - Nuxt sets `window.useNuxtApp` after
-			// hydration is complete. Bail out after 8s if the marker never
-			// appears (e.g. a hard error page).
 			await page
 				.waitForFunction(
 					() =>
@@ -292,11 +268,7 @@ export const test = baseTest.extend<TestFixtures>({
 					{ timeout: 8_000 }
 				)
 				.catch(() => {});
-			// Wait for the auth store to be in a settled state:
-			//   - currentUser is `null` or a user object (not undefined), AND
-			//   - no in-flight fetchPromise.
-			// Pinia ships the store via `useNuxtApp().$pinia` which we read
-			// directly.
+
 			await page
 				.waitForFunction(
 					() => {
@@ -318,13 +290,6 @@ export const test = baseTest.extend<TestFixtures>({
 
 export { expect };
 
-/**
- * Conditional `test.skip()` for tests that hardcode mock-shaped data (e.g.
- * specific entity IDs like `act-1`, names like "Sample Activity 1", or rely on
- * `mockApi.set` overrides that don't take effect against the real backend).
- *
- * Call inside a test body. No-op outside integration mode.
- */
 export function skipIfIntegration(reason: string = 'requires seeded mock data') {
 	test.skip(integrationMode, reason);
 }
@@ -347,10 +312,6 @@ export async function findByRoleName(
 	return page.getByRole(role, { name }).first();
 }
 
-/**
- * Time how long a navigation + hydration cycle takes. Returns a millisecond
- * count that tests can assert against to catch performance regressions.
- */
 export async function timeNavigation(
 	page: Page,
 	url: string,
