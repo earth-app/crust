@@ -28,6 +28,51 @@
 			</div>
 		</div>
 
+		<div
+			v-if="preview"
+			class="rounded-lg border border-default p-3 flex flex-col gap-2"
+		>
+			<div class="flex items-center justify-between gap-2 flex-wrap">
+				<span class="text-sm font-medium"
+					>Discovery Preview &mdash; {{ preview.candidates.length }} candidate(s) queued</span
+				>
+				<UButton
+					size="xs"
+					variant="ghost"
+					color="neutral"
+					icon="mdi:close"
+					@click="preview = null"
+					>Dismiss</UButton
+				>
+			</div>
+
+			<div
+				v-if="preview.candidates.length"
+				class="flex items-center gap-1 flex-wrap"
+			>
+				<UBadge
+					v-for="id in preview.candidates"
+					:key="id"
+					color="info"
+					variant="subtle"
+					size="sm"
+					>{{ id }}</UBadge
+				>
+			</div>
+			<p
+				v-else
+				class="text-sm text-muted"
+			>
+				No candidates survived the filters this run.
+			</p>
+
+			<p class="text-xs text-muted font-mono">
+				{{ preview.funnel.raw }} raw &rarr; {{ preview.funnel.afterCatalog }} new &rarr;
+				{{ preview.funnel.afterGenre }} specific &rarr;
+				{{ preview.funnel.afterSimilarity }} distinct &rarr; {{ preview.funnel.selected }} selected
+			</p>
+		</div>
+
 		<div class="flex items-center gap-2 flex-wrap">
 			<UButton
 				:variant="view === 'activities' ? 'solid' : 'ghost'"
