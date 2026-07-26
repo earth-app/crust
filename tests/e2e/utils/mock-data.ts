@@ -661,3 +661,59 @@ export function paginate<T>(items: T[], page = 1, limit = 25): PaginatedResponse
 
 export const MOCK_SESSION_TOKEN = 'mock-session-token-abc123';
 export const MOCK_ADMIN_TOKEN = 'mock-admin-token-xyz789';
+
+export function makeStagedActivity(overrides: Record<string, any> = {}): Record<string, any> {
+	const activity = overrides.activity ?? makeActivity({ id: 'bouldering', name: 'Bouldering' });
+	const failsOpen = overrides.fails_open ?? overrides.source === 'cloud_discovery';
+	const expiresInHours = overrides.expires_in_hours ?? (failsOpen ? 4 : 31);
+
+	return {
+		id: overrides.id ?? 1,
+		activity,
+		note: overrides.note ?? null,
+		state: overrides.state ?? 'pending',
+		submitter_kind: overrides.submitter_kind ?? (failsOpen ? 'cloud' : 'organizer'),
+		submitter: overrides.submitter ?? (failsOpen ? null : { id: 'org-1', username: 'organizer' }),
+		source: overrides.source ?? 'api',
+		submitted_at: FIXED_NOW,
+		expires_at: new Date(Date.parse(FIXED_NOW) + expiresInHours * 3600_000).toISOString(),
+		expires_in_seconds: expiresInHours * 3600,
+		fails_open: failsOpen,
+		decided_at: overrides.decided_at ?? null,
+		reviewer: overrides.reviewer ?? null,
+		review_notes: overrides.review_notes ?? null,
+		published_activity_id: overrides.published_activity_id ?? null,
+		...overrides
+	};
+}
+
+export function makeVerifiedPublisher(overrides: Record<string, any> = {}): Record<string, any> {
+	return {
+		state: 'none',
+		verified: false,
+		reason: null,
+		organization: null,
+		links: [],
+		applied_at: null,
+		reviewed_at: null,
+		notes: null,
+		can_reapply_at: null,
+		...overrides
+	};
+}
+
+export function makeVerifiedApplication(overrides: Record<string, any> = {}): Record<string, any> {
+	return makeVerifiedPublisher({
+		user: overrides.user ?? {
+			id: 'org-1',
+			username: 'organizer',
+			account_type: 'ORGANIZER'
+		},
+		state: 'pending',
+		applied_at: FIXED_NOW,
+		organization: 'Trailhead Collective',
+		links: ['https://example.org'],
+		reason: 'We organize weekly trail runs for a 400 member community across the bay.',
+		...overrides
+	});
+}

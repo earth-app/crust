@@ -21,8 +21,11 @@ import {
 	makeQuest,
 	makeReferralStats,
 	makeReportListItem,
+	makeStagedActivity,
 	makeTrail,
 	makeUser,
+	makeVerifiedApplication,
+	makeVerifiedPublisher,
 	paginate
 } from './mock-data';
 
@@ -76,6 +79,7 @@ interface BackendState {
 	gardenByOwner: Record<string, any>; // ownerUid -> CircleGarden
 	notifications: Record<string, any[]>; // uid -> notifications (newest first)
 	kudos: { from: string; to: string; key: string; phrase: string }[];
+	verifiedPublisher: Record<string, any>; // uid -> VerifiedPublisher (roundtrip state)
 }
 
 interface TrailmarkRecord {
@@ -162,7 +166,8 @@ function freshState(): BackendState {
 		expeditionByOwner: {},
 		gardenByOwner: {},
 		notifications: {},
-		kudos: []
+		kudos: [],
+		verifiedPublisher: {}
 	};
 }
 
@@ -891,6 +896,71 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 	// Activities list
 	{
 		method: 'GET',
+		pattern: /^\/v2\/activities\/staged\/mine\/?$/,
+		handler: (_req: any, res: any, ctx: any) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			json(res, 200, { items: [], page: 1, limit: 25, total: 0 });
+		}
+	},
+	{
+		method: 'GET',
+		pattern: /^\/v2\/activities\/staged\/?$/,
+		handler: (_req: any, res: any, ctx: any) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!state.users[id]?.is_admin) return json(res, 403, { message: 'Forbidden' });
+
+			const stagedState = ctx.url.searchParams.get('state') ?? 'pending';
+			const items =
+				stagedState === 'pending'
+					? [
+							makeStagedActivity({
+								id: 1,
+								source: 'cloud_discovery',
+								activity: makeActivity({ id: 'bouldering', name: 'Bouldering' })
+							}),
+							makeStagedActivity({
+								id: 2,
+								source: 'api',
+								activity: makeActivity({ id: 'sea_kayaking', name: 'Sea Kayaking' })
+							})
+						]
+					: [];
+			json(res, 200, { items, page: 1, limit: 50, total: items.length });
+		}
+	},
+	{
+		method: 'POST',
+		pattern: /^\/v2\/activities\/staged\/?$/,
+		handler: (_req: any, res: any, ctx: any) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			json(res, 201, makeStagedActivity({ activity: makeActivity(ctx.body ?? {}) }));
+		}
+	},
+	{
+		method: 'POST',
+		pattern: /^\/v2\/activities\/staged\/([^/]+)\/(approve|deny)\/?$/,
+		handler: (_req: any, res: any, ctx: any) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!state.users[id]?.is_admin) return json(res, 403, { message: 'Forbidden' });
+
+			const [, stagedId, action] = ctx.match ?? [];
+			json(
+				res,
+				200,
+				makeStagedActivity({
+					id: Number(stagedId),
+					state: action === 'approve' ? 'approved' : 'denied',
+					review_notes: ctx.body?.notes ?? null
+				})
+			);
+		}
+	},
+	{
+		method: 'GET',
 		pattern: /^\/v2\/activities\/?$/,
 		handler: (_req, res, ctx) => {
 			const page = Number(ctx.url.searchParams.get('page') ?? '1');
@@ -1283,6 +1353,74 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 				description: body.description ?? ''
 			});
 			json(res, 200, { report, deduped: false });
+		}
+	},
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/current\/verified_publisher\/?$/,
+		handler: (_req: any, res: any, ctx: any) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			json(res, 200, state.verifiedPublisher[id] ?? makeVerifiedPublisher());
+		}
+	},
+	{
+		method: 'POST',
+		pattern: /^\/v2\/users\/current\/verified_publisher\/?$/,
+		handler: (_req: any, res: any, ctx: any) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+
+			state.verifiedPublisher[id] = makeVerifiedPublisher({
+				state: 'pending',
+				applied_at: new Date().toISOString(),
+				reason: ctx.body?.reason ?? null,
+				organization: ctx.body?.organization ?? null,
+				links: ctx.body?.links ?? []
+			});
+			json(res, 201, state.verifiedPublisher[id]);
+		}
+	},
+	{
+		method: 'GET',
+		pattern: /^\/v2\/admin\/verified_publishers\/?$/,
+		handler: (_req: any, res: any, ctx: any) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!state.users[id]?.is_admin) return json(res, 403, { message: 'Forbidden' });
+
+			const applicationState = ctx.url.searchParams.get('state') ?? 'pending';
+			const items =
+				applicationState === 'pending'
+					? [
+							makeVerifiedApplication(),
+							makeVerifiedApplication({
+								user: { id: 'org-2', username: 'secondorg', account_type: 'ORGANIZER' },
+								organization: 'Coastal Paddlers'
+							})
+						]
+					: [];
+			json(res, 200, { items, page: 1, limit: 50, total: items.length });
+		}
+	},
+	{
+		method: 'PATCH',
+		pattern: /^\/v2\/admin\/verified_publishers\/([^/]+)\/?$/,
+		handler: (_req: any, res: any, ctx: any) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!state.users[id]?.is_admin) return json(res, 403, { message: 'Forbidden' });
+
+			const action = ctx.body?.action ?? 'approve';
+			json(
+				res,
+				200,
+				makeVerifiedApplication({
+					state: action === 'approve' ? 'approved' : action === 'deny' ? 'denied' : 'revoked',
+					verified: action === 'approve',
+					revoked_staged: action === 'revoke' ? 2 : 0
+				})
+			);
 		}
 	},
 	{
