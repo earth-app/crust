@@ -115,7 +115,7 @@
 		</div>
 		<div class="flex items-center gap-2">
 			<UButton
-				v-if="!props.activity"
+				v-if="!props.activity && !isStaged"
 				color="info"
 				class="font-semibold"
 				icon="mdi:refresh"
@@ -138,7 +138,9 @@
 				:loading="loading"
 				:disabled="loading"
 			>
-				{{ props.activity ? 'Update Activity' : 'Create Activity' }}
+				{{
+					isStaged ? 'Approve with Edits' : props.activity ? 'Update Activity' : 'Create Activity'
+				}}
 			</UButton>
 			<UButton
 				color="secondary"
@@ -149,7 +151,7 @@
 				Clear Activity Data
 			</UButton>
 			<UButton
-				v-if="props.activity"
+				v-if="props.activity && !isStaged"
 				color="error"
 				icon="mdi:delete-outline"
 				@click="removeActivity"
@@ -168,13 +170,17 @@ const props = defineProps<{
 	title?: string;
 	description?: string;
 	activity?: Partial<Activity>;
+	mode?: 'catalog' | 'staged';
 }>();
 
 const emit = defineEmits<{
 	(event: 'create:activity', value: Partial<Activity> | null): void;
 	(event: 'update:activity', value: Partial<Activity> | null): void;
 	(event: 'delete:activity', value: Partial<Activity> | null): void;
+	(event: 'approve:activity', value: Partial<Activity> | null): void;
 }>();
+
+const isStaged = computed(() => props.mode === 'staged');
 
 const activity = ref<Partial<Activity> | null>(props.activity || null);
 const toast = useToast();
@@ -438,6 +444,29 @@ async function createActivity() {
 	loading.value = false;
 }
 
+function buildActivity(): Partial<Activity> {
+	return {
+		id: activity.value?.id,
+		name: activityName.value || activity.value?.name || '',
+		description: activityDescription.value || activity.value?.description || '',
+		types: [
+			activityType1.value || activity.value?.types?.[0],
+			activityType2.value || activity.value?.types?.[1],
+			activityType3.value || activity.value?.types?.[2],
+			activityType4.value || activity.value?.types?.[3],
+			activityType5.value || activity.value?.types?.[4]
+		].filter(Boolean) as ActivityType[],
+		aliases:
+			activityAliases.value
+				.split(',')
+				.map((alias) => alias.trim().replace(/\s+/g, '_'))
+				.filter(Boolean) ||
+			activity.value?.aliases ||
+			[],
+		fields: activityFields.value || activity.value?.fields || {}
+	};
+}
+
 async function updateActivity() {
 	loading.value = true;
 
@@ -453,27 +482,17 @@ async function updateActivity() {
 		return;
 	}
 
+	// staged review never writes to the catalog directly; the parent approves the row
+	if (isStaged.value) {
+		loading.value = false;
+		emit('approve:activity', buildActivity());
+		return;
+	}
+
 	const activityStore = useActivityStore();
-	const res = await activityStore.updateActivity({
-		id: activity.value.id,
-		name: activityName.value || activity.value.name || '',
-		description: activityDescription.value || activity.value.description || '',
-		types: [
-			activityType1.value || activity.value.types?.[0],
-			activityType2.value || activity.value.types?.[1],
-			activityType3.value || activity.value.types?.[2],
-			activityType4.value || activity.value.types?.[3],
-			activityType5.value || activity.value.types?.[4]
-		].filter(Boolean) as ActivityType[],
-		aliases:
-			activityAliases.value
-				.split(',')
-				.map((alias) => alias.trim().replace(/\s+/g, '_'))
-				.filter(Boolean) ||
-			activity.value.aliases ||
-			[],
-		fields: activityFields.value || activity.value.fields || {}
-	});
+	const res = await activityStore.updateActivity(
+		buildActivity() as Parameters<typeof activityStore.updateActivity>[0]
+	);
 
 	loading.value = false;
 	if (valid(res)) {
