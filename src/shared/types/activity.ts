@@ -13,6 +13,41 @@ export type Activity = {
 	fields: Record<string, string>;
 };
 
+// #region staged activities
+
+export type StagedActivityState =
+	'pending' | 'approved' | 'denied' | 'expired_published' | 'expired_denied' | 'withdrawn';
+
+export type StagedActivitySubmitterKind = 'organizer' | 'admin' | 'cloud';
+
+export type StagedActivity = {
+	id: number;
+	activity: Activity;
+	note: string | null;
+	state: StagedActivityState;
+	submitter_kind: StagedActivitySubmitterKind;
+	submitter: { id: string; username: string } | null;
+	source: string;
+	submitted_at: string;
+	expires_at: string;
+	expires_in_seconds: number;
+	// read this rather than deriving it from submitter_kind; the two windows behave oppositely
+	fails_open: boolean;
+	decided_at: string | null;
+	reviewer: { id: string; username: string } | null;
+	review_notes: string | null;
+	published_activity_id: string | null;
+};
+
+export type StagedActivityList = {
+	items: StagedActivity[];
+	page: number;
+	limit: number;
+	total: number;
+};
+
+// #endregion
+
 export type WikipediaSummary = {
 	type: string;
 	title: string;

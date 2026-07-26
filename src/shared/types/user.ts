@@ -80,7 +80,44 @@ export type User = {
 	circle?: string[];
 	circle_count?: number;
 	max_circle_count?: number;
+	verified_publisher?: VerifiedPublisher;
 };
+
+// #region verified publisher
+
+export type VerifiedPublisherState = 'none' | 'pending' | 'approved' | 'denied' | 'revoked';
+
+export type VerifiedPublisher = {
+	user?: { id: string; username: string; account_type: AccountType };
+	state: VerifiedPublisherState;
+	verified: boolean;
+	reason?: string | null;
+	organization?: string | null;
+	links?: string[];
+	applied_at?: string | null;
+	reviewed_at?: string | null;
+	notes?: string | null;
+	can_reapply_at?: string | null;
+	revoked_staged?: number;
+};
+
+export type VerifiedPublisherList = {
+	items: VerifiedPublisher[];
+	page: number;
+	limit: number;
+	total: number;
+};
+
+/**
+ * Whether an owner should carry the verified chip.
+ *
+ * Paying for the Organizer tier is no longer verification; the flag is granted by review.
+ */
+export function isVerifiedOwner(owner?: Partial<User> | null): boolean {
+	return !!owner?.is_admin || !!owner?.verified_publisher?.verified;
+}
+
+// #endregion
 
 export type LoginResponse = {
 	id: string;

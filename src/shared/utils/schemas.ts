@@ -281,3 +281,29 @@ export const articleSchema = z.object({
 		.max(25000, 'Content must be at most 25000 characters'),
 	color_hex: z.string().regex(/^#([0-9A-Fa-f]{3}){1,2}$/, 'Color must be a valid hex code')
 });
+
+// #region verified publisher
+
+export const verifiedPublisherApplicationSchema = z.object({
+	organization: z.string().max(100, 'Must be at most 100 characters').optional().or(z.literal('')),
+	website: z
+		.url('Must be a valid URL')
+		.max(200, 'Must be at most 200 characters')
+		.optional()
+		.or(z.literal('')),
+	reason: z
+		.string()
+		.min(40, 'Please write at least 40 characters so reviewers have something to go on')
+		.max(1000, 'Must be at most 1000 characters'),
+	activity_examples: z
+		.string()
+		.min(3, 'List at least one activity you would submit')
+		.max(300, 'Must be at most 300 characters'),
+	agrees_to_guidelines: z.literal(true, {
+		message: 'You must agree to the publishing guidelines'
+	})
+});
+
+export type VerifiedPublisherApplicationShape = z.infer<typeof verifiedPublisherApplicationSchema>;
+
+// #endregion
