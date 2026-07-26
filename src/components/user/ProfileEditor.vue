@@ -515,6 +515,7 @@
 		/>
 
 		<UserSubscriptionSection v-if="isSelf" />
+		<UserVerifiedSection v-if="isSelf && showVerifiedSection" />
 
 		<UserEmailVerificationModal
 			ref="emailVerificationModal"
@@ -564,6 +565,12 @@ const changed = ref(false);
 
 // API key management is self-only - never expose another user's key surface.
 const isSelf = computed(() => authStore.currentUser?.id === user.value?.id);
+// stays visible for a downgraded verified publisher so they can see their status
+const showVerifiedSection = computed(
+	() =>
+		authStore.currentUser?.account?.account_type === 'ORGANIZER' ||
+		!!authStore.currentUser?.verified_publisher
+);
 
 const createAccountProp = (key: string) =>
 	computed({
