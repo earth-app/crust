@@ -40,6 +40,7 @@
 					<AdminQuestManagement v-else-if="item.value === 'quests'" />
 					<AdminMarketing v-else-if="item.value === 'marketing'" />
 					<AdminReports v-else-if="item.value === 'reports'" />
+					<AdminApprovals v-else-if="item.value === 'approvals'" />
 					<AdminMotd v-else-if="item.value === 'motd'" />
 					<AdminPolls v-else-if="item.value === 'polls'" />
 					<AdminTrialCodes v-else-if="item.value === 'trial-codes'" />
@@ -84,6 +85,7 @@ const tabs = [
 	{ label: 'Quests', icon: 'mdi:flag-checkered', value: 'quests' },
 	{ label: 'Marketing', icon: 'mdi:movie-open-play', value: 'marketing' },
 	{ label: 'Reports', icon: 'mdi:flag-outline', value: 'reports' },
+	{ label: 'Approvals', icon: 'mdi:clipboard-check-outline', value: 'approvals' },
 	{ label: 'MOTD', icon: 'mdi:bullhorn', value: 'motd' },
 	{ label: 'Polls', icon: 'mdi:poll', value: 'polls' },
 	{ label: 'Trial Codes', icon: 'mdi:ticket-percent', value: 'trial-codes' },
