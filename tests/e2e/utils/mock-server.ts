@@ -105,7 +105,12 @@ function freshState(): BackendState {
 	});
 
 	const activities = Array.from({ length: 30 }, (_, i) =>
-		makeActivity({ id: `act-${i + 1}`, name: `Sample Activity ${i + 1}` })
+		makeActivity({
+			id: `act-${i + 1}`,
+			name: `Sample Activity ${i + 1}`,
+			// act-1 carries an alias nothing else matches, so alias-aware search is provable
+			aliases: i === 0 ? ['jogging'] : []
+		})
 	);
 	const articles = Array.from({ length: 12 }, (_, i) =>
 		makeArticle({
@@ -966,9 +971,19 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			const page = Number(ctx.url.searchParams.get('page') ?? '1');
 			const limit = Number(ctx.url.searchParams.get('limit') ?? '25');
 			const search = ctx.url.searchParams.get('search') ?? '';
-			const items = Object.values(state.activities).filter(
-				(a: any) => !search || a.name.toLowerCase().includes(search.toLowerCase())
+			// mirrors mantle2: aliases only join the search when the flag is sent
+			const includeAliases = ['1', 'true'].includes(
+				(ctx.url.searchParams.get('include_aliases') ?? '').toLowerCase()
 			);
+			const term = search.toLowerCase();
+			const items = Object.values(state.activities).filter((a: any) => {
+				if (!term) return true;
+				if (a.name.toLowerCase().includes(term)) return true;
+				return (
+					includeAliases &&
+					(a.aliases ?? []).some((alias: string) => alias.toLowerCase().includes(term))
+				);
+			});
 			json(res, 200, paginate(items, page, limit));
 		}
 	},

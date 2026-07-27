@@ -368,7 +368,8 @@ export async function paginatedAPIRequest<T>(
 	options: any = {},
 	limit: number = -1,
 	search: string = '',
-	sort: SortingOption = 'desc'
+	sort: SortingOption = 'desc',
+	query: Record<string, string | number | boolean> = {}
 ) {
 	if (limit === 0) return { success: true, data: [] };
 
@@ -376,6 +377,10 @@ export async function paginatedAPIRequest<T>(
 	let currentPage = 1;
 	const maxPages = 100;
 	const encodedSearch = encodeURIComponent(search);
+	// extra query goes into the cache key too; a widened search must not read the narrow answer
+	const extraQuery = Object.entries(query)
+		.map(([key, value]) => `&${key}=${encodeURIComponent(String(value))}`)
+		.join('');
 
 	while (currentPage <= maxPages) {
 		const pageSize = limit > 0 ? Math.min(100, Math.max(limit - (currentPage - 1) * 100, 0)) : 100;
@@ -384,10 +389,10 @@ export async function paginatedAPIRequest<T>(
 			break;
 		}
 
-		const pageKey = `paginated-${url.replace(/\//g, '-')}-page${currentPage}-pageSize${pageSize}-limit${limit}-search${encodedSearch}-sort${sort}`;
+		const pageKey = `paginated-${url.replace(/\//g, '-')}-page${currentPage}-pageSize${pageSize}-limit${limit}-search${encodedSearch}-sort${sort}${extraQuery}`;
 		const res = await makeAPIRequest<{ items: T[]; total: number }>(
 			pageKey,
-			`${url}?page=${currentPage}&limit=${pageSize}&search=${encodedSearch}&sort=${sort}`,
+			`${url}?page=${currentPage}&limit=${pageSize}&search=${encodedSearch}&sort=${sort}${extraQuery}`,
 			token,
 			options
 		);

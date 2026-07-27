@@ -19,6 +19,7 @@ import {
 	getQuestDelayReduction,
 	getUserDisplayName,
 	invalidateAPICache,
+	paginatedAPIRequest,
 	parseLooseDate,
 	realFullName,
 	shuffle,
@@ -474,6 +475,63 @@ describe('api cache helpers', () => {
 	it('invalidateAPICache and TEST_ONLY_CLEAR run without throwing', () => {
 		expect(() => invalidateAPICache('some-key')).not.toThrow();
 		expect(() => apiCache_TEST_ONLY_CLEAR()).not.toThrow();
+	});
+});
+
+describe('paginatedAPIRequest', () => {
+	const stubFetch = (payload: unknown) => {
+		const fetchMock = vi.fn().mockResolvedValue(payload);
+		vi.stubGlobal('$fetch', fetchMock);
+		return fetchMock;
+	};
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+		apiCache_TEST_ONLY_CLEAR();
+	});
+
+	it('short-circuits a zero limit without touching the network', async () => {
+		const fetchMock = stubFetch({ items: [], total: 0 });
+
+		expect(await paginatedAPIRequest('/v2/activities', null, {}, 0)).toEqual({
+			success: true,
+			data: []
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('builds the page query without extra params by default', async () => {
+		const fetchMock = stubFetch({ items: [{ id: 'a1' }], total: 1 });
+
+		const res = await paginatedAPIRequest<{ id: string }>('/v2/activities', 'tok', {}, 1, 'jog');
+
+		expect(res).toEqual({ success: true, data: [{ id: 'a1' }] });
+		const url = fetchMock.mock.calls[0]![0] as string;
+		expect(url).toContain('/v2/activities?page=1&limit=1&search=jog&sort=desc');
+		expect(url).not.toContain('include_aliases');
+	});
+
+	it('appends and url-encodes extra query params', async () => {
+		const fetchMock = stubFetch({ items: [{ id: 'a1' }], total: 1 });
+
+		await paginatedAPIRequest('/v2/activities', 'tok', {}, 1, 'jiu jitsu', 'desc', {
+			include_aliases: true,
+			type: 'SPORT&HOBBY'
+		});
+
+		const url = fetchMock.mock.calls[0]![0] as string;
+		expect(url).toContain('search=jiu%20jitsu');
+		expect(url).toContain('&include_aliases=true');
+		expect(url).toContain('&type=SPORT%26HOBBY');
+	});
+
+	it('surfaces a failed page as a failure rather than partial data', async () => {
+		stubFetch({ message: 'nope' });
+
+		const res = await paginatedAPIRequest('/v2/activities', null, {}, 1, 'jog');
+
+		expect(res.success).toBe(false);
+		expect((res as { message?: string }).message).toContain('nope');
 	});
 });
 
