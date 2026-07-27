@@ -339,7 +339,8 @@ const groups = ref<CommandPaletteGroup<CommandPaletteItem>[]>([
 				suffix: 'Complete challenges and earn rewards',
 				icon: 'mdi:flag-checkered',
 				to: '/quests',
-				onSelect: close
+				onSelect: close,
+				ui: { itemLabelBase: 'text-info' }
 			},
 			{
 				id: 'trails',
@@ -347,16 +348,18 @@ const groups = ref<CommandPaletteGroup<CommandPaletteItem>[]>([
 				suffix: 'Outdoor walks with a clue and a payoff',
 				icon: 'mdi:map-marker-path',
 				to: '/trails',
-				onSelect: close
+				onSelect: close,
+				ui: { itemLabelBase: 'text-success' }
 			},
 			{
-				id: 'circle',
-				label: 'Your Circle',
+				id: 'garden',
+				label: 'Your Garden',
 				suffix: 'Shared expedition and garden',
-				icon: 'mdi:account-group',
+				icon: 'mdi:leaf',
 				to: '/circle',
 				auth: true,
-				onSelect: close
+				onSelect: close,
+				ui: { itemLabelBase: 'text-secondary' }
 			},
 			{
 				id: 'trailmarks',
@@ -364,7 +367,8 @@ const groups = ref<CommandPaletteGroup<CommandPaletteItem>[]>([
 				suffix: 'Leave and find kind notes at a place',
 				icon: 'mdi:map-marker-radius-outline',
 				to: '/trailmarks',
-				onSelect: close
+				onSelect: close,
+				ui: { itemLabelBase: 'text-warning' }
 			},
 			{
 				id: 'randomize',
@@ -377,23 +381,28 @@ const groups = ref<CommandPaletteGroup<CommandPaletteItem>[]>([
 	},
 	{
 		id: 'activities',
-		label: 'Activities'
+		label: 'Activities',
+		ignoreFilter: true
 	},
 	{
 		id: 'users',
-		label: 'Users'
+		label: 'Users',
+		ignoreFilter: true
 	},
 	{
 		id: 'prompts',
-		label: 'Prompts'
+		label: 'Prompts',
+		ignoreFilter: true
 	},
 	{
 		id: 'articles',
-		label: 'Articles'
+		label: 'Articles',
+		ignoreFilter: true
 	},
 	{
 		id: 'events',
-		label: 'Events'
+		label: 'Events',
+		ignoreFilter: true
 	}
 ]);
 
