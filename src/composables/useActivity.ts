@@ -53,26 +53,33 @@ export function useActivities(
 	page: number = 1,
 	limit: number = 25,
 	search: string = '',
-	sort: SortingOption = 'desc'
+	sort: SortingOption = 'desc',
+	includeAliases: boolean = true
 ) {
 	const activityStore = useActivityStore();
+	const aliasKey = includeAliases ? '-aliases' : '';
 	const activities = useState<Activity[]>(
-		`activities-${search}-${page}-${limit}-${sort}`,
+		`activities-${search}-${page}-${limit}-${sort}${aliasKey}`,
 		() => []
 	);
-	const total = useState<number>(`activities-total-${search}-${page}-${limit}-${sort}`, () => 0);
+	const total = useState<number>(
+		`activities-total-${search}-${page}-${limit}-${sort}${aliasKey}`,
+		() => 0
+	);
 
 	const fetch = async (
 		newPage: number = page,
 		newLimit: number = limit,
 		newSearch: string = search,
-		newSort: SortingOption = sort
+		newSort: SortingOption = sort,
+		newIncludeAliases: boolean = includeAliases
 	) => {
 		const authStore = useAuthStore();
+		const aliasQuery = newIncludeAliases ? '&include_aliases=true' : '';
 
 		const res = await makeAPIRequest<{ items: Activity[]; total: number }>(
-			`activities-${newSearch}-${newPage}-${newLimit}-${newSort}`,
-			`/v2/activities?page=${newPage}&limit=${newLimit}&search=${encodeURIComponent(newSearch)}&sort=${newSort}`,
+			`activities-${newSearch}-${newPage}-${newLimit}-${newSort}${newIncludeAliases ? '-aliases' : ''}`,
+			`/v2/activities?page=${newPage}&limit=${newLimit}&search=${encodeURIComponent(newSearch)}&sort=${newSort}${aliasQuery}`,
 			authStore.sessionToken
 		);
 
@@ -91,7 +98,8 @@ export function useActivities(
 	const fetchAll = async (
 		limit: number = 25,
 		search: string = '',
-		sort: SortingOption = 'desc'
+		sort: SortingOption = 'desc',
+		newIncludeAliases: boolean = includeAliases
 	) => {
 		const authStore = useAuthStore();
 		return await paginatedAPIRequest<Activity>(
@@ -100,7 +108,8 @@ export function useActivities(
 			{},
 			limit,
 			search,
-			sort
+			sort,
+			newIncludeAliases ? { include_aliases: true } : {}
 		);
 	};
 
