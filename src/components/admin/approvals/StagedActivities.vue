@@ -19,6 +19,53 @@
 		</div>
 
 		<div
+			v-if="pendingItems.length > 0"
+			class="flex items-center gap-3 flex-wrap rounded-lg border border-default px-3 py-2"
+		>
+			<UCheckbox
+				:model-value="allSelected"
+				:indeterminate="someSelected"
+				:disabled="!!bulkBusy"
+				label="Select All"
+				@update:model-value="toggleAll"
+			/>
+			<span class="text-xs text-muted"
+				>{{ selected.length }} of {{ pendingItems.length }} Selected</span
+			>
+
+			<div class="flex items-center gap-2 flex-wrap ml-auto">
+				<UButton
+					size="sm"
+					color="success"
+					variant="soft"
+					icon="mdi:check-all"
+					:loading="bulkBusy === 'approve'"
+					:disabled="selected.length === 0 || !!bulkBusy"
+					@click="bulkAct('approve')"
+					>{{ bulkLabel('approve') }}</UButton
+				>
+				<UButton
+					size="sm"
+					color="error"
+					variant="soft"
+					icon="mdi:close-box-multiple-outline"
+					:loading="bulkBusy === 'deny'"
+					:disabled="selected.length === 0 || !!bulkBusy"
+					@click="bulkAct('deny')"
+					>{{ bulkLabel('deny') }}</UButton
+				>
+				<UButton
+					size="sm"
+					color="neutral"
+					variant="ghost"
+					:disabled="selected.length === 0 || !!bulkBusy"
+					@click="selected = []"
+					>Clear</UButton
+				>
+			</div>
+		</div>
+
+		<div
 			v-if="items.length === 0 && !loading"
 			class="text-sm text-muted py-4 text-center rounded border border-default border-dashed"
 		>
@@ -37,6 +84,12 @@
 				<div class="flex items-start justify-between gap-3 flex-wrap">
 					<div class="min-w-0 flex flex-col gap-1">
 						<div class="flex items-center gap-2 flex-wrap">
+							<UCheckbox
+								v-if="staged.state === 'pending'"
+								:model-value="selected.includes(staged.id)"
+								:disabled="!!bulkBusy || !!busy[staged.id]"
+								@update:model-value="toggleOne(staged.id)"
+							/>
 							<UIcon
 								v-if="staged.activity.fields?.icon"
 								:name="staged.activity.fields.icon"
@@ -197,6 +250,9 @@ const state = ref<StagedActivityState>('pending');
 const busy = reactive<Record<number, 'approve' | 'deny' | null>>({});
 const editing = ref<StagedActivity | null>(null);
 const editorOpen = ref(false);
+const selected = ref<number[]>([]);
+const bulkBusy = ref<'approve' | 'deny' | null>(null);
+const bulkProgress = ref(0);
 
 const emit = defineEmits<{ (event: 'count', value: number): void }>();
 
@@ -211,6 +267,28 @@ const stateItems = [
 
 const stateLabel = computed(() => stateLabelOf(state.value).toLowerCase());
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit)));
+
+const pendingItems = computed(() => items.value.filter((item) => item.state === 'pending'));
+const allSelected = computed(
+	() => pendingItems.value.length > 0 && selected.value.length === pendingItems.value.length
+);
+const someSelected = computed(() => selected.value.length > 0 && !allSelected.value);
+
+function toggleAll() {
+	selected.value = allSelected.value ? [] : pendingItems.value.map((item) => item.id);
+}
+
+function toggleOne(id: number) {
+	selected.value = selected.value.includes(id)
+		? selected.value.filter((value) => value !== id)
+		: [...selected.value, id];
+}
+
+function bulkLabel(action: 'approve' | 'deny'): string {
+	const verb = action === 'approve' ? 'Approve' : 'Deny';
+	if (bulkBusy.value === action) return `${verb} ${bulkProgress.value}/${selected.value.length}`;
+	return selected.value.length > 0 ? `${verb} ${selected.value.length}` : verb;
+}
 
 function stateLabelOf(value: StagedActivityState): string {
 	return stateItems.find((item) => item.value === value)?.label ?? value;
@@ -256,17 +334,23 @@ async function load() {
 		}
 	} finally {
 		loading.value = false;
+		// ids are page-scoped, so a reload must not carry a stale selection forward
+		selected.value = selected.value.filter((id) =>
+			items.value.some((item) => item.id === id && item.state === 'pending')
+		);
 		if (state.value === 'pending') emit('count', total.value);
 	}
 }
 
 function onStateChange() {
 	page.value = 1;
+	selected.value = [];
 	load();
 }
 
 function changePage(delta: number) {
 	page.value = Math.max(1, page.value + delta);
+	selected.value = [];
 	load();
 }
 
@@ -307,6 +391,68 @@ async function act(staged: StagedActivity, action: 'approve' | 'deny') {
 	} finally {
 		busy[staged.id] = null;
 	}
+}
+
+/**
+ * Sequential on purpose: every approve creates a node on the mantle2 side, and a serial
+ * loop gives an exact per-item outcome instead of an all-or-nothing failure.
+ */
+async function bulkAct(action: 'approve' | 'deny') {
+	const ids = pendingItems.value
+		.filter((item) => selected.value.includes(item.id))
+		.map((item) => item.id);
+	if (ids.length === 0) return;
+
+	const verb = action === 'approve' ? 'Approve' : 'Deny';
+	const consequence =
+		action === 'approve'
+			? 'They will be published to the activity catalog immediately.'
+			: 'They will not be published, and automated discovery will not propose them again.';
+	if (
+		!confirm(
+			`${verb} ${ids.length} staged ${ids.length === 1 ? 'activity' : 'activities'}? ${consequence}`
+		)
+	)
+		return;
+
+	bulkBusy.value = action;
+	bulkProgress.value = 0;
+	let succeeded = 0;
+	const failures: string[] = [];
+
+	try {
+		for (const id of ids) {
+			const res = action === 'approve' ? await approve(id) : await deny(id);
+			if (res.success) succeeded++;
+			else failures.push(res.message ?? `#${id}`);
+			bulkProgress.value++;
+		}
+	} finally {
+		bulkBusy.value = null;
+		bulkProgress.value = 0;
+		selected.value = [];
+		await load();
+	}
+
+	if (failures.length === 0) {
+		toast.add({
+			title:
+				action === 'approve'
+					? `${succeeded} Activities Published`
+					: `${succeeded} Submissions Denied`,
+			icon: action === 'approve' ? 'mdi:check-circle' : 'mdi:close-circle',
+			color: action === 'approve' ? 'success' : 'warning',
+			duration: 3000
+		});
+		return;
+	}
+
+	toast.add({
+		title: 'Some Actions Failed',
+		description: `${succeeded} succeeded, ${failures.length} failed. ${failures[0]}`,
+		icon: 'mdi:alert-circle',
+		color: 'error'
+	});
 }
 
 async function approveWithEdits(activity: Partial<Activity> | null) {
