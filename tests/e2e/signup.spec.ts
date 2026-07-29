@@ -75,6 +75,6 @@ test.describe('Signup page (already logged in)', () => {
 			created_at: '2025-01-01T00:00:00Z'
 		});
 		await gotoHydrated('/signup');
-		await page.waitForURL(/127\.0\.0\.1:3000\/$/, { timeout: 8000 });
+		await page.waitForURL('/', { timeout: 8000 });
 	});
 });

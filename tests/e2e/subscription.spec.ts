@@ -1,4 +1,4 @@
-import { expect, expectToast, skipIfIntegration, test } from './utils/fixtures';
+import { BASE_URL, expect, expectToast, skipIfIntegration, test } from './utils/fixtures';
 
 // mirrors mantle2 STATUS SHAPE; snake_case matches the backend + existing crust types
 const STATUS_ACTIVE_PRO = {
@@ -16,7 +16,7 @@ const STATUS_ACTIVE_PRO = {
 
 const STATUS_ACTIVE_WRITER = { ...STATUS_ACTIVE_PRO, tier: 'writer' };
 
-const CHECKOUT_URL = 'http://127.0.0.1:3000/subscription/success';
+const CHECKOUT_URL = `${BASE_URL}/subscription/success`;
 
 test.describe('Subscription pricing + checkout clickthrough (web)', () => {
 	test('pricing page renders every tier with its price', async ({

@@ -91,6 +91,6 @@ test.describe('Login page (already logged in)', () => {
 	}) => {
 		await asUser({ username: 'gregory' });
 		await gotoHydrated('/login');
-		await page.waitForURL(/127\.0\.0\.1:3000\/$/, { timeout: 8000 });
+		await page.waitForURL('/', { timeout: 8000 });
 	});
 });

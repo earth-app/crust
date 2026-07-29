@@ -24,6 +24,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // repo root is three up from tests/e2e/utils (build output, node_modules and codecov reports live there)
 export const PROJECT_ROOT = resolve(__dirname, '../../..');
+// must match fixtures.ts + playwright.config.ts; fixtures imports this module, so no import back
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
 const RAW_DIR = resolve(PROJECT_ROOT, '.coverage', 'raw');
 const OUT_DIR = resolve(PROJECT_ROOT, 'coverage');
 const CHUNK_DIR = resolve(PROJECT_ROOT, '.output/public/_nuxt');
@@ -53,7 +55,7 @@ function isCandidateUrl(url: string): boolean {
 	if (url.includes('/_nuxt/builds/')) return false;
 	// Only chunks served from the dev/prod server matter - skip cross-origin
 	// scripts (which would have been blocked by our route handler anyway).
-	return url.startsWith('http://127.0.0.1:3000/') || url.includes('/_nuxt/');
+	return url.startsWith(`${BASE_URL}/`) || url.includes('/_nuxt/');
 }
 
 function isAppSourcePath(filePath: string): boolean {

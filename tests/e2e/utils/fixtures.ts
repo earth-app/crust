@@ -34,6 +34,13 @@ const INTEGRATION_SESSION_FILE = resolve(__dirname, '../../../.integration-sessi
 export const integrationMode = process.env.MOCK_DISABLED === '1';
 
 /**
+ * Origin the app under test is served from. Must follow `PLAYWRIGHT_BASE_URL`
+ * (see playwright.config.ts): a hardcoded `:3000` silently talks to whatever
+ * else owns that port when the suite runs elsewhere.
+ */
+export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
+
+/**
  * Every tour that auto-plays via `startTourIfNew(...)` on mount. Marking them
  * all complete before the first navigation keeps the fixed-position SiteTour
  * dim/tooltip layers from intercepting clicks mid-spec. Keep in sync with the
@@ -169,7 +176,7 @@ export const test = baseTest.extend<TestFixtures>({
 		try {
 			const ac = new AbortController();
 			const timer = setTimeout(() => ac.abort(), 3_000);
-			await fetch('http://127.0.0.1:3000/api/__test__/reset', {
+			await fetch(`${BASE_URL}/api/__test__/reset`, {
 				method: 'POST',
 				signal: ac.signal
 			}).catch(() => {});
