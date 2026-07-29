@@ -11,6 +11,11 @@ async function openApprovals(page: Page) {
 	});
 }
 
+// the bulk toolbar sits above the rows, so row actions are always scoped to their row
+function firstStagedRow(page: Page) {
+	return page.locator('[data-testid="staged-row"]').first();
+}
+
 test.describe('admin approvals', () => {
 	test('shows both queues with their pending counts', async ({ asAdmin, page, gotoHydrated }) => {
 		skipIfIntegration('approvals are mock-only');
@@ -64,9 +69,8 @@ test.describe('admin approvals', () => {
 		const request = page.waitForRequest(
 			(req) => /\/v2\/activities\/staged\/\d+\/approve/.test(req.url()) && req.method() === 'POST'
 		);
-		await page
+		await firstStagedRow(page)
 			.getByRole('button', { name: /^Approve$/ })
-			.first()
 			.click();
 		await request;
 
@@ -84,13 +88,56 @@ test.describe('admin approvals', () => {
 		const request = page.waitForRequest(
 			(req) => /\/v2\/activities\/staged\/\d+\/deny/.test(req.url()) && req.method() === 'POST'
 		);
-		await page
+		await firstStagedRow(page)
 			.getByRole('button', { name: /^Deny$/ })
-			.first()
 			.click();
 		await request;
 
 		await expect(page.getByText(/Submission Denied/i).last()).toBeVisible({ timeout: 10_000 });
+	});
+
+	// the row action and the bulk action must never share an accessible name
+	test('keeps the bulk toolbar distinct from the per-row actions', async ({
+		asAdmin,
+		page,
+		gotoHydrated
+	}) => {
+		skipIfIntegration('approvals are mock-only');
+		await asAdmin();
+		await gotoHydrated('/admin');
+		await openApprovals(page);
+
+		await expect(firstStagedRow(page).getByRole('button', { name: /^Approve$/ })).toBeEnabled({
+			timeout: 10_000
+		});
+		await expect(page.getByRole('button', { name: /^Approve$/ })).toHaveCount(2);
+		await expect(page.getByRole('button', { name: /^Approve Selected$/ })).toBeDisabled();
+	});
+
+	test('bulk approves every selected submission', async ({ asAdmin, page, gotoHydrated }) => {
+		skipIfIntegration('approvals are mock-only');
+		await asAdmin();
+		await gotoHydrated('/admin');
+		await openApprovals(page);
+
+		const approvals: string[] = [];
+		page.on('request', (req) => {
+			if (/\/v2\/activities\/staged\/\d+\/approve/.test(req.url()) && req.method() === 'POST') {
+				approvals.push(req.url());
+			}
+		});
+		page.on('dialog', (dialog) => dialog.accept());
+
+		await page.getByRole('checkbox', { name: /Select All/i }).click();
+		await expect(page.getByText(/2 of 2 Selected/i)).toBeVisible({ timeout: 10_000 });
+
+		await page.getByRole('button', { name: /^Approve Selected \(2\)$/ }).click();
+
+		await expect(page.getByText(/2 Activities Published/i).last()).toBeVisible({
+			timeout: 15_000
+		});
+		expect(approvals).toHaveLength(2);
+		await expect(page.getByText(/0 of 2 Selected/i)).toBeVisible();
 	});
 
 	test('filters to a state with no rows and shows the empty state', async ({

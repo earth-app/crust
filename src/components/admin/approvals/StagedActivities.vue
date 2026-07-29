@@ -79,6 +79,7 @@
 			<div
 				v-for="staged in items"
 				:key="staged.id"
+				data-testid="staged-row"
 				class="flex flex-col gap-3 px-3 py-3"
 			>
 				<div class="flex items-start justify-between gap-3 flex-wrap">
@@ -284,10 +285,13 @@ function toggleOne(id: number) {
 		: [...selected.value, id];
 }
 
+// never a bare "Approve"/"Deny"; the per-row buttons own those names
 function bulkLabel(action: 'approve' | 'deny'): string {
 	const verb = action === 'approve' ? 'Approve' : 'Deny';
 	if (bulkBusy.value === action) return `${verb} ${bulkProgress.value}/${selected.value.length}`;
-	return selected.value.length > 0 ? `${verb} ${selected.value.length}` : verb;
+	return selected.value.length > 0
+		? `${verb} Selected (${selected.value.length})`
+		: `${verb} Selected`;
 }
 
 function stateLabelOf(value: StagedActivityState): string {
@@ -438,8 +442,8 @@ async function bulkAct(action: 'approve' | 'deny') {
 		toast.add({
 			title:
 				action === 'approve'
-					? `${succeeded} Activities Published`
-					: `${succeeded} Submissions Denied`,
+					? `${succeeded} ${succeeded === 1 ? 'Activity' : 'Activities'} Published`
+					: `${succeeded} ${succeeded === 1 ? 'Submission' : 'Submissions'} Denied`,
 			icon: action === 'approve' ? 'mdi:check-circle' : 'mdi:close-circle',
 			color: action === 'approve' ? 'success' : 'warning',
 			duration: 3000
