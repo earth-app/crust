@@ -27,7 +27,7 @@ test.describe('Article creation (FREE account)', () => {
 		skipIfIntegration(SKIP_REASON);
 		await asUser({ account: { account_type: 'FREE', visibility: 'PUBLIC' } });
 		await gotoHydrated('/articles/new');
-		await page.waitForURL(/127\.0\.0\.1:3000\/$/, { timeout: 15_000 });
+		await page.waitForURL('/', { timeout: 15_000 });
 		await expect(page.getByText(/Upgrade Required|Writer plan/i).first()).toBeVisible({
 			timeout: 8000
 		});
@@ -37,7 +37,7 @@ test.describe('Article creation (FREE account)', () => {
 		skipIfIntegration(SKIP_REASON);
 		await asUser({ account: { account_type: 'PRO', visibility: 'PUBLIC' } });
 		await gotoHydrated('/articles/new');
-		await page.waitForURL(/127\.0\.0\.1:3000\/$/, { timeout: 15_000 });
+		await page.waitForURL('/', { timeout: 15_000 });
 	});
 });
 
