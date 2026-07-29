@@ -110,11 +110,12 @@
 					<!-- media upload (photos / drawings / audio) -->
 					<UFormField
 						v-else-if="isUploadType"
-						:label="stepType === 'transcribe_audio' ? 'Audio file' : 'Image file'"
+						:label="uploadLabel"
 					>
 						<input
 							type="file"
 							:accept="stepType === 'transcribe_audio' ? 'audio/*' : 'image/*'"
+							:aria-label="uploadLabel"
 							:disabled="busy"
 							class="text-sm"
 							@change="onFile"
@@ -217,6 +218,11 @@ const isAltStep = computed(() => Array.isArray(props.stepDef));
 const isDisabled = computed(() => DISABLED_TYPES.includes(stepType.value));
 const isEventType = computed(() => EVENT_TYPES.includes(stepType.value));
 const isUploadType = computed(() => UPLOAD_TYPES.includes(stepType.value));
+// the raw file input needs the same text as an aria-label; UFormField's <label for> only
+// reaches Nuxt UI inputs
+const uploadLabel = computed(() =>
+	stepType.value === 'transcribe_audio' ? 'Audio File' : 'Image File'
+);
 
 const eventId = ref('');
 const score = ref<number | null>(null);

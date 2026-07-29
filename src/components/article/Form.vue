@@ -66,6 +66,7 @@
 					<input
 						type="color"
 						v-model="state.color_hex"
+						aria-label="Color Picker"
 						class="h-10 w-20 rounded border cursor-pointer"
 						:disabled="loading"
 					/>
