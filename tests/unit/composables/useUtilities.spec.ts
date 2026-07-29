@@ -8,6 +8,7 @@ import {
 	useFormDraft,
 	useLongPressDrag,
 	usePauseOnHidden,
+	useRedirectOnce,
 	useTimeOnPage
 } from '~/composables/useUtilities';
 
@@ -411,5 +412,84 @@ describe('useFormDraft', () => {
 		result.clear();
 		expect(window.localStorage.getItem(KEY)).toBeNull();
 		unmount();
+	});
+});
+
+describe('useRedirectOnce', () => {
+	const at = (path: string) => reactive({ path });
+
+	it('latches after a navigation that actually moved the route', async () => {
+		const route = at('/login');
+		const replace = vi.fn(async (to: string) => {
+			route.path = to;
+		});
+		const { redirecting, redirectOnce } = useRedirectOnce({ replace }, route);
+
+		expect(await redirectOnce('/')).toBe(true);
+		expect(redirecting.value).toBe(true);
+
+		// a second attempt is swallowed - we already left the page
+		expect(await redirectOnce('/')).toBe(false);
+		expect(replace).toHaveBeenCalledTimes(1);
+	});
+
+	// regression: a resolved-but-did-not-navigate outcome used to latch the guard shut
+	// forever, stranding an authenticated visitor on the login/signup page
+	it('re-arms when the navigation resolves with a NavigationFailure', async () => {
+		const route = at('/login');
+		const replace = vi.fn(async () => ({ type: 8, from: {}, to: {} }));
+		const { redirecting, redirectOnce } = useRedirectOnce({ replace }, route);
+
+		expect(await redirectOnce('/')).toBe(false);
+		expect(redirecting.value).toBe(false);
+
+		expect(await redirectOnce('/')).toBe(false);
+		expect(replace).toHaveBeenCalledTimes(2);
+	});
+
+	it('re-arms when the navigation resolves cleanly but the route never changed', async () => {
+		const route = at('/login');
+		const replace = vi.fn(async () => undefined);
+		const { redirecting, redirectOnce } = useRedirectOnce({ replace }, route);
+
+		expect(await redirectOnce('/')).toBe(false);
+		expect(redirecting.value).toBe(false);
+
+		expect(await redirectOnce('/')).toBe(false);
+		expect(replace).toHaveBeenCalledTimes(2);
+	});
+
+	it('re-arms when the navigation throws', async () => {
+		const route = at('/login');
+		const replace = vi.fn(async () => {
+			throw new Error('navigation aborted');
+		});
+		const { redirecting, redirectOnce } = useRedirectOnce({ replace }, route);
+
+		expect(await redirectOnce('/')).toBe(false);
+		expect(redirecting.value).toBe(false);
+		expect(replace).toHaveBeenCalledTimes(1);
+	});
+
+	it('ignores a concurrent attempt while one is still in flight', async () => {
+		const route = at('/login');
+		let release: (() => void) | null = null;
+		const replace = vi.fn(
+			() =>
+				new Promise<void>((resolve) => {
+					release = () => {
+						route.path = '/';
+						resolve();
+					};
+				})
+		);
+		const { redirectOnce } = useRedirectOnce({ replace }, route);
+
+		const first = redirectOnce('/');
+		expect(await redirectOnce('/')).toBe(false);
+		expect(replace).toHaveBeenCalledTimes(1);
+
+		release!();
+		expect(await first).toBe(true);
 	});
 });

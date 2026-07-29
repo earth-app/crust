@@ -104,6 +104,26 @@ describe('login page toast behavior', () => {
 		wrapper.unmount();
 	});
 
+	// regression: the redirect sat behind a one-way latch, so a router.replace that
+	// resolved WITHOUT navigating stranded the authenticated visitor on /login for good
+	it('retries the redirect after an attempt that never left the page', async () => {
+		const wrapper = await mountSuspended(LoginPage, mountOpts);
+
+		replaceSpy.mockClear(); // mountSuspended's own boot navigation also lands on the spy
+
+		user.value = mkUser();
+		await nextTick();
+		await nextTick();
+		expect(replaceSpy).toHaveBeenCalledTimes(1);
+
+		// the mocked router keeps the route on /login, so the next auth resolution retries
+		user.value = mkUser();
+		await nextTick();
+		await nextTick();
+		expect(replaceSpy).toHaveBeenCalledTimes(2);
+		wrapper.unmount();
+	});
+
 	it('greets a genuinely already-authenticated visit with exactly one info toast', async () => {
 		user.value = mkUser(); // authenticated at mount
 		const wrapper = await mountSuspended(LoginPage, mountOpts);
