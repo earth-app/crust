@@ -652,3 +652,54 @@ export function useFormDraft<T extends object>(state: T, opts: UseFormDraftOptio
 		storageKey: readonly(storageKey)
 	};
 }
+
+// redirect once
+
+export interface RedirectOnceHandle {
+	redirecting: Readonly<Ref<boolean>>;
+	redirectOnce: (target: string) => Promise<boolean>;
+}
+
+interface RedirectRouter {
+	replace: (to: string) => unknown;
+}
+
+interface RedirectRoute {
+	path: string;
+}
+
+/**
+ * One-shot redirect that cannot latch itself shut.
+ *
+ * vue-router RESOLVES with a `NavigationFailure` instead of throwing when a guard aborts
+ * the navigation or the target is redundant, so a plain `if (sent) return` guard strands
+ * the visitor on the page forever once a navigation silently goes nowhere. This confirms
+ * the route actually changed and re-arms when it did not, so a later attempt can retry.
+ *
+ * @param router router that performs the navigation (injectable for tests)
+ * @param route reactive current route, read to confirm the navigation landed
+ */
+export function useRedirectOnce(
+	router: RedirectRouter = useRouter(),
+	route: RedirectRoute = useRoute()
+): RedirectOnceHandle {
+	const redirecting = ref(false);
+
+	async function redirectOnce(target: string): Promise<boolean> {
+		if (redirecting.value) return false;
+		redirecting.value = true;
+
+		const from = route.path;
+		try {
+			const failure = await router.replace(target);
+			if (!failure && route.path !== from) return true;
+		} catch {
+			// hard navigation error; fall through and re-arm
+		}
+
+		redirecting.value = false;
+		return false;
+	}
+
+	return { redirecting: readonly(redirecting), redirectOnce };
+}

@@ -49,7 +49,7 @@ const { user } = useAuth();
 const toast = useToast();
 const route = useRoute();
 const router = useRouter();
-const redirectingAfterSubmit = ref(false);
+const { redirecting, redirectOnce } = useRedirectOnce(router, route);
 const wasAuthenticatedAtMount = Boolean(user.value);
 
 const { error, redirect } = route.query;
@@ -103,15 +103,14 @@ if (error) {
 watch(
 	() => user.value,
 	(currentUser) => {
-		if (!currentUser || redirectingAfterSubmit.value) return;
-		redirectingAfterSubmit.value = true;
+		if (!currentUser || redirecting.value) return;
 
 		// honor the redirect query so already-logged-in users land where they intended
 		let target = '/';
 		if (redirect && typeof redirect === 'string' && redirect.startsWith('/')) {
 			target = redirect;
 		}
-		router.replace(target);
+		void redirectOnce(target);
 
 		// only greet a genuinely-already-authed visit; a fresh login redirects silently so
 		// Form.vue's "Login Successful" stays the sole success toast (no double toast)
@@ -128,8 +127,6 @@ watch(
 );
 
 function handleLoginSuccess() {
-	redirectingAfterSubmit.value = true;
-
 	let redirect0 = '/';
 	if (redirect && typeof redirect === 'string') {
 		if (!redirect.startsWith('/')) {
@@ -145,7 +142,7 @@ function handleLoginSuccess() {
 		}
 	}
 
-	router.replace(redirect0);
+	void redirectOnce(redirect0);
 }
 
 const { startTour } = useSiteTour();

@@ -50,7 +50,7 @@ const { user } = useAuth();
 const toast = useToast();
 const route = useRoute();
 const router = useRouter();
-const redirectingAfterSubmit = ref(false);
+const { redirecting, redirectOnce } = useRedirectOnce(router, route);
 const wasAuthenticatedAtMount = Boolean(user.value);
 
 const { error } = route.query;
@@ -92,9 +92,8 @@ if (error) {
 watch(
 	() => user.value,
 	(currentUser) => {
-		if (!currentUser || redirectingAfterSubmit.value) return;
-		redirectingAfterSubmit.value = true;
-		router.replace('/');
+		if (!currentUser || redirecting.value) return;
+		void redirectOnce('/');
 
 		if (wasAuthenticatedAtMount) {
 			toast.add({
@@ -120,11 +119,9 @@ watch(
 );
 
 function handleSignupSuccess(_: User, hasEmail: boolean) {
-	redirectingAfterSubmit.value = true;
-
 	// Redirect to home page or verify email after successful login
 	if (hasEmail) {
-		router.replace('/verify-email');
+		void redirectOnce('/verify-email');
 		toast.add({
 			title: 'Verification Email Sent',
 			description: 'Please check your email to verify your account.',
@@ -133,7 +130,7 @@ function handleSignupSuccess(_: User, hasEmail: boolean) {
 			duration: 5000
 		});
 	} else {
-		router.replace('/');
+		void redirectOnce('/');
 	}
 }
 
