@@ -1260,12 +1260,19 @@ async function exportBlob(format: 'png' | 'jpg' | 'svg' = 'png', scale = 1): Pro
 }
 
 // downscale to a longest-edge ceiling while preserving the scene aspect (keeps gif/apng small)
-function scaledFrameSize(w: number, h: number, maxDim: number): { width: number; height: number } {
-	const largest = Math.max(w, h);
+function scaledFrameSize(
+	cssWidth: number,
+	cssHeight: number,
+	maxDim: number
+): { width: number; height: number } {
+	const largest = Math.max(cssWidth, cssHeight);
 	if (!maxDim || largest <= maxDim)
-		return { width: Math.max(1, Math.round(w)), height: Math.max(1, Math.round(h)) };
+		return { width: Math.max(1, Math.round(cssWidth)), height: Math.max(1, Math.round(cssHeight)) };
 	const k = maxDim / largest;
-	return { width: Math.max(1, Math.round(w * k)), height: Math.max(1, Math.round(h * k)) };
+	return {
+		width: Math.max(1, Math.round(cssWidth * k)),
+		height: Math.max(1, Math.round(cssHeight * k))
+	};
 }
 
 // render one deterministic frame into a fresh offscreen canvas at the target size; loop=true

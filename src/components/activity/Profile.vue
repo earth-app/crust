@@ -205,12 +205,10 @@ function dismissNoveltyHint() {
 	}
 }
 
-// interleave a widget after every 6 InfoCards (positions 5, 11, 17, ...) so they ride
-// alongside the infinite-scroll stream rather than sitting below the loading sentinel.
-// shifted by an activity-id hash so different activities don't all show the same widget
-// at the same position.
 const activityIdHash = computed(() =>
-	(props.activity?.id ?? '').split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7)
+	(props.activity?.id ?? '')
+		.split('')
+		.reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 7)
 );
 function cardWidgetKind(index: number): FeedWidgetKind | null {
 	// position widget on every 6th card (5, 11, 17, ...) so each row has a clean rhythm

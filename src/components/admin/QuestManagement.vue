@@ -538,7 +538,7 @@ async function toggleHistory(questId: string) {
 	}
 	expanded.add(questId);
 	if (!selected.value) return;
-	const existing = historyList.value.find((h) => h.questId === questId);
+	const existing = historyList.value.find((item) => item.questId === questId);
 	if (existing?.progress) return;
 	loadingEntry.value = questId;
 	try {
@@ -546,7 +546,7 @@ async function toggleHistory(questId: string) {
 			force: true
 		});
 		if (entry) {
-			const idx = historyList.value.findIndex((h) => h.questId === questId);
+			const idx = historyList.value.findIndex((item) => item.questId === questId);
 			if (idx >= 0) historyList.value[idx] = entry;
 		}
 	} finally {
@@ -671,14 +671,14 @@ async function rescindPoints() {
 	}
 }
 
-function askDeleteHistory(h: QuestHistoryEntry) {
+function askDeleteHistory(entry: QuestHistoryEntry) {
 	askConfirm({
 		title: 'Delete Completed Quest',
-		body: `Permanently delete "${h.quest.title}" from this user's history? This cannot be undone.`,
+		body: `Permanently delete "${entry.quest.title}" from this user's history? This cannot be undone.`,
 		confirmLabel: 'Delete',
 		color: 'error',
 		icon: 'mdi:delete-outline',
-		action: () => deleteHistory(h.questId)
+		action: () => deleteHistory(entry.questId)
 	});
 }
 
@@ -693,7 +693,7 @@ async function deleteHistory(questId: string) {
 			{ method: 'DELETE' }
 		);
 		if (res.success) {
-			historyList.value = historyList.value.filter((h) => h.questId !== questId);
+			historyList.value = historyList.value.filter((item) => item.questId !== questId);
 			toast.add({
 				title: 'Quest Deleted',
 				color: 'success',
