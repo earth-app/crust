@@ -55,8 +55,8 @@ function autoImportUniverse(): Set<string> {
 
 	// re-exports of vue + `#app` + module-contributed composables
 	const reExports = readFileSync(join(NUXT_DIR, 'imports.d.ts'), 'utf8');
-	for (const [, group] of reExports.matchAll(/export \{([^}]*)\}/g))
-		for (const entry of group.split(','))
+	for (const match of reExports.matchAll(/export \{([^}]*)\}/g))
+		for (const entry of (match[1] ?? '').split(','))
 			names.add(
 				entry
 					.trim()
@@ -67,7 +67,7 @@ function autoImportUniverse(): Set<string> {
 
 	// crust's own `composables/`, `shared/utils/` and `shared/types/` exports
 	const globals = readFileSync(join(NUXT_DIR, 'types/imports.d.ts'), 'utf8');
-	for (const [, name] of globals.matchAll(/^\s*const (\w+):/gm)) names.add(name);
+	for (const match of globals.matchAll(/^\s*const (\w+):/gm)) names.add(match[1] ?? '');
 
 	names.delete('');
 	return names;
@@ -266,7 +266,9 @@ export function shadowedAutoImports(
 		if (reserved.has(name) && autoImported.has(name) && !moduleScope.declared.has(name))
 			findings.push({ name, line: at, reason: 'reserved name' });
 
-	return findings.sort((a, b) => a.name.localeCompare(b.name) || a.line - b.line);
+	return findings.sort(
+		(a, b) => a.name.localeCompare(b.name) || a.reason.localeCompare(b.reason) || a.line - b.line
+	);
 }
 
 // #endregion
