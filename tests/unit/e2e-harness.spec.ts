@@ -15,6 +15,11 @@ const ORIGIN = /(?:127\.0\.0\.1|localhost):(\d+)/;
 const MOCK_PORTS = ['8787', '8788', '9898', '9899'];
 const ENV_FALLBACK = 'process.env.PLAYWRIGHT_BASE_URL';
 
+// regression: /refund-policy carried its own `PLAYWRIGHT_PROD ? 5s : 15s` budget, which skips
+// the COVERAGE multiplier performance.spec.ts applies and failed the coverage lane at 5441ms
+const PERF_SPEC = 'tests/e2e/performance.spec.ts';
+const MODE_FLAG = 'process.env.PLAYWRIGHT_PROD';
+
 function specFiles(dir: string): string[] {
 	const out: string[] = [];
 	for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -48,6 +53,21 @@ function hardcodedOrigins(): string[] {
 	return offenders;
 }
 
+function adHocBudgets(): string[] {
+	const offenders: string[] = [];
+	// utils legitimately read the flag for server boot timing; only specs declare budgets
+	for (const file of specFiles(E2E).filter((f) => f.endsWith('.spec.ts'))) {
+		const relative = file.slice(PROJECT_ROOT.length + 1);
+		if (relative === PERF_SPEC) continue;
+		readFileSync(file, 'utf-8')
+			.split('\n')
+			.forEach((line, index) => {
+				if (line.includes(MODE_FLAG)) offenders.push(`${relative}:${index + 1}`);
+			});
+	}
+	return offenders;
+}
+
 describe('e2e harness base URL', () => {
 	it('scans the e2e tree', () => {
 		expect(specFiles(E2E).length).toBeGreaterThan(20);
@@ -55,5 +75,18 @@ describe('e2e harness base URL', () => {
 
 	it('never hardcodes the app origin outside its env fallback', () => {
 		expect(hardcodedOrigins()).toEqual([]);
+	});
+});
+
+describe('e2e performance budgets', () => {
+	it('keeps every route budget in performance.spec.ts', () => {
+		expect(adHocBudgets()).toEqual([]);
+	});
+
+	it('budgets the prerendered legal pages as one class', () => {
+		const perf = readFileSync(join(PROJECT_ROOT, PERF_SPEC), 'utf-8');
+		for (const path of ['/terms-of-service', '/privacy-policy', '/refund-policy']) {
+			expect(perf).toContain(`{ path: '${path}', budgetMs: scale(4_000) }`);
+		}
 	});
 });

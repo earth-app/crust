@@ -5,6 +5,12 @@
  * that an SSR data fetch, hydration mismatch, or large bundle has regressed
  * performance for that route.
  *
+ * Every route budget lives HERE, so the mode scaling below is applied exactly
+ * once. A per-page spec that re-declares its own `PLAYWRIGHT_PROD ? a : b`
+ * budget skips the COVERAGE multiplier and fails the coverage lane on a slow
+ * runner (that is what took out /refund-policy); `tests/unit/e2e-harness.spec.ts`
+ * fails the gate if one comes back.
+ *
  * Budgets are mode-dependent: in `PLAYWRIGHT_PROD=1` we run against the
  * pre-built bundle and use realistic numbers (1-2s for static pages, 3-4s for
  * ISR pages). In dev mode (Vite compile-on-demand) we 3x everything to avoid
@@ -32,11 +38,14 @@ const scale = (ms: number): number => {
 	return ms * factor;
 };
 
+// one base for every public route: the prerendered pages measured 5.4s on a loaded CI
+// runner, so a 3s base (6s instrumented) left them ~9% of headroom and tripped
 const PUBLIC_ROUTES: Array<{ path: string; budgetMs: number }> = [
 	{ path: '/', budgetMs: scale(4_000) },
-	{ path: '/about', budgetMs: scale(3_000) },
-	{ path: '/terms-of-service', budgetMs: scale(3_000) },
-	{ path: '/privacy-policy', budgetMs: scale(3_000) },
+	{ path: '/about', budgetMs: scale(4_000) },
+	{ path: '/terms-of-service', budgetMs: scale(4_000) },
+	{ path: '/privacy-policy', budgetMs: scale(4_000) },
+	{ path: '/refund-policy', budgetMs: scale(4_000) },
 	{ path: '/activities', budgetMs: scale(4_000) },
 	{ path: '/articles', budgetMs: scale(4_000) },
 	{ path: '/events', budgetMs: scale(4_000) },
@@ -52,7 +61,10 @@ test.describe('Page hydration performance budgets', () => {
 			await asAnonymous();
 			const start = Date.now();
 			await gotoHydrated(route.path);
-			expect(Date.now() - start).toBeLessThan(route.budgetMs);
+			const elapsed = Date.now() - start;
+			// logged on every run so drift toward a budget is visible before it trips
+			console.log(`[perf] ${route.path} ${elapsed}ms / ${route.budgetMs}ms`);
+			expect(elapsed).toBeLessThan(route.budgetMs);
 		});
 	}
 });
@@ -65,6 +77,7 @@ test.describe('Performance metrics - DOMContentLoaded budget', () => {
 			const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
 			return nav?.domContentLoadedEventEnd ?? 0;
 		});
+		console.log(`[perf] / DOMContentLoaded ${Math.round(dcl)}ms / ${scale(2_000)}ms`);
 		expect(dcl).toBeGreaterThan(0);
 		expect(dcl).toBeLessThan(scale(2_000));
 	});

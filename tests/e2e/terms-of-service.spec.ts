@@ -21,14 +21,4 @@ test.describe('Terms of Service page', () => {
 		await gotoHydrated('/terms-of-service');
 		await expect(page.getByRole('heading', { name: 'Terms of Service' })).toBeVisible();
 	});
-
-	test('initial render is within budget', async ({ page, gotoHydrated }) => {
-		// 5s against the pre-built bundle; 15s against dev mode (Vite compiles
-		// on demand and the budget can't catch real regressions there).
-		const budgetMs = process.env.PLAYWRIGHT_PROD === '1' ? 5_000 : 15_000;
-		const start = Date.now();
-		await gotoHydrated('/terms-of-service');
-		await expect(page.getByRole('heading', { name: 'Terms of Service' })).toBeVisible();
-		expect(Date.now() - start).toBeLessThan(budgetMs);
-	});
 });

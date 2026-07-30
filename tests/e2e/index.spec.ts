@@ -69,14 +69,6 @@ test.describe('Homepage (anonymous)', () => {
 		await gotoHydrated('/');
 		await expect(heroCtas(page).getByRole('button', { name: /Admin Panel/i })).toHaveCount(0);
 	});
-
-	test('completes initial render within budget', async ({ page, gotoHydrated }) => {
-		const budgetMs = process.env.PLAYWRIGHT_PROD === '1' ? 10_000 : 20_000;
-		const start = Date.now();
-		await gotoHydrated('/');
-		await expect(page.getByRole('heading', { name: 'The Earth App' })).toBeVisible();
-		expect(Date.now() - start).toBeLessThan(budgetMs);
-	});
 });
 
 test.describe('Homepage (logged-in user)', () => {
