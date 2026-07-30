@@ -4,6 +4,7 @@ export default defineVitestConfig({
 	test: {
 		environment: 'nuxt',
 		include: ['tests/unit/**/*.spec.ts'],
+		setupFiles: ['tests/unit/setup.ts'],
 		globals: true,
 		// every file pays a setupNuxt() beforeAll; on a 4-core CI runner with coverage
 		// instrumentation that regularly blows past vitest's 10s default (whichever
