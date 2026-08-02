@@ -2,7 +2,7 @@
 	<nav
 		id="navbar"
 		aria-label="Main navigation"
-		class="bg-secondary-800 border-b-primary-500 border-b-8 text-white p-4 flex items-center"
+		class="bg-secondary-800 border-b-primary-500 border-b-4 text-white p-4 flex items-center"
 	>
 		<div
 			class="flex items-center max-w-40 sm:max-w-60 lg:max-w-none lg:flex-1 lg:min-w-0 gap-1 sm:gap-2"
@@ -14,7 +14,7 @@
 					format="webp"
 					width="48"
 					height="48"
-					class="min-w-8 w-8 h-auto xl:w-12 inline-block shadow-lg shadow-black/50 rounded-full hover:scale-105 transition-transform duration-300"
+					class="min-w-8 w-8 h-auto xl:w-12 inline-block rounded-full hover:scale-105 transition-transform duration-300 shadow-md"
 					loading="eager"
 					decoding="async"
 				/>
@@ -26,22 +26,22 @@
 				<div class="flex items-center justify-start gap-3 xl:gap-6">
 					<NuxtLink
 						to="/activities"
-						class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
+						class="text-lg xl:text-xl font-semibold hover:text-white/75 whitespace-nowrap"
 						>Activities</NuxtLink
 					>
 					<NuxtLink
 						to="/prompts"
-						class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
+						class="text-lg xl:text-xl font-semibold hover:text-white/75 whitespace-nowrap"
 						>Prompts</NuxtLink
 					>
 					<NuxtLink
 						to="/articles"
-						class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
+						class="text-lg xl:text-xl font-semibold hover:text-white/75 whitespace-nowrap"
 						>Articles</NuxtLink
 					>
 					<NuxtLink
 						to="/events"
-						class="text-lg xl:text-xl font-semibold hover:text-gray-300 whitespace-nowrap"
+						class="text-lg xl:text-xl font-semibold hover:text-white/75 whitespace-nowrap"
 						>Events</NuxtLink
 					>
 				</div>
@@ -82,11 +82,11 @@
 					>
 						<UAvatar
 							:src="avatar128"
-							class="size-6 sm:size-8 lg:size-10 xl:size-12 rounded-full shadow-lg shadow-black/50 shrink-0"
+							class="size-6 sm:size-8 lg:size-10 xl:size-12 rounded-full shrink-0 shadow-md"
 						/>
 
 						<span
-							class="hidden xl:inline text-md sm:text-lg xl:text-xl text-shadow-2xs text-shadow-black truncate max-w-32 2xl:max-w-none"
+							class="hidden xl:inline text-base sm:text-lg xl:text-xl text-shadow-2xs text-shadow-black truncate max-w-32 2xl:max-w-none"
 							>{{ user.username }}</span
 						>
 					</div>
@@ -175,7 +175,7 @@
 						>
 							<UIcon
 								name="material-symbols:logout-rounded"
-								class="size-6 lg:size-7 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
+								class="size-6 lg:size-7 e-text-danger cursor-pointer hover:scale-105 transition-transform duration-300"
 								@click="logoutUser"
 							/>
 						</NuxtLink>

@@ -1,5 +1,10 @@
 <template>
-	<div class="flex flex-col items-center justify-center w-full h-full min-h-64 py-8">
+	<div
+		role="status"
+		aria-live="polite"
+		class="flex flex-col items-center justify-center w-full h-full min-h-64 py-8"
+	>
+		<span class="sr-only">Loading</span>
 		<div class="relative">
 			<LazyNuxtImg
 				src="/cloud.png"
@@ -13,7 +18,7 @@
 			/>
 			<UIcon
 				name="mdi:loading"
-				class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl text-black animate-spin"
+				class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl text-muted animate-spin"
 			/>
 		</div>
 	</div>

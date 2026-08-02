@@ -1,14 +1,12 @@
 <template>
 	<footer
 		role="contentinfo"
-		class="flex items-center justify-between w-full mt-8 min-h-32 bg-gray-950 border-t-2 border-gray-800 text-gray-300 light:bg-gray-100 light:border-gray-300 light:text-gray-700 text-left px-4 sm:px-8 md:px-12 text-xs sm:text-sm md:text-md"
+		class="flex items-center justify-between w-full mt-8 min-h-32 bg-elevated border-t border-default text-muted text-left px-4 sm:px-8 md:px-12 text-xs sm:text-sm md:text-base"
 	>
 		<div class="flex flex-col items-start">
-			<span class="text-[10px] sm:text-xs"
-				>Copyright © 2026 The Earth App. All Rights Reserved.</span
-			>
+			<span class="text-2xs sm:text-xs">Copyright © 2026 The Earth App. All Rights Reserved.</span>
 			<div
-				class="flex text-[10px] sm:text-xs space-x-1 sm:space-x-2 md:space-x-4 text-gray-400 light:text-gray-600 *:hover:text-gray-200 *:light:hover:text-gray-900 *:transition-colors *:duration-200"
+				class="flex flex-wrap items-center gap-x-2 sm:gap-x-3 md:gap-x-4 text-2xs sm:text-xs text-muted *:inline-flex *:min-h-6 *:items-center *:justify-center *:px-1 *:hover:text-highlighted *:transition-colors"
 			>
 				<NuxtLink
 					to="https://earth-app.com"
@@ -28,7 +26,9 @@
 				<NuxtLink to="/refund-policy">Refund Policy</NuxtLink>
 				<NuxtLink to="/support">Support</NuxtLink>
 			</div>
-			<div class="flex space-x-3 mt-2 *:hover:opacity-70 *:transition-opacity *:duration-200">
+			<div
+				class="flex gap-1 mt-2 *:inline-flex *:size-11 *:items-center *:justify-center *:hover:opacity-70 *:transition-opacity"
+			>
 				<NuxtLink
 					to="https://github.com/earth-app"
 					target="_blank"
@@ -68,7 +68,7 @@
 			</div>
 		</div>
 		<ClientOnly>
-			<div class="flex flex-col items-start p-4 text-[10px] sm:text-xs">
+			<div class="flex flex-col items-start p-4 text-2xs sm:text-xs">
 				<span v-if="user">
 					Logged in as {{ user.username }} {{ user.account.email ? `(${user.account.email})` : '' }}
 				</span>
