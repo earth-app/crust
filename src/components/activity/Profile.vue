@@ -76,7 +76,7 @@
 		</div>
 		<h3
 			id="activity-description"
-			class="text-md sm:text-lg md:text-xl min-w-75 w-3/5 mt-8"
+			class="text-base sm:text-lg md:text-xl min-w-75 w-3/5 mt-8"
 		>
 			{{ activity.description }}
 		</h3>

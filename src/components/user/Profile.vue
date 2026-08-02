@@ -20,7 +20,7 @@
 			</div>
 			<h2
 				v-if="hasFullName"
-				class="text-xl ml-2 text-gray-400"
+				class="text-xl ml-2 text-muted"
 			>
 				@{{ props.user.username }}
 			</h2>
@@ -159,7 +159,7 @@
 				@mouseleave="badgeVariants[i] = 'outline'"
 				@click="$router.push(`/activities/${activity.id}`)"
 				:ui="{
-					base: 'text-xs sm:text-sm md:text-md lg:text-base px-1 sm:px-1.5 md:px-2.5 py-1 gap-1 md:gap-1.5 rounded-sm sm:rounded-md',
+					base: 'text-xs sm:text-sm md:text-base lg:text-base px-1 sm:px-1.5 md:px-2.5 py-1 gap-1 md:gap-1.5 rounded-sm sm:rounded-md',
 					leadingIcon: 'size-4 sm:size-5 md:size-6'
 				}"
 				class="hover:cursor-pointer transition-all duration-500 ml-2 mb-2 sm:mb-3"

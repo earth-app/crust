@@ -7,7 +7,7 @@
 			class="text-muted size-16"
 		/>
 		<h1 class="text-3xl font-bold">Checkout Canceled</h1>
-		<p class="text-md max-w-xl opacity-80">
+		<p class="text-base max-w-xl opacity-80">
 			No charge was made and your account has not changed. You can pick a plan whenever you're
 			ready.
 		</p>

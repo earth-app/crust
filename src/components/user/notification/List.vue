@@ -1,28 +1,28 @@
 <template>
 	<div
-		class="min-w-90 w-full h-full overflow-y-auto p-4 bg-gray-800 border border-gray-700 rounded-lg shadow-lg"
+		class="min-w-90 w-full h-full overflow-y-auto p-4 bg-elevated border border-default rounded-lg shadow-lg"
 	>
 		<div
 			v-if="notifications.length === 0"
-			class="text-gray-400 light:text-gray-600"
+			class="text-muted light:text-toned"
 		>
 			No notifications
 		</div>
 		<div v-else>
 			<div class="flex justify-between">
-				<h2 class="text-sm sm:text-md mb-4 text-gray-400">
+				<h2 class="text-sm sm:text-base mb-4 text-muted">
 					{{ notificationsCount }} Notifications
 					{{ displayed.length !== notificationsCount ? `(${displayed.length} shown)` : '' }}
 				</h2>
 				<div class="flex space-x-8 font-medium">
 					<h2
-						class="text-sm sm:text-md mb-4 text-gray-400 hover:cursor-pointer"
+						class="text-sm sm:text-base mb-4 text-muted hover:cursor-pointer"
 						@click="markAllRead"
 					>
 						Mark All as Read
 					</h2>
 					<h2
-						class="text-sm sm:text-md mb-4 text-gray-400 hover:cursor-pointer"
+						class="text-sm sm:text-base mb-4 text-muted hover:cursor-pointer"
 						@click="confirmOpen = true"
 					>
 						Clear All

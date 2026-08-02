@@ -9,17 +9,15 @@
 				:text="relativeTime"
 				arrow
 			>
-				<h3 class="text-md text-gray-400 mb-4">{{ time }}</h3>
+				<h3 class="text-base text-muted mb-4">{{ time }}</h3>
 			</UTooltip>
 			<UChip
 				:color="notification.type"
 				:ui="{ base: 'size-4 lg:size-6' }"
 				:title="capitalizeFully(notification.type)"
 			>
-				<div
-					class="p-4 bg-gray-800 border-2 border-gray-200 light:border-gray-400 rounded-lg w-full max-w-3xl"
-				>
-					<p class="text-gray-300 text-sm md:text-md lg:text-lg mb-4 whitespace-pre-line">
+				<div class="p-4 bg-elevated border border-default rounded-lg w-full max-w-3xl">
+					<p class="text-toned text-sm md:text-base lg:text-lg mb-4 whitespace-pre-line">
 						{{ message }}
 					</p>
 					<USeparator
@@ -29,11 +27,11 @@
 					<a
 						v-if="notification.link"
 						:href="notification.link"
-						class="text-blue-400 hover:underline break-all"
+						class="e-text-azure hover:underline break-all"
 					>
 						{{ notification.link.startsWith('http') ? notification.link : 'Open Link' }}
 					</a>
-					<p class="text-gray-500 text-xs mt-2">
+					<p class="text-muted text-xs mt-2">
 						From: {{ notification.source }} | Type: {{ capitalizeFully(notification.type) }} | ID:
 						{{ notification.id }}
 					</p>
@@ -51,7 +49,7 @@
 		v-else-if="user && notification === null"
 		class="flex flex-col items-center justify-center h-screen"
 	>
-		<p class="text-gray-600">Notification doesn't exist. Maybe look at the URL again?</p>
+		<p class="text-muted">Notification doesn't exist. Maybe look at the URL again?</p>
 	</div>
 	<Loading v-else />
 </template>

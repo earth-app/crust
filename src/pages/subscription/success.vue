@@ -4,10 +4,10 @@
 	>
 		<UIcon
 			name="mdi:check-circle"
-			class="text-emerald-500 size-16"
+			class="e-text-brand size-16"
 		/>
 		<h1 class="text-3xl font-bold">You're All Set</h1>
-		<p class="text-md max-w-xl opacity-80">
+		<p class="text-base max-w-xl opacity-80">
 			Thank you for subscribing to The Earth App. Your plan is now
 			<span
 				v-if="tierLabel"

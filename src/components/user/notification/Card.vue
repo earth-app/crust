@@ -7,7 +7,7 @@
 		<div
 			ref="rootRef"
 			:class="[
-				'relative min-w-60 border border-gray-700 rounded-lg p-4 transition-all duration-200 bg-linear-to-tl via-gray-500/20 to-transparent hover:opacity-90',
+				'relative min-w-60 border border-default rounded-lg p-4 transition-all duration-200 bg-linear-to-tl via-gray-500/20 to-transparent hover:opacity-90',
 				useGradientBorder ? '' : 'mb-4',
 				readTint,
 				enterAnimationClass
@@ -25,7 +25,7 @@
 				<div>
 					<NuxtLink :to="`/profile/notifications/${notification.id}`">
 						<p
-							class="text-sm sm:text-md text-blue-400 light:text-gray-700 mb-2"
+							class="text-sm sm:text-base e-text-azure light:text-toned mb-2"
 							:style="{ fontWeight: notification.read ? 'normal' : 'bold' }"
 						>
 							{{ notification.title }}
@@ -33,15 +33,15 @@
 					</NuxtLink>
 
 					<p
-						class="text-xs sm:text-sm md:text-md text-gray-300 light:text-gray-700 whitespace-pre-line"
+						class="text-xs sm:text-sm md:text-base text-muted light:text-toned whitespace-pre-line"
 						:style="{ fontWeight: notification.read ? 'normal' : 'bold' }"
 					>
 						{{ trimString(notification.message, 50) }}
 					</p>
-					<p class="text-xs md:text-sm text-gray-400 light:text-gray-800">
+					<p class="text-xs md:text-sm text-muted light:text-highlighted">
 						{{ timestamp }} • {{ fullTimestamp }}
 					</p>
-					<p class="text-xs md:text-sm text-gray-600 light:text-gray-300 mt-2">
+					<p class="text-xs md:text-sm text-toned light:text-muted mt-2">
 						{{ notification.source }} | ID: {{ notification.id }}
 					</p>
 				</div>
@@ -49,20 +49,20 @@
 					<UIcon
 						v-if="type === 'error'"
 						name="mdi:alert-circle-outline"
-						class="text-red-400 size-3 sm:size-6"
+						class="e-text-danger size-3 sm:size-6"
 						title="Error Notification"
 					/>
 					<UIcon
 						v-else-if="type === 'warning'"
 						name="mdi:alert-outline"
-						class="text-yellow-400 size-3 sm:size-6"
+						class="e-text-warning size-3 sm:size-6"
 						size="20"
 						title="Warning Notification"
 					/>
 					<UIcon
 						v-else-if="type === 'success' && additional"
 						name="mdi:check-circle-outline"
-						class="text-green-400 size-3 sm:size-6"
+						class="e-text-brand size-3 sm:size-6"
 						title="Success Notification"
 						size="20"
 					/>
@@ -79,7 +79,7 @@
 							:color="type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'"
 							class="pointer-events-none"
 						>
-							<span class="inline-block size-3 bg-blue-500 rounded-full"></span>
+							<span class="inline-block size-3 bg-info rounded-full"></span>
 						</UiPulseRing>
 					</button>
 					<button
@@ -97,7 +97,7 @@
 					<UIcon
 						v-if="additional"
 						name="mdi:delete"
-						class="size-4 sm:size-5 md:size-6 text-gray-500 hover:text-red-500 hover:cursor-pointer transition-colors duration-200"
+						class="size-4 sm:size-5 md:size-6 text-muted hover:e-text-danger hover:cursor-pointer transition-colors duration-200"
 						title="Delete Notification"
 						@click="confirmDeleteOpen = true"
 					/>
@@ -285,12 +285,12 @@ const enterStyle = computed(() => {
 });
 
 // read-state tint — settles cards to muted gray once acknowledged
-const readTint = computed(() => (props.notification.read ? 'opacity-70 [&_p]:text-gray-500!' : ''));
+const readTint = computed(() => (props.notification.read ? 'opacity-70 [&_p]:text-muted!' : ''));
 
 const unreadDotClass = computed(() => {
-	if (type.value === 'error') return 'bg-red-500 notif-pulse-error';
-	if (type.value === 'warning') return 'bg-yellow-500 notif-pulse-warning';
-	return 'bg-blue-500';
+	if (type.value === 'error') return 'bg-error notif-pulse-error';
+	if (type.value === 'warning') return 'bg-warning notif-pulse-warning';
+	return 'bg-info';
 });
 
 onMounted(() => {

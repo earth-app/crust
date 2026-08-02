@@ -1,14 +1,14 @@
 <template>
 	<div class="text-left">
-		<p class="text-md mt-2 max-w-3xl">Last Updated: June 14, 2026</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">Last Updated: June 14, 2026</p>
+		<p class="text-base mt-2 max-w-3xl">
 			The Earth App ("we", "our", or "us") provides a platform for users to explore and learn about
 			the world around them. By accessing or using our services, you agree to comply with and be
 			bound by the following terms and conditions ("Terms of Service"). Please read these terms
 			carefully before using our services.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">1. General Provisions</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			The Earth App is subject to United States export, copyright, control, and criminal laws and
 			regulations. You agree to comply with all applicable export control laws and regulations,
 			including but not limited to the U.S. Export Administration Regulations and the U.S.
@@ -26,7 +26,7 @@
 			Cook County, Illinois for the resolution of any disputes arising out of or related to these
 			Terms of Service or our services.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			In the event of a class action lawsuit against us, you agree that you will not participate as
 			a plaintiff or class member in any class action lawsuit against us. You agree that the only
 			claims you may bring against us are individual claims, and you waive your right to bring any
@@ -37,11 +37,11 @@
 			this provision, please contact us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 				>support@earth-app.com</NuxtLink
 			>.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			This Terms of Service is provided in English, AS IS, and we make no representations or
 			warranties of any kind, express or implied, about the completeness, accuracy, reliability,
 			suitability, or availability of the services or the information, products, services, or
@@ -52,16 +52,16 @@
 			with, the use of our services.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">2. Acceptance of Terms</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			By using our services, you agree to be bound by these Terms of Service, as well as our Privacy
 			Policy. If you do not agree to these terms, please do not use our services.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			Advertising your own products, services, or content on our platform is not allowed without our
 			prior written consent. Those with the consent of The Earth App may be allowed to advertise
 			their own content, but must still adhere to all other guidelines and policies.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			To comply with the Children's Online Privacy Protection Act (COPPA) and relevant international
 			laws, we do not knowingly collect personal information from children under the age of 13, or
 			the age of 16 in certain jurisdictions. Our services are not directed towards children, and we
@@ -72,13 +72,13 @@
 			contact us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 			>
 				support@earth-app.com
 			</NuxtLink>
 			so that we can take appropriate action.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			Administrators and moderators of our services are responsible for enforcing these Terms of
 			Service and maintaining a safe and respectful environment for all users. They have the
 			authority to remove content, issue warnings, and take other actions as necessary to enforce
@@ -95,12 +95,12 @@
 			sharing personal information online.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">3. User Conduct</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			You agree to use our services in a manner that is lawful, ethical, and respectful of others.
 			You shall not engage in any activity that may harm, disrupt, or interfere with the proper
 			functioning of our services or the experience of other users.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			You shall not access our services through automated means (including bots, scrapers, or
 			crawlers), attempt to bypass or interfere with rate limits, security measures, or
 			authentication, or collect or harvest data from our services except as expressly permitted by
@@ -108,7 +108,7 @@
 			API Keys section below). We may impose and enforce limits on the volume and frequency of
 			requests to protect the stability and security of our services.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We provide tools to help keep our community safe. You may report content or other users that
 			you believe violate these Terms of Service through the in-application reporting tools,
 			selecting a reason such as hate speech, harassment, sexual content, violence, spam,
@@ -121,7 +121,7 @@
 			ban. You will generally be notified of moderation actions affecting your content or account,
 			and you may appeal as described below.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			Any photographs, writing, videos, or other content that you submit to our services ("User
 			Content") must comply with our content guidelines and must not violate any applicable laws or
 			regulations. You are solely responsible for the User Content you submit and must ensure that
@@ -129,7 +129,7 @@
 			rights, privacy rights, and publicity rights. We reserve the right to remove any User Content
 			that we deem inappropriate or in violation of our policies.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			All content involving other persons must have the consent of those individuals before being
 			submitted to our services. By submitting such content, you represent and warrant that you have
 			obtained all necessary consents and permissions from the individuals depicted in the content.
@@ -138,7 +138,7 @@
 			themselves by contacting us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 			>
 				support@earth-app.com </NuxtLink
 			>. If you fail to obtain the necessary consents and permissions for content involving other
@@ -149,14 +149,14 @@
 			violation of this requirement or your failure to obtain the necessary consents and permissions
 			for content involving other persons, or any other violation of these Terms of Service.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			In accordance with the Digital Millennium Copyright Act (DMCA) and other applicable laws, we
 			have a process for responding to claims of copyright infringement. If you believe that your
 			copyrighted work has been infringed upon through our services, you may submit a DMCA takedown
 			notice to us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 			>
 				support@earth-app.com </NuxtLink
 			>. Your notice must include the following information: (1) a physical or electronic signature
@@ -171,7 +171,7 @@
 			that you are authorized to act on behalf of the copyright owner. We will review all DMCA
 			takedown notices and take appropriate action as required by law.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We will keep a temporary record of all content submitted to our services, including User
 			Content and AI-generated, even if it is publicly removed, for a period of 30 days. If you
 			would like for it to be removed permanently in compliance with the General Data Protection
@@ -179,7 +179,7 @@
 			contact us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 			>
 				support@earth-app.com</NuxtLink
 			>
@@ -194,7 +194,7 @@
 			Terms of Service and to respect the rights and privacy of others when submitting content to
 			our services.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			In addition to the temporary record described above, please be aware that some content is
 			removed automatically over time as part of the normal operation of our services. For example,
 			prompts, articles, and events are subject to limited lifespans and are deleted automatically
@@ -205,13 +205,13 @@
 			wish to retain.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">4. Intellectual Property</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			All content and materials provided through our services, including but not limited to text,
 			graphics, logos, images, and software, are the property of The Earth App or its licensors and
 			are protected by intellectual property laws. You may not use, reproduce, or distribute any
 			content from our services without our prior written consent.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			By submitting User Content to our services, you grant us a worldwide, non-exclusive,
 			royalty-free, sublicensable, and transferable license to use, reproduce, distribute, prepare
 			derivative works of, display, and perform the User Content in connection with our services and
@@ -225,7 +225,7 @@
 			User Content that we believe may violate this requirement or that we deem inappropriate for
 			our platform.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			Users have the ability to set their accounts to "Unlisted" or "Private," which limits the
 			visibility of their content to only those with whom they choose to share it. If you set your
 			account to "Unlisted," your content will not be discoverable through search or browsing
@@ -243,7 +243,7 @@
 			consider the content they share and to use our privacy settings to control who can see their
 			content.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			Accounts found in violation of any section of these Terms of Service may be subject to
 			penalties, including but not limited to content removal, account suspension, or permanent
 			banning. We reserve the right to take any action we deem necessary to enforce our policies and
@@ -251,7 +251,7 @@
 			been unfairly penalized, you may contact us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 			>
 				support@earth-app.com
 			</NuxtLink>
@@ -262,7 +262,7 @@
 			Terms of Service and to respect the rights and privacy of others when using our services.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">5. Developer Access and API Keys</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We may allow you to create API keys for programmatic access to our services. You are
 			responsible for keeping your API keys confidential and for all activity that occurs under
 			them. You must use API keys only within the scopes and permissions granted, must not share
@@ -276,7 +276,7 @@
 			violation of these Terms of Service.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">6. Mobile Applications and Quests</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			Our mobile applications and certain features, particularly quests, may request access to
 			capabilities and data on your device, including your location (including background location
 			while a distance-based quest is active), camera, microphone, motion and activity sensors,
@@ -287,7 +287,7 @@
 			features, you consent to our collection and use of the associated data as described in our
 			<NuxtLink
 				to="/privacy-policy"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 				>Privacy Policy</NuxtLink
 			>. You are responsible for using location-based and physical-activity features safely, for
 			remaining aware of your surroundings, and for complying with all applicable laws; you
@@ -296,7 +296,7 @@
 			store or platform.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">7. Subscriptions and Billing</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			The Earth App offers optional paid subscriptions that unlock additional features and higher
 			account tiers. Our paid tiers are Pro, Writer, and Organizer, offered as monthly plans and
 			charged in United States dollars at the price shown to you at checkout (currently $5.99 per
@@ -312,12 +312,12 @@
 			part of these Terms of Service and should be read together with our
 			<NuxtLink
 				to="/refund-policy"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 				>Refund Policy</NuxtLink
 			>.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">8. Auto-Renewal and Express Consent</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			Paid subscriptions are auto-renewing continuous-service (negative option) subscriptions.
 			Before you are charged, we clearly and conspicuously disclose the subscription's material
 			terms (the tier, the recurring price, the monthly billing frequency, the fact that the
@@ -332,7 +332,7 @@
 			price for the next period. You may cancel at any time as described in the next section.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">9. One-Click Cancellation (Web and In-App)</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			You can cancel your subscription at any time, easily and without penalty. Cancellation is
 			available online through your account's billing settings on our website and, for subscriptions
 			managed by us, directly inside our mobile application through an in-app cancel control, in
@@ -348,7 +348,7 @@
 			link to the correct place (see the Mobile Store Purchases section below).
 		</p>
 		<h1 class="text-2xl font-bold mt-4">10. Refunds and 14-Day Money-Back Guarantee</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We offer a universal 14-day money-back guarantee. If you are not satisfied, you may request a
 			full refund of any subscription charge within 14 days of that charge, both for your first
 			purchase and for every renewal. This guarantee supersedes any shorter refund window that might
@@ -357,7 +357,7 @@
 			processed as a full refund, and your tier returns to free) or contact us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 				>support@earth-app.com</NuxtLink
 			>. Refunds are issued to your original payment method. For subscriptions billed by the Apple
 			App Store or Google Play, refunds are handled by the applicable store; we will help you
@@ -365,12 +365,12 @@
 			details, timing, and worked examples are in our
 			<NuxtLink
 				to="/refund-policy"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 				>Refund Policy</NuxtLink
 			>.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">11. EU and UK Statutory Withdrawal Rights</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			If you are a consumer in the European Union, the European Economic Area, or the United
 			Kingdom, you have a statutory right to withdraw from your purchase within 14 days without
 			giving any reason, under the EU Consumer Rights Directive (2011/83/EU) and the UK Consumer
@@ -379,7 +379,7 @@
 			emailing
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 				>support@earth-app.com</NuxtLink
 			>; you may use the model withdrawal form but are not required to). If you withdraw in time, we
 			refund all payments received for the withdrawn subscription, without undue delay and no later
@@ -390,7 +390,7 @@
 			exceed these statutory protections.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">12. Price Changes</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We may change subscription prices from time to time. If a price increase would affect your
 			subscription, we will give you advance notice before the new price takes effect, sent on a
 			schedule of roughly 30 days, 7 days, and 1 day beforehand, with a confirmation at the time of
@@ -403,7 +403,7 @@
 			the new price applies to your next renewal.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">13. Free-Trial Codes</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We sometimes offer free-trial codes that unlock a paid tier for a limited time. Trial codes
 			never require a credit card, and they do not convert into a paid subscription or charge you
 			anything when they end. When a trial from a code ends, your account simply returns to the free
@@ -415,7 +415,7 @@
 			refund when it ends.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">14. Mobile Store Purchases</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			If you buy a subscription inside our iOS or Android application, the purchase is processed,
 			billed, managed, renewed, cancelled, and refunded by the Apple App Store or Google Play under
 			that store's terms, not by us directly. To change or cancel a store-billed subscription, or to
@@ -428,12 +428,12 @@
 			already subscribe through one provider, cancel it before subscribing through another.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">15. Chargebacks and Disputes</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			Because we offer a generous, no-questions 14-day money-back guarantee and easy one-click
 			cancellation, please contact us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 				>support@earth-app.com</NuxtLink
 			>
 			before disputing a charge with your bank or card issuer, so we can resolve it quickly, usually
@@ -446,7 +446,7 @@
 			claim.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">16. Governing Law</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			The governing-law, venue, and dispute-resolution provisions in Section 1 apply to these
 			subscription and billing terms. However, if you are a consumer, nothing in these Terms of
 			Service removes or reduces the mandatory rights and protections you have under the
@@ -459,19 +459,19 @@
 			applies to you, that protection controls, and the rest of these terms continue in effect.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">17. Limitation of Liability</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			To the fullest extent permitted by law, The Earth App shall not be liable for any direct,
 			indirect, incidental, special, consequential, or punitive damages arising out of or related to
 			your use of our services.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			The application allows users to submit their own content, and we do not endorse or take
 			responsibility for any user-generated content. Users are solely responsible for the content
 			they submit and must ensure that it does not violate any applicable laws or regulations. We
 			reserve the right to remove any user-generated content that we deem inappropriate or in
 			violation of our policies.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			In addition to user-generated content, our services may include AI-generated content. The
 			parameters for generating this content are determined by us, and we do not guarantee the
 			accuracy, reliability, or appropriateness of any AI-generated content. Users should exercise
@@ -480,7 +480,7 @@
 			AI-generated content that we deem inappropriate or in violation of our policies.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">18. Changes to Terms</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We reserve the right to modify or update these Terms of Service at any time. Any changes will
 			be effective immediately upon posting on our website. Your continued use of our services after
 			any such changes constitutes your acceptance of the new terms. We will endeavor to notify
@@ -490,11 +490,11 @@
 			terms, please discontinue use of our services.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">19. Contact Us</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			If you have any questions or concerns about these Terms of Service, please contact us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 font-semibold"
+				class="e-text-azure font-semibold"
 				>support@earth-app.com</NuxtLink
 			>
 			for assistance.

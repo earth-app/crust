@@ -62,7 +62,7 @@
 
 		<h3
 			id="bio"
-			class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8"
+			class="text-2xl font-semibold text-muted light:text-toned mt-8"
 		>
 			Bio
 		</h3>
@@ -75,7 +75,7 @@
 		/>
 
 		<h3
-			class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8"
+			class="text-2xl font-semibold text-muted light:text-toned mt-8"
 			id="activities"
 		>
 			Activities
@@ -89,7 +89,7 @@
 		<UserSavedWordsSection v-if="isSelf" />
 
 		<h3
-			class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8"
+			class="text-2xl font-semibold text-muted light:text-toned mt-8"
 			id="cosmetics"
 		>
 			Points Shop
@@ -226,13 +226,11 @@
 						<div class="flex gap-1 items-center">
 							<p
 								v-if="selectedCosmeticForPurchase.price !== selectedCosmeticForPurchase.full_price"
-								class="text-sm text-gray-400 line-through"
+								class="text-sm text-muted line-through"
 							>
 								{{ selectedCosmeticForPurchase.full_price }}
 							</p>
-							<p class="text-sm text-gray-300 light:text-gray-500">
-								{{ selectedCosmeticForPurchase.price }} points
-							</p>
+							<p class="text-sm text-muted">{{ selectedCosmeticForPurchase.price }} points</p>
 						</div>
 						<div class="flex gap-2">
 							<UButton
@@ -294,7 +292,7 @@
 							/>
 							<template #item="{ item }">
 								<button
-									class="flex items-center w-full px-2 py-1.5 gap-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
+									class="flex items-center w-full px-2 py-1.5 gap-2 text-left hover:bg-muted dark:hover:bg-elevated"
 									@click="updateAccountVisibility(item.value)"
 								>
 									<div class="flex flex-col">
@@ -306,7 +304,7 @@
 										</div>
 										<span
 											v-if="item.description"
-											class="text-xs text-gray-500"
+											class="text-xs text-muted"
 											>{{ item.description }}</span
 										>
 									</div>
@@ -335,7 +333,7 @@
 				id="privacy"
 				class="mt-4 w-full flex flex-col lg:grid lg:grid-cols-3 gap-2 lg:gap-x-4"
 			>
-				<h2 class="text-md sm:text-lg md:text-xl flex">
+				<h2 class="text-base sm:text-lg md:text-xl flex">
 					{{ prop.name
 					}}<span
 						v-if="prop.unverified === true"
@@ -354,7 +352,7 @@
 						<EditableValue
 							v-if="prop.type !== 'dropdown' && prop.computed"
 							v-model="prop.computed.value"
-							class="text-md sm:text-lg"
+							class="text-base sm:text-lg"
 							size="lg"
 							:type="prop.type"
 							:onFinish="updateUser"
@@ -450,8 +448,8 @@
 							checked-icon="mdi:email-check"
 							unchecked-icon="mdi:email-off"
 							label="Email Notifications"
-							class="py-1 px-2 border rounded-md border-blue-500"
-							:ui="{ label: 'font-semibold text-blue-400', base: 'hover:cursor-pointer' }"
+							class="py-1 px-2 border rounded-md border-info"
+							:ui="{ label: 'font-semibold e-text-azure', base: 'hover:cursor-pointer' }"
 						/>
 						<UButton
 							id="password-change"

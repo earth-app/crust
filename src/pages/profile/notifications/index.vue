@@ -6,7 +6,7 @@
 		<div class="flex items-center gap-2">
 			<h1
 				id="notifications-title"
-				class="text-2xl font-bold text-white"
+				class="text-2xl font-bold text-highlighted"
 			>
 				Notifications for @{{ user.username }}
 			</h1>
@@ -19,7 +19,7 @@
 		</div>
 		<h5
 			id="notifications-count"
-			class="text-md mb-4 text-gray-300 light:text-gray-500"
+			class="text-base mb-4 text-muted"
 		>
 			{{ unreadCount }} unread
 		</h5>
@@ -33,9 +33,7 @@
 		v-else-if="user === null"
 		class="w-full h-full flex items-center justify-center"
 	>
-		<p class="text-gray-400 light:text-gray-600 mb-4">
-			You need to be logged in to view your notifications.
-		</p>
+		<p class="text-muted mb-4">You need to be logged in to view your notifications.</p>
 	</div>
 
 	<ClientOnly>

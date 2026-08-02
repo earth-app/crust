@@ -4,38 +4,38 @@
 		class="flex flex-col w-full min-w-100 px-8"
 	>
 		<div class="flex flex-col w-full mb-4">
-			<strong class="text-sm sm:text-md mb-2">@{{ user.username }}</strong>
-			<p class="text-xs sm:text-sm md:text-md">
+			<strong class="text-sm sm:text-base mb-2">@{{ user.username }}</strong>
+			<p class="text-xs sm:text-sm md:text-base">
 				Deleting your account is irreversible. Please make sure that this is something you want to
 				do before you proceed.
 			</p>
 			<p
 				v-if="checkingReauth"
-				class="text-xs sm:text-sm md:text-md mt-2 text-muted"
+				class="text-xs sm:text-sm md:text-base mt-2 text-muted"
 			>
 				Checking your sign-in status...
 			</p>
 			<p
 				v-else-if="recentlyAuthenticated"
-				class="text-xs sm:text-sm md:text-md mt-2"
+				class="text-xs sm:text-sm md:text-base mt-2"
 			>
 				You're recently signed in. Confirm below to permanently delete your account.
 			</p>
 			<p
 				v-else-if="hasPassword"
-				class="text-xs sm:text-sm md:text-md mt-2"
+				class="text-xs sm:text-sm md:text-base mt-2"
 			>
 				To delete your account, please enter your password and confirm your choice.
 			</p>
 			<p
 				v-else-if="hasOAuth"
-				class="text-xs sm:text-sm md:text-md mt-2"
+				class="text-xs sm:text-sm md:text-base mt-2"
 			>
 				For security, please reauthenticate with one of your linked providers before deleting.
 			</p>
 			<p
 				v-else
-				class="text-xs sm:text-sm md:text-md mt-2"
+				class="text-xs sm:text-sm md:text-base mt-2"
 			>
 				No reauthentication method is available on your account. Contact support to delete your
 				account.
@@ -106,7 +106,7 @@
 
 			<div
 				v-if="error"
-				class="text-red-500 mt-2"
+				class="e-text-danger mt-2"
 			>
 				{{ error }}
 			</div>
@@ -116,7 +116,7 @@
 		v-else
 		class="flex flex-col w-full h-full items-center justify-center"
 	>
-		<p class="text-center text-gray-600">Please log in.</p>
+		<p class="text-center text-toned">Please log in.</p>
 	</div>
 </template>
 

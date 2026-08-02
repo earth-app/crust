@@ -1,7 +1,7 @@
 <template>
 	<div class="text-left">
-		<p class="text-md mt-2 max-w-3xl">Last Updated: June 14, 2026</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">Last Updated: June 14, 2026</p>
+		<p class="text-base mt-2 max-w-3xl">
 			At The Earth App ("we", "our", or "us"), we are committed to protecting your privacy. This
 			Privacy Policy explains what information we collect, how we use and share it, how long we keep
 			it, and the choices and rights you have. It applies to our website, our mobile applications,
@@ -10,12 +10,12 @@
 			read together with our
 			<NuxtLink
 				to="/terms-of-service"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 				>Terms of Service</NuxtLink
 			>.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">1. Information We Collect</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>Information you provide to us.</strong> When you create an account or use our
 			services, we collect the information you choose to give us. This includes your username, email
 			address, and password, and may include profile details such as your first and last name, phone
@@ -24,14 +24,14 @@
 			articles, events, event images, quest submissions, and any reports you file about other
 			content or users.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>Information from third-party sign-in.</strong> If you choose to register or log in
 			using a third-party provider — currently Google, Microsoft, Discord, GitHub, or Apple — we
 			receive a unique identifier for your account with that provider and basic profile information
 			that you authorize the provider to share, which typically includes your email address, name,
 			and profile picture. We do not receive your password for those accounts.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>Information we collect automatically.</strong> When you use our services, we
 			automatically collect certain technical information, including your IP address (and the
 			approximate location and country it indicates), browser and device type, operating system, and
@@ -43,7 +43,7 @@
 			(for example, to require an additional verification step when you sign in from a new location)
 			and to enforce rate limits and prevent abuse.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>Location, sensor, camera, and health data.</strong> Some features — particularly
 			quests in our mobile application — may, with your permission, access additional information
 			from your device. This can include your device's location while you are using the app (used to
@@ -59,7 +59,7 @@
 			you for permission before we access location, camera, microphone, health, or motion data, and
 			you can change these permissions at any time in your device settings.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>Notifications and on-device data.</strong> If you enable push notifications, we
 			collect a device push token (provided by Apple Push Notification service or Firebase Cloud
 			Messaging) so we can deliver notifications to you. Our mobile application also keeps
@@ -68,7 +68,7 @@
 			export and share them.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">2. How We Use Your Information</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We use the information we collect to provide, maintain, and improve our services; to create
 			and manage your account; to personalize your experience and power features such as quests,
 			badges, journeys, leaderboards, cosmetics, and content recommendations; to communicate with
@@ -76,13 +76,13 @@
 			preventing fraud and abuse, and enforcing rate limits); to enforce our
 			<NuxtLink
 				to="/terms-of-service"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 				>Terms of Service</NuxtLink
 			>
 			and respond to content reports; to understand how our services are used through analytics; and
 			to comply with our legal obligations.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We send two general kinds of email. <strong>Transactional and service messages</strong> — such
 			as email verification, security and login-verification codes, notifications about your account
 			or content, and moderation notices — are part of providing the service, and you cannot opt out
@@ -95,7 +95,7 @@
 			>
 		</p>
 		<h1 class="text-2xl font-bold mt-4">3. Automated Processing and AI Features</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			Some features rely on artificial intelligence. To generate personalized features — such as
 			badge-mastery quests and AI-generated profile images — we send certain profile information
 			(which may include your username, biography, country, display name, and selected interests and
@@ -107,7 +107,7 @@
 			involvement.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">4. Cookies, Local Storage, and Similar Technologies</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We use cookies and browser local storage to operate the services rather than to track you for
 			advertising. These include a session cookie that keeps you logged in, a cookie that records
 			whether you have visited before (used for onboarding), and, if you arrive through a referral
@@ -118,11 +118,11 @@
 			browser or device settings, though some features may not work properly without them.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">5. How We Share Your Information</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>We do not sell, trade, or rent your personal information to third parties.</strong> We
 			share information only in the following circumstances:
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>With service providers and sub-processors</strong> who help us operate the services
 			and are bound to protect your information and use it only on our behalf. These currently
 			include: Cloudflare (hosting and edge infrastructure, AI inference through Workers AI, image
@@ -134,17 +134,17 @@
 			that enriches activities. Apple Push Notification service is used to deliver notifications on
 			Apple devices.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>With other users</strong>, according to your privacy settings. Information and content
 			you mark as public may be visible to anyone, including unauthenticated visitors, while
 			information you restrict is shown only to the people you allow (see Section 7).
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>For legal and safety reasons</strong>, when we believe in good faith that disclosure
 			is required by law or legal process, or is necessary to protect the rights, property, or
 			safety of The Earth App, our users, or the public.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>With our administrators for moderation.</strong> Our administrators may review the
 			content and data you submit to quests — including photos, audio recordings, text responses,
 			scan and event data, and related submission metadata — to enforce our policies, investigate
@@ -152,13 +152,13 @@
 			violates our rules. This quest submission data is used for moderation and to power your own
 			quest experience; it is not made available to other users.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>In a business transfer</strong>, such as a merger, acquisition, financing, or sale of
 			assets, in which case we will continue to protect your information consistent with this
 			Privacy Policy and notify you of any material change in how it is handled.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">6. Payment and Billing Data</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			When you purchase a paid subscription, your payment is handled by a third-party payment
 			processor, not by us. Subscriptions bought on our website are processed by Stripe, and
 			subscriptions bought in our mobile applications are processed by the Apple App Store or Google
@@ -166,7 +166,7 @@
 			payment-account details under their own privacy policies and applicable payment-card security
 			standards.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We deliberately limit the billing information we store. We keep your billing contact
 			information (such as your name and email address) and your subscription state (your tier,
 			subscription status, provider, current billing-period end date, whether you have scheduled a
@@ -181,7 +181,7 @@
 			method, any limited card details shown (such as the card brand and last four digits) are
 			retrieved live from the processor and are not stored on our servers.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We retain billing, invoice, tax, and auto-renewal consent records for as long as needed to
 			operate your subscription and, after it ends, for the period required by accounting, tax,
 			audit, and consumer-protection laws. Records of your express consent to auto-renewal are kept
@@ -191,7 +191,7 @@
 			Transfers section below, using appropriate safeguards where required.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">7. Public Information and Your Privacy Controls</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			You control how visible your account and content are. You can set your account to "Public,"
 			"Unlisted," or "Private," which determines whether your content is discoverable by everyone,
 			only by logged-in users with a direct link, or only by people you approve. Individual profile
@@ -203,7 +203,7 @@
 			you choose to share.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">8. Data Retention</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We keep your account information for as long as your account is active and as needed to
 			provide the services. Some data is kept only for limited periods: onboarding state is retained
 			for about a year; journey streaks for about 48 hours; anonymous mood votes for about 30 days;
@@ -217,7 +217,7 @@
 			time and are overwritten in the normal course of operations.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">9. Data Security</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We implement appropriate technical and organizational measures to protect your personal
 			information from unauthorized access, alteration, disclosure, or destruction. These include
 			access controls, the use of reputable infrastructure providers, and encryption of certain
@@ -226,7 +226,7 @@
 			absolute security. You are responsible for keeping your login credentials confidential.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">10. International Data Transfers</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We are based in the United States, and our services are operated using infrastructure located
 			in the United States and on the global networks of our service providers. If you access our
 			services from outside the United States, your information will be transferred to, stored in,
@@ -235,13 +235,13 @@
 			such transfers, and by using our services you consent to this transfer and processing.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">11. Your Rights and Choices</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			You can access and update most of your information directly within the services by editing
 			your profile and adjusting your privacy and notification settings, and you can delete your
 			account at any time (we may ask you to re-authenticate first to confirm it is you). You can
 			also opt out of marketing emails as described in Section 2.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong
 				>If you are in the European Economic Area, the United Kingdom, or a similar
 				jurisdiction</strong
@@ -253,7 +253,7 @@
 			marketing emails), and compliance with legal obligations. You also have the right to lodge a
 			complaint with your local data protection authority.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			<strong>If you are a California resident</strong>, you have the right to know what personal
 			information we collect and how we use and disclose it, the right to request access to and
 			deletion or correction of your personal information, and the right to opt out of the "sale" or
@@ -261,17 +261,17 @@
 			terms are defined under California law, and we will not discriminate against you for
 			exercising your rights.
 		</p>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			To exercise any of these rights, contact us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 				>support@earth-app.com</NuxtLink
 			>. We may need to verify your identity before responding, and we will respond within the time
 			required by applicable law.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">12. Children's Privacy</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			Our services are not directed to children, and you must be at least 13 years old (or older
 			where required by your jurisdiction, such as 16 in parts of the European Economic Area) to
 			create an account. In accordance with the Children's Online Privacy Protection Act (COPPA) and
@@ -282,13 +282,13 @@
 			contact us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 hover:underline"
+				class="e-text-azure hover:underline"
 				>support@earth-app.com</NuxtLink
 			>
 			so we can take appropriate action.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">13. Changes to This Privacy Policy</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			We reserve the right to update or modify this Privacy Policy at any time. Any changes will be
 			effective immediately upon posting on our website, and we will update the "Last Updated" date
 			above. We will endeavor to notify you of significant changes through our services or other
@@ -296,12 +296,12 @@
 			your acceptance of the updated Privacy Policy.
 		</p>
 		<h1 class="text-2xl font-bold mt-4">14. Contact Us</h1>
-		<p class="text-md mt-2 max-w-3xl">
+		<p class="text-base mt-2 max-w-3xl">
 			If you have any questions or concerns about this Privacy Policy or our data practices, please
 			contact us at
 			<NuxtLink
 				to="mailto:support@earth-app.com"
-				class="text-blue-500 font-semibold"
+				class="e-text-azure font-semibold"
 			>
 				support@earth-app.com
 			</NuxtLink>

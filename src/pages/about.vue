@@ -4,7 +4,7 @@
 		<div class="relative size-48 my-24">
 			<EarthCircle />
 		</div>
-		<p class="text-md mt-2 text-center max-w-3xl">
+		<p class="text-base mt-2 text-center max-w-3xl">
 			In today's world, we are often confined within our own lives, isolated from the vastness of
 			knowledge and experience that surrounds us. The Earth App is a new take on the app landscape,
 			encouraging users to learn about new things and find novelty in their lives. The app appeals
@@ -22,7 +22,7 @@
 					<h1 class="font-bold text-xl">Gregory R. Mitchell</h1>
 					<NuxtLink
 						to="/profile/gmitch215"
-						class="text-blue-500 font-semibold"
+						class="e-text-azure font-semibold"
 						>@gmitch215</NuxtLink
 					>
 					<NuxtImg
@@ -31,13 +31,13 @@
 						format="webp"
 						width="480"
 						height="480"
-						class="h-1/2 max-h-240 w-auto mt-4 mr-4 object-contain border-2 border-gray-300 rounded-md hover:scale-105 transition-transform duration-200 shadow-lg shadow-gray-700"
+						class="h-1/2 max-h-240 w-auto mt-4 mr-4 object-contain border border-default rounded-md hover:scale-105 transition-transform shadow-lg"
 						loading="lazy"
 						decoding="async"
 					/>
 				</div>
 				<div class="flex flex-col items-center max-w-3xl ml-8 mt-12 w-1/2">
-					<p class="text-md mt-2">
+					<p class="text-base mt-2">
 						Gregory Mitchell is a 17-year-old software developer and student based in the United
 						States. Born in Illinois, he has a passion for building applications that make a
 						difference in people's lives, and he believes that technology can be a powerful tool for
@@ -48,7 +48,7 @@
 					<NuxtLink
 						to="https://gmitch215.dev"
 						target="_blank"
-						class="mt-4 text-blue-400 hover:underline font-semibold"
+						class="mt-4 e-text-azure hover:underline font-semibold"
 					>
 						gmitch215.dev
 					</NuxtLink>

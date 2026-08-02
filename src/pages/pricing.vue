@@ -1,7 +1,7 @@
 <template>
 	<div class="flex flex-col items-center w-full h-full py-8 px-4 sm:px-8">
 		<h1 class="text-3xl font-bold text-center">Choose Your Plan</h1>
-		<p class="text-md mt-2 text-center max-w-2xl opacity-80">
+		<p class="text-base mt-2 text-center max-w-2xl opacity-80">
 			Upgrade to unlock more events, faster quests, creator tools, and priority support. Paid plans
 			renew monthly and can be canceled anytime.
 		</p>

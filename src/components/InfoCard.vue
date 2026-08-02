@@ -71,18 +71,18 @@
 							:to="appendUTMParameters(link)"
 							target="_blank"
 							rel="noopener noreferrer"
-							class="text-md sm:text-md md:text-lg font-semibold text-blue-500 light:text-blue-600 hover:underline"
+							class="inline-flex min-h-6 items-center text-base sm:text-base md:text-lg font-semibold e-text-azure hover:underline"
 							>{{ title }}</NuxtLink
 						>
 						<NuxtLink
 							v-else-if="link"
 							:to="appendUTMParameters(link)"
-							class="text-sm sm:text-md md:text-lg font-semibold text-blue-500 light:text-blue-600 hover:underline"
+							class="inline-flex min-h-6 items-center text-sm sm:text-base md:text-lg font-semibold e-text-azure hover:underline"
 							>{{ title }}</NuxtLink
 						>
 						<h4
 							v-else
-							class="text-sm sm:text-md md:text-lg font-semibold"
+							class="text-sm sm:text-base md:text-lg font-semibold"
 						>
 							{{ title }}
 						</h4>
@@ -115,25 +115,25 @@
 						:to="appendUTMParameters(descriptionLink)"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="text-sm md:text-md lg:text-base text-gray-600 light:text-gray-900 hover:underline"
+						class="text-sm md:text-base lg:text-base text-toned light:text-highlighted hover:underline"
 						>{{ description }}</NuxtLink
 					>
 					<p
 						v-else-if="description"
-						class="text-sm md:text-md lg:text-base text-gray-600 light:text-gray-900 hover:cursor-text"
+						class="text-sm md:text-base lg:text-base text-toned light:text-highlighted hover:cursor-text"
 					>
 						{{ description }}
 					</p>
 					<USeparator
 						v-if="content || image || youtubeId || video || object"
-						class="border-gray-500 light:border-black my-2 w-11/12"
+						class="border-default light:border-black my-2 w-11/12"
 					/>
 					<NuxtLink
 						v-if="imageLink && image && !imageFailed"
 						:to="appendUTMParameters(imageLink)"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="text-xs text-gray-500 hover:underline mb-1"
+						class="text-xs text-muted hover:underline mb-1"
 					>
 						<LazyNuxtImg
 							:src="image"
@@ -259,13 +259,13 @@
 							:type="object.type || undefined"
 							class="w-full min-h-64 object-cover rounded-lg mb-2"
 						>
-							<p class="text-center text-gray-500">
+							<p class="text-center text-muted">
 								Unable to display content. <br />
 								<a
 									:href="object.url"
 									target="_blank"
 									rel="noopener noreferrer"
-									class="text-blue-500 hover:underline"
+									class="e-text-azure hover:underline"
 								>
 									View here.
 								</a>
@@ -274,7 +274,7 @@
 					</LazyClientOnly>
 					<span
 						v-if="content"
-						class="text-xs sm:text-sm md:text-md text-gray-300 light:text-gray-700 hover:cursor-text"
+						class="text-xs sm:text-sm md:text-base text-muted light:text-toned hover:cursor-text"
 						>{{ content }}</span
 					>
 					<div
@@ -312,7 +312,7 @@
 								"
 								:target="linkObj.external ? '_blank' : '_self'"
 								rel="noopener noreferrer"
-								class="font-semibold text-blue-500 text-sm hover:underline"
+								class="font-semibold e-text-azure text-sm hover:underline"
 								>{{ linkObj.text }}
 							</NuxtLink>
 							<span v-if="index < additionalLinks.length - 1">•</span>
@@ -340,7 +340,7 @@
 					</div>
 					<USeparator
 						v-if="footer"
-						class="border-gray-500 my-2 w-11/12"
+						class="border-default my-2 w-11/12"
 					/>
 					<LazyUTooltip
 						v-if="footerTooltip"
@@ -349,20 +349,20 @@
 					>
 						<p
 							v-if="footer"
-							class="text-gray-500 text-xs sm:text-sm"
+							class="text-muted text-xs sm:text-sm"
 						>
 							{{ footer }}
 						</p>
 					</LazyUTooltip>
 					<p
 						v-else-if="footer && !footerTooltip"
-						class="text-gray-500 light:text-gray-800 text-xs sm:text-sm"
+						class="text-muted light:text-highlighted text-xs sm:text-sm"
 					>
 						{{ footer }}
 					</p>
 					<p
 						v-if="secondaryFooter"
-						class="mt-2 text-gray-600 light:text-gray-800 text-xs"
+						class="mt-2 text-toned light:text-highlighted text-xs"
 					>
 						{{ secondaryFooter }}
 					</p>
@@ -372,7 +372,9 @@
 				v-if="buttons && buttons.length > 0"
 				class="flex flex-col items-center ml-4 min-w-22 sm:min-w-26 md:min-w-30 lg:min-w-34"
 			>
-				<h2 class="text-sm md:text-md text-center font-semibold text-gray-500 light:text-gray-800">
+				<h2
+					class="text-sm md:text-base text-center font-semibold text-muted light:text-highlighted"
+				>
 					Actions
 				</h2>
 				<LazyUButton
