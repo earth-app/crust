@@ -53,6 +53,15 @@ export default defineNuxtConfig({
 		locales: [{ code: 'en', language: 'en-US' }],
 		defaultLocale: 'en'
 	},
+	/* MUST mirror nuxt.config.ts. prepack copies this file over nuxt.config.ts before publish, and
+	   @nuxt/ui REPLACES rather than extends this list, so any drift drops a colour slot from the
+	   published layer. omitting it entirely is what left sky rendering `tertiary` as an empty
+	   colour. tests/unit/design/library-config.spec.ts deep-equals the two */
+	ui: {
+		theme: {
+			colors: ['primary', 'secondary', 'tertiary', 'info', 'success', 'warning', 'error']
+		}
+	},
 	image: {
 		provider: 'none'
 	}
