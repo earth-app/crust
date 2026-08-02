@@ -1,16 +1,20 @@
 <template>
 	<div
-		class="flex justify-center! items-center aspect-video overflow-hidden rounded-xl border-4 border-gray-700 bg-gray-600 light:border-gray-200 light:bg-white light:shadow-md hover:-translate-y-1 hover:brightness-110 transition-all duration-300 cursor-pointer"
+		class="flex justify-center! items-center aspect-video overflow-hidden rounded-xl border-4 border-default bg-gray-600 light:border-default light:bg-white light:shadow-md hover:-translate-y-1 hover:brightness-110 transition-all duration-300 cursor-pointer"
 		:class="[
 			sizeClasses.container,
 			isGranted
-				? 'border-yellow-500 shadow-md shadow-white/40 bg-linear-to-tl from-yellow-500/70 via-yellow-600/40 to-yellow-500/70 light:border-yellow-400 light:shadow-yellow-500/30 light:from-yellow-400/80 light:via-amber-200/60 light:to-yellow-400/80'
+				? 'border-warning shadow-md shadow-white/40 bg-linear-to-tl from-yellow-500/70 via-yellow-600/40 to-yellow-500/70 light:border-warning light:shadow-yellow-500/30 light:from-yellow-400/80 light:via-amber-200/60 light:to-yellow-400/80'
 				: '',
 			isMastered
 				? 'bg-linear-to-tl! border-purple-400/70! from-purple-900! via-purple-400/60! to-purple-900! shadow-md shadow-purple-500/40! light:via-purple-500/90!'
 				: ''
 		]"
+		role="button"
+		tabindex="0"
 		@click="emit('clicked')"
+		@keydown.enter.prevent="emit('clicked')"
+		@keydown.space.prevent="emit('clicked')"
 	>
 		<UIcon
 			:name="badge.icon"

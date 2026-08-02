@@ -39,7 +39,11 @@
 				:key="row.id"
 				class="flex items-center gap-3 p-2 rounded-lg transition-colors cursor-pointer hover:bg-primary/5"
 				:class="row.isSelf ? 'bg-primary/10 ring-1 ring-primary/40' : ''"
+				role="button"
+				tabindex="0"
 				@click="navigate(row.id)"
+				@keydown.enter.prevent="navigate(row.id)"
+				@keydown.space.prevent="navigate(row.id)"
 			>
 				<span
 					class="font-mono font-bold text-sm w-6 text-center"
@@ -51,6 +55,7 @@
 					:src="row.avatarSrc"
 					:alt="row.username"
 					size="sm"
+					class="shadow-sm"
 				/>
 				<div class="flex-1 min-w-0">
 					<p class="text-sm font-semibold truncate">

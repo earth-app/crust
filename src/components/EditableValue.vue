@@ -1,10 +1,15 @@
 <template>
 	<div
+		role="button"
+		tabindex="0"
+		aria-label="Edit"
 		class="cursor-pointer space-y-1"
 		@click="startEditing"
+		@keydown.enter.prevent="startEditing"
+		@keydown.space.prevent="startEditing"
 	>
 		<template v-if="!editing">
-			<span :class="['text-gray-800 dark:text-white', props.class]">
+			<span :class="['text-highlighted dark:text-white', props.class]">
 				{{ props.modelValue || props.placeholder || '-' }}
 			</span>
 			<UIcon
