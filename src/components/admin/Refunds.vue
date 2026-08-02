@@ -115,12 +115,10 @@
 					v-if="target"
 					class="flex flex-col gap-4 p-1"
 				>
-					<div
-						class="flex items-start gap-2 rounded bg-amber-500/10 border border-amber-500/40 p-3"
-					>
+					<div class="flex items-start gap-2 rounded bg-warning/10 border border-warning/40 p-3">
 						<UIcon
 							name="mdi:alert"
-							class="text-amber-500 text-lg shrink-0"
+							class="e-text-warning text-lg shrink-0"
 						/>
 						<div class="text-xs">
 							This issues a real-money refund and revokes the paid plan immediately. This action

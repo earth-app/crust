@@ -63,7 +63,7 @@
 				>
 					<UIcon
 						name="i-lucide-info"
-						class="size-5 text-amber-600 shrink-0"
+						class="size-5 e-text-warning shrink-0"
 					/>
 					<span class="text-xs! opacity-90">{{ migratedMessage }}</span>
 				</div>

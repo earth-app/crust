@@ -1,4 +1,4 @@
-import { PixabayVideo } from 'types/activity';
+import { type PixabayVideo } from 'types/activity';
 import { ensureLoggedIn } from '~/server/utils';
 
 export default defineEventHandler(async (event) => {

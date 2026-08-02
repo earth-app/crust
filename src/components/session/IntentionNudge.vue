@@ -20,7 +20,7 @@
 			<div class="flex items-center gap-2">
 				<UIcon
 					name="mdi:weather-sunny"
-					class="size-5 text-amber-500"
+					class="size-5 e-text-warning"
 				/>
 				<h3 class="text-sm sm:text-base font-semibold">What Brings You Here Today?</h3>
 			</div>

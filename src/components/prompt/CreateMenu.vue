@@ -95,7 +95,7 @@
 			</ClientOnly>
 			<div
 				v-if="error"
-				class="text-red-500 mt-2"
+				class="e-text-danger mt-2"
 			>
 				{{ error }}
 			</div>

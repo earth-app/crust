@@ -54,13 +54,13 @@ const badgeLabel = computed(() => {
 const badgeStyling = computed(() => {
 	switch (props.user.account?.account_type) {
 		case 'ADMINISTRATOR':
-			return 'bg-red-500 font-bold';
+			return 'bg-error font-bold';
 		case 'ORGANIZER':
-			return 'bg-green-500 font-semibold';
+			return 'bg-success font-semibold';
 		case 'WRITER':
-			return 'bg-yellow-500 font-medium';
+			return 'bg-warning font-medium';
 		case 'PRO':
-			return 'bg-blue-500';
+			return 'bg-info';
 		default:
 			return 'bg-gray-500';
 	}

@@ -2,7 +2,7 @@
 	<div class="flex flex-col gap-1.5">
 		<NuxtLink
 			:to="href"
-			class="text-xs font-mono text-blue-500 hover:underline self-start"
+			class="text-xs font-mono e-text-azure hover:underline self-start"
 			>{{ label }}: {{ id }}</NuxtLink
 		>
 		<ArticleCard

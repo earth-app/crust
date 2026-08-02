@@ -1,6 +1,6 @@
 import { H3Event } from 'h3';
 import { importPKCS8, SignJWT } from 'jose';
-import { InternetArchiveSearch } from '~/shared/types/activity';
+import { type InternetArchiveSearch } from '~/shared/types/activity';
 
 export function cloudErrorMessage(data: unknown): string | undefined {
 	const str = (v: unknown): string | undefined =>

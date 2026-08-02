@@ -5,7 +5,7 @@
 		:class="prefersReducedMotion ? '' : 'motion-preset-fade-md'"
 	>
 		<div
-			class="relative w-full max-w-2xl rounded-xl border border-teal-200/70 dark:border-teal-900/40 bg-linear-to-br from-teal-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-900 dark:to-teal-950/30 p-4 sm:p-5"
+			class="relative w-full max-w-2xl rounded-xl border border-default bg-linear-to-br from-brand-50 via-default to-brand-100/60 dark:from-elevated dark:via-elevated dark:to-brand-950/30 p-4 sm:p-5"
 		>
 			<UButton
 				icon="mdi:close"
@@ -20,7 +20,7 @@
 			<div class="flex items-center gap-2">
 				<UIcon
 					name="mdi:walk"
-					class="size-5 text-teal-600 dark:text-teal-300"
+					class="size-5 e-text-brand"
 				/>
 				<h3 class="text-sm sm:text-base font-semibold">Been Here a While?</h3>
 			</div>

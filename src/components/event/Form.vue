@@ -12,7 +12,7 @@
 		/>
 		<div
 			v-if="error"
-			class="p-4 bg-red-100 border border-red-400 text-red-700 rounded"
+			class="p-4 bg-error/10 border border-error e-text-danger rounded"
 		>
 			{{ error }}
 		</div>
@@ -169,7 +169,7 @@
 						#error
 						v-if="eventLinkValid === false"
 					>
-						<span class="text-sm text-red-500">Please enter a valid URL</span>
+						<span class="text-sm e-text-danger">Please enter a valid URL</span>
 					</template>
 				</UFormField>
 
@@ -206,7 +206,7 @@
 						#error
 						v-if="maxInPersonValid === false"
 					>
-						<span class="text-sm text-red-500"
+						<span class="text-sm e-text-danger"
 							>Cannot exceed your account limit of {{ maxEventAttendees.toLocaleString() }}</span
 						>
 					</template>
@@ -230,7 +230,7 @@
 						#error
 						v-if="maxOnlineValid === false"
 					>
-						<span class="text-sm text-red-500"
+						<span class="text-sm e-text-danger"
 							>Cannot exceed your account limit of {{ maxEventAttendees.toLocaleString() }}</span
 						>
 					</template>

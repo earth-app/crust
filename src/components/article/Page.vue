@@ -15,7 +15,7 @@
 				<h2>
 					by
 					<NuxtLink :to="`/profile/@${article.author.username}`">
-						<span class="font-semibold text-blue-500"> @{{ article.author.username }} </span>
+						<span class="font-semibold e-text-azure"> @{{ article.author.username }} </span>
 					</NuxtLink>
 				</h2>
 			</UTooltip>
@@ -110,7 +110,7 @@
 		</div>
 		<h3
 			id="article-time"
-			class="text-xs sm:text-sm text-gray-400"
+			class="text-xs sm:text-sm text-muted"
 		>
 			{{ time }}
 		</h3>

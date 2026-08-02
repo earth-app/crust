@@ -31,7 +31,7 @@
 						v-if="event.fields?.link"
 						:to="event.fields.link"
 						target="_blank"
-						class="text-blue-600 hover:underline border-blue-600 inline-flex items-center w-fit"
+						class="e-text-azure hover:underline border-info inline-flex items-center w-fit"
 					>
 						<UIcon
 							name="mdi:link-variant"

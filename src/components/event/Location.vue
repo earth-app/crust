@@ -20,7 +20,7 @@
 				</UInput>
 				<span
 					v-if="coordinatesValid === false"
-					class="text-xs text-red-500"
+					class="text-xs e-text-danger"
 				>
 					Invalid coordinates format. Use: latitude, longitude
 				</span>
@@ -45,7 +45,7 @@
 									<div class="font-medium">{{ item.label }}</div>
 									<div
 										v-if="item.subtitle"
-										class="text-xs text-gray-500"
+										class="text-xs text-muted"
 									>
 										{{ item.subtitle }}
 									</div>

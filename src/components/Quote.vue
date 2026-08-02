@@ -3,15 +3,15 @@
 		<UAvatar
 			:src="avatar || '/cloud.png'"
 			size="xl"
-			class="mb-1"
+			class="mb-1 shadow-md"
 		/>
-		<p class="font-medium text-lg bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
+		<p class="font-medium text-lg bg-muted dark:bg-elevated p-2 rounded-lg">
 			"{{ text }}"
 			<span v-if="link"> - </span>
 			<a
 				v-if="link"
 				:href="`/profile/@${username || 'cloud'}`"
-				class="text-blue-600 font-semibold"
+				class="e-text-azure font-semibold"
 				>@{{ username || 'cloud' }}</a
 			>
 		</p>

@@ -47,15 +47,12 @@ src/
 Crust leverages Nuxt's flexible rendering modes for optimal performance:
 
 - **SSR (Server-Side Rendering)**: Default for SEO-critical pages
-- **ISR (Incremental Static Regeneration)**: For content listing pages
-  - Homepage: regenerates every hour (`isr: 3600`)
-  - Activities: every 4 hours (`isr: 14400`)
-  - Events: every 10 minutes (`isr: 600`)
-  - Prompts: every 15 minutes (`isr: 900`)
-- **SWR (Stale-While-Revalidate)**: For individual content pages
-  - Activities cached for 4 hours
-  - Articles cached for 1 hour
-  - Events cached for 30 minutes
+- **ISR (Incremental Static Regeneration)**: listing pages only, with deliberately short TTLs
+  (60-300s) so cached HTML cannot outlive the `/_nuxt/*` chunks it references. See `routeRules` in
+  [nuxt.config.ts](nuxt.config.ts) for the live values rather than a copy here.
+- **Detail pages use plain SSR with no cache.** SWR HTML repeatedly outlived its chunks across
+  deploys and produced hydration failures; see the Route caching strategy in
+  [CLAUDE.md](CLAUDE.md).
   - Prompts cached for 30 minutes
 - **Client-Side Only**: For authenticated pages (profiles, admin, auth flows)
 
@@ -230,9 +227,9 @@ Configured in `app.vue` with `useSeoMeta()`:
 
 **Robots.txt**:
 
-- Static file at `public/_robots.txt`
-- Managed by `@nuxtjs/robots` module
-- Currently allows crawling by default
+- Managed entirely by the `@nuxtjs/robots` module (`mergeWithRobotsTxtPath: false`), so there is
+  no static file to edit
+- Disallows `/admin`, `/oauth/`, and `/__test__/`
 
 ### 8. **Internationalization (i18n)**
 
@@ -252,16 +249,20 @@ Configured via `@nuxtjs/i18n`:
 
 #### Scripts
 
-```json
-{
-	"dev": "bunx nuxi dev --dotenv .config/local.env --no-restart --public --port 3000",
-	"dev:remote": "bunx nuxi dev --dotenv .config/production.env --dotenv .env --dotenv .env.local --no-restart --public --port 3000",
-	"build": "NODE_OPTIONS='--max-old-space-size=4096' nuxt build",
-	"postinstall": "nuxt prepare",
-	"prettier": "bunx prettier --write .",
-	"prettier:check": "bunx prettier --check ."
-}
-```
+Run `bun run` to list them. The ones worth knowing:
+
+| script           | what it does                                              |
+| ---------------- | --------------------------------------------------------- |
+| `dev`            | dev server on :3000 against `.config/local.env`           |
+| `build`          | production build (Cloudflare Workers preset)              |
+| `build:test`     | e2e build, node-server preset, into `.output-e2e`         |
+| `test:unit`      | vitest gate lane                                          |
+| `test:e2e`       | playwright against the prod-ish build on :3002            |
+| `typecheck`      | all four TS programs (app, server, e2e tests, unit tests) |
+| `prettier:check` | formatting gate                                           |
+
+This table is deliberately partial; `package.json` is the source of truth and a full copy here
+only rots.
 
 #### Environment Configuration
 
@@ -318,7 +319,7 @@ NUXT_ADMIN_API_KEY=<secret>
 
 ### Cloudflare Workers (via NuxtHub)
 
-**Build Command**: `NODE_OPTIONS='--max-old-space-size=4096' nuxt build`
+**Build Command**: `NODE_OPTIONS='--max-old-space-size=6144' nuxt build`
 **Output**: Cloudflare Workers module
 **Features**:
 
@@ -396,9 +397,16 @@ NUXT_PIXABAY_API_KEY=<local-or-dev-key>
 ### Type Checking
 
 ```bash
-# Run type checker
-bunx vue-tsc --noEmit
+bun run typecheck
 ```
+
+**Do not run `vue-tsc --noEmit` on its own.** The root `tsconfig.json` is solution-style
+(`files: []` plus `references`), and outside build mode `references` is only a module-resolution
+redirect -- so a bare `vue-tsc --noEmit` builds an EMPTY program and exits 0 with real errors
+present. TS also suppresses `TS18003` when `references` is set, so there is no warning. The
+`typecheck` script points `-p` at each real program instead: `.nuxt/tsconfig.app.json`,
+`.nuxt/tsconfig.server.json`, `tests/tsconfig.json` and `tests/unit/tsconfig.json`. It needs
+`.nuxt` to exist, which `postinstall` guarantees.
 
 ## 📚 API Integration Guide
 
@@ -511,7 +519,7 @@ export const useAuthStore = defineStore('auth', () => {
 2. **Code Splitting**: Automatic per-route chunks
 3. **Tree Shaking**: Unused Iconify icons excluded
 4. **Caching Strategy**:
-   - Page rendering: ISR/SWR from 10min to 4hr depending on route
+   - Page rendering: short ISR (60-300s) on listing pages; detail pages are uncached SSR
    - Internal API cache: `/api/activity/**` cached for 1 hour
    - Client request layer: deduped in-flight requests + bounded in-memory cache
    - Static assets: Indefinite (CDN cache)

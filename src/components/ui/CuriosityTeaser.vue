@@ -29,9 +29,9 @@ const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 const gap = computed(() => curiosityGap(props.revealed, props.total, { noun: props.noun }));
 
 const pillClass = computed(() => {
-	if (gap.value.complete) return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300';
+	if (gap.value.complete) return 'bg-success/10 e-text-brand';
 	// the last payoff gets the warmest color to pull the user in
-	if (gap.value.oneAway) return 'bg-amber-500/15 text-amber-700 dark:text-amber-300';
+	if (gap.value.oneAway) return 'bg-warning/15 e-text-warning';
 	return 'bg-primary/10 text-primary';
 });
 

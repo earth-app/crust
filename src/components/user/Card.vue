@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex flex-col p-4 bg-gray-800 light:bg-gray-100 rounded-lg shadow-md border-2 border-gray-700 light:border-gray-300"
+		class="flex flex-col p-4 bg-elevated light:bg-muted rounded-lg shadow-md border-2 border-default"
 	>
 		<div class="flex flex-wrap gap-y-2">
 			<UUser

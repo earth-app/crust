@@ -40,7 +40,7 @@
 							<UIcon
 								:name="currentResult.correct ? 'mdi:check' : 'mdi:close'"
 								class="mr-2"
-								:class="currentResult.correct ? 'text-green-500' : 'text-red-500'"
+								:class="currentResult.correct ? 'e-text-brand' : 'e-text-danger'"
 							/>
 							<span>{{ currentResult.correct ? 'Correct' : 'Incorrect' }}</span>
 						</div>
@@ -113,7 +113,7 @@
 											currentResult.correct_answer_indices.includes(i)
 										"
 										name="mdi:check-circle"
-										class="text-green-500"
+										class="e-text-brand"
 									/>
 									<UIcon
 										v-else-if="
@@ -121,7 +121,7 @@
 											currentResult.user_answer_indices.includes(i)
 										"
 										name="mdi:close-circle"
-										class="text-red-500"
+										class="e-text-danger"
 									/>
 								</div>
 							</template>
@@ -135,7 +135,7 @@
 										class="flex items-center gap-2 rounded-md border border-default px-3 py-2"
 										:class="
 											currentResult.user_order && currentResult.user_order[i] === item
-												? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+												? 'bg-success/10 dark:bg-success/20/20 e-text-brand'
 												: ''
 										"
 									>
@@ -161,9 +161,9 @@
 									:key="i"
 									class="flex items-center justify-between p-2 rounded"
 									:class="{
-										'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400':
+										'bg-success/10 dark:bg-success/20/20 e-text-brand':
 											i === currentResult?.correct_answer_index,
-										'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400':
+										'bg-error/10 dark:bg-error/20/20 e-text-danger':
 											i === singlePickAnswers[index] &&
 											!currentResult?.correct &&
 											i !== currentResult?.correct_answer_index
@@ -173,12 +173,12 @@
 									<UIcon
 										v-if="i === currentResult?.correct_answer_index"
 										name="mdi:check-circle"
-										class="text-green-500"
+										class="e-text-brand"
 									/>
 									<UIcon
 										v-else-if="i === singlePickAnswers[index] && !currentResult?.correct"
 										name="mdi:close-circle"
-										class="text-red-500"
+										class="e-text-danger"
 									/>
 								</div>
 							</template>
@@ -223,7 +223,7 @@
 		</div>
 		<div
 			v-else-if="quiz === null"
-			class="text-center text-gray-500 py-8"
+			class="text-center text-muted py-8"
 		>
 			<p>No quiz available for this article.</p>
 		</div>
@@ -353,11 +353,9 @@ function multiSelectResultClass(i: number, result: any): Record<string, boolean>
 	const isCorrect = correctIdx.includes(i);
 	const isUserPicked = userIdx.includes(i);
 	return {
-		'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400':
-			isCorrect && isUserPicked,
-		'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400':
-			isCorrect && !isUserPicked, // user missed a correct one
-		'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400': !isCorrect && isUserPicked // user picked a wrong one
+		'bg-success/10 dark:bg-success/20/20 e-text-brand': isCorrect && isUserPicked,
+		'bg-warning/10 dark:bg-warning/20/20 e-text-warning': isCorrect && !isUserPicked, // user missed a correct one
+		'bg-error/10 dark:bg-error/20/20 e-text-danger': !isCorrect && isUserPicked // user picked a wrong one
 	};
 }
 </script>

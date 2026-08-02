@@ -80,14 +80,14 @@
 					</div>
 				</template>
 
-				<p class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">
+				<p class="text-sm text-toned dark:text-muted whitespace-pre-line">
 					{{ step.description }}
 				</p>
 
 				<NuxtImg
 					v-if="step.image"
 					:src="step.image"
-					class="mt-3 rounded-md w-full max-h-48 object-cover border border-gray-200 dark:border-gray-800"
+					class="mt-3 rounded-md w-full max-h-48 object-cover border border-default"
 					loading="lazy"
 				/>
 
@@ -95,12 +95,12 @@
 					<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
 						<p
 							v-if="step.footer"
-							class="text-xs text-gray-500 px-2 flex-1"
+							class="text-xs text-muted px-2 flex-1"
 						>
 							{{ step.footer }}
 						</p>
 						<div class="flex items-center justify-between gap-2 sm:justify-end shrink-0">
-							<span class="text-xs text-gray-500 whitespace-nowrap">
+							<span class="text-xs text-muted whitespace-nowrap">
 								Step {{ visibleStepIndex + 1 }}&nbsp;of&nbsp;{{ visibleSteps.length }}
 							</span>
 							<div class="flex flex-col sm:flex-row gap-2">

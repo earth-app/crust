@@ -1,5 +1,5 @@
 import { ensureLoggedIn } from '~/server/utils';
-import { UnsplashImage } from '~/shared/types/activity';
+import { type UnsplashImage } from '~/shared/types/activity';
 
 export default defineEventHandler(async (event) => {
 	await ensureLoggedIn(event);

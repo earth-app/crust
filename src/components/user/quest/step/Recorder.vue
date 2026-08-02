@@ -34,9 +34,9 @@
 		>
 			<UIcon
 				name="i-lucide-mic-off"
-				class="size-14 text-red-400"
+				class="size-14 e-text-danger"
 			/>
-			<p class="text-sm! font-medium! text-red-400!">Microphone Unavailable</p>
+			<p class="text-sm! font-medium! e-text-danger!">Microphone Unavailable</p>
 			<p class="text-xs! text-neutral-500! leading-relaxed!">{{ errorMsg }}</p>
 			<button
 				class="mt-2! px-6! py-2! rounded-xl! border border-neutral-700 text-white text-sm!"
@@ -84,13 +84,13 @@
 				class="size-16! rounded-full! border-4! flex items-center justify-center! transition-all!"
 				:class="
 					canStop
-						? 'border-red-500! active:scale-90 cursor-pointer'
-						: 'border-red-500/30 opacity-40 cursor-not-allowed'
+						? 'border-error! active:scale-90 cursor-pointer'
+						: 'border-error/30 opacity-40 cursor-not-allowed'
 				"
 				:disabled="!canStop"
 				@click="stopRecording"
 			>
-				<span class="w-5 h-5 bg-red-500 rounded-sm" />
+				<span class="w-5 h-5 bg-error rounded-sm" />
 			</button>
 			<button
 				v-else
@@ -123,7 +123,7 @@
 			/>
 			<div class="flex gap-4! mt-1!">
 				<button
-					class="px-5! py-2! rounded-xl! border border-red-500/50 text-red-400 text-sm! active:scale-95 transition-transform!"
+					class="px-5! py-2! rounded-xl! border border-error/50 e-text-danger text-sm! active:scale-95 transition-transform!"
 					@click="retake"
 				>
 					Retake

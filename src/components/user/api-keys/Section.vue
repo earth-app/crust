@@ -3,7 +3,7 @@
 		id="api-keys"
 		class="flex flex-col items-center w-full max-w-4xl"
 	>
-		<h3 class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8">API Keys</h3>
+		<h3 class="text-2xl font-semibold text-muted light:text-toned mt-8">API Keys</h3>
 		<div class="text-sm opacity-80 text-center max-w-2xl mb-4">
 			API keys let scripts and tools act on your behalf. Each key has a scoped permission set and an
 			optional expiration. You can never view a key after it is generated.
@@ -44,7 +44,7 @@
 
 			<div
 				v-if="atLimit"
-				class="text-xs text-amber-500"
+				class="text-xs e-text-warning"
 			>
 				You've reached the maximum number of active keys for your tier. Revoke one before creating
 				another.
@@ -52,7 +52,7 @@
 
 			<div
 				v-if="!emailVerified"
-				class="text-xs text-amber-500 flex items-center gap-2"
+				class="text-xs e-text-warning flex items-center gap-2"
 			>
 				<UIcon name="mdi:alert" />
 				You need a verified email address before you can generate API keys.

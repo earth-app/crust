@@ -1,4 +1,4 @@
-import { PixabayImage } from 'types/activity';
+import { type PixabayImage } from 'types/activity';
 import { ensureLoggedIn } from '~/server/utils';
 
 export default defineEventHandler(async (event) => {

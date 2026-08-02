@@ -76,7 +76,7 @@
 
 		<div
 			v-if="modelValue.length === 0"
-			class="text-xs text-red-500"
+			class="text-xs e-text-danger"
 		>
 			Select at least one permission.
 		</div>

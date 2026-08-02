@@ -11,7 +11,7 @@
 				>
 					Email Verification
 				</h1>
-				<p class="mb-4 text-gray-600 dark:text-gray-300">
+				<p class="mb-4 text-toned dark:text-muted">
 					Please enter the 8-digit verification code sent to
 					<span class="font-medium">{{ user.account.email }}</span>
 				</p>
@@ -29,7 +29,7 @@
 				</div>
 				<p
 					id="verification-help"
-					class="text-sm text-gray-500 mt-2"
+					class="text-sm text-muted mt-2"
 				>
 					Enter all 8 digits of the verification code. The code will be automatically submitted when
 					complete.
@@ -61,7 +61,7 @@
 					class="mt-4 text-center"
 				>
 					<p
-						class="text-sm text-gray-600 dark:text-gray-300"
+						class="text-sm text-toned dark:text-muted"
 						aria-live="polite"
 					>
 						Loading...

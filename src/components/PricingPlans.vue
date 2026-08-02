@@ -21,11 +21,11 @@
 					>.
 				</p>
 				<div
-					class="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs flex items-start gap-2"
+					class="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs flex items-start gap-2"
 				>
 					<UIcon
 						name="mdi:autorenew"
-						class="text-amber-500 text-lg shrink-0"
+						class="e-text-warning text-lg shrink-0"
 					/>
 					<span>
 						This is an auto-renewing subscription. Your card is charged {{ confirmPlan.price }} each

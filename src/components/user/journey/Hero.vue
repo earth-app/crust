@@ -25,7 +25,7 @@
 					<UIcon
 						:name="row.icon"
 						class="size-5"
-						:class="row.count > 0 ? 'text-primary-500' : 'text-gray-400'"
+						:class="row.count > 0 ? 'text-primary-500' : 'text-muted'"
 					/>
 					<span class="text-xs sm:text-sm font-medium uppercase tracking-wider opacity-80">{{
 						row.label
@@ -37,7 +37,7 @@
 						:value="row.count"
 						:duration="700"
 						class="text-3xl sm:text-4xl font-bold leading-none"
-						:class="row.count > 0 ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'"
+						:class="row.count > 0 ? 'text-highlighted dark:text-muted' : 'text-muted'"
 					/>
 					<UBadge
 						v-if="row.rank > 0"
@@ -50,7 +50,7 @@
 
 				<div
 					class="mt-1 text-[11px] sm:text-xs font-medium tabular-nums"
-					:class="row.expiringSoon ? 'text-red-600 dark:text-red-400' : 'opacity-70'"
+					:class="row.expiringSoon ? 'e-text-danger' : 'opacity-70'"
 				>
 					<template v-if="row.count === 0">Start Today</template>
 					<template v-else-if="row.expiringSoon"> Expires Soon · {{ row.countdown }} </template>
@@ -59,7 +59,7 @@
 
 				<span
 					v-if="row.isBest"
-					class="mt-1 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"
+					class="mt-1 text-[10px] font-semibold uppercase tracking-wide e-text-warning"
 					>Your Longest Yet</span
 				>
 
@@ -163,9 +163,9 @@ const hoverClass = computed(() =>
 
 function cellClass(row: ReturnType<typeof rows.value.at>) {
 	if (!row) return '';
-	if (row.expiringSoon) return 'bg-red-50/80 dark:bg-red-950/30 ring-1 ring-red-300/60';
-	if (row.count > 0) return 'bg-white/70 dark:bg-gray-800/40';
-	return 'bg-gray-100/60 dark:bg-gray-800/20 opacity-80';
+	if (row.expiringSoon) return 'bg-error/10/80 dark:bg-red-950/30 ring-1 ring-red-300/60';
+	if (row.count > 0) return 'bg-white/70 dark:bg-elevated/40';
+	return 'bg-muted/60 dark:bg-elevated/20 opacity-80';
 }
 
 async function loadOne(type: JourneyType, id: string) {

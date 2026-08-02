@@ -115,7 +115,7 @@
 			></div>
 			<p
 				v-if="isLoading"
-				class="text-gray-500 my-4"
+				class="text-muted my-4"
 			>
 				Loading more responses...
 			</p>

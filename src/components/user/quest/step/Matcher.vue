@@ -10,13 +10,13 @@
 			<div class="flex items-center gap-2!">
 				<span
 					class="text-xs! font-mono! tabular-nums! w-8!"
-					:class="lowTime ? 'text-red-400!' : ''"
+					:class="lowTime ? 'e-text-danger!' : ''"
 					>{{ timeLeft }}s</span
 				>
 				<div class="flex-1! h-1.5! bg-neutral-800! rounded-full! overflow-hidden!">
 					<div
 						class="h-full! rounded-full! transition-all duration-1000"
-						:class="lowTime ? 'bg-red-500!' : 'bg-primary!'"
+						:class="lowTime ? 'bg-error!' : 'bg-primary!'"
 						:style="{ width: `${(timeLeft / 60) * 100}%` }"
 					/>
 				</div>
@@ -95,9 +95,9 @@
 		>
 			<UIcon
 				name="i-lucide-timer-off"
-				class="size-14 text-red-400"
+				class="size-14 e-text-danger"
 			/>
-			<h3 class="text-xl! font-bold! text-red-400!">Time's up!</h3>
+			<h3 class="text-xl! font-bold! e-text-danger!">Time's up!</h3>
 			<p class="text-sm! text-neutral-400!">{{ remainingPairs }} pair(s) remaining.</p>
 			<button
 				class="mt-2! px-6! py-2! rounded-xl! border border-neutral-700 bg-neutral-900 text-white text-sm! font-medium! active:scale-95 transition-transform"
@@ -422,7 +422,7 @@ function cardClass(card: Card) {
 		return 'border-success bg-success/25 text-success shadow-lg! shadow-success/40';
 	if (props.disabled)
 		return 'border-neutral-800 bg-neutral-900/40 text-neutral-600 cursor-not-allowed opacity-50';
-	if (shaking.value.has(card.id)) return 'border-red-500 bg-red-500/10 text-red-300 animate-shake';
+	if (shaking.value.has(card.id)) return 'border-error bg-error/10 e-text-danger animate-shake';
 	if (dragId.value === card.id) return 'border-primary bg-primary/30 text-white shadow-2xl!';
 	if (selected.value === card.id) return 'border-primary bg-primary/20 text-white';
 	// terms (left) read lighter than definitions (right) for at-a-glance contrast

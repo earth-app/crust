@@ -86,7 +86,7 @@
 					/>
 					<UIcon
 						name="material-symbols:delete-outline"
-						class="size-6 text-red-500 cursor-pointer hover:scale-105 transition-transform duration-300"
+						class="size-6 e-text-danger cursor-pointer hover:scale-105 transition-transform duration-300"
 						@click="deleteField(key)"
 					/>
 				</div>

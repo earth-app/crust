@@ -1,7 +1,5 @@
 <template>
-	<div
-		class="p-4 bg-white dark:bg-gray-900 rounded-lg shadow border-2 border-gray-200 dark:border-gray-700"
-	>
+	<div class="p-4 bg-white dark:bg-elevated rounded-lg shadow border-2 border-default">
 		<h2 class="text-lg font-semibold mb-4">@{{ user.username }}'s Journeys</h2>
 		<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
 			<UserJourneyProgress

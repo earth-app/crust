@@ -37,13 +37,13 @@
 			v-else-if="stage === 'error'"
 			class="absolute inset-0 flex flex-col items-center justify-center gap-5 p-8 text-center"
 		>
-			<div class="w-20 h-20 rounded-full border-2 border-red-500 flex items-center justify-center">
+			<div class="w-20 h-20 rounded-full border-2 border-error flex items-center justify-center">
 				<UIcon
 					name="i-lucide-camera-off"
-					class="text-3xl text-red-400"
+					class="text-3xl e-text-danger"
 				/>
 			</div>
-			<p class="text-[0.8rem]! font-medium! tracking-[0.12em] uppercase text-red-400!">
+			<p class="text-[0.8rem]! font-medium! tracking-[0.12em] uppercase e-text-danger!">
 				Camera Unavailable
 			</p>
 			<p class="text-[0.72rem]! text-neutral-500! leading-[1.65]!">{{ errorMsg }}</p>
@@ -160,7 +160,7 @@
 				style="background: linear-gradient(to top, rgba(0, 0, 0, 0.65), transparent)"
 			>
 				<button
-					class="w-12! h-12! rounded-full! border border-red-500/50 bg-black/30 backdrop-blur-sm flex items-center justify-center text-red-400 cursor-pointer hover:border-red-400 transition-colors duration-200"
+					class="w-12! h-12! rounded-full! border border-error/50 bg-black/30 backdrop-blur-sm flex items-center justify-center e-text-danger cursor-pointer hover:border-error transition-colors duration-200"
 					aria-label="Retake"
 					@click="rejectPhoto"
 				>

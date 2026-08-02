@@ -30,6 +30,47 @@ journey leaderboards via a `type` query, not one route per metric).
 Section comments use `// #region <name>` ... `// #endregion` markers (editor-
 foldable, matches the mantle2/PHP style), NOT dashed dividers like `// ----- x`.
 
+## Design system
+
+Colour, type, elevation and motion all resolve through tokens in
+[src/assets/css/main.css](src/assets/css/main.css) and the `ui.colors` aliases in
+[src/app.config.ts](src/app.config.ts). Prefer those knobs over per-component edits.
+
+**Five traps, each of which has already cost real time:**
+
+1. **`@theme static` is mandatory for any non-Tailwind ramp name** (`brand`, `ink`, `azure`,
+   `danger`, `warning`). @nuxt/ui resolves an alias at RUNTIME into
+   `--ui-color-primary-500: var(--color-brand-500, <fallback>)`, and the fallback comes from
+   `tailwindcss/colors` where those names do not exist -- so it is the EMPTY string. Tailwind then
+   tree-shakes any theme key nothing references, and the injected runtime `<style>` is invisible to
+   its scanner. Plain `@theme` therefore ships an app whose primary surfaces are transparent, with
+   nothing thrown. `tests/unit/design/tree-shake.spec.ts` guards this.
+2. **Never add `neutral` to `ui.theme.colors` in nuxt.config.** @nuxt/ui appends it itself; listing
+   it emits `--color-neutral: var(--ui-neutral)`, which the colors plugin never generates, silently
+   emptying `bg-neutral` / `text-neutral` / `border-neutral`.
+3. **`nuxt.config.library.ts` must mirror `nuxt.config.ts`'s `ui.theme.colors`.** `prepack` copies
+   it over `nuxt.config.ts` before publish and @nuxt/ui REPLACES rather than extends that list, so
+   drift drops a colour from the published layer. `tests/unit/design/library-config.spec.ts`
+   deep-equals the two.
+4. **Coloured text uses the `-700` step, never `-500`.** Every `-500` in this system is 2.5-3:1 on
+   white -- a FILL tone. Use the `e-text-brand` / `e-text-danger` / `e-text-warning` /
+   `e-text-azure` utilities for text; `contrast.spec.ts` asserts both halves of that rule.
+5. **The reduced-motion killswitch lives in `@layer theme`.** `!important` REVERSES layer order, so
+   an early layer is what lets it beat `!` utilities, @nuxt/icon's `@layer base` injection and
+   every unlayered component `<style>` block. Moving it later silently disables it.
+
+**crust is not sky.** Do NOT port sky's `@layer ionic, ...;` statement, its `:root:root` doubling,
+`--app-ui-scale`, `--m-safe-*`, or its global 44px tap floor. crust has no `@ionic/core` to
+out-specify, so `@import 'tailwindcss'` already establishes layer order and a doubled root would
+outrank the `.light`/`.dark` rules. The 44px floor applies only under `@media (pointer: coarse)`;
+24px (WCAG 2.2 SC 2.5.8) is the floor elsewhere, and inline text links are exempt.
+
+**Adding a token means adding its assertion to `tests/unit/design/`.** The colour migration off raw
+Tailwind palette classes is tracked by a ratchet in `no-raw-palette.spec.ts`: migrate a directory,
+then add its prefix to `MIGRATED`. `src/components/**` is published to sky through
+`package.json.files`, so it moves last and deliberately -- and do not republish the package until
+that migration is complete and Gregory has cleared it.
+
 ## Quick Map (Key files & folders)
 
 - `src/` - Application source (components, composables, pages, plugins, server)

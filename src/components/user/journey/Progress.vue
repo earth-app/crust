@@ -26,13 +26,13 @@
 			<div class="flex flex-col items-start justify-center w-full">
 				<span
 					v-if="total"
-					class="text-sm font-medium text-gray-900 dark:text-gray-100"
+					class="text-sm font-medium text-highlighted dark:text-muted"
 				>
 					{{ count }} / {{ total }}
 				</span>
 				<span
 					v-else
-					class="text-sm font-semibold text-yellow-500 light:text-yellow-600"
+					class="text-sm font-semibold e-text-warning"
 				>
 					{{ count }}
 				</span>
@@ -50,32 +50,32 @@
 			<div class="max-w-xs p-4">
 				<p
 					v-if="title"
-					class="font-medium text-gray-900 dark:text-gray-100 mb-2"
+					class="font-medium text-highlighted dark:text-muted mb-2"
 				>
 					{{ title }}
 				</p>
 				<p
 					v-if="total"
-					class="text-sm text-gray-700 dark:text-gray-300"
+					class="text-sm text-toned dark:text-muted"
 				>
 					{{ count }} out of {{ total }} activities have been found on this journey.
 				</p>
 				<p
 					v-else
-					class="text-sm text-gray-700 dark:text-gray-300"
+					class="text-sm text-toned dark:text-muted"
 				>
 					{{ count }} {{ title?.toLowerCase() || 'items' }} so far. Streaks only last every 48
 					hours, so keep going!
 				</p>
 				<p
 					v-if="help"
-					class="mt-2 text-xs text-gray-500 dark:text-gray-400"
+					class="mt-2 text-xs text-muted"
 				>
 					{{ help }}
 				</p>
 				<p
 					v-if="rank"
-					class="mt-2 text-xs text-gray-500 dark:text-gray-400"
+					class="mt-2 text-xs text-muted"
 				>
 					This user is ranked #{{ rank }} on this journey among all users. Keep going to climp the
 					leaderboard!

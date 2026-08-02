@@ -5,10 +5,10 @@
 		role="status"
 	>
 		<div
-			class="relative w-full max-w-md text-center rounded-2xl border border-emerald-200/70 dark:border-emerald-900/40 bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-900 dark:to-emerald-950/30 p-6 shadow-sm"
+			class="relative w-full max-w-md text-center rounded-2xl border border-default bg-linear-to-br from-brand-50 via-default to-brand-100/60 dark:from-elevated dark:via-elevated dark:to-brand-950/30 p-6 shadow-sm"
 		>
 			<div
-				class="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
+				class="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-success/10 e-text-brand"
 			>
 				<UIcon
 					:name="prefersReducedMotion ? 'mdi:check-circle-outline' : 'mdi:leaf'"

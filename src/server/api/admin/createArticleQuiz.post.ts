@@ -1,4 +1,4 @@
-import { Article } from 'types/article';
+import { type Article } from 'types/article';
 import { ensureAdministrator } from '~/server/utils';
 
 export default defineEventHandler(async (event) => {

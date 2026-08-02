@@ -3,7 +3,7 @@
 		id="subscription"
 		class="flex flex-col items-center w-full max-w-4xl"
 	>
-		<h3 class="text-2xl font-semibold text-gray-200 light:text-gray-600 mt-8">Subscription</h3>
+		<h3 class="text-2xl font-semibold text-muted light:text-toned mt-8">Subscription</h3>
 		<div class="text-sm opacity-80 text-center max-w-2xl mb-4">
 			Manage your Earth App plan, billing, and trial codes. Paid plans renew automatically each
 			month until you cancel, and you can request a refund within 14 days of a charge.
@@ -42,7 +42,7 @@
 						</div>
 						<div
 							v-if="refundLine"
-							class="text-xs text-emerald-500"
+							class="text-xs e-text-brand"
 						>
 							{{ refundLine }}
 						</div>

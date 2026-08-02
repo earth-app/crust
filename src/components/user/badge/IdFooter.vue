@@ -1,9 +1,9 @@
 <template>
 	<div class="flex flex-col items-center flex-wrap">
-		<span class="text-gray-700 light:text-gray-200">id:{{ badge.id }}</span>
+		<span class="text-toned light:text-muted">id:{{ badge.id }}</span>
 		<span
 			v-if="badge.tracker_id"
-			class="text-gray-700 light:text-gray-200"
+			class="text-toned light:text-muted"
 		>
 			tracker:{{ badge.tracker_id }}</span
 		>

@@ -12,7 +12,7 @@
 					class="fixed top-4 inset-x-0 mx-auto z-9999 max-w-md px-3 pointer-events-none"
 				>
 					<div
-						class="pointer-events-auto relative flex items-center gap-3 p-3 rounded-2xl border border-yellow-400/60 bg-linear-to-r from-yellow-500/95 via-amber-400/95 to-yellow-500/95 text-amber-950 shadow-xl shadow-amber-500/30"
+						class="pointer-events-auto relative flex items-center gap-3 p-3 rounded-2xl border border-warning/60 bg-linear-to-r from-yellow-500/95 via-amber-400/95 to-yellow-500/95 text-amber-950 shadow-xl shadow-amber-500/30"
 					>
 						<UiSparkleBurst
 							:trigger="sparkleTrigger"

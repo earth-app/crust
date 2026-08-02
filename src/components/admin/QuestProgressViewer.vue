@@ -146,7 +146,7 @@
 					v-if="entry.data"
 					:href="entry.data"
 					:download="`quest-${entry.index ?? 0}-${entry.altIndex ?? 0}`"
-					class="text-xs text-blue-500 hover:underline self-start"
+					class="text-xs e-text-azure hover:underline self-start"
 					>Download Submission</a
 				>
 			</div>

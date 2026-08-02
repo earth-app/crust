@@ -48,7 +48,7 @@
 				<div
 					v-for="(item, i) in forms"
 					:key="i"
-					class="flex flex-col gap-2 rounded-lg border border-gray-700 light:border-gray-300 p-3"
+					class="flex flex-col gap-2 rounded-lg border border-default p-3"
 				>
 					<div class="flex items-center justify-between gap-2">
 						<span class="text-xs font-semibold text-muted">Notification {{ i + 1 }}</span>
@@ -103,7 +103,7 @@
 				</div>
 			</div>
 
-			<div class="flex flex-col gap-2 rounded-lg border border-gray-700 light:border-gray-300 p-3">
+			<div class="flex flex-col gap-2 rounded-lg border border-default p-3">
 				<div class="flex items-center gap-2 text-sm font-semibold text-muted">
 					<UIcon
 						name="mdi:medal-outline"

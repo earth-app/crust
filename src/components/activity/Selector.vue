@@ -13,7 +13,7 @@
 			:loading="activitiesLoading"
 			@update:modelValue="handleUpdate"
 			@update:searchTerm="updateActivitiesList"
-			:ui="{ tagsItemDeleteIcon: 'text-red-500' }"
+			:ui="{ tagsItemDeleteIcon: 'e-text-danger' }"
 		>
 			<template #tags-item-text="{ item, index }">
 				<div class="flex items-center justify-center">
@@ -26,7 +26,7 @@
 			</template>
 		</UInputMenu>
 		<template #fallback>
-			<div :class="className + ' p-2 border rounded-md text-gray-500'">Loading activities...</div>
+			<div :class="className + ' p-2 border rounded-md text-muted'">Loading activities...</div>
 		</template>
 	</ClientOnly>
 </template>

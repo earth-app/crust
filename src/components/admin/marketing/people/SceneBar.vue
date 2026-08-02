@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col gap-3 rounded-lg border border-gray-700 light:border-gray-300 p-3">
+	<div class="flex flex-col gap-3 rounded-lg border border-default p-3">
 		<div class="flex items-center gap-2 text-sm font-semibold text-muted">
 			<UIcon
 				name="mdi:bookmark-multiple-outline"

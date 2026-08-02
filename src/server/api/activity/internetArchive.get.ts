@@ -5,9 +5,9 @@ import {
 	isFilePubliclyAccessible
 } from '~/server/utils';
 import {
-	InternetArchiveItem,
-	InternetArchiveMetadata,
-	InternetArchiveSearch
+	type InternetArchiveItem,
+	type InternetArchiveMetadata,
+	type InternetArchiveSearch
 } from '~/shared/types/activity';
 
 type ValidMetadataResult = {

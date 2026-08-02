@@ -79,13 +79,13 @@
 
 			<div
 				v-if="error"
-				class="text-red-500 mt-2"
+				class="e-text-danger mt-2"
 			>
 				{{ error }}
 			</div>
 			<div
 				v-if="message"
-				class="text-green-500 mt-2"
+				class="e-text-brand mt-2"
 			>
 				{{ message }}
 			</div>

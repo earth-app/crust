@@ -7,10 +7,10 @@
 	>
 		<template #body>
 			<div class="flex flex-col gap-4 p-1">
-				<div class="flex items-start gap-2 rounded bg-amber-500/10 border border-amber-500/40 p-3">
+				<div class="flex items-start gap-2 rounded bg-warning/10 border border-warning/40 p-3">
 					<UIcon
 						name="mdi:alert"
-						class="text-amber-500 text-2xl shrink-0"
+						class="e-text-warning text-2xl shrink-0"
 					/>
 					<div class="text-sm">
 						<div class="font-semibold">This is the only time you'll see this token.</div>
@@ -31,7 +31,7 @@
 					</div>
 					<div
 						v-if="created?.never_expires"
-						class="text-xs text-amber-500"
+						class="text-xs e-text-warning"
 					>
 						This key never expires.
 					</div>

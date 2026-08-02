@@ -51,11 +51,11 @@
 					</div>
 					<div
 						v-else-if="form.expiryPreset === 'never'"
-						class="flex items-start gap-2 mt-1 rounded bg-amber-500/10 border border-amber-500/40 p-2"
+						class="flex items-start gap-2 mt-1 rounded bg-warning/10 border border-warning/40 p-2"
 					>
 						<UIcon
 							name="mdi:alert"
-							class="text-amber-500 text-lg shrink-0"
+							class="e-text-warning text-lg shrink-0"
 						/>
 						<div class="text-xs">
 							No-expiration keys remain valid until you revoke them. Anyone with this token can act

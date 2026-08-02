@@ -56,7 +56,7 @@ const stats = computed(() => [
 		label: 'Minutes Outside',
 		value: minutesOutside.value,
 		icon: 'mdi:pine-tree',
-		color: 'text-emerald-500'
+		color: 'e-text-brand'
 	},
 	{
 		label: 'Quests & Trails',
@@ -68,7 +68,7 @@ const stats = computed(() => [
 		label: 'Moments of Wonder',
 		value: curiosityTouched.value,
 		icon: 'mdi:star-four-points-outline',
-		color: 'text-amber-500'
+		color: 'e-text-warning'
 	}
 ]);
 

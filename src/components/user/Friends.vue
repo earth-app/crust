@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="p-4 flex flex-col justify-center bg-white dark:bg-gray-900 rounded-lg shadow border-2 border-gray-200 dark:border-gray-700"
+		class="p-4 flex flex-col justify-center bg-white dark:bg-elevated rounded-lg shadow border-2 border-default"
 	>
 		<div class="flex justify-between">
 			<h2 class="text-lg font-semibold mb-4">@{{ user.username }}'s Friends</h2>
@@ -67,7 +67,7 @@
 		<div class="flex gap-4 justify-center">
 			<div
 				v-if="!isThisUser"
-				class="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg shadow"
+				class="flex flex-col items-center justify-center p-4 bg-muted dark:bg-elevated rounded-lg shadow"
 			>
 				<UIcon
 					name="mdi:account-multiple"
@@ -80,7 +80,7 @@
 			</div>
 			<div
 				v-if="user.added_count !== undefined"
-				class="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg shadow"
+				class="flex flex-col items-center justify-center p-4 bg-muted dark:bg-elevated rounded-lg shadow"
 			>
 				<UIcon
 					name="mdi:account-plus"
@@ -93,7 +93,7 @@
 			</div>
 			<div
 				v-if="user.non_mutual_count !== undefined"
-				class="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg shadow"
+				class="flex flex-col items-center justify-center p-4 bg-muted dark:bg-elevated rounded-lg shadow"
 			>
 				<UIcon
 					name="mdi:account-minus"

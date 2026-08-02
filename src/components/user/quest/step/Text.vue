@@ -120,7 +120,7 @@ const canSubmit = computed(() => !props.disabled && !submitting.value && inRange
 
 const charCountClass = computed(() => {
 	if (length.value < minLength.value) return 'text-neutral-500';
-	if (length.value > maxLength.value) return 'text-red-400';
+	if (length.value > maxLength.value) return 'e-text-danger';
 	return 'text-success';
 });
 

@@ -66,7 +66,7 @@
 			>
 			<span
 				v-if="framing.isNewBest && roundedMinutes > 0"
-				class="text-xs font-semibold text-amber-600 dark:text-amber-400"
+				class="text-xs font-semibold e-text-warning"
 				>Your Longest Yet</span
 			>
 			<span

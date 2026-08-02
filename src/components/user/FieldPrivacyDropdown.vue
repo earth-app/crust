@@ -25,7 +25,7 @@
 							/>
 							<UIcon
 								:name="item.icon || 'mdi:lock'"
-								class="w-4 h-4 text-gray-600"
+								class="w-4 h-4 text-toned"
 								v-show="selected !== item.value"
 							/>
 							<span class="font-medium text-sm">
@@ -37,7 +37,7 @@
 						</div>
 						<span
 							v-if="item.description"
-							class="text-xs text-gray-500"
+							class="text-xs text-muted"
 							>{{ item.description }}</span
 						>
 					</div>

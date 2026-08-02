@@ -5,7 +5,7 @@
 				<div class="flex items-center mb-2">
 					<USkeleton
 						class="h-8 w-8 mr-2"
-						:ui="{ rounded: 'rounded-full' }"
+						:ui="{ base: 'rounded-full' }"
 					/>
 					<USkeleton class="h-6 w-48" />
 				</div>

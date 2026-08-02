@@ -13,13 +13,13 @@
 			>
 				<span
 					class="text-xs! font-mono! tabular-nums! w-8!"
-					:class="lowTime ? 'text-red-400!' : ''"
+					:class="lowTime ? 'e-text-danger!' : ''"
 					>{{ timeLeft }}s</span
 				>
 				<div class="flex-1! h-1.5! bg-neutral-800! rounded-full! overflow-hidden!">
 					<div
 						class="h-full! rounded-full! transition-all duration-1000"
-						:class="lowTime ? 'bg-red-500!' : 'bg-primary!'"
+						:class="lowTime ? 'bg-error!' : 'bg-primary!'"
 						:style="{ width: `${(timeLeft / 60) * 100}%` }"
 					/>
 				</div>
@@ -158,9 +158,9 @@
 		>
 			<UIcon
 				name="i-lucide-timer-off"
-				class="size-14 text-red-400"
+				class="size-14 e-text-danger"
 			/>
-			<h3 class="text-xl! font-bold! text-red-400!">Time's up!</h3>
+			<h3 class="text-xl! font-bold! e-text-danger!">Time's up!</h3>
 			<p class="text-sm! text-neutral-400!">Better luck next time.</p>
 			<button
 				class="mt-2! px-6! py-2! rounded-xl! border border-neutral-700 bg-neutral-900 text-white text-sm! font-medium! active:scale-95 transition-transform"
@@ -402,7 +402,7 @@ function validate() {
 function slotClass(slot: string | null, i: number) {
 	// in quiz/untimed mode we must not paint wrong slots red — that would leak the answer key
 	if (!props.untimed && slot !== null && wrongSlots.value.includes(i))
-		return 'border-red-500 bg-red-500/10 text-red-300 cursor-pointer';
+		return 'border-error bg-error/10 e-text-danger cursor-pointer';
 	if (dragOverSlot.value === i) return 'border-primary border-dashed bg-primary/10 cursor-pointer';
 	if (slot) return 'border-neutral-600 bg-neutral-900/60 cursor-pointer';
 	if (selectedIndex.value !== null || draggingPayload.value)

@@ -7,7 +7,7 @@
 			:key="index"
 			:class="{
 				'border-2 border-primary': highlighted === plan.title?.toUpperCase(),
-				'border-gray-300 light:border-gray-600': highlighted !== plan.title?.toUpperCase()
+				'border-default': highlighted !== plan.title?.toUpperCase()
 			}"
 			v-bind="pricingProps(plan)"
 		>
