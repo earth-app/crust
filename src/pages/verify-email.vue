@@ -8,13 +8,13 @@
 			<UserEmailVerification @verified="onEmailVerified" />
 		</div>
 		<div v-else-if="user && user.account.email_verified">
-			<p class="text-center text-green-600">Your email is already verified.</p>
+			<p class="text-center e-text-brand">Your email is already verified.</p>
 		</div>
 		<div
 			v-else-if="user === null"
 			class="flex flex-col w-full h-full items-center justify-center"
 		>
-			<p class="text-center text-gray-600">Please log in to verify your email.</p>
+			<p class="text-center text-muted">Please log in to verify your email.</p>
 		</div>
 
 		<SiteTour

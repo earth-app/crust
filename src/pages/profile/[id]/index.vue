@@ -5,7 +5,7 @@
 		class="flex flex-col items-center justify-center h-screen"
 	>
 		<!-- User not found -->
-		<p class="text-gray-600">User doesn't exist. Maybe look at the URL again?</p>
+		<p class="text-muted">User doesn't exist. Maybe look at the URL again?</p>
 	</div>
 	<div
 		v-else

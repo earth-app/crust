@@ -11,7 +11,7 @@
 			v-else-if="user === null"
 			class="flex flex-col w-full h-full items-center justify-center"
 		>
-			<p class="text-center text-gray-600">Please log in to change your password.</p>
+			<p class="text-center text-muted">Please log in to change your password.</p>
 		</div>
 	</ClientOnly>
 </template>

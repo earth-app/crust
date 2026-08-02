@@ -14,7 +14,7 @@
 			<p class="text-lg mb-2">{{ errorMessage }}</p>
 			<p
 				v-if="errorDescription"
-				class="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-md"
+				class="text-sm text-muted mb-8 max-w-md"
 			>
 				{{ errorDescription }}
 			</p>

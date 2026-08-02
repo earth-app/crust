@@ -12,7 +12,7 @@
 					>
 						Verify it's you
 					</h1>
-					<p class="mb-4 text-gray-600 dark:text-gray-300">
+					<p class="mb-4 text-muted">
 						We sent an 8-digit code to
 						<span class="font-medium">{{ pendingLogin.email }}</span
 						>. Enter it below to finish signing in.
@@ -31,13 +31,13 @@
 					</div>
 					<p
 						id="login-verification-help"
-						class="text-sm text-gray-500 mt-2"
+						class="text-sm text-muted mt-2"
 					>
 						Enter all 8 digits of the verification code. The code will be automatically submitted
 						when complete.
 					</p>
 					<p
-						class="text-sm text-gray-500 mt-2"
+						class="text-sm text-muted mt-2"
 						aria-live="polite"
 					>
 						<template v-if="secondsRemaining > 0">
@@ -74,7 +74,7 @@
 						class="mt-4 text-center"
 					>
 						<p
-							class="text-sm text-gray-600 dark:text-gray-300"
+							class="text-sm text-muted"
 							aria-live="polite"
 						>
 							Loading...

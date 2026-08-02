@@ -82,7 +82,7 @@
 
 			<div
 				v-if="premiumQuests && premiumQuests.length > 0"
-				class="flex flex-col items-center mt-8 p-4 bg-gray-900 light:bg-gray-200/20 border-2 border-warning-500 rounded-lg"
+				class="flex flex-col items-center mt-8 p-4 bg-elevated border border-warning rounded-lg"
 			>
 				<h2 class="text-xl">Premium Quests</h2>
 				<span class="text-base opacity-80">{{ premiumQuests.length }} Total</span>

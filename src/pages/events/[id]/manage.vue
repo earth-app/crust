@@ -91,7 +91,7 @@
 			v-else-if="event === null"
 			class="flex flex-col items-center justify-center h-screen w-screen"
 		>
-			<p class="text-gray-600">Event doesn't exist. Maybe look at the URL again?</p>
+			<p class="text-muted">Event doesn't exist. Maybe look at the URL again?</p>
 		</div>
 		<Loading v-else />
 	</div>

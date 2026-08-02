@@ -9,7 +9,7 @@
 		v-else-if="currentActivity === null"
 		class="flex flex-col items-center justify-center h-screen"
 	>
-		<p class="text-gray-600">Activity doesn't exist. Maybe look at the URL again?</p>
+		<p class="text-muted">Activity doesn't exist. Maybe look at the URL again?</p>
 	</div>
 	<Loading v-else />
 </template>

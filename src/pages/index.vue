@@ -24,7 +24,7 @@
 			>
 				<UAvatar
 					:src="avatar128"
-					class="size-8 mr-2 border border-white/50 light:border-black/50 shadow-lg shadow-black/50"
+					class="size-8 mr-2 border border-default shadow-lg"
 				/>
 				<p class="text-lg font-semibold">Welcome, @{{ user.username }}</p>
 			</div>
