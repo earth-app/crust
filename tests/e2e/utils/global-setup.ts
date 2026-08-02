@@ -85,7 +85,7 @@ export default async function globalSetup() {
 		await startMockServers();
 	}
 
-	const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
+	const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3002';
 	const prodMode = process.env.PLAYWRIGHT_PROD === '1';
 	const deadline = Date.now() + 180_000;
 	let up = false;

@@ -8,7 +8,10 @@ const allowedOrigins = [
 	'http://localhost:3000',
 	'http://127.0.0.1:3000',
 	'http://localhost:3001',
-	'http://127.0.0.1:3001'
+	'http://127.0.0.1:3001',
+	// the e2e lane binds 3002 so it never collides with a running dev server
+	'http://localhost:3002',
+	'http://127.0.0.1:3002'
 ];
 
 export default defineEventHandler((event) => {

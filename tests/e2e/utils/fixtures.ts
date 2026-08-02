@@ -38,7 +38,7 @@ export const integrationMode = process.env.MOCK_DISABLED === '1';
  * (see playwright.config.ts): a hardcoded `:3000` silently talks to whatever
  * else owns that port when the suite runs elsewhere.
  */
-export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
+export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3002';
 
 /**
  * Every tour that auto-plays via `startTourIfNew(...)` on mount. Marking them

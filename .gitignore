@@ -1,6 +1,7 @@
 # Nuxt dev/build outputs
 .output
 .output.*
+.output-e2e
 .data
 .data.*
 .nuxt

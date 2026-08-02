@@ -25,7 +25,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // repo root is three up from tests/e2e/utils (build output, node_modules and codecov reports live there)
 export const PROJECT_ROOT = resolve(__dirname, '../../..');
 // must match fixtures.ts + playwright.config.ts; fixtures imports this module, so no import back
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3002';
 const RAW_DIR = resolve(PROJECT_ROOT, '.coverage', 'raw');
 const OUT_DIR = resolve(PROJECT_ROOT, 'coverage');
 const CHUNK_DIR = resolve(PROJECT_ROOT, '.output/public/_nuxt');

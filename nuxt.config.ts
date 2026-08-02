@@ -130,7 +130,7 @@ export default defineNuxtConfig({
 			}
 		},
 		prerender: {
-			routes: ['/sitemap.xml']
+			routes: process.env.NUXT_TEST_BUILD === '1' ? [] : ['/sitemap.xml']
 		},
 		storage: {
 			shield: {
@@ -143,13 +143,14 @@ export default defineNuxtConfig({
 		cache: true
 	},
 	routeRules: {
-		// Static pages, assets (prerender at build time)
-		'/about': { prerender: true },
+		// Static pages, assets (prerender at build time). the test lane opts out -- see the
+		// nitro.prerender comment above; prerendering silently produces no server bundle there
+		'/about': process.env.NUXT_TEST_BUILD === '1' ? {} : { prerender: true },
 		'/tos': { redirect: '/terms-of-service' },
-		'/terms-of-service': { prerender: true },
-		'/privacy-policy': { prerender: true },
-		'/refund-policy': { prerender: true },
-		'/pricing': { prerender: true },
+		'/terms-of-service': process.env.NUXT_TEST_BUILD === '1' ? {} : { prerender: true },
+		'/privacy-policy': process.env.NUXT_TEST_BUILD === '1' ? {} : { prerender: true },
+		'/refund-policy': process.env.NUXT_TEST_BUILD === '1' ? {} : { prerender: true },
+		'/pricing': process.env.NUXT_TEST_BUILD === '1' ? {} : { prerender: true },
 
 		// Client-side only pages (auth, profiles, admin)
 		'/login': { ssr: false },

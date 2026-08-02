@@ -22,7 +22,9 @@ import { fileURLToPath } from 'node:url';
 const PROJECT_ROOT = fileURLToPath(new URL('.', import.meta.url));
 const isCI = !!process.env.CI;
 const coverage = process.env.COVERAGE === '1';
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
+// 3002, not 3000: `bun run dev` owns 3000, and a dev server left running made the prod lane fail
+// to bind while a stale one silently answered the suite instead
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3002';
 const prodServer = process.env.PLAYWRIGHT_PROD === '1';
 const includeWebkit = process.env.PLAYWRIGHT_WEBKIT === '1';
 
@@ -52,11 +54,15 @@ export default defineConfig<ConfigOptions>({
 	// failure screenshots / traces and produce a CI warning. Two distinct dirs.
 	outputDir: 'playwright-results',
 	webServer: {
+		// the guard is existence-only, so the build it checks for must be one ONLY build:test can
+		// produce. `.output` is shared with `bun run build`, and a leftover production bundle
+		// satisfied this check and ran the whole suite against the wrong artifact; `.output-e2e`
+		// is written by nothing else, which makes existence a real provenance check
 		command: prodServer
-			? 'test -f .output/server/index.mjs || bun run build:test && bun run start:test'
+			? 'test -f .output-e2e/server/index.mjs || bun run build:test && bun run start:test'
 			: 'bun run dev:test',
 		url: BASE_URL,
-		reuseExistingServer: !isCI && !prodServer,
+		reuseExistingServer: !isCI,
 		timeout: prodServer ? 360_000 : 240_000,
 		stdout: 'pipe',
 		stderr: 'pipe'
