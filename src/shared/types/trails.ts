@@ -113,7 +113,9 @@ export interface TrailJournalEntry {
 	completedAt: string;
 }
 
-// personal weekly nature-minutes ring (~120 min/week target; non-competitive, personal-best)
+// personal weekly nature-minutes ring (non-competitive, personal-best). the 120 min/week goal is
+// a product choice, NOT an evidence-derived target -- the source study is cross-sectional and its
+// own authors declined to give guidance, so never surface it to users as a recommended dose
 export interface NatureMinutes {
 	week: string;
 	minutes: number;

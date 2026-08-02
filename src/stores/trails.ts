@@ -14,7 +14,7 @@ import { reactive, ref } from 'vue';
 import { registerTrailPracticeMeta } from '~/shared/utils/trails';
 import { useAuthStore } from './auth';
 
-// ~120 min/week target; personal, never compared
+// 120 min/week is a product-chosen goal, not an evidence-based dose; personal, never compared
 export const NATURE_MINUTES_TARGET = 120;
 
 // zod shape-guards at the store boundary; a bad shape caches as null, never corrupt ui

@@ -134,7 +134,7 @@ const trailsTour = computed<SiteTourStep[]>(() => [
 		id: 'nature-ring',
 		title: 'Your Nature Minutes',
 		description:
-			'This ring tracks the time you spend outdoors, gently aiming for about 120 minutes a week - the amount linked to feeling calmer and more restored. It fills as you walk trails; it never scolds you for missing a day.',
+			'This ring tracks the time you spend outdoors. Even five minutes out there is associated with feeling calmer and more restored, so short counts. It fills as you walk trails; it never scolds you for missing a day.',
 		footer: 'Time outside is the whole point, not the point total.',
 		icon: 'mdi:timer-sand',
 		placement: 'bottom'

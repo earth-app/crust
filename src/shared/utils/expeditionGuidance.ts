@@ -32,7 +32,7 @@ interface GoalRate {
 	perDay: boolean;
 }
 
-// per-goal healthy/stretch framing. nature_minutes: ~120 min/person is healthy, ~180 a
+// per-goal healthy/stretch framing. nature_minutes: ~120 min/person is our chosen goal, ~180 a
 // stretch. quests: ~5/day/person is the heavy-day ceiling. trails: ~1 finished trail per
 // person per day is a healthy pace. tuned to be encouraging, never a hard rule.
 const GOAL_RATES: Record<ExpeditionGoal, GoalRate> = {
