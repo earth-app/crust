@@ -22,8 +22,8 @@ const quest = {
 	title: 'Nature Demo',
 	description: 'A short demo quest.',
 	icon: 'mdi:pine-tree',
-	rarity: 'normal',
-	steps: [{ type: 'describe_text', description: 'Reflect on today.', parameters: [] }],
+	rarity: 'normal' as const,
+	steps: [{ type: 'describe_text' as const, description: 'Reflect on today.', parameters: [] }],
 	reward: 120
 };
 

@@ -195,13 +195,16 @@ function moveStep(index: number, direction: -1 | 1) {
 	const target = index + direction;
 	if (target < 0 || target >= props.model.steps.length) return;
 	const steps = props.model.steps;
-	[steps[index], steps[target]] = [steps[target], steps[index]];
+	const a = steps[index];
+	const b = steps[target];
+	if (!a || !b) return;
+	[steps[index], steps[target]] = [b, a];
 }
 
 // a step belongs to an alt-group when it shares a non-null groupId with an adjacent step
 function inAltGroup(index: number) {
 	const steps = props.model.steps;
-	const gid = steps[index].groupId;
+	const gid = steps[index]?.groupId;
 	if (!gid) return false;
 	return steps[index - 1]?.groupId === gid || steps[index + 1]?.groupId === gid;
 }
@@ -209,20 +212,24 @@ function inAltGroup(index: number) {
 function groupedWithPrevious(index: number) {
 	if (index === 0) return false;
 	const steps = props.model.steps;
-	const gid = steps[index].groupId;
+	const gid = steps[index]?.groupId;
 	return !!gid && steps[index - 1]?.groupId === gid;
 }
 
 function toggleGroup(index: number) {
 	if (index === 0) return;
 	const steps = props.model.steps;
+	const step = steps[index];
+	if (!step) return;
+
 	if (groupedWithPrevious(index)) {
-		steps[index].groupId = null;
+		step.groupId = null;
 		return;
 	}
 	// adopt the previous step's group, creating one if it has none
 	const prev = steps[index - 1];
+	if (!prev) return;
 	if (!prev.groupId) prev.groupId = nextLocalId('grp');
-	steps[index].groupId = prev.groupId;
+	step.groupId = prev.groupId;
 }
 </script>

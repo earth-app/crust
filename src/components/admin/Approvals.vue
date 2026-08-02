@@ -104,12 +104,24 @@
 </template>
 
 <script setup lang="ts">
+import { extractServerMessage } from 'errors';
 // a nested UTabs inside the vertical outer tabs renders badly, so this is a segmented
 // switcher that keeps both backlog counts visible at once
 const view = ref<'activities' | 'publishers'>('activities');
 const stagedCount = ref(0);
 const publisherCount = ref(0);
 const discovering = ref(false);
+
+type DiscoveryFunnel = {
+	raw: number;
+	afterCatalog: number;
+	afterGenre: number;
+	afterSimilarity: number;
+	selected: number;
+	nextUp?: string[];
+};
+
+const preview = ref<{ candidates: string[]; funnel: DiscoveryFunnel } | null>(null);
 
 const toast = useToast();
 const stagedRef = useTemplateRef<{ load: () => Promise<void> }>('stagedRef');
@@ -122,10 +134,11 @@ async function refresh() {
 async function runDryRun() {
 	discovering.value = true;
 	try {
-		const res = await $fetch<{ considered: number; funnel: { nextUp: string[] } }>(
+		const res = await $fetch<{ considered: number; funnel: DiscoveryFunnel }>(
 			'/api/admin/activity/discover',
 			{ method: 'POST' }
 		);
+		preview.value = { candidates: res.funnel?.nextUp ?? [], funnel: res.funnel };
 		toast.add({
 			title: `Discovery Preview: ${res.considered} Candidates`,
 			description: res.funnel?.nextUp?.length
@@ -138,7 +151,7 @@ async function runDryRun() {
 	} catch (err) {
 		toast.add({
 			title: 'Discovery Preview Failed',
-			description: errors.extractServerMessage(err, 'Could not reach the discovery pipeline.'),
+			description: extractServerMessage(err, 'Could not reach the discovery pipeline.'),
 			icon: 'mdi:alert-circle',
 			color: 'error'
 		});

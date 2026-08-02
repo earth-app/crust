@@ -308,7 +308,7 @@ describe('animated encoding (gif.js / upng-js dispatch)', () => {
 		const blob = await encodeApng([frame(4, 4), frame(4, 4)], { fps: 10 });
 		expect(blob.type).toBe('image/png');
 		expect(h.upngEncode).toHaveBeenCalledTimes(1);
-		const args = h.upngEncode.mock.calls[0]!;
+		const args = h.upngEncode.mock.calls[0]! as unknown[];
 		expect(args[1]).toBe(4); // width
 		expect(args[2]).toBe(4); // height
 		expect(args[3]).toBe(0); // lossless cnum
@@ -639,7 +639,7 @@ describe('animated export via a deterministic frame provider', () => {
 		expect(download).toHaveBeenCalledTimes(1);
 		expect(download.mock.calls[0]![1]).toBe('circle-garden.gif');
 
-		const reqArg = provider.mock.calls[0]![0] as {
+		const reqArg = (provider.mock.calls[0]! as unknown[])[0] as {
 			phases: number[];
 			fps: number;
 			maxDimension?: number;

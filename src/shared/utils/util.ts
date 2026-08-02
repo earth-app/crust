@@ -331,13 +331,16 @@ export async function makeServerRequest<T>(
 			headers['Content-Type'] = 'application/json';
 		}
 
-		const data = await $fetch<T>(suburl, {
+		/* nitro types $fetch from the ROUTE LITERAL, and suburl is a runtime string, so it widens
+		   to TypedInternalResponse instead of collapsing to T. pinning it once here keeps the cast
+		   at the single boundary that declares the contract rather than at every call site */
+		const data = (await $fetch(suburl, {
 			...options,
 			headers: {
 				...headers,
 				...(options.headers ?? {})
 			}
-		});
+		})) as T;
 
 		return {
 			success: true,

@@ -73,7 +73,7 @@ describe('circles store fetchExpedition', () => {
 		const res = await store.fetchExpedition();
 		expect(res?.id).toBe('exp1');
 		expect(store.expedition?.id).toBe('exp1');
-		const url = vi.mocked(makeAPIRequest).mock.calls[0][1] as string;
+		const url = vi.mocked(makeAPIRequest).mock.calls[0]![1] as string;
 		expect(url).toBe('/v2/users/current/expedition');
 	});
 
@@ -144,7 +144,7 @@ describe('circles store startExpedition', () => {
 		expect(res.success).toBe(true);
 		expect(store.expedition?.id).toBe('new');
 		// mutation goes to mantle2 with a rounded, clamped target
-		const [url, , opts] = vi.mocked(makeClientAPIRequest).mock.calls[0] as any;
+		const [url, , opts] = vi.mocked(makeClientAPIRequest).mock.calls[0]! as any;
 		expect(url).toBe('/v2/users/current/expedition');
 		expect(opts.method).toBe('POST');
 		expect(opts.body.target).toBe(6);
@@ -168,7 +168,7 @@ describe('circles store fetchGarden', () => {
 		const res = await store.fetchGarden('o1');
 		expect(res?.owner_uid).toBe('o1');
 		expect(store.getGarden('o1')?.level).toBe(3);
-		const url = vi.mocked(makeAPIRequest).mock.calls[0][1] as string;
+		const url = vi.mocked(makeAPIRequest).mock.calls[0]![1] as string;
 		expect(url).toBe('/v2/users/o1/garden');
 
 		await store.fetchGarden('o1');
@@ -227,7 +227,7 @@ describe('circles store sendKudos', () => {
 		expect(res).toEqual({ success: true, alreadySent: false });
 		expect(store.hasSentKudos(input)).toBe(true);
 		// mutation posts direct to the recipient's mantle2 kudos endpoint
-		const url = vi.mocked(makeClientAPIRequest).mock.calls[0][0] as string;
+		const url = vi.mocked(makeClientAPIRequest).mock.calls[0]![0] as string;
 		expect(url).toBe('/v2/users/friend/kudos');
 	});
 

@@ -1,3 +1,6 @@
+/// <reference lib="dom" />
+// browser-only: every entry point here is guarded on import.meta.client at the call site
+
 // #region types
 
 // our extended geolocation-permission union: the three real Permissions API states

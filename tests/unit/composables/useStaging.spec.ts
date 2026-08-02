@@ -32,7 +32,7 @@ describe('useStagedActivities', () => {
 	it('reads the pending queue through the cacheable request helper', async () => {
 		await useStagedActivities().list();
 
-		const [key, url, token] = apiMock.mock.calls[0];
+		const [key, url, token] = apiMock.mock.calls[0]!;
 		expect(key).toBeNull();
 		expect(url).toBe('/v2/activities/staged?state=pending&page=1&limit=50');
 		expect(token).toBe('session-token');
@@ -41,19 +41,19 @@ describe('useStagedActivities', () => {
 	it('reflects a non-default state and page in the url', async () => {
 		await useStagedActivities().list('denied', 3, 10);
 
-		expect(apiMock.mock.calls[0][1]).toBe('/v2/activities/staged?state=denied&page=3&limit=10');
+		expect(apiMock.mock.calls[0]![1]).toBe('/v2/activities/staged?state=denied&page=3&limit=10');
 	});
 
 	it('reads the caller own submissions from the mine route', async () => {
 		await useStagedActivities().mine();
 
-		expect(apiMock.mock.calls[0][1]).toContain('/v2/activities/staged/mine');
+		expect(apiMock.mock.calls[0]![1]).toContain('/v2/activities/staged/mine');
 	});
 
 	it('submits through the uncached helper', async () => {
 		await useStagedActivities().submit({ id: 'bouldering', name: 'Bouldering' });
 
-		const [url, token, options] = clientMock.mock.calls[0];
+		const [url, token, options] = clientMock.mock.calls[0]!;
 		expect(url).toBe('/v2/activities/staged');
 		expect(token).toBe('session-token');
 		expect(options?.method).toBe('POST');
@@ -63,51 +63,51 @@ describe('useStagedActivities', () => {
 
 	it('approves and denies on separate paths rather than one action body', async () => {
 		await useStagedActivities().approve(12, 'great');
-		expect(clientMock.mock.calls[0][0]).toBe('/v2/activities/staged/12/approve');
-		expect(clientMock.mock.calls[0][2]?.body).toEqual({ notes: 'great', force: false });
+		expect(clientMock.mock.calls[0]![0]).toBe('/v2/activities/staged/12/approve');
+		expect(clientMock.mock.calls[0]![2]?.body).toEqual({ notes: 'great', force: false });
 
 		clientMock.mockClear();
 		await useStagedActivities().deny(12, 'nope');
-		expect(clientMock.mock.calls[0][0]).toBe('/v2/activities/staged/12/deny');
-		expect(clientMock.mock.calls[0][2]?.body).toEqual({ notes: 'nope' });
+		expect(clientMock.mock.calls[0]![0]).toBe('/v2/activities/staged/12/deny');
+		expect(clientMock.mock.calls[0]![2]?.body).toEqual({ notes: 'nope' });
 	});
 
 	it('passes force through on approve', async () => {
 		await useStagedActivities().approve(12, undefined, true);
 
-		expect(clientMock.mock.calls[0][2]?.body).toMatchObject({ force: true });
+		expect(clientMock.mock.calls[0]![2]?.body).toMatchObject({ force: true });
 	});
 
 	it('withdraws with a DELETE', async () => {
 		await useStagedActivities().withdraw(5);
 
-		expect(clientMock.mock.calls[0][0]).toBe('/v2/activities/staged/5');
-		expect(clientMock.mock.calls[0][1 + 1]?.method).toBe('DELETE');
+		expect(clientMock.mock.calls[0]![0]).toBe('/v2/activities/staged/5');
+		expect(clientMock.mock.calls[0]![1 + 1]?.method).toBe('DELETE');
 	});
 });
 
 describe('useVerifiedPublisher', () => {
 	it('reads and submits the caller own application on the snake_case path', async () => {
 		await useVerifiedPublisher().status();
-		expect(clientMock.mock.calls[0][0]).toBe('/v2/users/current/verified_publisher');
+		expect(clientMock.mock.calls[0]![0]).toBe('/v2/users/current/verified_publisher');
 
 		clientMock.mockClear();
 		await useVerifiedPublisher().apply({ reason: 'because', organization: 'Org' });
-		expect(clientMock.mock.calls[0][0]).toBe('/v2/users/current/verified_publisher');
-		expect(clientMock.mock.calls[0][2]?.method).toBe('POST');
-		expect(clientMock.mock.calls[0][2]?.body).toMatchObject({ reason: 'because' });
+		expect(clientMock.mock.calls[0]![0]).toBe('/v2/users/current/verified_publisher');
+		expect(clientMock.mock.calls[0]![2]?.method).toBe('POST');
+		expect(clientMock.mock.calls[0]![2]?.body).toMatchObject({ reason: 'because' });
 	});
 
 	it('lists applications for admins and patches a decision', async () => {
 		await useVerifiedPublisher().listApplications('approved', 2, 10);
-		expect(apiMock.mock.calls[0][1]).toBe(
+		expect(apiMock.mock.calls[0]![1]).toBe(
 			'/v2/admin/verified_publishers?state=approved&page=2&limit=10'
 		);
 
 		await useVerifiedPublisher().review('42', 'revoke', 'policy');
-		expect(clientMock.mock.calls[0][0]).toBe('/v2/admin/verified_publishers/42');
-		expect(clientMock.mock.calls[0][2]?.method).toBe('PATCH');
-		expect(clientMock.mock.calls[0][2]?.body).toEqual({ action: 'revoke', notes: 'policy' });
+		expect(clientMock.mock.calls[0]![0]).toBe('/v2/admin/verified_publishers/42');
+		expect(clientMock.mock.calls[0]![2]?.method).toBe('PATCH');
+		expect(clientMock.mock.calls[0]![2]?.body).toEqual({ action: 'revoke', notes: 'policy' });
 	});
 });
 
@@ -131,7 +131,7 @@ describe('verifiedPublisherApplicationSchema', () => {
 		});
 
 		expect(result.success).toBe(false);
-		expect(result.error?.issues[0].message).toContain('at least 40 characters');
+		expect(result.error?.issues[0]?.message).toContain('at least 40 characters');
 	});
 
 	it('rejects a malformed website but allows an empty one', () => {

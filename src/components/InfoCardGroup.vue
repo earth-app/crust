@@ -35,11 +35,11 @@
 						class="size-4 md:size-8 mr-2 mt-0.5"
 					/>
 				</div>
-				<div class="flex flex-col items-start text-white light:text-gray-800 min-w-1/4">
+				<div class="flex flex-col items-start text-white light:text-highlighted min-w-1/4">
 					<h1 class="text-2xl font-semibold">{{ title }}</h1>
 					<p
 						v-if="description"
-						class="text-gray-400 light:text-gray-700 text-sm mt-1"
+						class="text-muted light:text-toned text-sm mt-1"
 					>
 						{{ description }}
 					</p>

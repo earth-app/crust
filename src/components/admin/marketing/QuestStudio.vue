@@ -99,7 +99,7 @@ const saving = ref(false);
 const deleting = ref(false);
 const loadingScenes = ref(false);
 const scenes = ref<MarketingScene<BuilderQuest>[]>([]);
-const selectedScene = ref<{ label: string; value: string } | null>(null);
+const selectedScene = ref<{ label: string; value: string } | undefined>(undefined);
 
 const sceneItems = computed(() => scenes.value.map((s) => ({ label: s.name, value: s.id })));
 
@@ -144,7 +144,7 @@ async function loadScenes() {
 }
 
 async function onSave() {
-	if (!sceneName.trim() || saving.value) return;
+	if (!sceneName.value.trim() || saving.value) return;
 	saving.value = true;
 	try {
 		const payload = JSON.parse(JSON.stringify(builder)) as BuilderQuest;
@@ -202,7 +202,7 @@ async function onDelete() {
 				icon: 'mdi:trash-can-outline',
 				color: 'neutral'
 			});
-			selectedScene.value = null;
+			selectedScene.value = undefined;
 			await loadScenes();
 		} else {
 			toast.add({

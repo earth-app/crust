@@ -299,9 +299,9 @@ export const verifiedPublisherApplicationSchema = z.object({
 		.string()
 		.min(3, 'List at least one activity you would submit')
 		.max(300, 'Must be at most 300 characters'),
-	agrees_to_guidelines: z.literal(true, {
-		message: 'You must agree to the publishing guidelines'
-	})
+	agrees_to_guidelines: z
+		.boolean()
+		.refine((agreed) => agreed === true, 'You must agree to the publishing guidelines')
 });
 
 export type VerifiedPublisherApplicationShape = z.infer<typeof verifiedPublisherApplicationSchema>;

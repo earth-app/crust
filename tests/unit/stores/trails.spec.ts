@@ -193,7 +193,7 @@ describe('trails store fetchTrails', () => {
 
 		await store.fetchTrails({ theme: 'nature', premium: true });
 		expect(store.has('a')).toBe(true);
-		const url = vi.mocked(makeAPIRequest).mock.calls[0][1] as string;
+		const url = vi.mocked(makeAPIRequest).mock.calls[0]![1] as string;
 		expect(url).toContain('/v2/users/trails');
 		expect(url).toContain('theme=nature');
 		expect(url).toContain('premium=true');
@@ -214,7 +214,7 @@ describe('trails store fetchTrail', () => {
 		const result = await store.fetchTrail('t1', false);
 		expect(result?.id).toBe('t1');
 		expect(store.get('t1')?.id).toBe('t1');
-		const url = vi.mocked(makeAPIRequest).mock.calls[0][1] as string;
+		const url = vi.mocked(makeAPIRequest).mock.calls[0]![1] as string;
 		expect(url).toBe('/v2/users/trails/t1');
 	});
 
@@ -269,7 +269,7 @@ describe('trails store run lifecycle', () => {
 		expect(run.presenceMinutes).toBe(0);
 		expect(run.completed).toBe(false);
 		expect(store.getRun('t1')?.pledge?.where).toBe('the park');
-		const url = vi.mocked(makeClientAPIRequest).mock.calls[0][0] as string;
+		const url = vi.mocked(makeClientAPIRequest).mock.calls[0]![0] as string;
 		expect(url).toBe('/v2/users/current/trails/t1/start');
 	});
 
@@ -382,7 +382,7 @@ describe('trails store fetchJournal', () => {
 		expect(res.success).toBe(true);
 		expect(store.journal.map((e) => e.trailId)).toEqual(['t1', 't2']);
 		expect(store.journalLoaded).toBe(true);
-		const url = vi.mocked(makeAPIRequest).mock.calls[0][1] as string;
+		const url = vi.mocked(makeAPIRequest).mock.calls[0]![1] as string;
 		expect(url).toBe('/v2/users/current/trail-journal');
 	});
 

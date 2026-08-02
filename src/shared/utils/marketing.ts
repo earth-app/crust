@@ -1156,16 +1156,21 @@ export function buildQuestSteps(steps: BuilderStep[]): (QuestStep | QuestStep[])
 	const out: (QuestStep | QuestStep[])[] = [];
 	let i = 0;
 	while (i < steps.length) {
-		const gid = steps[i].groupId;
+		const step = steps[i];
+		if (!step) break;
+
+		const gid = step.groupId;
 		if (gid) {
 			const group: QuestStep[] = [];
-			while (i < steps.length && steps[i].groupId === gid) {
-				group.push(toQuestStep(steps[i]));
+			while (i < steps.length && steps[i]?.groupId === gid) {
+				const member = steps[i];
+				if (member) group.push(toQuestStep(member));
 				i += 1;
 			}
-			out.push(group.length === 1 ? group[0] : group);
+			// a one-member group is just a step; keep the array when it is genuinely empty
+			out.push(group.length === 1 && group[0] ? group[0] : group);
 		} else {
-			out.push(toQuestStep(steps[i]));
+			out.push(toQuestStep(step));
 			i += 1;
 		}
 	}
@@ -1364,17 +1369,20 @@ export const PREVIEW_PHOTO_DATA_URL =
 			'text-anchor="middle" dominant-baseline="middle">Preview Submission</text></svg>'
 	);
 
+const EMPTY_STEP: QuestStep = { type: 'describe_text', description: '', parameters: [] };
+
 function firstStepOf(quest: Quest): QuestStep {
 	const slot = quest.steps[0];
-	if (!slot) return { type: 'describe_text', description: '', parameters: [] };
-	return Array.isArray(slot) ? slot[0] : slot;
+	if (!slot) return EMPTY_STEP;
+	// an alt-step group can be declared empty, so the first member is not guaranteed
+	return Array.isArray(slot) ? (slot[0] ?? EMPTY_STEP) : slot;
 }
 
 function stepAt(quest: Quest, index: number): QuestStep {
 	const clamped = Math.max(0, Math.min(index, quest.steps.length - 1));
 	const slot = quest.steps[clamped];
 	if (!slot) return firstStepOf(quest);
-	return Array.isArray(slot) ? slot[0] : slot;
+	return Array.isArray(slot) ? (slot[0] ?? EMPTY_STEP) : slot;
 }
 
 // a believable completed-entry per step type, so the "already completed" step view
@@ -1453,8 +1461,11 @@ export function buildProgress(
 	const limit = Math.max(0, Math.min(completedCount, quest.steps.length));
 	for (let i = 0; i < limit; i += 1) {
 		const slot = quest.steps[i];
+		if (!slot) continue;
+
 		if (Array.isArray(slot)) {
-			progress.push([mockProgressEntry(slot[0].type, i, 0, now + i * 1000)]);
+			const first = slot[0];
+			if (first) progress.push([mockProgressEntry(first.type, i, 0, now + i * 1000)]);
 		} else {
 			progress.push(mockProgressEntry(slot.type, i, undefined, now + i * 1000));
 		}
@@ -1729,7 +1740,7 @@ export function mockChallengeView(
 // throwaway id so a seeded preview trail can never collide with a real trail id
 export const PREVIEW_TRAIL_ID = 'marketing_preview_trail';
 
-// ~120 min/week; kept local so this file stays pinia-free and unit-testable in isolation
+// 120 min/week product goal; kept local so this file stays pinia-free and unit-testable alone
 export const PREVIEW_NATURE_TARGET = 120;
 
 export const TRAIL_THEMES: TrailTheme[] = [

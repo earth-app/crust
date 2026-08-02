@@ -221,7 +221,7 @@ describe('progress builders', () => {
 		expect(prog).toHaveLength(2);
 		expect(Array.isArray(prog[0])).toBe(false);
 		expect(Array.isArray(prog[1])).toBe(true);
-		expect((prog[1] as QuestProgressEntry[])[0].altIndex).toBe(0);
+		expect((prog[1] as QuestProgressEntry[])[0]?.altIndex).toBe(0);
 	});
 
 	it('freshQuestProgress starts empty and not completed', () => {
@@ -292,7 +292,7 @@ describe('applyPreviewSubmit', () => {
 			1000
 		);
 		expect(Array.isArray(next.progress[0])).toBe(true);
-		expect((next.progress[0] as QuestProgressEntry[])[0].altIndex).toBe(1);
+		expect((next.progress[0] as QuestProgressEntry[])[0]?.altIndex).toBe(1);
 		expect(result.completed).toBe(true);
 	});
 

@@ -285,7 +285,7 @@ async function refreshScenes() {
 }
 
 async function onSave() {
-	if (!sceneName.trim()) return;
+	if (!sceneName.value.trim()) return;
 	saving.value = true;
 	const res = await studio.saveScene({
 		kind: props.kind,

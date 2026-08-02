@@ -62,7 +62,7 @@ describe('trailmark store fetchNearby', () => {
 		expect(res.success).toBe(true);
 		expect(store.get('m1')).toBeTruthy();
 		expect(store.get('m2')).toBeTruthy();
-		const url = vi.mocked(makeAPIRequest).mock.calls[0][1] as string;
+		const url = vi.mocked(makeAPIRequest).mock.calls[0]![1] as string;
 		expect(url).toContain('/v2/trailmarks');
 	});
 
@@ -86,7 +86,7 @@ describe('trailmark store fetchNearby', () => {
 		const store = useTrailmarkStore();
 		vi.mocked(makeAPIRequest).mockResolvedValue(ok([]) as any);
 		await store.fetchNearby({ lat: 1, lng: 2, radius: 999999 }, false);
-		const url = vi.mocked(makeAPIRequest).mock.calls[0][1] as string;
+		const url = vi.mocked(makeAPIRequest).mock.calls[0]![1] as string;
 		expect(url).toContain('radius=2000');
 	});
 });
@@ -254,7 +254,7 @@ describe('trailmark store fetchForPrompt / forPrompt', () => {
 		const res = await store.fetchForPrompt('p1');
 		expect(res.success).toBe(true);
 		expect(store.forPrompt('p1').map((m) => m.id)).toEqual(['m1', 'm2']);
-		const url = vi.mocked(makeAPIRequest).mock.calls[0][1] as string;
+		const url = vi.mocked(makeAPIRequest).mock.calls[0]![1] as string;
 		expect(url).toBe('/v2/prompts/p1/trailmarks');
 	});
 
