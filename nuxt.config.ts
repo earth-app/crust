@@ -51,6 +51,10 @@ export default defineNuxtConfig({
 		appleKeyId: process.env.NUXT_APPLE_KEY_ID || ''
 	},
 	ssr: true,
+	site: {
+		url: process.env.NUXT_PUBLIC_SITE_URL || 'https://app.earth-app.com',
+		name: 'The Earth App'
+	},
 	compatibilityDate: '2025-12-13',
 	// Disable devtools in production to reduce client bundle size and overhead
 	devtools: { enabled: process.env.NODE_ENV !== 'production' },
@@ -64,7 +68,6 @@ export default defineNuxtConfig({
 	app: {
 		head: {
 			link: [
-				{ rel: 'canonical', href: 'https://app.earth-app.com' },
 				{ rel: 'preconnect', href: 'https://cdn.earth-app.com' },
 				{ rel: 'dns-prefetch', href: 'https://cdn.earth-app.com' },
 				{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -118,6 +121,7 @@ export default defineNuxtConfig({
 	},
 	nitro: {
 		preset: process.env.NUXT_TEST_BUILD === '1' ? 'node-server' : 'cloudflare_module',
+		...(process.env.NITRO_OUTPUT_DIR ? { output: { dir: process.env.NITRO_OUTPUT_DIR } } : {}),
 		cloudflare: {
 			deployConfig: true,
 			nodeCompat: true,

@@ -9,15 +9,24 @@
 
 <script setup lang="ts">
 const appConfig = useAppConfig();
+const route = useRoute();
+const siteUrl = (useRuntimeConfig().public.baseUrl || 'https://app.earth-app.com').replace(
+	/\/$/,
+	''
+);
+
+// per-page, because nuxt.config declared ONE canonical pointing every route at the homepage, which
+// tells crawlers every page is a duplicate of `/`
+useHead({
+	link: [{ rel: 'canonical', href: () => `${siteUrl}${route.path}` }]
+});
 
 useSeoMeta({
 	charset: 'utf-8',
+	// no maximumScale/userScalable: pinning them blocks pinch zoom, a WCAG 1.4.4 failure
 	viewport: {
 		width: 'device-width',
-		initialScale: 1,
-		minimumScale: 1,
-		maximumScale: 1,
-		userScalable: 'no'
+		initialScale: 1
 	},
 	applicationName: appConfig.name,
 	title: appConfig.name,
