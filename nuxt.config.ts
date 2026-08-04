@@ -97,7 +97,6 @@ export default defineNuxtConfig({
 				'@vue/devtools-core',
 				'@vue/devtools-kit',
 				'@tensorflow/tfjs',
-				'@earth-app/ocean',
 				'@internationalized/date',
 				'luxon',
 				'zod',
@@ -108,9 +107,6 @@ export default defineNuxtConfig({
 				'gif.js',
 				'upng-js'
 			]
-		},
-		ssr: {
-			noExternal: ['@earth-app/ocean']
 		},
 		build: {
 			reportCompressedSize: false

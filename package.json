@@ -49,7 +49,6 @@
     "typecheck": "bunx vue-tsc --noEmit -p .nuxt/tsconfig.app.json && bunx tsc --noEmit -p .nuxt/tsconfig.server.json && bunx tsc --noEmit -p tests/tsconfig.json && bunx vue-tsc --noEmit -p tests/unit/tsconfig.json"
   },
   "dependencies": {
-    "@earth-app/ocean": "^1.1.0",
     "@internationalized/date": "^3.12.3",
     "@nuxt/hints": "^1.1.4",
     "@nuxt/icon": "^2.4.1",
