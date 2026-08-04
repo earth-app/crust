@@ -2,6 +2,7 @@ import { DateTime } from 'luxon';
 import type { SortingOption } from '../types/global';
 import type { User } from '../types/user';
 import { DEFAULT_FULL_NAME } from '../types/user';
+import { reportRequestOutcome } from './backend';
 import { extractServerMessage } from './errors';
 
 const requestQueue = new Map<string, Promise<any>>();
@@ -9,10 +10,6 @@ const requestQueue = new Map<string, Promise<any>>();
 // one retry with a small backoff on a transient (network / 5xx) GET failure
 const RETRY_BACKOFF_MS = 150;
 
-// LRU cache for API responses to prevent memory leaks. Disabled in test mode
-// so that mock overrides (which can change response shape between tests) are
-// always honored; otherwise the long-lived dev server's module-level cache
-// would return stale data after a warmup or earlier test.
 const MAX_CACHE_SIZE = 100;
 const apiCache = new Map<string, any>();
 const isApiCacheDisabled = (): boolean => {
@@ -23,11 +20,6 @@ const isApiCacheDisabled = (): boolean => {
 	);
 };
 
-/**
- * TEST-ONLY: empty the in-process API cache so the dev server doesn't bleed
- * default mock data from a warmup or earlier test into the current test.
- * Used by `src/server/api/__test__/reset.post.ts`; do not call from app code.
- */
 export function apiCache_TEST_ONLY_CLEAR(): void {
 	apiCache.clear();
 	requestQueue.clear();
@@ -44,8 +36,6 @@ const evictOldestCacheEntry = () => {
 	}
 };
 
-// parse a body that arrived as an unparsed json string; leaves plain text / already-parsed
-// values untouched. only attempts strings that actually look like json
 function parseIfJsonString(value: unknown): unknown {
 	if (typeof value !== 'string') return value;
 	const trimmed = value.trim();
@@ -202,6 +192,8 @@ export async function makeRequest<T>(
 					if (!isRetriable || !isTransient || attempt === 2) break;
 					await new Promise((resolve) => setTimeout(resolve, RETRY_BACKOFF_MS));
 				}
+
+				reportRequestOutcome(responseStatus);
 
 				// a network error that wasn't a 404 -> surface as failure (post-retry)
 				if (caught && !(caught as any).is404) throw caught;
