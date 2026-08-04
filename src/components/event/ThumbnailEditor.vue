@@ -10,14 +10,14 @@
 					v-model="thumbnailUrl"
 					placeholder="https://example.com/image.jpg or upload below"
 					:disabled="loading || !!thumbnailFile || thumbnailUrl.startsWith('blob:')"
-					class="min-w-100"
+					class="sm:min-w-100"
 				/>
 
 				<UFileUpload
 					v-model="thumbnailFile"
 					accept="image/*"
 					label="Upload Thumbnail"
-					class="min-w-100 min-h-50"
+					class="sm:min-w-100 min-h-50"
 					:disabled="loading"
 				/>
 

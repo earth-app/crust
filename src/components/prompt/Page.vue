@@ -47,7 +47,7 @@
 			<USeparator class="my-4 mx-3 w-4/5" />
 		</div>
 
-		<div class="flex flex-col gap-2 w-3/5 min-w-100 my-2">
+		<div class="flex flex-col gap-2 w-3/5 sm:min-w-100 my-2">
 			<div class="flex items-center justify-between gap-2">
 				<div class="flex items-center gap-2">
 					<UIcon
@@ -91,7 +91,7 @@
 			</div>
 		</div>
 
-		<div class="flex flex-col items-center justify-center min-w-100 w-3/5 my-8">
+		<div class="flex flex-col items-center justify-center sm:min-w-100 w-3/5 my-8">
 			<div
 				v-for="(response, i) in responses"
 				:id="`response-${i}`"

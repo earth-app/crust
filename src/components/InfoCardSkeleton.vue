@@ -1,5 +1,7 @@
 <template>
-	<div class="min-w-100 w-11/12 p-4 shadow-lg rounded-lg light:border-2 light:border-black/10">
+	<div
+		class="min-w-80 lg:min-w-100 xl:min-w-120 w-11/12 p-4 shadow-lg rounded-lg light:border-2 light:border-black/10"
+	>
 		<div class="flex items-center space-x-4">
 			<div class="flex flex-col w-full">
 				<div class="flex items-center mb-2">

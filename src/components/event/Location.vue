@@ -32,7 +32,7 @@
 					:loading="loading"
 					placeholder="Or search for a location..."
 					@update:searchTerm="handleSearchChange"
-					class="w-2/3 min-w-120"
+					class="w-2/3 sm:min-w-120"
 				>
 					<template #item="{ item }">
 						<div class="flex items-center justify-between w-full">

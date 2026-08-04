@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col items-center min-w-120 w-full min-h-50 px-2">
+	<div class="flex flex-col items-center sm:min-w-120 w-full min-h-50 px-2">
 		<h1 class="font-semibold text-lg mb-2">{{ metricLabel }} Leaderboard (Showing {{ size }})</h1>
 
 		<UTabs

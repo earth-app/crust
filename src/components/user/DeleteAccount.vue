@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="user"
-		class="flex flex-col w-full min-w-100 px-8"
+		class="flex flex-col w-full sm:min-w-100 px-8"
 	>
 		<div class="flex flex-col w-full mb-4">
 			<strong class="text-sm sm:text-base mb-2">@{{ user.username }}</strong>
