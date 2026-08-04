@@ -28,7 +28,18 @@ export const PROJECT_ROOT = resolve(__dirname, '../../..');
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3002';
 const RAW_DIR = resolve(PROJECT_ROOT, '.coverage', 'raw');
 const OUT_DIR = resolve(PROJECT_ROOT, 'coverage');
-const CHUNK_DIR = resolve(PROJECT_ROOT, '.output/public/_nuxt');
+/* Where the chunks that were actually SERVED live.
+ *
+ * The prod lane builds into `.output-e2e` (build:test) and serves from it (start:test) so a
+ * concurrent build cannot swap the bundle out from under a running server. This has to resolve the
+ * same directory or every chunk fails its sourcemap lookup with ENOENT and the whole run's coverage
+ * is silently empty. `tests/unit/coverage.spec.ts` asserts this agrees with the npm scripts.
+ */
+export const E2E_OUTPUT_DIR = '.output-e2e';
+const OUTPUT_DIR =
+	process.env.NITRO_OUTPUT_DIR ||
+	(process.env.PLAYWRIGHT_PROD === '1' ? E2E_OUTPUT_DIR : '.output');
+const CHUNK_DIR = resolve(PROJECT_ROOT, OUTPUT_DIR, 'public/_nuxt');
 
 // After sourcemap remap, keep only app source files (not vendor/runtime).
 const KEEP_PREFIXES = [

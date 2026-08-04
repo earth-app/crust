@@ -1,11 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { PROJECT_ROOT, toLcov, toRepoRelative } from '../e2e/utils/coverage';
+import { E2E_OUTPUT_DIR, PROJECT_ROOT, toLcov, toRepoRelative } from '../e2e/utils/coverage';
 
-// regression: v8-to-istanbul keys coverage by absolute on-disk path; codecov
-// matches onto the repo tree by repo-relative path, so absolute CI paths made
-// the whole e2e-integration report "unusable". paths must come out repo-relative.
-// (build against the live PROJECT_ROOT, not a hardcoded CI path that could itself
-// be a prefix of the runner's checkout)
 describe('toRepoRelative', () => {
 	it('strips the absolute project-root prefix to a repo-relative src path', () => {
 		const abs = `${PROJECT_ROOT}/src/components/OfflineBanner.vue`;
@@ -43,5 +40,17 @@ describe('toLcov', () => {
 		expect(lcov).toContain('SF:src/components/OfflineBanner.vue');
 		expect(lcov).not.toContain('/home/runner');
 		expect(lcov).toContain('end_of_record');
+	});
+});
+
+/* regression: the e2e lane moved to `.output-e2e` but coverage still resolved `.output`, so every
+   served chunk failed its sourcemap lookup with ENOENT and the run reported no coverage at all */
+describe('coverage reads the directory the e2e lane actually serves', () => {
+	const scripts = JSON.parse(readFileSync(join(PROJECT_ROOT, 'package.json'), 'utf-8'))
+		.scripts as Record<string, string>;
+
+	it('builds, serves and reads the same output directory', () => {
+		expect(scripts['build:test']).toContain(`NITRO_OUTPUT_DIR=${E2E_OUTPUT_DIR}`);
+		expect(scripts['start:test']).toContain(`${E2E_OUTPUT_DIR}/server/index.mjs`);
 	});
 });
