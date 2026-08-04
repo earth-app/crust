@@ -304,6 +304,10 @@
 		[role='button'],
 		summary {
 			min-height: 44px;
+			/* height alone leaves an icon-only button tall and 20px wide, which still fails
+			   SC 2.5.8 on its narrow axis. a text button is already wider than this, so the floor
+			   only ever squares up the icon-only ones */
+			min-width: 44px;
 		}
 	}
 }

@@ -174,7 +174,10 @@ export async function plantDefects(page: Page): Promise<void> {
 		stage.id = 'planted-defects';
 		stage.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;';
 		stage.innerHTML = `
-			<button style="width:20px;height:20px;padding:0;border:0">x</button>
+			<!-- min-*:0 opts this out of the app's own coarse-pointer 44px floor, which would
+			     otherwise inflate the plant to 44x44 and leave the detector with nothing to find.
+			     the plant exists to prove the DETECTOR fires, not to exercise the app's css -->
+			<button style="width:20px;height:20px;min-width:0;min-height:0;padding:0;border:0">x</button>
 			<div style="width:4000px;height:4px"></div>
 			<p style="height:6px;line-height:20px;font-size:20px;overflow:visible;margin:0">clipped text</p>
 		`;
