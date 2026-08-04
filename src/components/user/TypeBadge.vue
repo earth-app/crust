@@ -28,8 +28,8 @@
 	</span>
 </template>
 
+import { ACCOUNT_TYPE, type AccountType } from 'types/enums';
 <script setup lang="ts">
-import { com } from '@earth-app/ocean';
 import { capitalizeFully } from 'utils';
 
 defineOptions({
@@ -67,15 +67,15 @@ const badgeStyling = computed(() => {
 });
 
 const editorItems = props.editor
-	? com.earthapp.account.AccountType.values().map((type) => ({
-			label: capitalizeFully(type.name.replace('_', ' ')),
-			value: type.name,
-			disabled: type.name === props.user.account?.account_type,
-			onSelect: () => handleSetAccountType(type.name)
+	? ACCOUNT_TYPE.map((type) => ({
+			label: capitalizeFully(type.replace('_', ' ')),
+			value: type,
+			disabled: type === props.user.account?.account_type,
+			onSelect: () => handleSetAccountType(type)
 		}))
 	: [];
 
-async function handleSetAccountType(type: typeof com.earthapp.account.AccountType.prototype.name) {
+async function handleSetAccountType(type: AccountType) {
 	const old = props.user.account.account_type;
 	const toast = useToast();
 

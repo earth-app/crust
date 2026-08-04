@@ -531,9 +531,9 @@
 </template>
 
 <script setup lang="ts">
-import { com } from '@earth-app/ocean';
 import { extractServerMessage } from 'errors';
 import { usernameSchema } from 'schemas';
+import { COUNTRIES, VISIBILITY } from 'types/enums';
 import { OAUTH_PROVIDERS, type User } from 'types/user';
 import { capitalizeFully } from 'utils';
 import type { InputTypeHTMLAttribute } from 'vue';
@@ -637,7 +637,7 @@ const props: {
 		id: 'country',
 		type: 'dropdown',
 		get dropdownItems() {
-			const countries = com.earthapp.account.Country.values().map((country) => ({
+			const countries = COUNTRIES.map((country) => ({
 				label: country.countryName,
 				value: country.code,
 				icon: country.flagEmoji,
@@ -1166,15 +1166,15 @@ const accountVisibility = computed({
 	}
 });
 
-const accountVisibilityOptions = com.earthapp.Visibility.values().map((value) => ({
-	label: capitalizeFully(value.name),
-	value: value.name,
-	icon: ['mdi:lock', 'mdi:account-box', 'mdi:office-building'][value.ordinal],
+const accountVisibilityOptions = VISIBILITY.map((value, ordinal) => ({
+	label: capitalizeFully(value),
+	value,
+	icon: ['mdi:lock', 'mdi:account-box', 'mdi:office-building'][ordinal],
 	description: [
 		'Only you and friends can see',
 		'Invisible to search and anonymous users',
 		'Everyone can see'
-	][value.ordinal]
+	][ordinal]
 }));
 
 const visibilityLoading = ref(false);

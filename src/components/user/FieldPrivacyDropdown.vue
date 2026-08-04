@@ -56,8 +56,8 @@
 	</ClientOnly>
 </template>
 
+import { PRIVACY } from 'types/enums';
 <script setup lang="ts">
-import { com } from '@earth-app/ocean';
 import type { DropdownMenuItem } from '@nuxt/ui';
 
 const props = defineProps<{
@@ -73,7 +73,7 @@ const user = props.user;
 const loading = ref(false);
 const selected = ref(user.account.field_privacy[props.field] || 'PRIVATE');
 const selectedIndex = computed(() => {
-	return com.earthapp.account.Privacy.values().findIndex((value) => value.name === selected.value);
+	return (PRIVACY as readonly string[]).indexOf(selected.value);
 });
 
 const icons = ['mdi:lock', 'mdi:circle-outline', 'mdi:account-box', 'mdi:office-building'];
@@ -84,14 +84,13 @@ const descriptions = [
 	'Everyone can see'
 ];
 const items = ref<DropdownMenuItem[]>(
-	com.earthapp.account.Privacy.values().map((value) => ({
-		label: value.name.charAt(0).toUpperCase() + value.name.slice(1).toLowerCase(),
-		icon: icons[value.ordinal],
-		value: value.name,
-		description: descriptions[value.ordinal],
-		checked: selected.value === value.name,
-		disabled:
-			(isNeverPublic(props.field) && value.name === 'PUBLIC') || selected.value === value.name
+	PRIVACY.map((value, ordinal) => ({
+		label: value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(),
+		icon: icons[ordinal],
+		value,
+		description: descriptions[ordinal],
+		checked: selected.value === value,
+		disabled: (isNeverPublic(props.field) && value === 'PUBLIC') || selected.value === value
 	}))
 );
 

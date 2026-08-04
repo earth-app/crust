@@ -163,9 +163,8 @@
 	</div>
 </template>
 
+import { ACTIVITY_TYPE } from 'types/enums';
 <script setup lang="ts">
-import { com } from '@earth-app/ocean';
-
 const props = defineProps<{
 	title?: string;
 	description?: string;
@@ -228,7 +227,7 @@ if (Array.isArray(activity.value?.fields)) {
 const newFieldKey = ref<string>('');
 const newFieldValue = ref<string>('');
 
-const typeItems = com.earthapp.activity.ActivityType.values().map((type) => type.name.toString());
+const typeItems = [...ACTIVITY_TYPE];
 
 watch(
 	() => props.activity,

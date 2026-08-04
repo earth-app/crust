@@ -1,5 +1,5 @@
-import { com } from '@earth-app/ocean';
 import { defineStore } from 'pinia';
+import type { Visibility } from 'types/enums';
 import type { Prompt, PromptResponse } from 'types/prompts';
 import type { User } from 'types/user';
 import { classifyItemFetch, makeClientAPIRequest } from 'utils';
@@ -195,16 +195,13 @@ export const usePromptStore = defineStore('prompt', () => {
 		}
 	};
 
-	const createPrompt = async (
-		prompt: string,
-		visibility: com.earthapp.Visibility = com.earthapp.Visibility.PUBLIC
-	) => {
+	const createPrompt = async (prompt: string, visibility: Visibility = 'PUBLIC') => {
 		const authStore = useAuthStore();
 		const res = await makeClientAPIRequest<Prompt>('/v2/prompts', authStore.sessionToken, {
 			method: 'POST',
 			body: {
 				prompt,
-				visibility: visibility.name
+				visibility
 			}
 		});
 
@@ -215,17 +212,13 @@ export const usePromptStore = defineStore('prompt', () => {
 		return res;
 	};
 
-	const updatePrompt = async (
-		id: string,
-		prompt: string,
-		visibility: com.earthapp.Visibility = com.earthapp.Visibility.PUBLIC
-	) => {
+	const updatePrompt = async (id: string, prompt: string, visibility: Visibility = 'PUBLIC') => {
 		const authStore = useAuthStore();
 		const res = await makeClientAPIRequest<Prompt>(`/v2/prompts/${id}`, authStore.sessionToken, {
 			method: 'PATCH',
 			body: {
 				prompt,
-				visibility: visibility.name
+				visibility
 			}
 		});
 

@@ -181,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import { com } from '@earth-app/ocean';
+import { ACTIVITY_TYPE } from 'types/enums';
 
 const toast = useToast();
 const { user } = useAuth();
@@ -310,9 +310,7 @@ async function loadContent() {
 		return null;
 	});
 
-	tagOrder.value = com.earthapp.activity.ActivityType.values()
-		.map((type) => type.name.toLowerCase())
-		.sort(() => Math.random() - 0.5);
+	tagOrder.value = ACTIVITY_TYPE.map((type) => type.toLowerCase()).sort(() => Math.random() - 0.5);
 }
 
 onMounted(async () => {

@@ -1,6 +1,6 @@
-import { com } from '@earth-app/ocean';
 import { useAuthStore } from 'stores/auth';
 import { usePromptStore } from 'stores/prompt';
+import type { Visibility } from 'types/enums';
 import type { SortingOption } from 'types/global';
 import type { Prompt } from 'types/prompts';
 import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from 'utils';
@@ -92,11 +92,7 @@ export function usePrompts(
 	};
 
 	const create = async (promptText: string, visibility?: Visibility) => {
-		// callers hold the name string; store wants the enum instance (defaults PUBLIC when omitted)
-		return await promptStore.createPrompt(
-			promptText,
-			visibility ? com.earthapp.Visibility.valueOf(visibility) : undefined
-		);
+		return await promptStore.createPrompt(promptText, visibility);
 	};
 
 	return {

@@ -31,8 +31,8 @@
 	</ClientOnly>
 </template>
 
+import { ACTIVITY_TYPE } from 'types/enums';
 <script setup lang="ts">
-import { com } from '@earth-app/ocean';
 import { capitalizeFully } from 'utils';
 
 interface ActivityItem {
@@ -83,9 +83,9 @@ const activitiesLoading = ref(false);
 
 // Add activity types to the list if enabled - do this synchronously before mount
 if (props.includeActivityTypes) {
-	const activityTypes = com.earthapp.activity.ActivityType.values().map((type) => ({
-		label: capitalizeFully(type.name.toString().replace(/_/g, ' ')),
-		value: type.name.toString(),
+	const activityTypes = ACTIVITY_TYPE.map((type) => ({
+		label: capitalizeFully(type.replace(/_/g, ' ')),
+		value: type,
 		icon: 'mdi:tag-outline',
 		isActivityType: true
 	}));
@@ -118,11 +118,9 @@ function initializeActivities() {
 		const newIds = (props.modelValue as string[]).filter((id) => !existingIds.includes(id));
 
 		if (newIds.length > 0) {
-			const activityTypeNames = com.earthapp.activity.ActivityType.values().map((t) =>
-				t.name.toString()
-			);
-			const typeValues = newIds.filter((id) => activityTypeNames.includes(id));
-			const activityIds = newIds.filter((id) => !activityTypeNames.includes(id));
+			const isType = (id: string) => (ACTIVITY_TYPE as readonly string[]).includes(id);
+			const typeValues = newIds.filter(isType);
+			const activityIds = newIds.filter((id) => !isType(id));
 
 			if (props.includeActivityTypes && typeValues.length > 0) {
 				const types = typeValues.map((typeValue) => ({

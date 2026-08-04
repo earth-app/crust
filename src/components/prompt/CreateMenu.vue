@@ -35,9 +35,9 @@
 					v-model="state.visibility"
 					label="Visibility"
 					:items="[
-						{ label: 'Public', value: com.earthapp.Visibility.PUBLIC.name },
-						{ label: 'Unlisted', value: com.earthapp.Visibility.UNLISTED.name },
-						{ label: 'Private', value: com.earthapp.Visibility.PRIVATE.name }
+						{ label: 'Public', value: 'PUBLIC' },
+						{ label: 'Unlisted', value: 'UNLISTED' },
+						{ label: 'Private', value: 'PRIVATE' }
 					]"
 					class="mt-4 max-w-30"
 				/>
@@ -104,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { com } from '@earth-app/ocean';
+import { toVisibility, type Visibility } from 'types/enums';
 
 const emit = defineEmits<{
 	(event: 'prompt-created', prompt: Prompt): void;
@@ -141,7 +141,7 @@ interface PromptDraft {
 }
 const state = reactive<PromptDraft>({
 	prompt: '',
-	visibility: com.earthapp.Visibility.PUBLIC.name
+	visibility: 'PUBLIC' as Visibility
 });
 
 const userIdForDraft = computed(() => user.value?.id ?? null);
@@ -195,10 +195,7 @@ async function newPrompt() {
 		loading.value = true;
 
 		const promptStore = usePromptStore();
-		const res = await promptStore.createPrompt(
-			text,
-			com.earthapp.Visibility.valueOf(state.visibility)
-		);
+		const res = await promptStore.createPrompt(text, toVisibility(state.visibility));
 		if (valid(res)) {
 			loading.value = false;
 			toast.add({
