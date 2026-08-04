@@ -1,5 +1,7 @@
-import { com } from '@earth-app/ocean';
 import type { Activity } from './activity';
+import type { AccountType, Country, Privacy, Visibility } from './enums';
+
+export type { AccountType, Country, Privacy, Visibility };
 
 export const DEFAULT_FULL_NAME = 'John Doe';
 
@@ -17,10 +19,6 @@ export const OAUTH_PROVIDERS: OAuthProvider[] = [
 ];
 
 export type Rarity = 'normal' | 'rare' | 'amazing' | 'green';
-
-export type AccountType = typeof com.earthapp.account.AccountType.prototype.name;
-export type Visibility = typeof com.earthapp.Visibility.prototype.name;
-export type Privacy = typeof com.earthapp.account.Privacy.prototype.name;
 
 export type User = {
 	id: string;

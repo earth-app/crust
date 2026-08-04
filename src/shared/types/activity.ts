@@ -1,6 +1,6 @@
-import type { com } from '@earth-app/ocean';
+import type { ActivityType } from './enums';
 
-export type ActivityType = typeof com.earthapp.activity.ActivityType.prototype.name;
+export type { ActivityType };
 
 export type Activity = {
 	id: string;

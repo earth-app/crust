@@ -1,4 +1,4 @@
-import { com } from '@earth-app/ocean';
+import type { Privacy } from './enums';
 import type { User } from './user';
 
 export type Prompt = {
@@ -8,7 +8,7 @@ export type Prompt = {
 	responses_count: number;
 	has_responded: boolean;
 	prompt: string;
-	visibility: typeof com.earthapp.account.Privacy.prototype.name;
+	visibility: Privacy;
 	created_at: string;
 	updated_at?: string;
 };
