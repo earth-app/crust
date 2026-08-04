@@ -5,13 +5,15 @@
 		>Skip to main content</a
 	>
 	<OfflineBanner />
+	<CloudDegradedBanner />
 	<NavBar />
 	<main
 		id="main-content"
 		tabindex="-1"
 		class="min-h-[90vh] w-full focus:outline-none"
 	>
-		<slot />
+		<BackendGate v-if="backend.hasChecked && backend.isBlocked" />
+		<slot v-else />
 	</main>
 	<LazyFooter hydrate-on-visible />
 
@@ -52,8 +54,10 @@
 </template>
 
 <script setup lang="ts">
+import { useBackendStore } from 'stores/backend';
 const route = useRoute();
 const router = useRouter();
+const backend = useBackendStore();
 const { user, fetchUser } = useAuth();
 const celebration = useQuestCelebration();
 const { code, fetchCode } = useReferral();

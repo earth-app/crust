@@ -1,3 +1,4 @@
+import { useBackendStore } from 'stores/backend';
 import { decodeOAuthUserHandoff } from 'utils';
 import { isValidUser } from '~/stores/user';
 
@@ -6,8 +7,6 @@ export default defineNuxtPlugin((nuxtApp) => {
 	const authStore = useAuthStore();
 	const userStore = useUserStore();
 
-	// consume the short-lived oauth user handoff (set by the oauth callback) so currentUser is set
-	// directly, mirroring useLogin — removes the dependency on a /v2/users/current round-trip
 	const oauthUserCookie = useCookie<string | null>('oauth_user', { default: () => null });
 	if (oauthUserCookie.value) {
 		const decoded = decodeOAuthUserHandoff(oauthUserCookie.value);
@@ -16,6 +15,10 @@ export default defineNuxtPlugin((nuxtApp) => {
 	}
 
 	nuxtApp.hook('app:mounted', async () => {
+		const backendStore = useBackendStore();
+		await backendStore.preflight();
+		if (backendStore.isBlocked) return;
+
 		try {
 			await fetchUser();
 		} catch (error) {

@@ -67,7 +67,27 @@
 				</div>
 			</div>
 		</div>
-		<div class="ml-auto min-w-0 shrink-0">
+		<ClientOnly>
+			<div
+				v-if="backend.hasChecked && backend.isBlocked"
+				id="navbar-backend-state"
+				role="status"
+				aria-live="polite"
+				class="ml-auto mr-2 flex shrink-0 items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white sm:text-sm"
+			>
+				<UIcon
+					:name="
+						backend.mantle === 'maintenance' ? 'mdi:wrench-outline' : 'mdi:cloud-alert-outline'
+					"
+					class="size-4 shrink-0"
+				/>
+				<span>{{ backend.mantle === 'maintenance' ? 'Under Maintenance' : 'Service Outage' }}</span>
+			</div>
+		</ClientOnly>
+		<div
+			class="min-w-0 shrink-0"
+			:class="backend.hasChecked && backend.isBlocked ? '' : 'ml-auto'"
+		>
 			<ClientOnly
 				fallback-tag="div"
 				class="flex items-center"
@@ -312,8 +332,12 @@
 </template>
 
 <script setup lang="ts">
+import { useBackendStore } from 'stores/backend';
 const { user, avatar128, sendVerificationEmail } = useAuth();
 const userId = computed(() => user.value?.id);
+
+// the gate explains it in full; the navbar just has to make the state impossible to miss
+const backend = useBackendStore();
 
 const toast = useToast();
 const router = useRouter();
