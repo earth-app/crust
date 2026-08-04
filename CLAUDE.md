@@ -123,6 +123,45 @@ This is the vital architectural boundary; get it right every time.
   param; sky passes its own `makeMServerRequest` (which calls the crust host's Nitro routes from
   native). See `useActivity` (no param) vs `useActivityInfo` (param) for the exact shape.
 
+### Backend preflight (health gating)
+
+Before the app auto-logs-in or fetches content it asks the backend whether it is up. The whole
+contract lives in [src/shared/utils/backend.ts](src/shared/utils/backend.ts) (pure, no pinia) and
+[src/stores/backend.ts](src/stores/backend.ts).
+
+- **mantle2 `/v2/info` is the authority.** `status: 'active'` runs normally, `'maintenance'` and any
+  **5xx** block the app behind `<BackendGate>`; the outage variant carries the status and support
+  links. `blocksApp()` is the single place that decides.
+- **Fail open on anything ambiguous.** A 3xx/4xx, an unrecognised `status` string, or a missing body
+  resolves to `unknown` and does NOT block. A false outage blanks the entire app, which is far worse
+  than one request failing with its own local message.
+- **Offline is not an outage.** A transport failure while `navigator.onLine` is false stays
+  `unknown`, because `<OfflineBanner>` already owns that message and two contradictory banners is
+  worse than one.
+- **cloud never blocks.** It is pinged separately (2xx = up) and only raises
+  `<CloudDegradedBanner>`. Login does not depend on it.
+- **The preflight outranks a live request.** `reportSuccess()` clears an outage _inferred from a
+  failed request_ but never one the preflight confirmed - some endpoints stay up while the backend
+  is broadly down, and letting one lucky 2xx dismiss the gate flaps the whole app open. Only another
+  preflight clears that. There is a regression test for exactly this.
+- **Only mantle-direct calls move global health.** `reportRequestOutcome` is called from
+  `makeRequest` (which backs `makeAPIRequest`/`makeClientAPIRequest`) and deliberately NOT from
+  `makeServerRequest`, so a cloud 5xx proxied through Nitro can never blank the app. It is wired
+  through a listener because `util.ts` is imported _by_ the stores; importing one back is circular.
+- **Never fetch health during SSR.** These routes are ISR-cached, so a health value baked into the
+  HTML would be served to every later visitor long after it stopped being true.
+
+### Onboarding tours: just-in-time, not up-front
+
+The one clean large experiment (Andersen et al. 2012, CHI, N>45,000) found context-sensitive
+tutorials beat up-front ones by **+40% levels completed** on a complex product, that tutorials had
+**no** engagement effect on simple ones and made **3.5% fewer** players return, that forcing the
+action (blocking/stencils) helped nowhere, and that an on-demand help button was **harmful**
+(-12% levels) on a simple surface. crust is complex enough to justify tours; prefer firing them on
+arrival at the surface they explain (sky's `startTourIfNew('trails')` pattern) over walking a new
+user through an up-front sequence. Everything else in this space - the 77% cliff, the aha-moment,
+the $300M button - is folklore; see the `behavior-design-evidence` skill before citing any of it.
+
 ## CI, Packaging & Publishing
 
 - CI workflows live in `.github/workflows/`:
