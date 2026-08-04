@@ -223,44 +223,14 @@ export default defineNuxtConfig({
 		[
 			'@nuxt/icon',
 			{
-				/* these were nested under a further `icon:` key, which the module never reads -- the
-				   whole block was inert. flattened so mode/cssLayer actually apply */
 				mode: 'css',
 				cssLayer: 'base',
 				size: '48px',
-				/* inline every icon the source actually references. the runtime `loadIcon` falls back
-				   to an HTTP fetch for anything not already bundled, and that fetch fails during SSR
-				   and in the sandboxed test lane -- which is what produced thousands of
-				   `failed to load icon X` warnings. scanning makes `_getIcon` hit in-process, so no
-				   request is ever made */
 				clientBundle: {
 					scan: true,
 					includeCustomCollections: true
 				},
-				/* every collection below is an installed @iconify-json devDependency, so resolve them
-				   from disk rather than the iconify api */
-				serverBundle: {
-					collections: [
-						'bx',
-						'carbon',
-						'cib',
-						'circum',
-						'eos-icons',
-						'flowbite',
-						'game-icons',
-						'healthicons',
-						'heroicons',
-						'icon-park-outline',
-						'lucide',
-						'map',
-						'material-symbols',
-						'material-symbols-light',
-						'mdi',
-						'nimbus',
-						'ph',
-						'solar'
-					]
-				}
+				serverBundle: 'remote'
 			}
 		],
 		'@nuxt/test-utils/module',
