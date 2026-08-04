@@ -54,7 +54,7 @@ test.describe('backend preflight', () => {
 
 		const gate = page.locator('#backend-gate');
 		await expect(gate).toBeVisible();
-		await expect(gate).toContainText("We Can't Reach The Earth App");
+		await expect(gate).toContainText("We can't reach The Earth App");
 
 		const status = gate.getByRole('link', { name: 'Check Status' });
 		const support = gate.getByRole('link', { name: 'Contact Support' });
@@ -105,7 +105,7 @@ test.describe('cloud degradation', () => {
 
 		const banner = page.locator('#cloud-degraded-banner');
 		await expect(banner).toBeVisible();
-		await expect(banner).toContainText('Some Features Are Unavailable');
+		await expect(banner).toContainText('Some Features are Unavailable');
 
 		// the whole point of separating the two: cloud is optional, so the page still works
 		await expect(page.locator('#backend-gate')).toHaveCount(0);
