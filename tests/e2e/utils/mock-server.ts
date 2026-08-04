@@ -338,6 +338,18 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			json(res, 200, { message: 'Hello from mantle2 mock', version: 'mock-1.0.0' })
 	},
 
+	// preflight; specs that need maintenance or an outage intercept this in the browser instead
+	{
+		method: 'GET',
+		pattern: /^\/v2\/info\/?$/,
+		handler: (_req, res) =>
+			json(res, 200, {
+				name: 'mantle2',
+				description: 'The drupal backend for The Earth App',
+				status: 'active'
+			})
+	},
+
 	// Login -- Basic auth
 	{
 		method: 'POST',
