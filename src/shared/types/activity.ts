@@ -1,6 +1,6 @@
-import type { ActivityType } from './enums';
+import { ACTIVITY_TYPE } from './enums';
 
-export type { ActivityType };
+export type ActivityType = (typeof ACTIVITY_TYPE)[number];
 
 export type Activity = {
 	id: string;

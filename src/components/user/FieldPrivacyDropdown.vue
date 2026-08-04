@@ -56,9 +56,9 @@
 	</ClientOnly>
 </template>
 
-import { PRIVACY } from 'types/enums';
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui';
+import { PRIVACY } from 'types/enums';
 
 const props = defineProps<{
 	user: User;

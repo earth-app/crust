@@ -104,7 +104,8 @@
 </template>
 
 <script setup lang="ts">
-import { toVisibility, type Visibility } from 'types/enums';
+import { toVisibility } from 'types/enums';
+import type { Visibility } from 'types/user';
 
 const emit = defineEmits<{
 	(event: 'prompt-created', prompt: Prompt): void;

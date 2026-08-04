@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
-import type { Visibility } from 'types/enums';
 import type { Prompt, PromptResponse } from 'types/prompts';
-import type { User } from 'types/user';
+import type { User, Visibility } from 'types/user';
 import { classifyItemFetch, makeClientAPIRequest } from 'utils';
 import { reactive } from 'vue';
 import { useAuthStore } from './auth';

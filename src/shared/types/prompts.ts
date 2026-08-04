@@ -1,5 +1,4 @@
-import type { Privacy } from './enums';
-import type { User } from './user';
+import type { Privacy, User } from './user';
 
 export type Prompt = {
 	id: string;

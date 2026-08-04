@@ -31,8 +31,8 @@
 	</ClientOnly>
 </template>
 
-import { ACTIVITY_TYPE } from 'types/enums';
 <script setup lang="ts">
+import { ACTIVITY_TYPE } from 'types/enums';
 import { capitalizeFully } from 'utils';
 
 interface ActivityItem {

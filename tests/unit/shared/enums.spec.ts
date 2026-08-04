@@ -151,4 +151,19 @@ describe('the dependency stays gone', () => {
 			expect(readFileSync(join(ROOT, config), 'utf-8')).not.toContain('@earth-app/ocean');
 		}
 	});
+
+	it('imports the replacement inside the script block, not above it', () => {
+		const offenders: string[] = [];
+		for (const file of sourceFiles(join(ROOT, 'src'))) {
+			if (extname(file) !== '.vue') continue;
+
+			const lines = readFileSync(file, 'utf-8').split('\n');
+			const script = lines.findIndex((line) => line.startsWith('<script'));
+			const imported = lines.findIndex((line) => /^import .* from 'types\/enums';/.test(line));
+			if (imported !== -1 && (script === -1 || imported < script)) {
+				offenders.push(`${relative(ROOT, file)}:${imported + 1}`);
+			}
+		}
+		expect(offenders).toEqual([]);
+	});
 });

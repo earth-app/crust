@@ -1,19 +1,13 @@
 // #region visibility
 export const VISIBILITY = ['PRIVATE', 'UNLISTED', 'PUBLIC'] as const;
 
-export type Visibility = (typeof VISIBILITY)[number];
-
 // #endregion
 
 // #region account
 
 export const ACCOUNT_TYPE = ['FREE', 'PRO', 'WRITER', 'ORGANIZER', 'ADMINISTRATOR'] as const;
 
-export type AccountType = (typeof ACCOUNT_TYPE)[number];
-
 export const PRIVACY = ['PRIVATE', 'CIRCLE', 'MUTUAL', 'PUBLIC'] as const;
-
-export type Privacy = (typeof PRIVACY)[number];
 
 export const COUNTRY = [
 	'INTERNATIONAL',
@@ -213,8 +207,6 @@ export const COUNTRY = [
 	'ZIMBABWE'
 ] as const;
 
-export type Country = (typeof COUNTRY)[number];
-
 // #endregion
 
 // #region activity
@@ -247,8 +239,6 @@ export const ACTIVITY_TYPE = [
 	'OTHER'
 ] as const;
 
-export type ActivityType = (typeof ACTIVITY_TYPE)[number];
-
 // #endregion
 
 // #region guards
@@ -270,35 +260,45 @@ function coerce<T extends string>(values: readonly T[], value: unknown, fallback
 		: fallback;
 }
 
-export const isVisibility = (v: unknown): v is Visibility =>
+export const isVisibility = (v: unknown): v is (typeof VISIBILITY)[number] =>
 	typeof v === 'string' && (VISIBILITY as readonly string[]).includes(v);
 
-export const toVisibility = (v: unknown, fallback: Visibility = 'PUBLIC'): Visibility =>
-	coerce(VISIBILITY, v, fallback);
+export const toVisibility = (
+	v: unknown,
+	fallback: (typeof VISIBILITY)[number] = 'PUBLIC'
+): (typeof VISIBILITY)[number] => coerce(VISIBILITY, v, fallback);
 
-export const isAccountType = (v: unknown): v is AccountType =>
+export const isAccountType = (v: unknown): v is (typeof ACCOUNT_TYPE)[number] =>
 	typeof v === 'string' && (ACCOUNT_TYPE as readonly string[]).includes(v);
 
-export const toAccountType = (v: unknown, fallback: AccountType = 'FREE'): AccountType =>
-	coerce(ACCOUNT_TYPE, v, fallback);
+export const toAccountType = (
+	v: unknown,
+	fallback: (typeof ACCOUNT_TYPE)[number] = 'FREE'
+): (typeof ACCOUNT_TYPE)[number] => coerce(ACCOUNT_TYPE, v, fallback);
 
-export const isPrivacy = (v: unknown): v is Privacy =>
+export const isPrivacy = (v: unknown): v is (typeof PRIVACY)[number] =>
 	typeof v === 'string' && (PRIVACY as readonly string[]).includes(v);
 
-export const toPrivacy = (v: unknown, fallback: Privacy = 'PRIVATE'): Privacy =>
-	coerce(PRIVACY, v, fallback);
+export const toPrivacy = (
+	v: unknown,
+	fallback: (typeof PRIVACY)[number] = 'PRIVATE'
+): (typeof PRIVACY)[number] => coerce(PRIVACY, v, fallback);
 
-export const isActivityType = (v: unknown): v is ActivityType =>
+export const isActivityType = (v: unknown): v is (typeof ACTIVITY_TYPE)[number] =>
 	typeof v === 'string' && (ACTIVITY_TYPE as readonly string[]).includes(v);
 
-export const toActivityType = (v: unknown, fallback: ActivityType = 'OTHER'): ActivityType =>
-	coerce(ACTIVITY_TYPE, v, fallback);
+export const toActivityType = (
+	v: unknown,
+	fallback: (typeof ACTIVITY_TYPE)[number] = 'OTHER'
+): (typeof ACTIVITY_TYPE)[number] => coerce(ACTIVITY_TYPE, v, fallback);
 
-export const isCountry = (v: unknown): v is Country =>
+export const isCountry = (v: unknown): v is (typeof COUNTRY)[number] =>
 	typeof v === 'string' && (COUNTRY as readonly string[]).includes(v);
 
-export const toCountry = (v: unknown, fallback: Country = 'INTERNATIONAL'): Country =>
-	coerce(COUNTRY, v, fallback);
+export const toCountry = (
+	v: unknown,
+	fallback: (typeof COUNTRY)[number] = 'INTERNATIONAL'
+): (typeof COUNTRY)[number] => coerce(COUNTRY, v, fallback);
 
 // #endregion
 
@@ -311,7 +311,7 @@ export const toCountry = (v: unknown, fallback: Country = 'INTERNATIONAL'): Coun
  * `INTERNATIONAL` deliberately carries an empty `code`; the editor disables it on that basis.
  */
 export type CountryInfo = {
-	name: Country;
+	name: (typeof COUNTRY)[number];
 	countryName: string;
 	code: string;
 	locale: string;

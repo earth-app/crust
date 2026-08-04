@@ -1,7 +1,10 @@
 import type { Activity } from './activity';
-import type { AccountType, Country, Privacy, Visibility } from './enums';
+import { ACCOUNT_TYPE, COUNTRY, PRIVACY, VISIBILITY } from './enums';
 
-export type { AccountType, Country, Privacy, Visibility };
+export type AccountType = (typeof ACCOUNT_TYPE)[number];
+export type Visibility = (typeof VISIBILITY)[number];
+export type Privacy = (typeof PRIVACY)[number];
+export type Country = (typeof COUNTRY)[number];
 
 export const DEFAULT_FULL_NAME = 'John Doe';
 

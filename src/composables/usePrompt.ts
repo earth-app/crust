@@ -1,8 +1,8 @@
 import { useAuthStore } from 'stores/auth';
 import { usePromptStore } from 'stores/prompt';
-import type { Visibility } from 'types/enums';
 import type { SortingOption } from 'types/global';
 import type { Prompt } from 'types/prompts';
+import type { Visibility } from 'types/user';
 import { makeAPIRequest, makeClientAPIRequest, paginatedAPIRequest } from 'utils';
 
 export function usePrompt(id: string) {

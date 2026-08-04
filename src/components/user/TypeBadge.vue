@@ -28,8 +28,9 @@
 	</span>
 </template>
 
-import { ACCOUNT_TYPE, type AccountType } from 'types/enums';
 <script setup lang="ts">
+import { ACCOUNT_TYPE } from 'types/enums';
+import type { AccountType } from 'types/user';
 import { capitalizeFully } from 'utils';
 
 defineOptions({
