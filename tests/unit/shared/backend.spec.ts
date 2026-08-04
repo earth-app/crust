@@ -1,5 +1,4 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	blocksApp,
 	classifyCloud,
@@ -10,7 +9,8 @@ import {
 	setRequestOutcomeListener,
 	STATUS_PAGE_URL,
 	SUPPORT_PAGE_URL
-} from '~/shared/utils/backend';
+} from 'backend';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 afterEach(() => setRequestOutcomeListener(null));
 

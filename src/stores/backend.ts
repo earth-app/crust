@@ -88,6 +88,14 @@ export const useBackendStore = defineStore('backend', () => {
 
 	async function pingCloud(): Promise<void> {
 		const base = useRuntimeConfig().public.cloudBaseUrl;
+		/* a consumer of this layer may not configure cloud at all (sky reaches it through crust's
+		   nitro routes). "cannot check" is not "down" -- pinging undefined would report a permanent
+		   outage for a backend that is fine */
+		if (!base) {
+			cloud.value = 'unknown';
+			return;
+		}
+
 		try {
 			// answers plain text, so only the code matters; parsing it as json would throw
 			const res = await $fetch.raw(base, {

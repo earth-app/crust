@@ -8,6 +8,7 @@ export default defineNuxtConfig({
 		utils: fileURLToPath(new URL('./src/shared/utils/util', import.meta.url)),
 		schemas: fileURLToPath(new URL('./src/shared/utils/schemas', import.meta.url)),
 		errors: fileURLToPath(new URL('./src/shared/utils/errors', import.meta.url)),
+		backend: fileURLToPath(new URL('./src/shared/utils/backend', import.meta.url)),
 		stores: fileURLToPath(new URL('./src/stores', import.meta.url))
 	},
 	runtimeConfig: {

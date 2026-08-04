@@ -47,8 +47,8 @@
 </template>
 
 <script setup lang="ts">
+import { STATUS_PAGE_URL } from 'backend';
 import { useBackendStore } from 'stores/backend';
-import { STATUS_PAGE_URL } from '~/shared/utils/backend';
 
 const backend = useBackendStore();
 

@@ -101,6 +101,24 @@ describe('preflight', () => {
 		expect(store.isBlocked).toBe(false);
 	});
 
+	it('reports unknown, not down, when no cloud url is configured', async () => {
+		const raw = stubFetch({
+			info: { status: 200, _data: { status: 'active' } },
+			cloud: { status: 200 }
+		});
+		const config = useRuntimeConfig();
+		const original = config.public.cloudBaseUrl;
+		config.public.cloudBaseUrl = '';
+
+		const store = useBackendStore();
+		await store.preflight();
+
+		expect(store.cloud).toBe('unknown');
+		expect(store.isDegraded).toBe(false);
+		expect(raw).toHaveBeenCalledTimes(1); // info only; cloud was never asked
+		config.public.cloudBaseUrl = original;
+	});
+
 	it('does not let a slow cloud stop mantle from answering', async () => {
 		stubFetch({ info: { status: 200, _data: { status: 'active' } }, cloud: new Error('timeout') });
 		const store = useBackendStore();

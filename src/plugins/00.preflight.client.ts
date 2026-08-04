@@ -1,5 +1,5 @@
+import { setRequestOutcomeListener } from 'backend';
 import { useBackendStore } from 'stores/backend';
-import { setRequestOutcomeListener } from '~/shared/utils/backend';
 
 export default defineNuxtPlugin(() => {
 	const backend = useBackendStore();
