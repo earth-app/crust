@@ -5,8 +5,8 @@
 				<h2 class="text-xl font-semibold">Approvals</h2>
 				<p class="text-sm text-muted mt-1">
 					Review activities awaiting publication and applications for verified publisher status.
-					Automated submissions publish themselves if the window closes; organizer submissions are
-					denied.
+					Nothing publishes on its own: any submission left unreviewed when its window closes is
+					denied automatically.
 				</p>
 			</div>
 			<div class="flex items-center gap-2">

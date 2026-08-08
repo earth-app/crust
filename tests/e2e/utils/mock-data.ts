@@ -664,16 +664,18 @@ export const MOCK_ADMIN_TOKEN = 'mock-admin-token-xyz789';
 
 export function makeStagedActivity(overrides: Record<string, any> = {}): Record<string, any> {
 	const activity = overrides.activity ?? makeActivity({ id: 'bouldering', name: 'Bouldering' });
-	const failsOpen = overrides.fails_open ?? overrides.source === 'cloud_discovery';
-	const expiresInHours = overrides.expires_in_hours ?? (failsOpen ? 4 : 31);
+	// mantle2 fails every kind closed now, so fails_open defaults false regardless of source
+	const failsOpen = overrides.fails_open ?? false;
+	const automated = overrides.source === 'cloud_discovery';
+	const expiresInHours = overrides.expires_in_hours ?? (automated ? 4 : 31);
 
 	return {
 		id: overrides.id ?? 1,
 		activity,
 		note: overrides.note ?? null,
 		state: overrides.state ?? 'pending',
-		submitter_kind: overrides.submitter_kind ?? (failsOpen ? 'cloud' : 'organizer'),
-		submitter: overrides.submitter ?? (failsOpen ? null : { id: 'org-1', username: 'organizer' }),
+		submitter_kind: overrides.submitter_kind ?? (automated ? 'cloud' : 'organizer'),
+		submitter: overrides.submitter ?? (automated ? null : { id: 'org-1', username: 'organizer' }),
 		source: overrides.source ?? 'api',
 		submitted_at: FIXED_NOW,
 		expires_at: new Date(Date.parse(FIXED_NOW) + expiresInHours * 3600_000).toISOString(),

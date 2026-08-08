@@ -305,7 +305,8 @@ function typeLabel(type: string): string {
 		.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-// the two windows behave oppositely, so the chip has to say which one applies
+// read from the contract field rather than derived from submitter_kind; the server owns
+// which way an unreviewed row resolves
 function expiryLabel(staged: StagedActivity): string {
 	if (staged.state !== 'pending') return 'Resolved';
 
@@ -313,10 +314,11 @@ function expiryLabel(staged: StagedActivity): string {
 	return staged.fails_open ? `Auto-publishes ${relative}` : `Auto-denies ${relative}`;
 }
 
+// urgency is purely how long is left; a row that will be denied unreviewed is still work lost
 function expiryColor(staged: StagedActivity): 'warning' | 'neutral' | 'error' {
 	if (staged.state !== 'pending') return 'neutral';
 	if (staged.expires_in_seconds < 2 * 3600) return 'error';
-	return staged.fails_open ? 'warning' : 'neutral';
+	return staged.expires_in_seconds < 24 * 3600 ? 'warning' : 'neutral';
 }
 
 async function load() {

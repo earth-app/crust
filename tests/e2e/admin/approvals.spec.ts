@@ -43,8 +43,8 @@ test.describe('admin approvals', () => {
 		await expect(page.getByText('Sea Kayaking')).toBeVisible();
 	});
 
-	// the two windows behave oppositely, so the chip must say which one applies
-	test('renders auto-publishes and auto-denies distinctly', async ({
+	// nothing publishes unreviewed any more, so every pending chip must say auto-denies
+	test('renders every pending deadline as an auto-deny', async ({
 		asAdmin,
 		page,
 		gotoHydrated
@@ -54,8 +54,8 @@ test.describe('admin approvals', () => {
 		await gotoHydrated('/admin');
 		await openApprovals(page);
 
-		await expect(page.getByText(/Auto-publishes/i).first()).toBeVisible({ timeout: 10_000 });
-		await expect(page.getByText(/Auto-denies/i).first()).toBeVisible();
+		await expect(page.getByText(/Auto-denies/i).first()).toBeVisible({ timeout: 10_000 });
+		await expect(page.getByText(/Auto-publishes/i)).toHaveCount(0);
 	});
 
 	test('approves a staged activity', async ({ asAdmin, page, gotoHydrated }) => {
