@@ -1,15 +1,3 @@
-/**
- * Playwright global setup.
- *
- * Boots the mock backend servers exactly once before all workers start. The
- * servers stay alive for the lifetime of the Playwright run and are torn down
- * in global-teardown.
- *
- * The Nuxt dev server itself is started by @nuxt/test-utils's playwright
- * integration (see `nuxt:` in playwright.config.ts) and reads
- * NUXT_PUBLIC_API_BASE_URL / NUXT_PUBLIC_CLOUD_BASE_URL pointing to these mocks.
- */
-
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,19 +9,6 @@ const PROJECT_ROOT = resolve(__dirname, '../../..');
 const RAW_COVERAGE_DIR = resolve(PROJECT_ROOT, '.coverage', 'raw');
 const INTEGRATION_SESSION_FILE = resolve(PROJECT_ROOT, '.integration-session.json');
 
-/**
- * Real-backend integration mode shares a single session across all workers.
- *
- * mantle2 applies two distinct rate limits to the `/v2/users/login` endpoint:
- *   - global: 60 requests per ~28s window per client IP
- *   - per-account: a fresh `session_token` can only be issued every ~25s
- *
- * With 152 tests × 4 workers each calling `loginAsRealAdmin` per test, those
- * limits get blown immediately and every subsequent test fails with 409/429.
- * Logging in *once* in globalSetup and writing the token to a temp file lets
- * every fixture invocation reuse the same cookie - zero login traffic after
- * setup. The file is git-ignored and lives for the duration of the run.
- */
 async function loginAndCacheAdminSession() {
 	const apiBase = process.env.NUXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787';
 	const auth = Buffer.from('admin:admin').toString('base64');
@@ -62,6 +37,31 @@ async function loginAndCacheAdminSession() {
 	console.log(`[setup] cached real admin session (user=${user.username || 'admin'})`);
 }
 
+async function assertMantleAllowsBrowserOrigin(apiBase: string, origin: string) {
+	let acao: string | null;
+	try {
+		const res = await fetch(`${apiBase}/v2/info`, {
+			headers: { Origin: origin, Accept: 'application/json' },
+			signal: AbortSignal.timeout(15_000)
+		});
+		acao = res.headers.get('access-control-allow-origin');
+	} catch (err) {
+		throw new Error(
+			`[setup] ABORT: could not reach mantle2 at ${apiBase}/v2/info - ${(err as Error).message}`
+		);
+	}
+
+	if (acao !== origin && acao !== '*') {
+		throw new Error(
+			`[setup] ABORT: mantle2 does not allow the browser origin ${origin} ` +
+				`(it answered Access-Control-Allow-Origin: ${acao ?? '<none>'}). Every /v2/* call from ` +
+				'the page would be blocked, the backend preflight would read that as an outage and ' +
+				'<BackendGate> would blank the app. Add the origin to mantle2 ' +
+				'src/EventSubscriber/CorsSubscriber.php::$allowedOrigins.'
+		);
+	}
+}
+
 export default async function globalSetup() {
 	// Clear any previous coverage run
 	if (existsSync(RAW_COVERAGE_DIR)) {
@@ -76,17 +76,23 @@ export default async function globalSetup() {
 		rmSync(INTEGRATION_SESSION_FILE, { force: true });
 	}
 
+	const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3002';
+	const prodMode = process.env.PLAYWRIGHT_PROD === '1';
+
 	// Skip mock server boot when an explicit MOCK_DISABLED flag is set --
 	// e.g. when running the integration workflow against the real mantle2/cloud.
 	if (process.env.MOCK_DISABLED === '1') {
 		console.log('[setup] MOCK_DISABLED=1 → skipping mock server boot');
+		await assertMantleAllowsBrowserOrigin(
+			process.env.NUXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787',
+			new URL(baseURL).origin
+		);
+		console.log(`[setup] mantle2 allows the browser origin ${new URL(baseURL).origin}`);
 		await loginAndCacheAdminSession();
 	} else {
 		await startMockServers();
 	}
 
-	const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3002';
-	const prodMode = process.env.PLAYWRIGHT_PROD === '1';
 	const deadline = Date.now() + 180_000;
 	let up = false;
 	while (Date.now() < deadline && !up) {
@@ -158,10 +164,7 @@ export default async function globalSetup() {
 		'/terms-of-service',
 		'/privacy-policy'
 	];
-	// Warm routes sequentially - Vite's compiler is single-threaded so firing
-	// requests in parallel just creates head-of-line contention. A serial
-	// warm-up of 25 routes typically finishes in 15-20s and dramatically
-	// improves per-test navigation times since the chunks are now cached.
+
 	const warmStart = Date.now();
 	let warmed = 0;
 	for (const route of warmRoutes) {
