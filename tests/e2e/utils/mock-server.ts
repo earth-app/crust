@@ -1185,8 +1185,10 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 		method: 'GET',
 		pattern: /^\/v2\/users\/[^/]+\/share\/quest\/[^/]+\/?$/,
 		handler: (_req, res) => {
+			// the old blob here had a truncated IDAT and a bad CRC, so it never actually
+			// decoded; chrome dropped it to a broken <img> and libpng rejects it outright
 			const png = Buffer.from(
-				'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+				'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP4/x8AAwAB/2+Bq7YAAAAASUVORK5CYII=',
 				'base64'
 			);
 			res.writeHead(200, {
