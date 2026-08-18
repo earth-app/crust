@@ -73,6 +73,10 @@
 				/>
 			</div>
 		</div>
+
+		<USeparator />
+
+		<AdminCatalogAudit @edit="openById" />
 	</div>
 </template>
 
@@ -90,6 +94,22 @@ async function load() {
 	const res = await fetchAll(100, search.value);
 	if (res.data) activities.value = res.data;
 	loading.value = false;
+}
+
+// audit findings are ids only, so a flagged row opens the editor by fetching that one activity
+async function openById(id: string) {
+	const existing = activities.value.find((activity) => activity.id === id);
+	if (existing) {
+		activityToEdit.value = existing;
+		editModal.value = true;
+		return;
+	}
+
+	const found = await useActivityStore().fetchActivity(id);
+	if (found) {
+		activityToEdit.value = found;
+		editModal.value = true;
+	}
 }
 
 onMounted(load);
