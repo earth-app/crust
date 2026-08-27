@@ -4,21 +4,30 @@ import {
 	articleFormFromPayload,
 	emptyActivityForm,
 	emptyArticleForm,
+	emptyJourneyStreakForm,
 	emptyPromptForm,
+	emptyTrailmarkForm,
 	eventFormFromPayload,
 	hexColorToInt,
 	intColorToHex,
+	JOURNEY_STUDIO_PRESETS,
+	journeyPreviewRows,
+	journeySequenceFrames,
 	mockActivity,
 	mockArticle,
 	mockEvent,
 	mockPrompt,
 	mockPromptResponses,
 	mockUser,
+	nearbyFieldForms,
 	normalizeActivityType,
 	parseInfoCardBadges,
 	parseYoutubeId,
 	promptFormFromPayload,
-	splitCsv
+	splitCsv,
+	trailmarkFormToTrailmark,
+	trailmarkSequenceFrames,
+	trailmarkThanksNotification
 } from '~/shared/utils/marketing';
 
 // deterministic clock so every factory produces byte-stable output
@@ -267,5 +276,138 @@ describe('article factory + normalizer', () => {
 		expect(fromLive.colorHex).toBe('#123456');
 		expect(fromLive.authorUsername).toBe('ada');
 		expect(fromLive.favicon).toBe('f.ico');
+	});
+});
+
+describe('journey studio staging', () => {
+	it('maps a form onto the hero preview rows', () => {
+		const rows = journeyPreviewRows({
+			article: 8,
+			prompt: 3,
+			event: 0,
+			articleRank: 1,
+			promptRank: 4,
+			eventRank: 0,
+			hoursLeft: 30,
+			markBest: true
+		});
+
+		expect(rows.map((r) => r.type)).toEqual(['article', 'prompt', 'event']);
+		expect(rows[0]).toMatchObject({ count: 8, rank: 1, hoursLeft: 30, isBest: true });
+		// only the highest row is a best, and a zero row is never one
+		expect(rows[1]!.isBest).toBe(false);
+		expect(rows[2]!.isBest).toBe(false);
+	});
+
+	it('never marks a best when the toggle is off or everything is zero', () => {
+		const off = journeyPreviewRows({ ...emptyJourneyStreakForm(), markBest: false });
+		expect(off.every((r) => !r.isBest)).toBe(true);
+
+		const cold = journeyPreviewRows({
+			...emptyJourneyStreakForm(),
+			article: 0,
+			prompt: 0,
+			event: 0
+		});
+		expect(cold.every((r) => !r.isBest)).toBe(true);
+	});
+
+	it('clamps negative counts and hours', () => {
+		const rows = journeyPreviewRows({
+			...emptyJourneyStreakForm(),
+			article: -4,
+			articleRank: -1,
+			hoursLeft: -10
+		});
+		expect(rows[0]).toMatchObject({ count: 0, rank: 0, hoursLeft: 0 });
+	});
+
+	it('offers presets that cover the states worth filming', () => {
+		const names = JOURNEY_STUDIO_PRESETS.map((p) => p.name);
+		expect(names).toContain('Expiring Soon');
+		expect(names).toContain('Cold Start');
+
+		const expiring = JOURNEY_STUDIO_PRESETS.find((p) => p.name === 'Expiring Soon')!.build();
+		expect(expiring.hoursLeft).toBeLessThan(12);
+	});
+
+	it('builds a growth story that only goes up', () => {
+		const frames = journeySequenceFrames('build');
+		const counts = frames.map((f) => f.form.article);
+
+		expect(frames.length).toBeGreaterThan(2);
+		expect([...counts].sort((a, b) => a - b)).toEqual(counts);
+		expect(frames[0]!.label).toBe('Day 1');
+	});
+
+	it('builds a rescue story that ends higher and safe', () => {
+		const frames = journeySequenceFrames('save');
+		const last = frames.at(-1)!;
+		const first = frames[0]!;
+
+		expect(first.form.hoursLeft).toBeLessThan(12);
+		expect(last.form.hoursLeft).toBeGreaterThan(24);
+		expect(last.form.article).toBeGreaterThan(first.form.article);
+	});
+});
+
+describe('trailmark studio sequences', () => {
+	it('fills the nearby field one step at a time, capped by the note pool', () => {
+		const frames = trailmarkSequenceFrames('nearby');
+		expect(frames.map((f) => f.fieldCount)).toEqual([1, 3, 6]);
+
+		expect(nearbyFieldForms(0)).toEqual([]);
+		expect(nearbyFieldForms(3)).toHaveLength(3);
+		// never invents notes beyond the authored pool
+		expect(nearbyFieldForms(99).length).toBeLessThanOrEqual(6);
+		// distances grow so the field reads as a spread, not a pile
+		const distances = nearbyFieldForms(6).map((f) => f.distanceMeters);
+		expect([...distances].sort((a, b) => a - b)).toEqual(distances);
+	});
+
+	it('closes the distance in the discovery story without ever reaching zero', () => {
+		const frames = trailmarkSequenceFrames('discovery');
+		const distances = frames.map((f) => f.form.distanceMeters);
+
+		expect([...distances].sort((a, b) => b - a)).toEqual(distances);
+		expect(distances.at(-1)!).toBeGreaterThan(0);
+		expect(frames.every((f) => f.form.isMine === false)).toBe(true);
+		expect(frames.every((f) => f.fieldCount === 0)).toBe(true);
+	});
+
+	it('ends the thanks story on the author side with a notification frame', () => {
+		const frames = trailmarkSequenceFrames('thanks');
+
+		expect(frames[0]!.form.thankedByMe).toBe(false);
+		expect(frames[1]!.form.thankedByMe).toBe(true);
+		expect(frames[1]!.form.thanksForAuthor).toBeGreaterThan(frames[0]!.form.thanksForAuthor);
+
+		const last = frames.at(-1)!;
+		expect(last.notification).toBe(true);
+		expect(last.form.isMine).toBe(true);
+		expect(frames.filter((f) => f.notification)).toHaveLength(1);
+	});
+
+	it('writes a thank notification that names the place', () => {
+		const notification = trailmarkThanksNotification({
+			...emptyTrailmarkForm(),
+			placeLabel: 'North Pond'
+		});
+
+		expect(notification.title).toContain('Thanked');
+		expect(notification.message).toContain('North Pond');
+		expect(notification.source).toBe('trailmark');
+		expect(notification.type).toBe('success');
+	});
+
+	it('keeps staged field notes on distinct store ids', () => {
+		const forms = nearbyFieldForms(3);
+		const ids = forms.map(
+			(form, i) => trailmarkFormToTrailmark(form, { selfUid: 'me', idSuffix: `field-${i}` }).id
+		);
+
+		expect(new Set(ids).size).toBe(3);
+		// the default id is untouched for every existing caller
+		expect(trailmarkFormToTrailmark(forms[0]!, { selfUid: 'me' }).id).not.toContain('field-');
 	});
 });

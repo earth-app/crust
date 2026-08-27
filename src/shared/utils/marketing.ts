@@ -2212,7 +2212,8 @@ function safeCoord(value: number | undefined, fallback: number): number {
 // build a valid Trailmark from the author form; always passes trailmarkSchema (id / note / geo)
 export function trailmarkFormToTrailmark(
 	form: TrailmarkForm,
-	opts: { selfUid: string; now?: number }
+	// idSuffix keeps a staged field of notes from collapsing onto one preview id in the store
+	opts: { selfUid: string; now?: number; idSuffix?: string }
 ): Trailmark {
 	const now = opts.now ?? Date.now();
 	const username = (form.authorUsername ?? '').trim() || 'earthwanderer';
@@ -2220,7 +2221,7 @@ export function trailmarkFormToTrailmark(
 	const place = (form.placeLabel ?? '').trim();
 
 	const mark: Trailmark = {
-		id: PREVIEW_TRAILMARK_ID,
+		id: opts.idSuffix ? `${PREVIEW_TRAILMARK_ID}-${opts.idSuffix}` : PREVIEW_TRAILMARK_ID,
 		author_uid,
 		author_username: username,
 		geo: {
@@ -2267,6 +2268,304 @@ export interface TrailmarkStudioPreset {
 	name: string;
 	icon: string;
 	build: () => TrailmarkForm;
+}
+
+// #region Journey / streak studio
+
+export type JourneyStreakForm = {
+	article: number;
+	prompt: number;
+	event: number;
+	articleRank: number;
+	promptRank: number;
+	eventRank: number;
+	/** hours until the 48h window closes, shared by every row */
+	hoursLeft: number;
+	/** flag the highest row as a personal best */
+	markBest: boolean;
+};
+
+export function emptyJourneyStreakForm(): JourneyStreakForm {
+	return {
+		article: 4,
+		prompt: 2,
+		event: 1,
+		articleRank: 1,
+		promptRank: 0,
+		eventRank: 0,
+		hoursLeft: 40,
+		markBest: true
+	};
+}
+
+export interface JourneyStudioPreset {
+	name: string;
+	icon: string;
+	build: () => JourneyStreakForm;
+}
+
+export const JOURNEY_STUDIO_PRESETS: JourneyStudioPreset[] = [
+	{
+		name: 'Day One',
+		icon: 'mdi:numeric-1-circle-outline',
+		build: () => ({
+			...emptyJourneyStreakForm(),
+			article: 1,
+			prompt: 0,
+			event: 0,
+			articleRank: 0,
+			markBest: false
+		})
+	},
+	{
+		name: 'Going Well',
+		icon: 'mdi:fire',
+		build: () => emptyJourneyStreakForm()
+	},
+	{
+		name: 'Expiring Soon',
+		icon: 'mdi:clock-alert-outline',
+		build: () => ({ ...emptyJourneyStreakForm(), hoursLeft: 6 })
+	},
+	{
+		name: 'Long Run',
+		icon: 'mdi:trophy-outline',
+		build: () => ({
+			...emptyJourneyStreakForm(),
+			article: 23,
+			prompt: 14,
+			event: 6,
+			articleRank: 1,
+			promptRank: 2,
+			eventRank: 3
+		})
+	},
+	{
+		name: 'Cold Start',
+		icon: 'mdi:snowflake',
+		build: () => ({
+			...emptyJourneyStreakForm(),
+			article: 0,
+			prompt: 0,
+			event: 0,
+			articleRank: 0,
+			promptRank: 0,
+			eventRank: 0,
+			markBest: false
+		})
+	}
+];
+
+/** the rows `UserJourneyHero`'s preview prop expects */
+export function journeyPreviewRows(form: JourneyStreakForm): {
+	type: 'article' | 'prompt' | 'event';
+	count: number;
+	rank: number;
+	hoursLeft: number;
+	isBest: boolean;
+}[] {
+	const rows = [
+		{
+			type: 'article' as const,
+			count: clampCount(form.article),
+			rank: clampCount(form.articleRank)
+		},
+		{ type: 'prompt' as const, count: clampCount(form.prompt), rank: clampCount(form.promptRank) },
+		{ type: 'event' as const, count: clampCount(form.event), rank: clampCount(form.eventRank) }
+	];
+
+	const top = Math.max(...rows.map((r) => r.count));
+	return rows.map((row) => ({
+		...row,
+		hoursLeft: Math.max(0, form.hoursLeft),
+		isBest: form.markBest && row.count > 0 && row.count === top
+	}));
+}
+
+export type JourneySequenceKind = 'build' | 'save';
+
+/**
+ * Two stories the streak mechanic needs imagery for: a streak growing day over day, and the
+ * expiring-soon state being rescued before the 48h window closes.
+ */
+export function journeySequenceFrames(
+	kind: JourneySequenceKind
+): { label: string; form: JourneyStreakForm }[] {
+	const base = emptyJourneyStreakForm();
+
+	if (kind === 'build') {
+		return [1, 2, 3, 5, 8].map((article, i) => ({
+			label: `Day ${i + 1}`,
+			form: {
+				...base,
+				article,
+				prompt: Math.max(0, article - 1),
+				event: Math.floor(article / 3),
+				articleRank: article >= 5 ? 1 : 0,
+				promptRank: article >= 8 ? 2 : 0,
+				markBest: article >= 5
+			}
+		}));
+	}
+
+	return [
+		{ label: 'Expiring Soon', form: { ...base, hoursLeft: 5 } },
+		{ label: 'Two Hours Left', form: { ...base, hoursLeft: 2 } },
+		{
+			label: 'Saved, Streak Up',
+			form: {
+				...base,
+				article: base.article + 1,
+				hoursLeft: 47,
+				markBest: true
+			}
+		}
+	];
+}
+
+// #endregion
+
+/**
+ * A staged frame of a trailmark story.
+ *
+ * The three sequences are the imagery the mechanic has no real data for yet: a nearby surface that
+ * looks inhabited, the distance closing on someone else's note, and the quiet thank arriving on the
+ * author's side. Frames are data so they can be asserted rather than eyeballed.
+ */
+export interface TrailmarkSequenceFrame {
+	label: string;
+	form: TrailmarkForm;
+	/** notes rendered in the nearby field for this frame */
+	fieldCount: number;
+	/** render the author-side thank notification instead of the card */
+	notification: boolean;
+}
+
+export type TrailmarkSequenceKind = 'nearby' | 'discovery' | 'thanks';
+
+const NEARBY_FIELD_NOTES: { note: string; author: string; place: string; meters: number }[] = [
+	{
+		note: 'Whoever you are, I hope the walk here was worth it. Sit a minute before you head back.',
+		author: 'quietfern',
+		place: 'The Overlook',
+		meters: 120
+	},
+	{
+		note: 'The heron comes back to this same rock most mornings. Worth the wait.',
+		author: 'northpond',
+		place: 'North Pond',
+		meters: 340
+	},
+	{
+		note: 'Look up at the second bridge. Nobody ever does.',
+		author: 'riverwalker',
+		place: 'Riverwalk',
+		meters: 610
+	},
+	{
+		note: 'Bench under the big oak is dry even after rain.',
+		author: 'oakandash',
+		place: 'Old Oak',
+		meters: 880
+	},
+	{
+		note: 'Left this after a slow lap. The light at dusk here is unreasonable.',
+		author: 'duskloop',
+		place: 'Lakefront Path',
+		meters: 1240
+	},
+	{
+		note: 'Somebody planted tulips in the gap in the wall. Say hello to them.',
+		author: 'wallgarden',
+		place: 'Brick Wall Garden',
+		meters: 1610
+	}
+];
+
+export function nearbyFieldForms(count: number): TrailmarkForm[] {
+	const total = Math.max(0, Math.min(count, NEARBY_FIELD_NOTES.length));
+	return NEARBY_FIELD_NOTES.slice(0, total).map((entry) => ({
+		...emptyTrailmarkForm(),
+		note: entry.note,
+		authorUsername: entry.author,
+		placeLabel: entry.place,
+		isMine: false,
+		thankedByMe: false,
+		distanceMeters: entry.meters,
+		minutesAgo: 20 + entry.meters / 10
+	}));
+}
+
+export function trailmarkSequenceFrames(kind: TrailmarkSequenceKind): TrailmarkSequenceFrame[] {
+	const base = emptyTrailmarkForm();
+
+	if (kind === 'nearby') {
+		// a surface filling up: one note, then a handful, then a field
+		return [1, 3, 6].map((fieldCount) => ({
+			label: `${fieldCount} Note${fieldCount === 1 ? '' : 's'} Nearby`,
+			form: { ...base },
+			fieldCount,
+			notification: false
+		}));
+	}
+
+	if (kind === 'discovery') {
+		// the walk in: same note, distance closing, until it is the place you are standing
+		return [850, 320, 90, 12].map((distanceMeters) => ({
+			label: `${distanceMeters} m Away`,
+			form: {
+				...base,
+				note: 'You made it here. Take a breath and look up - the light is worth it.',
+				authorUsername: 'quietfern',
+				placeLabel: 'The Overlook',
+				isMine: false,
+				thankedByMe: false,
+				distanceMeters,
+				minutesAgo: 34
+			},
+			fieldCount: 0,
+			notification: false
+		}));
+	}
+
+	const authored: TrailmarkForm = {
+		...base,
+		note: 'Left this after my morning sit. The heron came back to the same rock again.',
+		placeLabel: 'North Pond',
+		isMine: false,
+		authorUsername: 'quietfern',
+		distanceMeters: 40,
+		minutesAgo: 96,
+		thanksForAuthor: 7
+	};
+
+	return [
+		{ label: 'Found, Not Yet Thanked', form: { ...authored }, fieldCount: 0, notification: false },
+		{
+			label: 'Thanked',
+			form: { ...authored, thankedByMe: true, thanksForAuthor: 8 },
+			fieldCount: 0,
+			notification: false
+		},
+		{
+			label: 'Author Gets the Thanks',
+			form: { ...authored, isMine: true, thanksForAuthor: 8, distanceMeters: 0 },
+			fieldCount: 0,
+			notification: true
+		}
+	];
+}
+
+/** the notification cloud sends the author when their note is thanked */
+export function trailmarkThanksNotification(form: TrailmarkForm): MockNotificationForm {
+	return {
+		title: 'Someone Thanked Your Trailmark',
+		message: `Your note at ${form.placeLabel || 'a place you stood'} lifted somebody today.`,
+		type: 'success',
+		source: 'trailmark',
+		link: '/trailmarks',
+		read: false
+	};
 }
 
 export const TRAILMARK_STUDIO_PRESETS: TrailmarkStudioPreset[] = [

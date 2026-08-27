@@ -89,8 +89,19 @@
 type JourneyType = 'article' | 'prompt' | 'event';
 
 const { user: currentUser, fetchCurrentJourney, fetchCurrentJourneyRank } = useAuth();
+export type JourneyPreviewRow = {
+	type: 'article' | 'prompt' | 'event';
+	count: number;
+	rank?: number;
+	/** hours until the 48h window closes; drives the countdown and the expiring-soon styling */
+	hoursLeft?: number;
+	isBest?: boolean;
+};
+
 const props = defineProps<{
 	user: User;
+	/** staged values for the marketing studio; when set nothing is fetched and no store is read */
+	preview?: JourneyPreviewRow[] | null;
 }>();
 const userId = computed(() => props.user?.id);
 
@@ -130,8 +141,27 @@ function formatRemaining(ms: number): string {
 	return `${hours}h ${minutes}m`;
 }
 
+const previewByType = computed(() => {
+	const map = new Map<JourneyType, JourneyPreviewRow>();
+	for (const row of props.preview ?? []) map.set(row.type, row);
+	return map;
+});
+
 const rows = computed(() =>
 	ROWS.map((r) => {
+		const staged = previewByType.value.get(r.type);
+		if (staged) {
+			const remaining = (staged.hoursLeft ?? 40) * 3600000;
+			return {
+				...r,
+				count: staged.count,
+				rank: staged.rank ?? 0,
+				countdown: formatRemaining(remaining),
+				expiringSoon: staged.count > 0 && remaining > 0 && remaining < WARN_THRESHOLD_MS,
+				isBest: Boolean(staged.isBest) && staged.count > 0
+			};
+		}
+
 		const lw = lastWrites[r.type];
 		const expiresAt = lw ? lw + STREAK_TTL_MS : 0;
 		const remaining = expiresAt - now.value;
@@ -211,6 +241,9 @@ function onJourneyUpdated(ev: Event) {
 }
 
 onMounted(() => {
+	// a staged hero must not hit the network; the studio owns every number it shows
+	if (props.preview?.length) return;
+
 	void loadAll();
 	void fetchUserQuest();
 	if (import.meta.client) {

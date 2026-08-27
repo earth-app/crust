@@ -180,9 +180,37 @@
 					>
 				</div>
 
-				<TrailmarkCard
-					:mark="mark"
-					:distance-meters="cardDistance"
+				<div
+					ref="sequenceTarget"
+					class="flex flex-col gap-3"
+				>
+					<UserNotificationCard
+						v-if="showNotification"
+						:notification="thanksNotification"
+						:index="0"
+					/>
+
+					<TrailmarkCard
+						v-else-if="fieldMarks.length === 0"
+						:mark="mark"
+						:distance-meters="cardDistance"
+					/>
+
+					<template v-else>
+						<TrailmarkCard
+							v-for="(fieldMark, i) in fieldMarks"
+							:key="fieldMark.id"
+							:mark="fieldMark"
+							:distance-meters="fieldDistances[i]"
+						/>
+					</template>
+				</div>
+
+				<AdminMarketingSequenceBar
+					:sequences="sequences"
+					:get-target="() => sequenceTarget"
+					filename="trailmark"
+					label="Trailmark stories"
 				/>
 
 				<TrailmarkComposer
@@ -257,6 +285,56 @@ function applyForm(next: Partial<TrailmarkForm>) {
 	Object.assign(form, emptyTrailmarkForm(), next);
 }
 
+// #region sequences
+
+const sequenceTarget = ref<HTMLElement | null>(null);
+const fieldForms = ref<TrailmarkForm[]>([]);
+const showNotification = ref(false);
+
+const fieldMarks = computed(() =>
+	fieldForms.value.map((entry, i) =>
+		trailmarkFormToTrailmark(entry, { selfUid: selfUid.value, idSuffix: `field-${i}` })
+	)
+);
+const fieldDistances = computed(() => fieldForms.value.map((entry) => entry.distanceMeters));
+const thanksNotification = computed(() =>
+	makeMockNotification(trailmarkThanksNotification(form), 0)
+);
+
+// the field marks have to resolve through the store like any other card
+watch(
+	fieldMarks,
+	(marks) => {
+		for (const m of marks) store.upsert(m);
+	},
+	{ immediate: true }
+);
+
+function applyFrame(frame: TrailmarkSequenceFrame) {
+	applyForm(frame.form);
+	fieldForms.value = nearbyFieldForms(frame.fieldCount);
+	showNotification.value = frame.notification;
+	source.value = 'manual';
+}
+
+const SEQUENCE_KINDS: { name: string; kind: TrailmarkSequenceKind }[] = [
+	{ name: 'Populated Nearby', kind: 'nearby' },
+	{ name: 'Discovery Moment', kind: 'discovery' },
+	{ name: 'Thank Notification', kind: 'thanks' }
+];
+
+const sequences = computed(() =>
+	SEQUENCE_KINDS.map(({ name, kind }) => ({
+		name,
+		steps: trailmarkSequenceFrames(kind).map((frame) => ({
+			label: frame.label,
+			apply: () => applyFrame(frame)
+		}))
+	}))
+);
+
+// #endregion
+
 function applyPreset(preset: TrailmarkStudioPreset) {
 	applyForm(preset.build());
 	source.value = 'manual';
@@ -279,6 +357,8 @@ function randomize() {
 
 function reset() {
 	applyForm(emptyTrailmarkForm());
+	fieldForms.value = [];
+	showNotification.value = false;
 	source.value = 'manual';
 }
 

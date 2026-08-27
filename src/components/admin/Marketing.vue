@@ -31,6 +31,7 @@
 					<AdminMarketingGardenStudio v-else-if="item.value === 'garden'" />
 					<AdminMarketingTrailStudio v-else-if="item.value === 'trails'" />
 					<AdminMarketingTrailmarkStudio v-else-if="item.value === 'trailmarks'" />
+					<AdminMarketingJourneyStudio v-else-if="item.value === 'journeys'" />
 				</div>
 			</template>
 		</UTabs>
@@ -46,6 +47,7 @@ const sections = [
 	{ label: 'Quests', icon: 'mdi:flag-checkered', value: 'quests' },
 	{ label: 'Garden', icon: 'mdi:sprout', value: 'garden' },
 	{ label: 'Trails', icon: 'mdi:map-marker-path', value: 'trails' },
-	{ label: 'Trailmarks', icon: 'mdi:map-marker-radius-outline', value: 'trailmarks' }
+	{ label: 'Trailmarks', icon: 'mdi:map-marker-radius-outline', value: 'trailmarks' },
+	{ label: 'Streaks', icon: 'mdi:fire', value: 'journeys' }
 ];
 </script>

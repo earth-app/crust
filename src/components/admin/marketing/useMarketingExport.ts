@@ -95,6 +95,44 @@ export function exportFilename(base: string, format: ExportFormat): string {
 
 // #region options
 
+/**
+ * `base-01.png` for step 1 of 9, `base-001.png` for step 1 of 100.
+ *
+ * Numbered frames are what an editor imports as an image sequence, so the padding has to be uniform
+ * across the whole run or the sort order breaks at the ten boundary.
+ */
+export function sequenceFrameName(
+	base: string,
+	index: number,
+	total: number,
+	format: 'svg' | 'png' | 'jpg'
+): string {
+	const width = Math.max(2, String(Math.max(1, total)).length);
+	const number = String(Math.max(1, index + 1)).padStart(width, '0');
+	return exportFilename(`${base}-${number}`, format);
+}
+
+export interface SequenceStep {
+	/** shown in the studio list and used for nothing else */
+	label: string;
+	/** puts the surface into this state; awaited before the frame is captured */
+	apply: () => void | Promise<void>;
+}
+
+export interface SequenceOptions {
+	steps: SequenceStep[];
+	node: HTMLElement | null;
+	format: 'svg' | 'png' | 'jpg';
+	filename?: string;
+	pixelRatio?: number;
+	backgroundColor?: string;
+	quality?: number;
+	/** settle time after `apply` so transitions and image loads land before capture */
+	settleMs?: number;
+}
+
+export const DEFAULT_SEQUENCE_SETTLE_MS = 450;
+
 export interface ExportOptions {
 	format: ExportFormat;
 	// static target (one of node / getNode is required for svg/png/jpg)
@@ -632,5 +670,74 @@ export function useMarketingExport() {
 		}
 	}
 
-	return { exporting, progress, phase, frame, frameTotal, formatsFor, exportAsset };
+	/**
+	 * One surface, N states, numbered frames.
+	 *
+	 * The studios can stage a story (a map filling up, a distance closing, a thank arriving) but the
+	 * export was one-frame-at-a-time, so assembling a sequence meant re-authoring each state by hand
+	 * and exporting again. This walks the steps, waits for each to settle, and downloads
+	 * `base-01.png … base-NN.png`.
+	 */
+	async function exportSequence(
+		opts: SequenceOptions,
+		deps: ExportRunDeps & { settle?: (ms: number) => Promise<void> } = {}
+	): Promise<MarketingResult<{ frames: number }>> {
+		if (!import.meta.client)
+			return { success: false, error: 'Export is only available in the browser.' };
+		if (exporting.value) return { success: false, error: 'An export is already in progress.' };
+		if (opts.steps.length === 0) return { success: false, error: 'No scenes were selected.' };
+
+		const renderStatic = deps.renderStatic ?? renderStaticBlob;
+		const download = deps.download ?? triggerDownload;
+		const settle =
+			deps.settle ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+		const settleMs = Math.max(0, opts.settleMs ?? DEFAULT_SEQUENCE_SETTLE_MS);
+		const base = opts.filename ?? 'marketing-sequence';
+
+		exporting.value = true;
+		progress.value = 0;
+		phase.value = 'rendering';
+		frame.value = 0;
+		frameTotal.value = opts.steps.length;
+
+		try {
+			for (const [index, step] of opts.steps.entries()) {
+				await step.apply();
+				if (settleMs > 0) await settle(settleMs);
+
+				// resolved per frame: applying a state can swap the node the studio renders
+				const node = opts.node;
+				if (!node) throw new Error('No preview element was found to export.');
+
+				const blob = await renderStatic(node, opts.format, {
+					pixelRatio: opts.pixelRatio,
+					backgroundColor: opts.backgroundColor,
+					quality: opts.quality
+				});
+				download(blob, sequenceFrameName(base, index, opts.steps.length, opts.format));
+
+				frame.value = index + 1;
+				progress.value = (index + 1) / opts.steps.length;
+			}
+
+			phase.value = 'done';
+			return { success: true, data: { frames: opts.steps.length } };
+		} catch (e) {
+			phase.value = 'idle';
+			return { success: false, error: e instanceof Error ? e.message : 'Sequence export failed.' };
+		} finally {
+			exporting.value = false;
+		}
+	}
+
+	return {
+		exporting,
+		progress,
+		phase,
+		frame,
+		frameTotal,
+		formatsFor,
+		exportAsset,
+		exportSequence
+	};
 }

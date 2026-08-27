@@ -34,6 +34,7 @@ import {
 	resolveCanvas,
 	resolveExportNode,
 	scaledSize,
+	sequenceFrameName,
 	STATIC_EXPORT_FORMATS,
 	toImageData,
 	triggerDownload,
@@ -322,6 +323,135 @@ describe('animated encoding (gif.js / upng-js dispatch)', () => {
 		expect(h.addFrame).toHaveBeenCalled();
 		expect((await encodeAnimatedBlob([frame()], 'apng')).type).toBe('image/png');
 		expect(h.upngEncode).toHaveBeenCalled();
+	});
+});
+
+describe('sequenceFrameName', () => {
+	it('pads to the width of the total so an editor sorts the sequence correctly', () => {
+		expect(sequenceFrameName('trailmark', 0, 3, 'png')).toBe('trailmark-01.png');
+		expect(sequenceFrameName('trailmark', 9, 12, 'png')).toBe('trailmark-10.png');
+		expect(sequenceFrameName('trailmark', 0, 100, 'jpg')).toBe('trailmark-001.jpg');
+		expect(sequenceFrameName('trailmark', 99, 100, 'jpg')).toBe('trailmark-100.jpg');
+	});
+
+	it('never emits a zero-indexed or unpadded frame', () => {
+		expect(sequenceFrameName('x', 0, 1, 'svg')).toBe('x-01.svg');
+		expect(sequenceFrameName('x', -5, 4, 'png')).toBe('x-01.png');
+	});
+});
+
+describe('exportSequence', () => {
+	const step = (label: string, onApply: () => void) => ({ label, apply: onApply });
+
+	function harness() {
+		const applied: string[] = [];
+		const downloads: string[] = [];
+		const deps = {
+			renderStatic: vi.fn(async () => new Blob(['frame'])),
+			download: vi.fn((_blob: Blob, name: string) => void downloads.push(name)),
+			settle: vi.fn(async () => {})
+		};
+		return { applied, downloads, deps };
+	}
+
+	it('applies every state in order and downloads numbered frames', async () => {
+		const { applied, downloads, deps } = harness();
+		const { exportSequence, exporting, frame, frameTotal } = useMarketingExport();
+
+		const res = await exportSequence(
+			{
+				steps: [
+					step('One', () => applied.push('one')),
+					step('Two', () => applied.push('two')),
+					step('Three', () => applied.push('three'))
+				],
+				node: document.createElement('div'),
+				format: 'png',
+				filename: 'story'
+			},
+			deps
+		);
+
+		expect(res.success).toBe(true);
+		expect(res.data?.frames).toBe(3);
+		expect(applied).toEqual(['one', 'two', 'three']);
+		expect(downloads).toEqual(['story-01.png', 'story-02.png', 'story-03.png']);
+		expect(deps.settle).toHaveBeenCalledTimes(3);
+		expect(frame.value).toBe(3);
+		expect(frameTotal.value).toBe(3);
+		expect(exporting.value).toBe(false);
+	});
+
+	it('refuses an empty sequence and a missing node', async () => {
+		const { deps } = harness();
+		const { exportSequence } = useMarketingExport();
+
+		expect((await exportSequence({ steps: [], node: null, format: 'png' }, deps)).error).toContain(
+			'No scenes'
+		);
+
+		const missing = await exportSequence(
+			{ steps: [step('One', () => {})], node: null, format: 'png' },
+			deps
+		);
+		expect(missing.success).toBe(false);
+		expect(missing.error).toContain('No preview element');
+	});
+
+	it('stops at the failing frame and reports the error', async () => {
+		const { downloads, deps } = harness();
+		deps.renderStatic = vi.fn(async () => {
+			if (downloads.length === 1) throw new Error('capture blew up');
+			return new Blob(['frame']);
+		});
+		const { exportSequence, exporting } = useMarketingExport();
+
+		const res = await exportSequence(
+			{
+				steps: [step('One', () => {}), step('Two', () => {}), step('Three', () => {})],
+				node: document.createElement('div'),
+				format: 'png',
+				filename: 'story'
+			},
+			deps
+		);
+
+		expect(res.success).toBe(false);
+		expect(res.error).toContain('capture blew up');
+		expect(downloads).toEqual(['story-01.png']);
+		expect(exporting.value).toBe(false);
+	});
+
+	it('awaits an async apply before capturing', async () => {
+		const order: string[] = [];
+		const deps = {
+			renderStatic: vi.fn(async () => {
+				order.push('capture');
+				return new Blob(['frame']);
+			}),
+			download: vi.fn(),
+			settle: vi.fn(async () => {})
+		};
+		const { exportSequence } = useMarketingExport();
+
+		await exportSequence(
+			{
+				steps: [
+					{
+						label: 'Slow',
+						apply: async () => {
+							await Promise.resolve();
+							order.push('apply');
+						}
+					}
+				],
+				node: document.createElement('div'),
+				format: 'png'
+			},
+			deps
+		);
+
+		expect(order).toEqual(['apply', 'capture']);
 	});
 });
 
