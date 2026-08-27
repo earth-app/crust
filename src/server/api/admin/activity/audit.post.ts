@@ -20,7 +20,8 @@ export default defineEventHandler(async (event) => {
 	await ensureAdministrator(event);
 
 	const config = useRuntimeConfig();
-	const body = await readBody<{ ids?: string[] }>(event).catch(() => ({}));
+	// the empty fallback needs the same shape, or the union widens to `{}` and `ids` vanishes
+	const body: { ids?: string[] } = await readBody<{ ids?: string[] }>(event).catch(() => ({}));
 	const ids = Array.isArray(body?.ids)
 		? body.ids.filter((id) => typeof id === 'string' && id.trim().length > 0)
 		: undefined;

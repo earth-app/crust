@@ -152,6 +152,36 @@ describe('admin staged activities', () => {
 		expect(buttonsNamed(wrapper, 'Approve Selected')).toHaveLength(1);
 	});
 
+	// the run deletes each row from the selection as it lands, so a "done/remaining" pair counts
+	// in opposite directions and reads as 1/24, 2/23, 3/22 - a plain count is the honest label
+	it('shows a rising count with no shrinking denominator while a bulk run is in flight', async () => {
+		let release: (() => void) | null = null;
+		approveMock.mockImplementationOnce(async () => {
+			await new Promise<void>((resolve) => {
+				release = resolve;
+			});
+			return { success: true };
+		});
+
+		const wrapper = await mountLoaded();
+		await checkbox(wrapper, 0).trigger('click');
+		await wrapper.vm.$nextTick();
+		await buttonNamed(wrapper, 'Approve Selected (2)').trigger('click');
+		await vi.waitFor(() => expect(approveMock).toHaveBeenCalledTimes(1));
+		await wrapper.vm.$nextTick();
+
+		const inFlight = wrapper
+			.findAll('button')
+			.map((button: any) => button.text().trim())
+			.filter((text: string) => text.startsWith('Approve '));
+
+		expect(inFlight.some((text: string) => /^Approve \d+$/.test(text))).toBe(true);
+		expect(inFlight.some((text: string) => text.includes('/'))).toBe(false);
+
+		release!();
+		await vi.waitFor(() => expect(approveMock).toHaveBeenCalledTimes(2));
+	});
+
 	it('denies only the rows that were checked', async () => {
 		const wrapper = await mountLoaded();
 

@@ -40,6 +40,7 @@ beforeEach(() => {
 	fetchMock.mockReset();
 	fetchMock.mockResolvedValue(auditResponse);
 	vi.stubGlobal('$fetch', fetchMock);
+	useAuthStore().sessionToken = 'session-token';
 });
 
 afterEach(() => {
@@ -58,10 +59,16 @@ describe('CatalogAudit', () => {
 		await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 		await wrapper.vm.$nextTick();
 
-		expect(fetchMock).toHaveBeenCalledWith('/api/admin/activity/audit', {
-			method: 'POST',
-			body: {}
-		});
+		// the header is the point: the route re-checks admin against mantle2, and a call without
+		// it 401s no matter who is signed in
+		expect(fetchMock).toHaveBeenCalledWith(
+			'/api/admin/activity/audit',
+			expect.objectContaining({
+				method: 'POST',
+				body: {},
+				headers: expect.objectContaining({ Authorization: 'Bearer session-token' })
+			})
+		);
 
 		const text = wrapper.text();
 		expect(text).toContain('marina');

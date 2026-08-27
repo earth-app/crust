@@ -104,7 +104,6 @@
 </template>
 
 <script setup lang="ts">
-import { extractServerMessage } from 'errors';
 // a nested UTabs inside the vertical outer tabs renders badly, so this is a segmented
 // switcher that keeps both backlog counts visible at once
 const view = ref<'activities' | 'publishers'>('activities');
@@ -124,6 +123,7 @@ type DiscoveryFunnel = {
 const preview = ref<{ candidates: string[]; funnel: DiscoveryFunnel } | null>(null);
 
 const toast = useToast();
+const authStore = useAuthStore();
 const stagedRef = useTemplateRef<{ load: () => Promise<void> }>('stagedRef');
 const publishersRef = useTemplateRef<{ load: () => Promise<void> }>('publishersRef');
 
@@ -134,26 +134,34 @@ async function refresh() {
 async function runDryRun() {
 	discovering.value = true;
 	try {
-		const res = await $fetch<{ considered: number; funnel: DiscoveryFunnel }>(
+		// the server route re-checks admin against mantle2, so the session token has to ride along
+		const res = await makeServerRequest<{ considered: number; funnel: DiscoveryFunnel }>(
+			null,
 			'/api/admin/activity/discover',
+			authStore.sessionToken,
 			{ method: 'POST' }
 		);
-		preview.value = { candidates: res.funnel?.nextUp ?? [], funnel: res.funnel };
+
+		if (!valid(res)) {
+			toast.add({
+				title: 'Discovery Preview Failed',
+				description: res.message ?? 'Could not reach the discovery pipeline.',
+				icon: 'mdi:alert-circle',
+				color: 'error'
+			});
+			return;
+		}
+
+		const { considered, funnel } = res.data;
+		preview.value = { candidates: funnel?.nextUp ?? [], funnel };
 		toast.add({
-			title: `Discovery Preview: ${res.considered} Candidates`,
-			description: res.funnel?.nextUp?.length
-				? `Next up: ${res.funnel.nextUp.slice(0, 5).join(', ')}`
+			title: `Discovery Preview: ${considered} Candidates`,
+			description: funnel?.nextUp?.length
+				? `Next up: ${funnel.nextUp.slice(0, 5).join(', ')}`
 				: 'No further candidates queued.',
 			icon: 'mdi:radar',
 			color: 'info',
 			duration: 8000
-		});
-	} catch (err) {
-		toast.add({
-			title: 'Discovery Preview Failed',
-			description: extractServerMessage(err, 'Could not reach the discovery pipeline.'),
-			icon: 'mdi:alert-circle',
-			color: 'error'
 		});
 	} finally {
 		discovering.value = false;

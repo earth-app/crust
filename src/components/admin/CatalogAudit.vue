@@ -139,6 +139,8 @@ import {
 
 const emit = defineEmits<{ edit: [id: string] }>();
 
+const authStore = useAuthStore();
+
 const audit = ref<ActivityAudit | null>(null);
 const loading = ref(false);
 const error = ref('');
@@ -180,12 +182,16 @@ async function run() {
 	error.value = '';
 
 	try {
-		audit.value = await $fetch<ActivityAudit>('/api/admin/activity/audit', {
-			method: 'POST',
-			body: {}
-		});
-	} catch (err) {
-		error.value = extractServerMessage(err, 'Failed to run the catalog audit');
+		// the server route re-checks admin against mantle2, so the session token has to ride along
+		const res = await makeServerRequest<ActivityAudit>(
+			null,
+			'/api/admin/activity/audit',
+			authStore.sessionToken,
+			{ method: 'POST', body: {} }
+		);
+
+		if (valid(res)) audit.value = res.data;
+		else error.value = res.message ?? 'Failed to run the catalog audit';
 	} finally {
 		loading.value = false;
 	}

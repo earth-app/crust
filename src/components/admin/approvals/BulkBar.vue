@@ -97,7 +97,9 @@ const positionLabel = computed(
 // never a bare "Approve"/"Deny"; the per-row buttons own those names
 function actionLabel(action: 'approve' | 'deny'): string {
 	const verb = action === 'approve' ? 'Approve' : 'Deny';
-	if (props.busy === action) return `${verb} ${props.progress}/${props.totalSelected}`;
+	// count only, no denominator: the run drops each row from the selection as it lands, so
+	// `totalSelected` shrinks underneath and the pair read as a reverse countdown (1/24, 2/23)
+	if (props.busy === action) return `${verb} ${props.progress}`;
 	return props.totalSelected > 0 ? `${verb} Selected (${props.totalSelected})` : `${verb} Selected`;
 }
 </script>
