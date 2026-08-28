@@ -88,6 +88,7 @@
 			<div
 				v-for="entry in filtered"
 				:key="`${entry.kind}-${entry.value}`"
+				:data-blacklist-row="entry.original_value"
 				class="flex items-center justify-between gap-3 px-3 py-2"
 			>
 				<div class="flex items-center gap-2 min-w-0">

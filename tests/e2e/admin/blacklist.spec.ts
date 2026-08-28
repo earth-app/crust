@@ -60,16 +60,20 @@ test.describe('Admin Blacklist tab', () => {
 		// add a unique entry first, then remove exactly that row
 		const value = `rmuser-${testId.slice(0, 8)}`;
 		await page.getByPlaceholder(/badname or evilcorp/i).fill(value);
-		await page.getByRole('button', { name: /Add to Blacklist/i }).click();
-		const row = page.getByText(new RegExp(value, 'i')).first();
+		await Promise.all([
+			page.waitForResponse(
+				(r) => /\/v2\/admin\/blacklist$/.test(r.url()) && r.request().method() === 'POST'
+			),
+			page.getByRole('button', { name: /Add to Blacklist/i }).click()
+		]);
+
+		// scope to this entry's own row; `div:has(text)` matches every ancestor, so `.first()` on
+		// it used to grab whichever Remove button happened to be highest in the document
+		const row = page.locator(`[data-blacklist-row="${value}"]`);
 		await expect(row).toBeVisible({ timeout: 10_000 });
 
 		// the row's Remove button opens a confirm modal
-		await page
-			.locator('div', { has: page.getByText(new RegExp(value, 'i')) })
-			.getByRole('button', { name: /Remove/i })
-			.first()
-			.click();
+		await row.getByRole('button', { name: /Remove/i }).click();
 		await expect(page.getByText(/Remove from Blacklist\?/i)).toBeVisible({ timeout: 8_000 });
 
 		const [resp] = await Promise.all([
@@ -82,6 +86,6 @@ test.describe('Admin Blacklist tab', () => {
 				.click()
 		]);
 		expect([200, 204]).toContain(resp.status());
-		await expect(page.getByText(new RegExp(value, 'i'))).toHaveCount(0, { timeout: 10_000 });
+		await expect(row).toHaveCount(0, { timeout: 10_000 });
 	});
 });
