@@ -45,12 +45,16 @@
 				<div class="rounded bg-elevated p-3">
 					<p class="text-xs text-muted">Signups</p>
 					<p class="text-2xl font-bold">{{ funnel.signups_completed.toLocaleString() }}</p>
-					<p class="text-xs text-success mt-1">{{ signupRate }}% conversion</p>
+					<p class="text-xs text-success mt-1">
+						{{ signupRate === null ? 'No views yet' : `${signupRate}% conversion` }}
+					</p>
 				</div>
 				<div class="rounded bg-elevated p-3">
 					<p class="text-xs text-muted">Email verified</p>
 					<p class="text-2xl font-bold">{{ funnel.verifications_completed.toLocaleString() }}</p>
-					<p class="text-xs text-success mt-1">{{ verifyRate }}% of signups</p>
+					<p class="text-xs text-success mt-1">
+						{{ verifyRate === null ? 'No signups yet' : `${verifyRate}% of signups` }}
+					</p>
 				</div>
 			</div>
 		</div>
@@ -195,12 +199,13 @@ const funnel = computed(
 		}
 );
 
+// an empty denominator is no measurement, not a zero rate
 const signupRate = computed(() => {
-	if (!funnel.value.signup_views) return '0.0';
+	if (!funnel.value.signup_views) return null;
 	return ((funnel.value.signups_completed / funnel.value.signup_views) * 100).toFixed(1);
 });
 const verifyRate = computed(() => {
-	if (!funnel.value.signups_completed) return '0.0';
+	if (!funnel.value.signups_completed) return null;
 	return ((funnel.value.verifications_completed / funnel.value.signups_completed) * 100).toFixed(1);
 });
 
