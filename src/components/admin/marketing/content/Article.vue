@@ -9,6 +9,27 @@
 		@load="applyLoad"
 	>
 		<div class="grid gap-3 sm:grid-cols-2">
+			<div class="sm:col-span-2 flex flex-col gap-2">
+				<div class="flex flex-wrap items-center gap-2">
+					<span class="text-xs text-muted">Lens Presets</span>
+					<UButton
+						v-for="preset in MARKETING_ARTICLE_PRESETS"
+						:key="preset.label"
+						size="xs"
+						color="primary"
+						:variant="activePreset === preset.label ? 'solid' : 'subtle'"
+						@click="applyPreset(preset)"
+					>
+						{{ preset.label }}
+					</UButton>
+				</div>
+				<p
+					v-if="activeWhy"
+					class="text-xs text-muted"
+				>
+					{{ activeWhy }}
+				</p>
+			</div>
 			<UFormField
 				label="Title"
 				class="sm:col-span-2"
@@ -100,6 +121,8 @@ import {
 	articleFormFromPayload,
 	emptyArticleForm,
 	MARKETING_ACCOUNT_TYPES,
+	MARKETING_ARTICLE_PRESETS,
+	type MarketingArticlePreset,
 	mockArticle
 } from '~/shared/utils/marketing';
 
@@ -116,12 +139,24 @@ const accountTypeItems = MARKETING_ACCOUNT_TYPES.map((value) => ({
 	value
 }));
 
+const activePreset = ref<string | null>(null);
+const activeWhy = computed(
+	() => MARKETING_ARTICLE_PRESETS.find((p) => p.label === activePreset.value)?.why ?? ''
+);
+
+function applyPreset(preset: MarketingArticlePreset) {
+	Object.assign(form, preset.form);
+	activePreset.value = preset.label;
+}
+
 function applyLoad({ payload, mode }: { payload: unknown; mode: 'raw' | 'scene' }) {
 	const next =
 		mode === 'scene'
 			? { ...emptyArticleForm(), ...(payload as object) }
 			: articleFormFromPayload(payload);
 	Object.assign(form, next);
+	// a pull or a generate replaces the preset, so the "why" note stops describing the wrong card
+	activePreset.value = null;
 }
 
 if (props.scene) applyLoad({ payload: props.scene.payload, mode: 'scene' });

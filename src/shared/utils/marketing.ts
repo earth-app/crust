@@ -53,6 +53,119 @@ export const MARKETING_EVENT_TYPES: EventType[] = ['IN_PERSON', 'HYBRID', 'ONLIN
 // a slow-ish rotation of green-forward hues for article accents when none is supplied
 export const MARKETING_DEFAULT_ARTICLE_HEX = '#4ade80';
 
+export type MarketingArticlePreset = {
+	label: string;
+	/** the ACTIVITY_TYPE lens the piece was written through */
+	lens: string;
+	/** why the juxtaposition lands, shown next to the preview */
+	why: string;
+	form: MarketingArticleForm;
+};
+
+/**
+ * Articles where the lens genuinely landed.
+ *
+ * The lens mechanic draws random ACTIVITY_TYPE tags and the generator drops the ones the finished
+ * piece cannot ground, so most live articles carry a lens that is merely defensible. Filming the
+ * mechanic needs one where the juxtaposition is the point, and hand-writing one at record time is
+ * the slow step these remove.
+ */
+export const MARKETING_ARTICLE_PRESETS: MarketingArticlePreset[] = [
+	{
+		label: 'Kelp Forests / Nature',
+		lens: 'NATURE',
+		why: 'The obvious pairing, for a control shot: nothing about it is surprising.',
+		form: {
+			title: 'Kelp Forests Store Carbon Faster Than Trees',
+			description: 'An underwater forest doing the work of a rainforest, and growing a foot a day.',
+			content:
+				'Giant kelp grows up to two feet a day and pulls carbon out of the water column while it does. ' +
+				'A single hectare of kelp forest can outpace an equivalent hectare of temperate woodland, and ' +
+				'unlike a forest, it regrows within a season after a storm tears it out.',
+			tags: 'Nature',
+			colorHex: '#22c55e',
+			authorUsername: 'earthling',
+			authorAccountType: 'WRITER',
+			favicon: ''
+		}
+	},
+	{
+		label: 'Sourdough / Science',
+		lens: 'LEARNING',
+		why: 'A kitchen habit read as microbiology: the lens changes what the reader thinks they are doing.',
+		form: {
+			title: 'Your Sourdough Starter is a Managed Ecosystem',
+			description: 'Two species, one jar, and a balance you maintain by feeding schedule alone.',
+			content:
+				'A starter is wild yeast and lactic acid bacteria living at a ratio you control with nothing ' +
+				'more than flour, water and timing. Feed it warm and often and the yeast wins, so the bread ' +
+				'rises fast and tastes mild. Feed it cold and rarely and the bacteria win, so it rises slowly ' +
+				'and turns sour. The same jar, run two ways.',
+			tags: 'Learning, Relaxation',
+			colorHex: '#f59e0b',
+			authorUsername: 'earthling',
+			authorAccountType: 'WRITER',
+			favicon: ''
+		}
+	},
+	{
+		label: 'Night Sky / Community',
+		lens: 'COMMUNITY_SERVICE',
+		why: 'Astronomy framed as a neighbourhood act, which is the juxtaposition doing real work.',
+		form: {
+			title: 'Turning Off One Porch Light Brings Back the Milky Way',
+			description:
+				'Light pollution is the rare environmental problem that stops the moment you stop.',
+			content:
+				'Unlike carbon, light leaves no residue. A street that shields its fixtures downward sees the ' +
+				'sky change the same night, and towns that have done it report the Milky Way visible again ' +
+				'within a single season. It is the only conservation project whose result you can check by ' +
+				'walking outside.',
+			tags: 'Community Service, Nature',
+			colorHex: '#6366f1',
+			authorUsername: 'earthling',
+			authorAccountType: 'WRITER',
+			favicon: ''
+		}
+	},
+	{
+		label: 'Cold Water / Sport',
+		lens: 'SPORT',
+		why: 'A physiology piece read through training, so the lens supplies the reason to care.',
+		form: {
+			title: 'Cold Water Swimmers Grow a Different Kind of Fat',
+			description: 'Regular exposure converts white fat to brown, which burns rather than stores.',
+			content:
+				'Brown adipose tissue generates heat directly instead of storing energy, and repeated cold ' +
+				'exposure recruits more of it. Winter swimmers measured across a season show more active ' +
+				'brown fat than matched controls, which is why the second month feels nothing like the first.',
+			tags: 'Sport, Health',
+			colorHex: '#0ea5e9',
+			authorUsername: 'earthling',
+			authorAccountType: 'WRITER',
+			favicon: ''
+		}
+	},
+	{
+		label: 'Moss / Art',
+		lens: 'ART',
+		why: 'The furthest jump of the set, and the one that best shows what a lens is for.',
+		form: {
+			title: 'Moss Gardeners Work in Decades, Not Seasons',
+			description: 'A discipline where the medium sets the pace and the artist waits.',
+			content:
+				'A moss garden cannot be rushed: the grower chooses the stone, the shade and the moisture, ' +
+				'then waits years for the surface to close. Kyoto gardens maintained this way are older than ' +
+				'the buildings beside them, and the tending is closer to restoration than to planting.',
+			tags: 'Art, Relaxation, Nature',
+			colorHex: '#84cc16',
+			authorUsername: 'earthling',
+			authorAccountType: 'WRITER',
+			favicon: ''
+		}
+	}
+];
+
 function isoAt(ms: number): string {
 	return new Date(ms).toISOString();
 }
@@ -1740,8 +1853,9 @@ export function mockChallengeView(
 // throwaway id so a seeded preview trail can never collide with a real trail id
 export const PREVIEW_TRAIL_ID = 'marketing_preview_trail';
 
-// 120 min/week product goal; kept local so this file stays pinia-free and unit-testable alone
-export const PREVIEW_NATURE_TARGET = 120;
+// the api still carries a weekly `target` and the badge threshold still reads it; nothing renders
+// it, so this only fills the mock's shape
+const PREVIEW_NATURE_TARGET = 120;
 
 export const TRAIL_THEMES: TrailTheme[] = [
 	'nature',
@@ -1785,7 +1899,6 @@ export interface TrailForm {
 	seasonal: boolean;
 	// nature-minutes ring preview (not part of the Trail; drives TrailNatureRing)
 	natureMinutes: number;
-	natureTarget: number;
 	natureBest: number;
 }
 
@@ -1804,7 +1917,6 @@ export function emptyTrailForm(): TrailForm {
 		premium: false,
 		seasonal: false,
 		natureMinutes: 45,
-		natureTarget: PREVIEW_NATURE_TARGET,
 		natureBest: 80
 	};
 }
@@ -2038,12 +2150,7 @@ export function mockNatureMinutes(opts: {
 }
 
 export function mockNatureMinutesFromForm(form: TrailForm, now?: number): NatureMinutes {
-	return mockNatureMinutes({
-		minutes: form.natureMinutes,
-		target: form.natureTarget,
-		best: form.natureBest,
-		now
-	});
+	return mockNatureMinutes({ minutes: form.natureMinutes, best: form.natureBest, now });
 }
 
 // #endregion

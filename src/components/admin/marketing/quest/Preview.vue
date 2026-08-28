@@ -90,6 +90,52 @@
 					>
 				</div>
 
+				<div class="flex flex-col gap-2">
+					<span class="text-xs font-semibold text-muted uppercase tracking-wide"
+						>Exportable Card</span
+					>
+					<AdminMarketingExportCard
+						ref="exportCard"
+						:width="1080"
+						:height="1350"
+					>
+						<div class="flex h-full flex-col gap-10 p-16">
+							<div class="flex items-center gap-6">
+								<UIcon
+									:name="quest?.icon || 'mdi:compass-rose'"
+									class="size-24 text-primary"
+								/>
+								<div class="flex flex-col">
+									<span class="text-4xl uppercase tracking-widest text-muted">Quest</span>
+									<span class="text-6xl font-bold leading-tight">{{ quest?.title }}</span>
+								</div>
+							</div>
+							<p class="text-4xl leading-snug opacity-80">{{ quest?.description }}</p>
+							<div class="flex flex-col gap-5">
+								<div
+									v-for="(step, i) in exportSteps"
+									:key="i"
+									class="flex items-center gap-5"
+								>
+									<span
+										class="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary/15 text-3xl font-bold"
+										>{{ i + 1 }}</span
+									>
+									<span class="truncate text-4xl">{{ step }}</span>
+								</div>
+							</div>
+							<div class="mt-auto flex items-center justify-between text-3xl text-muted">
+								<span>{{ quest?.steps?.length || 0 }} Steps</span>
+								<span>The Earth App</span>
+							</div>
+						</div>
+					</AdminMarketingExportCard>
+					<AdminMarketingExportBar
+						:get-target="exportCardNode"
+						:filename="quest?.title || 'quest-card'"
+					/>
+				</div>
+
 				<p class="text-xs text-muted">
 					Interactions are simulated locally. Starting, ending, or submitting a step in this preview
 					never reaches the server or changes your real quest.
@@ -171,6 +217,24 @@ const store = useUserStore();
 const { user } = useAuth();
 const celebration = useQuestCelebration();
 const uid = computed(() => user.value?.id);
+
+const exportCard = ref<{ el: HTMLElement | null } | null>(null);
+
+// the fixed 1080x1350 card, never the live modal: a modal screenshot is viewport-sized and carries
+// chrome and a backdrop, so nothing can be overlaid on it reliably
+function exportCardNode(): HTMLElement | null {
+	return exportCard.value?.el ?? null;
+}
+
+const EXPORT_STEP_LIMIT = 5;
+
+// a step slot may be an alt-step group; the card shows the first alternative of each
+const exportSteps = computed(() =>
+	(props.quest?.steps ?? []).slice(0, EXPORT_STEP_LIMIT).map((slot) => {
+		const step = Array.isArray(slot) ? slot[0] : slot;
+		return step ? step.description || step.type : '';
+	})
+);
 
 // resolve the teleported quest modal node at export time (largest open dialog = the
 // fullscreen quest modal) so the shared ExportBar can snapshot it

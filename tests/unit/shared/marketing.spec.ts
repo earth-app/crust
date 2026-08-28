@@ -13,6 +13,7 @@ import {
 	JOURNEY_STUDIO_PRESETS,
 	journeyPreviewRows,
 	journeySequenceFrames,
+	MARKETING_ARTICLE_PRESETS,
 	mockActivity,
 	mockArticle,
 	mockEvent,
@@ -409,5 +410,43 @@ describe('trailmark studio sequences', () => {
 		expect(new Set(ids).size).toBe(3);
 		// the default id is untouched for every existing caller
 		expect(trailmarkFormToTrailmark(forms[0]!, { selfUid: 'me' }).id).not.toContain('field-');
+	});
+});
+
+// the studio's job for articles is staging one where the lens LANDED; hand-writing that at record
+// time was the slow step
+describe('MARKETING_ARTICLE_PRESETS', () => {
+	it('offers a spread of lenses rather than several of one', () => {
+		const lenses = MARKETING_ARTICLE_PRESETS.map((preset) => preset.lens);
+		expect(new Set(lenses).size).toBe(lenses.length);
+		expect(MARKETING_ARTICLE_PRESETS.length).toBeGreaterThanOrEqual(4);
+	});
+
+	it('renders every preset into a complete article card', () => {
+		for (const preset of MARKETING_ARTICLE_PRESETS) {
+			const article = mockArticle(preset.form);
+
+			expect(article.title.length).toBeGreaterThan(10);
+			expect(article.description.length).toBeGreaterThan(20);
+			expect(article.content.length).toBeGreaterThan(80);
+			expect(article.tags.length).toBeGreaterThan(0);
+			expect(article.color_hex).toMatch(/^#[0-9a-f]{6}$/i);
+		}
+	});
+
+	it('says why each juxtaposition lands, so a preset is not just filler text', () => {
+		for (const preset of MARKETING_ARTICLE_PRESETS) {
+			expect(preset.why.trim().length).toBeGreaterThan(20);
+			expect(preset.label.trim()).not.toBe('');
+		}
+	});
+
+	it('tags each preset with the lens it claims', () => {
+		for (const preset of MARKETING_ARTICLE_PRESETS) {
+			const tags = mockArticle(preset.form).tags.map((tag) =>
+				tag.toUpperCase().replace(/\s+/g, '_')
+			);
+			expect(tags).toContain(preset.lens);
+		}
 	});
 });

@@ -44,6 +44,45 @@
 				>
 			</div>
 
+			<div class="flex flex-col gap-2">
+				<span class="text-xs font-semibold text-muted uppercase tracking-wide"
+					>Exportable Card</span
+				>
+				<AdminMarketingExportCard
+					ref="exportCard"
+					:width="1080"
+					:height="1350"
+				>
+					<div class="flex h-full flex-col gap-12 p-16">
+						<div class="flex items-center gap-6">
+							<UIcon
+								:name="trail?.icon || 'mdi:map-marker-path'"
+								class="size-24 text-primary"
+							/>
+							<div class="flex flex-col">
+								<span class="text-4xl uppercase tracking-widest text-muted">Curiosity Trail</span>
+								<span class="text-6xl font-bold leading-tight">{{ trail?.title }}</span>
+							</div>
+						</div>
+						<p class="text-4xl leading-snug opacity-80">{{ trail?.description }}</p>
+						<p
+							v-if="trail?.curiosity"
+							class="rounded-2xl bg-primary/10 p-10 text-4xl italic leading-snug"
+						>
+							{{ trail.curiosity }}
+						</p>
+						<div class="mt-auto flex items-center justify-between text-3xl text-muted">
+							<span>{{ trail?.duration || 0 }} min outside</span>
+							<span>The Earth App</span>
+						</div>
+					</div>
+				</AdminMarketingExportCard>
+				<AdminMarketingExportBar
+					:get-target="exportCardNode"
+					:filename="trail?.title || 'trail-card'"
+				/>
+			</div>
+
 			<p class="text-xs text-muted">
 				The walkthrough is a read-only tour. The full flow simulates the pledge, presence timer,
 				reflection, and reveal locally; nothing here starts a trail, credits real Nature Minutes, or
@@ -107,6 +146,14 @@ watch(
 	},
 	{ immediate: true }
 );
+
+const exportCard = ref<{ el: HTMLElement | null } | null>(null);
+
+// the fixed 1080x1350 card, never the live runner modal: a modal screenshot is viewport-sized and
+// carries chrome and a backdrop, so nothing can be overlaid on it reliably
+function exportCardNode(): HTMLElement | null {
+	return exportCard.value?.el ?? null;
+}
 
 // resolve the teleported runner modal (largest open dialog) so the ExportBar can snapshot it
 function resolveModalNode(): HTMLElement | null {

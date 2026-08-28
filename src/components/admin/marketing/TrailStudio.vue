@@ -8,7 +8,6 @@
 		</div>
 		<TrailNatureRing
 			:minutes="natureMinutes.minutes"
-			:target="natureMinutes.target"
 			:best="natureMinutes.best"
 		/>
 	</div>
@@ -162,14 +161,6 @@
 							:step="5"
 						/>
 					</UFormField>
-					<UFormField :label="`Weekly Target: ${form.natureTarget} min`">
-						<USlider
-							v-model="form.natureTarget"
-							:min="30"
-							:max="240"
-							:step="10"
-						/>
-					</UFormField>
 					<UFormField :label="`Personal Best: ${form.natureBest} min`">
 						<USlider
 							v-model="form.natureBest"
@@ -210,7 +201,6 @@
 				<div class="flex justify-center rounded-2xl border border-default bg-elevated/30 p-4">
 					<TrailNatureRing
 						:minutes="natureMinutes.minutes"
-						:target="natureMinutes.target"
 						:best="natureMinutes.best"
 					/>
 				</div>
@@ -233,7 +223,6 @@
 				</div>
 				<TrailNatureRing
 					:minutes="natureMinutes.minutes"
-					:target="natureMinutes.target"
 					:best="natureMinutes.best"
 				/>
 			</div>
