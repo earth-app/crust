@@ -80,8 +80,14 @@ describe('staged activity risk scan', () => {
 		});
 	});
 
-	it('rates a well formed submission as safe', () => {
-		expect(tierOf(GOOD, { source: 'cloud_discovery' })).toBe('safe');
+	it('rates a well formed human submission as safe', () => {
+		expect(tierOf(GOOD)).toBe('safe');
+	});
+
+	// form is free for a generator, so an automated row cannot reach a tier that skips the
+	// approve confirmation on form alone, however clean it looks
+	it('holds an equally well formed automated submission below the safe tiers', () => {
+		expect(tierOf(GOOD, { source: 'cloud_discovery' })).toBe('slightly_safe');
 	});
 
 	it('keeps a plain but real submission on the safe side without overclaiming', () => {
@@ -186,8 +192,30 @@ describe('staged activity risk scan', () => {
 			expect(ids).toContain('submitter_note');
 		});
 
-		it('credits a submission that cleared the discovery filters', () => {
-			expect(signalIds(GOOD, { source: 'cloud_discovery' })).toContain('automated');
+		// coming from the pipeline used to be worth +1, which fired on 629 of 629 live rows and so
+		// carried no information; where a row came from is not evidence it is any good
+		it('does not credit a submission for having come from discovery', () => {
+			expect(signalIds(GOOD, { source: 'cloud_discovery' })).not.toContain('automated');
+		});
+
+		// each of these fired on 632 of 632 live automated rows, stacking a flat +5.5 onto every
+		// one of them; a signal that is always true is a constant
+		it('withholds the form positives from machine-written text', () => {
+			const ids = signalIds(GOOD, { source: 'cloud_discovery' });
+			expect(ids).not.toContain('clean_name');
+			expect(ids).not.toContain('rich_description');
+			expect(ids).not.toContain('prose');
+
+			// what remains is about the entry's substance, not how well it was typed
+			expect(ids).toContain('typed');
+			expect(ids).toContain('activity_shaped');
+		});
+
+		it('still credits a human for the same form', () => {
+			const ids = signalIds(GOOD);
+			expect(ids).toContain('clean_name');
+			expect(ids).toContain('rich_description');
+			expect(ids).toContain('prose');
 		});
 
 		it('credits a clean, activity-shaped name', () => {
@@ -214,6 +242,61 @@ describe('staged activity risk scan', () => {
 					description: 'Routes run 1500 2000 3000 moves long across the whole wall face here.'
 				})
 			).not.toContain('contact');
+		});
+	});
+
+	// a live queue of 629 automated rows scored 0 suspicious and 99.7% safe, because every
+	// detector was hunting a careless human and the queue contained none. these are the rows.
+	describe('the generated-queue blind spot', () => {
+		const generated = (name: string, extra: Record<string, any> = {}) => ({
+			...GOOD,
+			id: name.toLowerCase().replace(/\s+/g, '_'),
+			name,
+			...extra
+		});
+
+		it.each([
+			'Play Calling System',
+			'Single Wing Formation',
+			'Penalty Shot',
+			'Match Penalty',
+			'Zone Defense'
+		])('flags %s as naming a rule rather than a practice', (name) => {
+			expect(signalIds(generated(name))).toContain('not_a_practice');
+		});
+
+		it.each(['Paralympic Football', 'Olympic Nordic Skiing', 'Collegiate Wrestling'])(
+			'flags %s as a competition class',
+			(name) => {
+				expect(signalIds(generated(name))).toContain('not_a_practice');
+			}
+		);
+
+		it('does not flag a real activity whose name merely contains one of those words', () => {
+			for (const name of ['Bouldering', 'Shot Put', 'Playing Cards', 'Free Diving']) {
+				expect(signalIds(generated(name))).not.toContain('not_a_practice');
+			}
+		});
+
+		it('pins adult, gambling and blood-sport entries at suspicious', () => {
+			for (const name of ['Peep Show', 'Erotic Dance', 'Sports Betting', 'Cockfighting']) {
+				const assessment = assessStagedActivity(staged(generated(name)));
+				expect(assessment.tier).toBe('suspicious');
+				expect(assessment.signals.map((s) => s.id)).toContain('unsuitable');
+			}
+		});
+
+		// the old window was 60-1200 chars; live descriptions run 1188-1614, so the strongest
+		// positive in the scan fired 6 times out of 629
+		it('credits substance in a description longer than the old 1200-char cap', () => {
+			const long = 'A real sentence about the practice and how it is done. '.repeat(25);
+			expect(long.length).toBeGreaterThan(1200);
+			expect(signalIds({ ...GOOD, description: long })).toContain('rich_description');
+		});
+
+		it('flags a description that runs past any plausible catalog entry', () => {
+			const bloated = 'A real sentence about the practice and how it is done. '.repeat(50);
+			expect(signalIds({ ...GOOD, description: bloated })).toContain('bloated_description');
 		});
 	});
 

@@ -140,6 +140,79 @@ const KEYBOARD_RUNS = ['qwer', 'asdf', 'zxcv', 'hjkl', 'uiop', '1234'];
 const NAME_SHAPE = /^[A-Za-z][A-Za-z'\u2019\- ]{1,38}$/;
 const ACTIVITY_SUFFIXES = ['ing', 'ball', 'craft', 'ery', 'ics', 'ism', 'ology', 'graphy'];
 
+// a catalog entry that runs past this is not a description, it is an essay
+const DESCRIPTION_BLOAT_LENGTH = 2500;
+
+/*
+ * Every detector above hunts a careless human: profanity, contact details, markup, placeholders.
+ * An automated queue contains none of those, so nothing ever fired and 629 live rows scored as
+ * safe. These two ask the question the rest never did -- is this a thing a person does, and is it
+ * something this app should carry.
+ */
+
+// head nouns that name a rule, a play, a formation or a scoring term rather than a practice:
+// "Play Calling System", "Single Wing Formation", "Penalty Shot"
+const RULE_HEADS = new Set([
+	'system',
+	'systems',
+	'formation',
+	'formations',
+	'play',
+	'plays',
+	'rule',
+	'rules',
+	'ruleset',
+	'penalty',
+	'penalties',
+	'foul',
+	'fouls',
+	'infraction',
+	'scheme',
+	'strategy',
+	'tactic',
+	'tactics',
+	'maneuver',
+	'manoeuvre',
+	'offense',
+	'offence',
+	'defense',
+	'defence',
+	'scoring',
+	'terminology',
+	'notation',
+	'stance',
+	'grip',
+	// "throw", "kick" and "serve" are deliberately absent: discus throw, drop kick and the
+	// tennis serve are all things people actually do
+	'shot',
+	'shots'
+]);
+
+// a leading modifier that names a competition class of an activity the catalog already has:
+// "Paralympic Football", "Olympic Nordic Skiing", "Collegiate Wrestling"
+const COMPETITION_CLASS_MODIFIERS = new Set([
+	'paralympic',
+	'paralympics',
+	'olympic',
+	'olympics',
+	'commonwealth',
+	'collegiate',
+	'intercollegiate',
+	'professional',
+	'amateur',
+	'semi-professional',
+	'junior',
+	'senior',
+	'masters',
+	'youth',
+	'varsity'
+]);
+
+// content this app does not carry, whatever else the entry looks like. general-audience with
+// minors, so these are decisive rather than weighted
+const UNSUITABLE =
+	/\b(?:erotic|eroticism|striptease|stripper|pornograph\w*|fetish|bdsm|peep\s?show|lap\s?dance|sexual|prostitut\w*|cockfight\w*|bullfight\w*|dogfight\w*|bear-?baiting|sports?\s?betting|gambling|wagering|bookmaking)\b/i;
+
 const STOPWORDS = new Set([
 	'the',
 	'a',
@@ -253,6 +326,32 @@ function looksActivityShaped(name: string): boolean {
 	return ACTIVITY_SUFFIXES.some((suffix) => last.endsWith(suffix));
 }
 
+/**
+ * Whether the name reads as something other than a practice.
+ *
+ * Name-only on purpose: this runs per render in the review table, so it cannot look anything up.
+ * Cloud's discovery gate reads the Wikipedia short description and is the authority; this is the
+ * cheap mirror that flags what is already staged.
+ *
+ * @param name the submitted activity name
+ */
+export function namesSomethingOtherThanAPractice(name: string): boolean {
+	const tokens = name
+		.toLowerCase()
+		.split(/[\s-]+/)
+		.filter(Boolean);
+	if (tokens.length < 2) return false;
+
+	// "self defense" is a practice; "zone defense" is a formation inside one
+	if (tokens[0] === 'self') return false;
+
+	// english puts the head on the right: "Play Calling System" is a system
+	if (RULE_HEADS.has(tokens[tokens.length - 1] ?? '')) return true;
+
+	// "Paralympic Football" is a class of football, and football is the activity
+	return COMPETITION_CLASS_MODIFIERS.has(tokens[0] ?? '');
+}
+
 function isAliasShaped(alias: string): boolean {
 	const trimmed = alias.trim();
 	return NAME_SHAPE.test(trimmed) && trimmed.split(/\s+/).length <= 3 && !/\d/.test(trimmed);
@@ -286,6 +385,7 @@ export function assessStagedActivity(staged: StagedActivity): StagedRiskAssessme
 	}
 	if (looksUnreal(name)) add('unreal_name', 'Name Does Not Read as Real Words', -8, true);
 	if (hasAddress(corpus)) add('address', 'Street Address or Postcode', -7, true);
+	if (UNSUITABLE.test(corpus)) add('unsuitable', 'Adult, Gambling, or Blood Sport', -9, true);
 	// #endregion
 
 	// #region soft risks
@@ -316,17 +416,46 @@ export function assessStagedActivity(staged: StagedActivity): StagedRiskAssessme
 	if (PUNCTUATION_NOISE.test(corpus)) add('punctuation', 'Runaway Punctuation', -1.5);
 	if (types.length === 0) add('untyped', 'No Activity Types Set', -2);
 	if (aliases.length > 8) add('alias_flood', 'Unusually Many Aliases', -1.5);
+	// heavier than every positive an entry can collect, so "Paralympic Football" cannot be talked
+	// back into a safe tier by being well typed and carrying an icon. not decisive, because this
+	// reads the name alone and cloud's gate (which has the short description) is the authority
+	if (namesSomethingOtherThanAPractice(name)) {
+		add('not_a_practice', 'Names a Rule or Competition Class, Not a Practice', -6);
+	}
+	if (description.length > DESCRIPTION_BLOAT_LENGTH) {
+		add('bloated_description', 'Description Runs Far Past a Catalog Entry', -1.5);
+	}
 	// #endregion
 
 	// #region marks of a real submission
-	if (NAME_SHAPE.test(name) && name.split(/\s+/).length <= 3 && name.length <= 30) {
+
+	/*
+	 * Form is free for a generator, so it is only evidence when a human typed it.
+	 *
+	 * Measured against 632 live automated rows: `clean_name`, `prose` and `rich_description` each
+	 * fired 632 times, stacking a flat +5.5 onto every row and pinning the whole queue in the safe
+	 * tiers. A signal that is always true is a constant. They stay for human submissions, where
+	 * failing them is real evidence, and are withheld from machine output, where passing them is
+	 * not.
+	 */
+	const machineWritten = staged?.source === 'cloud_discovery';
+
+	if (
+		!machineWritten &&
+		NAME_SHAPE.test(name) &&
+		name.split(/\s+/).length <= 3 &&
+		name.length <= 30
+	) {
 		add('clean_name', 'Name is Short and Well Formed', 2);
 	}
 	if (looksActivityShaped(name)) add('activity_shaped', 'Name Reads Like an Activity', 1.5);
-	if (description.length >= 60 && description.length <= 1200 && words(description).length >= 12) {
+	// a floor, not a window: the old 1200-char ceiling was set for human submissions and sat below
+	// the generator's own median output, so the strongest positive fired 6 times in 629. bloat is
+	// a separate negative above rather than a missing positive here
+	if (!machineWritten && description.length >= 60 && words(description).length >= 12) {
 		add('rich_description', 'Description Has Real Substance', 2.5);
 	}
-	if (sentenceCount(description) >= 2 && /[.!?]$/.test(description)) {
+	if (!machineWritten && sentenceCount(description) >= 2 && /[.!?]$/.test(description)) {
 		add('prose', 'Description Reads as Finished Prose', 1);
 	}
 	if (types.length >= 1 && types.length <= 3) add('typed', 'Sensibly Typed', 1.5);
@@ -339,7 +468,9 @@ export function assessStagedActivity(staged: StagedActivity): StagedRiskAssessme
 		add('sane_aliases', 'Aliases Look Like Real Synonyms', 1);
 	}
 	if (activity?.fields?.icon) add('icon', 'Carries an Icon', 0.5);
-	if (staged?.source === 'cloud_discovery') add('automated', 'Cleared the Discovery Filters', 1);
+	// `source === 'cloud_discovery'` used to score +1 here. it fired on 629 of 629 live rows,
+	// so it was a constant rather than a signal, and coming from the pipeline is a fact about
+	// where a row came from rather than evidence it is any good
 	if (staged?.submitter_kind === 'admin') add('admin_submitter', 'Submitted by an Admin', 1.5);
 	if (note.length >= 20) add('submitter_note', 'Submitter Explained the Entry', 0.5);
 	// #endregion
