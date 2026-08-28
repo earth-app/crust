@@ -55,9 +55,19 @@ interface Override {
 	headers?: Record<string, string>;
 }
 
+interface PlanRecord {
+	menuIssued: boolean;
+	active: boolean;
+	rehearsed: boolean;
+	expiresAt: number | null;
+}
+
 interface BackendState {
 	users: Record<string, any>;
 	activities: Record<string, any>;
+	surpriseDraws?: number;
+	// if-then plan is stateful across menu -> form -> status, so it is keyed by testId
+	planByTestId: Record<string, PlanRecord>;
 	articles: Record<string, any>;
 	events: Record<string, any>;
 	prompts: Record<string, any>;
@@ -91,6 +101,7 @@ interface TrailmarkRecord {
 	created_at: string;
 	thanks: string[]; // uids who have thanked (private to the author)
 	prompt_id?: string; // set when left as an answer to a daily prompt
+	activity_id?: string; // the activity the author was doing here
 }
 
 function freshState(): BackendState {
@@ -156,6 +167,7 @@ function freshState(): BackendState {
 			[MOCK_ADMIN_TOKEN]: adminUser.id
 		},
 		currentUserByTestId: {},
+		planByTestId: {},
 		overrides: [],
 		mood: {},
 		blacklist: [
@@ -243,6 +255,17 @@ function tokenFor(req: IncomingMessage): string | null {
 	return null;
 }
 
+function planLookup(ctx: RouteContext): PlanRecord {
+	const key = ctx.testId ?? 'shared';
+	state.planByTestId[key] ??= {
+		menuIssued: false,
+		active: false,
+		rehearsed: false,
+		expiresAt: null
+	};
+	return state.planByTestId[key]!;
+}
+
 function currentUserId(ctx: RouteContext): string | null {
 	if (ctx.testId && state.currentUserByTestId[ctx.testId] !== undefined) {
 		return state.currentUserByTestId[ctx.testId] ?? null;
@@ -275,6 +298,15 @@ function pushNotification(uid: string, notif: any) {
 }
 
 // the private thanks tally is only ever returned to the author (never a public number)
+// mirrors cloud's enrichForViewer: shared_activity is computed per viewer from their own list
+function viewerActivityIds(viewer: string | null): string[] {
+	if (!viewer) return [];
+	const activities = state.users[viewer]?.activities;
+	return Array.isArray(activities)
+		? activities.map((a: any) => String(a?.id ?? '')).filter(Boolean)
+		: [];
+}
+
 function serializeTrailmark(m: TrailmarkRecord, viewer: string | null) {
 	const out: any = {
 		id: m.id,
@@ -284,8 +316,12 @@ function serializeTrailmark(m: TrailmarkRecord, viewer: string | null) {
 		note: m.note,
 		created_at: m.created_at,
 		thanked_by_me: !!viewer && m.thanks.includes(viewer),
-		...(m.prompt_id ? { prompt_id: m.prompt_id } : {})
+		...(m.prompt_id ? { prompt_id: m.prompt_id } : {}),
+		...(m.activity_id ? { activity_id: m.activity_id } : {})
 	};
+	if (m.activity_id && viewerActivityIds(viewer).includes(m.activity_id)) {
+		out.shared_activity = true;
+	}
 	if (viewer && viewer === m.author_uid) out.thanks_for_author = m.thanks.length;
 	return out;
 }
@@ -766,8 +802,14 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			const lat = Number(ctx.url.searchParams.get('lat'));
 			const lng = Number(ctx.url.searchParams.get('lng'));
 			const radius = Math.min(Number(ctx.url.searchParams.get('radius')) || 500, 2000);
+			const activity = ctx.url.searchParams.get('activity');
+			const sharedOnly = ctx.url.searchParams.get('shared') === 'true';
+			const viewerActivities = viewerActivityIds(viewer);
+
 			const items = state.trailmarks
 				.filter((m) => Number.isFinite(lat) && haversineMeters({ lat, lng }, m.geo) <= radius)
+				.filter((m) => !activity || m.activity_id === activity)
+				.filter((m) => !sharedOnly || (!!m.activity_id && viewerActivities.includes(m.activity_id)))
 				.map((m) => serializeTrailmark(m, viewer));
 			json(res, 200, { items });
 		}
@@ -794,7 +836,8 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 				note: String(body.note).slice(0, 240),
 				created_at: new Date().toISOString(),
 				thanks: [],
-				...(body.prompt_id ? { prompt_id: String(body.prompt_id) } : {})
+				...(body.prompt_id ? { prompt_id: String(body.prompt_id) } : {}),
+				...(body.activity_id ? { activity_id: String(body.activity_id) } : {})
 			};
 			state.trailmarks.push(rec);
 			// author's own fresh note omits the private tally so the card reads "Your Note"
@@ -805,7 +848,8 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 				geo: rec.geo,
 				note: rec.note,
 				created_at: rec.created_at,
-				...(rec.prompt_id ? { prompt_id: rec.prompt_id } : {})
+				...(rec.prompt_id ? { prompt_id: rec.prompt_id } : {}),
+				...(rec.activity_id ? { activity_id: rec.activity_id } : {})
 			});
 		}
 	},
@@ -896,6 +940,135 @@ const mantleRoutes: Array<{ method: string; pattern: RegExp; handler: Handler }>
 			const id = currentUserId(ctx);
 			if (!id) return unauthorized(res);
 			json(res, 200, Object.values(state.activities).slice(0, 4));
+		}
+	},
+
+	// Expeditions gathered around an activity (the shared-interest join surface)
+	{
+		method: 'GET',
+		pattern: /^\/v2\/activities\/([^/]+)\/expeditions\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+
+			// ctx.url is already parsed by the dispatcher; /v2/activities/<id>/expeditions
+			const activityId = decodeURIComponent(ctx.url.pathname.split('/')[3] ?? '');
+			if (activityId === 'act-empty') return json(res, 200, { total: 0, expeditions: [] });
+
+			json(res, 200, {
+				total: 1,
+				expeditions: [
+					{
+						id: 'exp-shared-1',
+						owner_uid: '900',
+						title: 'Dawn Chorus Group',
+						goal: 'nature_minutes',
+						target: 240,
+						progress: 60,
+						contributors: [{ uid: '900', username: 'host', contribution: 60 }],
+						status: 'active',
+						starts_at: new Date().toISOString(),
+						ends_at: new Date(Date.now() + 7 * 86400000).toISOString(),
+						activity_id: activityId
+					}
+				]
+			});
+		}
+	},
+
+	// One unexpected activity for the current user; rotates so a re-roll is observable
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/current\/activities\/surprise\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+
+			const pool = Object.values(state.activities);
+			if (pool.length === 0) return json(res, 404, { message: 'No unexpected activity available' });
+
+			state.surpriseDraws = (state.surpriseDraws ?? 0) + 1;
+			json(res, 200, {
+				activity: pool[state.surpriseDraws % pool.length],
+				unrelated: true,
+				pool: pool.length
+			});
+		}
+	},
+
+	// If-then plan: stateful across menu -> form -> status, keyed by testId so parallel workers
+	// cannot bleed an active plan into each other
+	{
+		method: 'POST',
+		pattern: /^\/v2\/users\/current\/plan\/menu\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+
+			planLookup(ctx).menuIssued = true;
+			json(res, 200, {
+				goal: 'spend more time outside',
+				cues: [
+					{ id: 'juncture_0', kind: 'juncture', text: 'I close this app' },
+					{
+						id: 'time_place_0',
+						kind: 'time_place',
+						text: 'I am walking past Sycamore Park after school',
+						place: 'Sycamore Park'
+					}
+				],
+				responses: [
+					{ id: 'response_0', text: 'walk one loop around the block' },
+					{ id: 'activity_hiking', text: 'head outside for hiking', activity_id: 'hiking' }
+				]
+			});
+		}
+	},
+	{
+		method: 'POST',
+		pattern: /^\/v2\/users\/current\/plan\/rehearsed\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+			if (!planLookup(ctx).active) return json(res, 404, { message: 'No active plan' });
+
+			planLookup(ctx).rehearsed = true;
+			json(res, 200, { rehearsed: true });
+		}
+	},
+	{
+		method: 'GET',
+		pattern: /^\/v2\/users\/current\/plan\/status\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+
+			const plan = planLookup(ctx);
+			json(res, 200, {
+				active: plan.active,
+				expires_at: plan.active ? plan.expiresAt : null,
+				rehearsed: plan.active ? plan.rehearsed : null
+			});
+		}
+	},
+	{
+		method: 'POST',
+		pattern: /^\/v2\/users\/current\/plan\/?$/,
+		handler: (_req, res, ctx) => {
+			const id = currentUserId(ctx);
+			if (!id) return unauthorized(res);
+
+			const plan = planLookup(ctx);
+			if (!plan.menuIssued) return json(res, 400, { message: 'No plan menu available' });
+			if (plan.active) return json(res, 409, { message: 'A plan is already active' });
+
+			plan.active = true;
+			plan.menuIssued = false;
+			plan.expiresAt = Date.now() + 7 * 86400000;
+			json(res, 201, {
+				sentence: 'If I close this app, then I will walk one loop around the block.',
+				expires_at: plan.expiresAt
+			});
 		}
 	},
 

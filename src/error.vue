@@ -11,8 +11,10 @@
 					class="h-48 w-48 mb-6"
 					:preload="{ fetchPriority: 'high' }"
 				/>
-				<h1 class="text-4xl font-bold mb-4">Oops! Something went wrong.</h1>
-				<p class="text-lg mb-8">
+				<h1 class="w-full px-4 mb-4 text-3xl sm:text-4xl font-bold text-center text-balance">
+					Oops! Something went wrong.
+				</h1>
+				<p class="w-full px-4 mb-8 text-lg text-center">
 					{{ error?.message || "We're sorry, but we couldn't find the page you were looking for." }}
 				</p>
 				<UButton

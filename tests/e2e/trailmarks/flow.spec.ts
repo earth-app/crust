@@ -70,6 +70,66 @@ test.describe('Trailmarks - leave, find, thank across users', () => {
 		await expect(page.getByText('Someone Thanked Your Trailmark')).toBeVisible({ timeout: 15000 });
 	});
 
+	// #24: activities do social work. A tags a note with an activity; B, who does the same thing,
+	// sees it flagged and can filter the surface down to exactly those notes.
+	test('a note tagged with an activity is flagged for someone who shares it and filterable', async ({
+		page,
+		context,
+		mockApi,
+		testId,
+		gotoHydrated
+	}) => {
+		skipIfIntegration('drives seeded mock trailmark state + geolocation');
+
+		const geo = uniqueGeo(testId);
+		await grantGeolocation(context, geo);
+
+		// catalog ids are readable slugs in production ('bouldering', 'cross_country'), which is what
+		// makes the card's "Left while ..." label legible without a second lookup
+		const shared = { id: 'bouldering', name: 'Bouldering', types: ['SPORT'], description: 'climb' };
+		const alice = makeActor(testId, 'alice', { activities: [shared] });
+		const bob = makeActor(testId, 'bob', { activities: [shared] });
+		const carol = makeActor(testId, 'carol', { activities: [] });
+		await registerActors(mockApi, alice, bob, carol);
+
+		const noteText = `Good handholds on the north face ${testId.slice(0, 8)}`;
+
+		await actAs(context, mockApi, alice);
+		await gotoHydrated('/trailmarks');
+
+		const composer = page.getByPlaceholder('You made it here. Take a breath and look up.');
+		await expect(composer).toBeVisible({ timeout: 15000 });
+		await composer.fill(noteText);
+
+		// the picker only offers the author's own activities, so the id always resolves
+		const picker = page.getByLabel('What You Were Doing');
+		await expect(picker).toBeVisible();
+		await picker.click();
+		await page.getByRole('option', { name: 'Bouldering' }).click();
+
+		const postBtn = page.getByRole('button', { name: 'Post Note' });
+		await expect(postBtn).toBeEnabled({ timeout: 12000 });
+		await postBtn.click();
+		await expect(page.getByText(noteText)).toBeVisible({ timeout: 12000 });
+
+		// --- Bob shares the activity: the note reads as "also yours" and survives the filter ---
+		await actAs(context, mockApi, bob);
+		await gotoHydrated('/trailmarks');
+		await expect(page.getByText(noteText)).toBeVisible({ timeout: 15000 });
+		await expect(page.getByText('Left while bouldering')).toBeVisible();
+		await expect(page.getByText('Also Yours')).toBeVisible();
+
+		await page.getByRole('button', { name: 'Shared Interests' }).click();
+		await expect(page.getByText(noteText)).toBeVisible({ timeout: 12000 });
+
+		// --- Carol shares nothing: no flag, and the filter button is not offered at all ---
+		await actAs(context, mockApi, carol);
+		await gotoHydrated('/trailmarks');
+		await expect(page.getByText(noteText)).toBeVisible({ timeout: 15000 });
+		await expect(page.getByText('Also Yours')).toHaveCount(0);
+		await expect(page.getByRole('button', { name: 'Shared Interests' })).toHaveCount(0);
+	});
+
 	test('a discouraging note is gently rejected without leaking a raw error, keeping the draft', async ({
 		page,
 		context,

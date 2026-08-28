@@ -26,6 +26,8 @@ export interface UserOverrides {
 	full_name?: string;
 	is_admin?: boolean;
 	created_at?: string;
+	/** the profile activity list; drives shared-interest surfaces */
+	activities?: Record<string, any>[];
 	account?: Partial<{
 		account_type: AccountType;
 		visibility: Visibility;
@@ -55,6 +57,7 @@ export function makeUser(overrides: UserOverrides = {}): Record<string, any> {
 		updated_at: FIXED_NOW,
 		last_login: FIXED_NOW,
 		is_admin: isAdmin,
+		activities: overrides.activities ?? [],
 		bio: overrides.account?.bio ?? 'A test user',
 		country: overrides.account?.country ?? 'US',
 		address: '',
