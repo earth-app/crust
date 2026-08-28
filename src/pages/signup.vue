@@ -134,6 +134,20 @@ function handleSignupSuccess(_: User, hasEmail: boolean) {
 	}
 }
 
+// the denominator of the admin dashboard's signup conversion rate; mantle2 dedupes per client
+// per day, and the session guard keeps a back-and-forth from spending a request each time
+onMounted(() => {
+	if (user.value) return;
+	try {
+		if (sessionStorage.getItem('signup_view_sent')) return;
+		sessionStorage.setItem('signup_view_sent', '1');
+	} catch {
+		// private mode; counting twice is better than not counting
+	}
+
+	void makeClientAPIRequest('/v2/analytics/signup_view', null, { method: 'POST' });
+});
+
 const { startTour } = useSiteTour();
 
 const signupTour: SiteTourStep[] = [
