@@ -3,7 +3,7 @@
 		arrow
 		mode="hover"
 	>
-		<div class="flex items-center w-28 mr-2">
+		<div class="flex items-center w-36 mr-2">
 			<UBadge
 				v-if="rank !== null && leaderboard"
 				:label="rank ? `#${rank}` : undefined"
@@ -24,6 +24,12 @@
 			/>
 
 			<div class="flex flex-col items-start justify-center w-full">
+				<span
+					v-if="title"
+					class="text-xs text-muted"
+				>
+					{{ title }}
+				</span>
 				<span
 					v-if="total"
 					class="text-sm font-medium text-highlighted dark:text-muted"
@@ -77,8 +83,7 @@
 					v-if="rank"
 					class="mt-2 text-xs text-muted"
 				>
-					This user is ranked #{{ rank }} on this journey among all users. Keep going to climp the
-					leaderboard!
+					Ranked #{{ rank }} on this journey among all users.
 				</p>
 			</div>
 		</template>

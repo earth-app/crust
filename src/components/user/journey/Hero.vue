@@ -207,6 +207,9 @@ async function loadOne(type: JourneyType, id: string) {
 	if (countRes && valid(countRes)) {
 		counts[type] = countRes.data.count ?? 0;
 		lastWrites[type] = countRes.data.lastWrite ?? 0;
+		// seed from the server record first; the local one is per-device, so a fresh browser would
+		// otherwise call every streak a personal best
+		bests[type].record(countRes.data.best ?? 0);
 		bests[type].record(counts[type]);
 	}
 	if (rankRes && valid(rankRes) && 'rank' in rankRes.data) {
