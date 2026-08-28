@@ -18,6 +18,8 @@ export type OceanArticle = {
 
 export type Article = {
 	id: string;
+	/** legacy numeric id; see the note on `User.nid` */
+	nid?: string;
 	title: string;
 	description: string;
 	tags: string[];

@@ -1,4 +1,4 @@
-import { ensureLoggedIn } from '~/server/utils';
+import { cloudUserId, ensureLoggedIn } from '~/server/utils';
 
 export default defineEventHandler(async (event) => {
 	const user = await ensureLoggedIn(event);
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
 		body: {
 			answers,
 			articleId,
-			userId: user.id,
+			userId: cloudUserId(user),
 			articleTypes,
 			rank: user.account?.account_type
 		}

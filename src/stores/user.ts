@@ -736,7 +736,7 @@ export const useUserStore = defineStore('user', () => {
 	const fetchQuestHistoryEntry = async (
 		identifier: string,
 		questId: string,
-		opts: { force?: boolean } = {}
+		opts: { force?: boolean; firstImageOnly?: boolean } = {}
 	): Promise<QuestHistoryEntry | null> => {
 		if (!identifier || !questId) return null;
 
@@ -744,10 +744,13 @@ export const useUserStore = defineStore('user', () => {
 		if (!opts.force && existing?.progress) return existing;
 
 		const authStore = useAuthStore();
+		// a caller that only wants one thumbnail asks for one; the full entry carries a base64 copy
+		// of every image step, and it must not be cached under the same key as the full one
+		const lean = opts.firstImageOnly ? '?image=first' : '';
 		const res = await makeAPIRequest<QuestHistoryEntry>(
 			// force bypasses the LRU api cache so a post-completion reconcile sees fresh progress
-			opts.force ? null : `user-${identifier}-quest-history-${questId}`,
-			`/v2/users/${identifier}/quest/history/${questId}`,
+			opts.force ? null : `user-${identifier}-quest-history-${questId}${lean}`,
+			`/v2/users/${identifier}/quest/history/${questId}${lean}`,
 			authStore.sessionToken
 		);
 

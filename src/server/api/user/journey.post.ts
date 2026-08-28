@@ -1,4 +1,4 @@
-import { ensureLoggedIn, ensureValidActivity } from '~/server/utils';
+import { cloudUserId, ensureLoggedIn, ensureValidActivity } from '~/server/utils';
 
 const validJournies = ['activity', 'prompt', 'article', 'event'];
 
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
 
 	try {
 		const response = await $fetch.raw<{ count: number }>(
-			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/${user.id}${
+			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/${cloudUserId(user)}${
 				type === 'activity'
 					? `?activity=${encodeURIComponent(normalizedActivity || '')}`
 					: '/increment'

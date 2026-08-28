@@ -25,6 +25,14 @@ export type Rarity = 'normal' | 'rare' | 'amazing' | 'green';
 
 export type User = {
 	id: string;
+	/**
+	 * Legacy numeric id, kept while `id` migrates to a 32-hex public id.
+	 *
+	 * Send this - not `id` - to anything that reaches the Cloud service directly, because cloud
+	 * keys its storage on the numeric id. Optional only because a cached payload from before the
+	 * field existed will not have it; fall back to `id` in that case.
+	 */
+	nid?: string;
 	username: string;
 	full_name?: string;
 	created_at: string;
@@ -34,6 +42,7 @@ export type User = {
 	account: {
 		account_type: AccountType;
 		id: string;
+		nid?: string;
 		avatar_url: string;
 		first_name?: string;
 		last_name?: string;

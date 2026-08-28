@@ -14,6 +14,8 @@ export type EventActivity =
 
 export type Event = {
 	id: string;
+	/** legacy numeric id; see the note on `User.nid` */
+	nid?: string;
 	hostId: string;
 	host: User;
 	name: string;

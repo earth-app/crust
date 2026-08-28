@@ -2,6 +2,29 @@ import { H3Event } from 'h3';
 import { importPKCS8, SignJWT } from 'jose';
 import { type InternetArchiveSearch } from '~/shared/types/activity';
 
+/**
+ * The id to hand the Cloud service for a user.
+ *
+ * Cloud keys its storage on the legacy numeric id, and `user.id` is migrating to a 32-hex public
+ * id. `nid` carries the numeric one; falling back to `id` keeps a payload cached from before the
+ * field existed working, and is correct for as long as the two agree.
+ */
+export function cloudUserId(user: { id: string; nid?: string }): string {
+	return user.nid || user.id;
+}
+
+/**
+ * Whether a value is an id the API has issued for a user.
+ *
+ * Both shapes have to pass: the legacy padded numeric id (`nid`, and what `id` used to be) and the
+ * 32-hex public id. Cloud resolves either, so rejecting one here would break the surface that
+ * happens to hold it.
+ */
+export function isUserIdParam(value: unknown): value is string {
+	if (typeof value !== 'string') return false;
+	return /^\d{1,50}$/.test(value) || /^[0-9a-f]{32}$/.test(value);
+}
+
 export function cloudErrorMessage(data: unknown): string | undefined {
 	const str = (v: unknown): string | undefined =>
 		typeof v === 'string' && v.trim().length > 0 && v.trim().length <= 500 ? v.trim() : undefined;

@@ -2,6 +2,8 @@ import type { Privacy, User } from './user';
 
 export type Prompt = {
 	id: string;
+	/** legacy numeric id; see the note on `User.nid` */
+	nid?: string;
 	owner_id: string;
 	owner: User;
 	responses_count: number;

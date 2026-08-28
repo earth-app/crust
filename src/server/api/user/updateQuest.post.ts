@@ -1,5 +1,6 @@
 import {
 	cloudErrorMessage,
+	cloudUserId,
 	ensureLoggedIn,
 	parseUserAgent,
 	resolveAccountRank
@@ -67,7 +68,7 @@ export default defineEventHandler(async (event) => {
 
 	try {
 		const res = await $fetch<{ message: string; completed: boolean; validated: boolean }>(
-			`${config.public.cloudBaseUrl}/v1/users/quests/progress/${user.id}/update`,
+			`${config.public.cloudBaseUrl}/v1/users/quests/progress/${cloudUserId(user)}/update`,
 			{
 				method: 'PATCH',
 				timeout: 35_000,

@@ -1,4 +1,4 @@
-import { ensureLoggedIn } from '~/server/utils';
+import { cloudUserId, ensureLoggedIn } from '~/server/utils';
 
 export default defineEventHandler(async (event) => {
 	const user = await ensureLoggedIn(event);
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
 
 	try {
 		const res = await $fetch(
-			`${config.public.cloudBaseUrl}/v1/articles/quiz/score?userId=${user.id}&articleId=${articleId}`,
+			`${config.public.cloudBaseUrl}/v1/articles/quiz/score?userId=${cloudUserId(user)}&articleId=${articleId}`,
 			{
 				method: 'GET',
 				headers: {

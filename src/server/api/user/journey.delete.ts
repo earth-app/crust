@@ -1,4 +1,4 @@
-import { ensureLoggedIn } from '~/server/utils';
+import { cloudUserId, ensureLoggedIn } from '~/server/utils';
 
 const validJournies = ['activity', 'prompt', 'article'];
 
@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
 
 	try {
 		const response = await $fetch(
-			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/${user.id}/delete`,
+			`${config.public.cloudBaseUrl}/v1/users/journey/${type}/${cloudUserId(user)}/delete`,
 			{
 				headers: {
 					Authorization: `Bearer ${config.adminApiKey}`,
