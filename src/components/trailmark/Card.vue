@@ -13,14 +13,31 @@
 					<span class="text-xs opacity-60">{{ relativeTime }}</span>
 				</div>
 			</div>
-			<UBadge
-				v-if="distanceLabel"
-				color="neutral"
-				variant="soft"
-				size="xs"
-				>{{ distanceLabel }} Away</UBadge
-			>
+			<div class="flex items-center gap-1 shrink-0">
+				<UBadge
+					v-if="mark.shared_activity"
+					color="primary"
+					variant="subtle"
+					size="xs"
+					icon="mdi:handshake-outline"
+					>Also Yours</UBadge
+				>
+				<UBadge
+					v-if="distanceLabel"
+					color="neutral"
+					variant="soft"
+					size="xs"
+					>{{ distanceLabel }} Away</UBadge
+				>
+			</div>
 		</div>
+
+		<p
+			v-if="activityLabel"
+			class="text-xs opacity-70"
+		>
+			Left while {{ activityLabel }}
+		</p>
 
 		<p class="text-sm opacity-90 whitespace-pre-line wrap-break-word">{{ mark.note }}</p>
 
@@ -66,6 +83,12 @@ const placeLabel = computed(() => props.mark.geo.place_label?.trim() || 'A Spot 
 const relativeTime = computed(() => {
 	const dt = DateTime.fromISO(props.mark.created_at);
 	return dt.isValid ? dt.toRelative() : '';
+});
+
+// activity ids are catalog slugs; the label is the id made readable, no extra fetch
+const activityLabel = computed(() => {
+	const id = props.mark.activity_id?.trim();
+	return id ? id.replace(/_/g, ' ') : '';
 });
 
 const distanceLabel = computed(() => {

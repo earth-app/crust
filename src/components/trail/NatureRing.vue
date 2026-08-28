@@ -11,7 +11,7 @@
 				:viewBox="`0 0 100 100`"
 				class="w-full h-full"
 				role="img"
-				:aria-label="`${roundedMinutes} of ${target} Nature Minutes this week`"
+				:aria-label="`${roundedMinutes} Nature Minutes this week`"
 			>
 				<circle
 					cx="50"
@@ -35,14 +35,6 @@
 					:stroke-dasharray="circumference"
 					:stroke-dashoffset="dashOffset"
 				/>
-				<circle
-					v-if="showBestMarker"
-					:cx="bestMarker.x"
-					:cy="bestMarker.y"
-					:r="stroke / 2.2"
-					class="text-warning"
-					fill="currentColor"
-				/>
 			</svg>
 			<div class="absolute inset-0 flex flex-col items-center justify-center">
 				<UiCountUp
@@ -53,7 +45,7 @@
 				<span
 					v-if="!compact"
 					class="text-[0.65rem] uppercase tracking-wide opacity-60"
-					>of {{ target }}</span
+					>min</span
 				>
 			</div>
 		</div>
@@ -87,38 +79,32 @@
 const props = withDefaults(
 	defineProps<{
 		minutes: number;
-		target?: number;
 		best?: number;
 		label?: string;
 		size?: number;
 		compact?: boolean;
 	}>(),
-	{ target: 120, best: 0, label: 'Nature Minutes', size: 88, compact: false }
+	{ best: 0, label: 'Nature Minutes', size: 88, compact: false }
 );
+
+// arbitrary ring scale for a first week with no record yet, deliberately local: the server's
+// `target` is 120 min/week, and a figure a user could read as advice does not belong in a
+// component the user looks at
+const FIRST_WEEK_SCALE = 60;
 
 const radius = 42;
 const stroke = 8;
 const circumference = 2 * Math.PI * radius;
 
 const roundedMinutes = computed(() => Math.max(0, Math.round(props.minutes)));
-const pct = computed(() =>
-	props.target > 0 ? Math.min(1, Math.max(0, roundedMinutes.value / props.target)) : 0
-);
+
+// the ring fills against your own best week; nothing else scales it
+const scale = computed(() => (props.best > 0 ? props.best : FIRST_WEEK_SCALE));
+const pct = computed(() => Math.min(1, Math.max(0, roundedMinutes.value / scale.value)));
 const dashOffset = computed(() => circumference * (1 - pct.value));
 
 // self-referential framing; "your longest yet" replaces the best line at a new high
 const framing = computed(() =>
 	personalBestFraming(roundedMinutes.value, props.best, { unit: 'min' })
 );
-
-// only show the personal-best tick once it exceeds this week's minutes (a gentle target)
-const showBestMarker = computed(
-	() => props.best > 0 && props.best > roundedMinutes.value && props.best <= props.target
-);
-const bestMarker = computed(() => {
-	const f = props.target > 0 ? Math.min(1, props.best / props.target) : 0;
-	const angle = -90 + 360 * f;
-	const rad = (angle * Math.PI) / 180;
-	return { x: 50 + radius * Math.cos(rad), y: 50 + radius * Math.sin(rad) };
-});
 </script>

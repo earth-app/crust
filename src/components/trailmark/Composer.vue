@@ -33,6 +33,15 @@
 			placeholder="Name this spot (Optional)"
 		/>
 
+		<USelect
+			v-if="activityOptions.length > 1"
+			v-model="activityId"
+			:items="activityOptions"
+			icon="mdi:run"
+			class="w-full"
+			aria-label="What You Were Doing"
+		/>
+
 		<div class="flex items-center gap-2 text-xs">
 			<UIcon
 				:name="locationReady ? 'mdi:crosshairs-gps' : 'mdi:crosshairs-question'"
@@ -90,9 +99,22 @@ const { leaveNote, maxNote } = useTrailmarks();
 const { lat, lng, error: locationError, fetchLocation } = useQuestGeolocation();
 const toast = useToast();
 
+const { user } = useAuth();
+
 const note = ref('');
 const place = ref('');
+const activityId = ref('');
 const busy = ref(false);
+
+// tagging a note with one of your own activities is what lets the next person see
+// "someone who does what I do stood here"; no free text, so the id always resolves
+const activityOptions = computed(() => [
+	{ label: 'Not Tied to an Activity', value: '' },
+	...(user.value?.activities ?? []).map((activity) => ({
+		label: activity.name,
+		value: activity.id
+	}))
+]);
 
 const locationReady = computed(() => lat.value !== null && lng.value !== null);
 const canPost = computed(() => !busy.value && !!note.value.trim() && locationReady.value);
@@ -108,7 +130,8 @@ async function post() {
 				...(place.value.trim() ? { place_label: place.value.trim() } : {})
 			},
 			note: note.value,
-			...(props.promptId ? { prompt_id: props.promptId } : {})
+			...(props.promptId ? { prompt_id: props.promptId } : {}),
+			...(activityId.value ? { activity_id: activityId.value } : {})
 		});
 
 		if (res.success && res.data) {
@@ -121,6 +144,7 @@ async function post() {
 			});
 			note.value = '';
 			place.value = '';
+			activityId.value = '';
 			emit('created', res.data.id);
 		} else {
 			toast.add({

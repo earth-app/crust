@@ -93,6 +93,17 @@ export const useCirclesStore = defineStore('circles', () => {
 		return res;
 	};
 
+	// open expeditions gathered around an activity; the join surface for a shared interest.
+	// deliberately uncached: a join list goes stale the moment someone starts or finishes one
+	const fetchExpeditionsForActivity = async (activityId: string, limit?: number) => {
+		const query = limit && limit > 0 ? `?limit=${Math.round(limit)}` : '';
+		return await makeClientAPIRequest<{ total: number; expeditions: Expedition[] }>(
+			`/v2/activities/${encodeURIComponent(activityId)}/expeditions${query}`,
+			token(),
+			{ method: 'GET' }
+		);
+	};
+
 	const getGarden = (owner: string): CircleGarden | null | undefined => {
 		if (!owner) return undefined;
 		return gardens.get(owner);
@@ -177,6 +188,7 @@ export const useCirclesStore = defineStore('circles', () => {
 		kudosSent,
 		fetchExpedition,
 		startExpedition,
+		fetchExpeditionsForActivity,
 		getGarden,
 		isGardenLoading,
 		fetchGarden,

@@ -18,7 +18,10 @@ const isValidTrailmark = (m: unknown): m is Trailmark => trailmarkSchema.safePar
 // round coords so nearby lookups within the same neighborhood share a cache bucket
 function nearbyKey(q: TrailmarkQuery): string {
 	const r = Math.min(q.radius ?? TRAILMARK_DEFAULT_RADIUS, TRAILMARK_MAX_RADIUS);
-	return `${q.lat.toFixed(3)}:${q.lng.toFixed(3)}:${r}`;
+	// the activity scoping is part of the identity of a result set, or a filtered list gets
+	// served from the cache of an unfiltered one
+	const scope = `${q.activity ?? ''}:${q.shared ? 'shared' : ''}`;
+	return `${q.lat.toFixed(3)}:${q.lng.toFixed(3)}:${r}:${scope}`;
 }
 
 export const useTrailmarkStore = defineStore('trailmark', () => {
@@ -59,9 +62,12 @@ export const useTrailmarkStore = defineStore('trailmark', () => {
 		const radius = Math.min(q.radius ?? TRAILMARK_DEFAULT_RADIUS, TRAILMARK_MAX_RADIUS);
 		// direct to mantle2 (it censors + proxies to cloud); null key skips the util cache
 		// since the store keeps its own short-lived nearby cache
+		const scope =
+			(q.activity ? `&activity=${encodeURIComponent(q.activity)}` : '') +
+			(q.shared ? '&shared=true' : '');
 		const res = await makeAPIRequest<{ items?: Trailmark[] } | Trailmark[]>(
 			null,
-			`/v2/trailmarks?lat=${q.lat}&lng=${q.lng}&radius=${radius}`,
+			`/v2/trailmarks?lat=${q.lat}&lng=${q.lng}&radius=${radius}${scope}`,
 			authStore.sessionToken
 		);
 

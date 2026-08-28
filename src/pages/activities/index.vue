@@ -26,7 +26,11 @@
 			/>
 		</InfoCardGroup>
 	</div>
-	<div class="flex justify-center w-full px-4 mt-8">
+	<div class="flex flex-col items-center w-full px-4 mt-8 gap-6">
+		<ActivitySurprise v-if="user" />
+
+		<UserPlanComposer v-if="user" />
+
 		<div class="w-full max-w-2xl">
 			<LazyWidgetsWordOfTheDay hydrate-on-visible />
 		</div>

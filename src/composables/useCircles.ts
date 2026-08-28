@@ -22,6 +22,11 @@ export function useCircles() {
 			: { success: false, error: res.message };
 	};
 
+	const expeditionsForActivity = async (activityId: string, limit?: number) => {
+		if (!activityId) return { success: false as const, message: 'An activity is required' };
+		return await store.fetchExpeditionsForActivity(activityId, limit);
+	};
+
 	const garden = (owner: string) => computed(() => store.getGarden(owner));
 
 	const fetchGarden = async (
@@ -47,6 +52,7 @@ export function useCircles() {
 		expedition,
 		fetchExpedition,
 		startExpedition,
+		expeditionsForActivity,
 		garden,
 		fetchGarden,
 		sendKudos,

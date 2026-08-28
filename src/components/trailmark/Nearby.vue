@@ -22,6 +22,17 @@
 					/>
 				</div>
 				<UButton
+					v-if="hasActivities"
+					id="trailmark-shared-filter"
+					:color="sharedOnly ? 'primary' : 'neutral'"
+					:variant="sharedOnly ? 'solid' : 'subtle'"
+					size="sm"
+					icon="mdi:handshake-outline"
+					:aria-pressed="sharedOnly"
+					@click="sharedOnly = !sharedOnly"
+					>Shared Interests</UButton
+				>
+				<UButton
 					icon="mdi:progress-question"
 					color="secondary"
 					variant="subtle"
@@ -131,7 +142,27 @@
 				name="mdi:map-marker-off-outline"
 				class="size-10"
 			/>
-			<p class="text-sm">No Notes Nearby Yet. Be the First to Leave One.</p>
+			<p
+				v-if="sharedOnly"
+				class="text-sm"
+			>
+				No Notes Nearby From People Who Share Your Activities Yet.
+			</p>
+			<p
+				v-else
+				class="text-sm"
+			>
+				No Notes Nearby Yet. Be the First to Leave One.
+			</p>
+			<UButton
+				v-if="sharedOnly"
+				variant="ghost"
+				size="sm"
+				color="neutral"
+				icon="mdi:filter-remove-outline"
+				@click="sharedOnly = false"
+				>Show Every Note</UButton
+			>
 		</div>
 	</div>
 </template>
@@ -180,6 +211,11 @@ const radiusOptions = [
 	{ label: '2 km', value: 2000 }
 ];
 const radius = ref(500);
+// filter to notes whose activity the viewer also does; server-side, so the tally is honest
+const sharedOnly = ref(false);
+
+const { user } = useAuth();
+const hasActivities = computed(() => (user.value?.activities?.length ?? 0) > 0);
 
 const locationReady = computed(() => lat.value !== null && lng.value !== null);
 
@@ -190,7 +226,15 @@ function distanceOf(mark: Trailmark): number | undefined {
 
 async function load(force = false) {
 	if (lat.value === null || lng.value === null) return;
-	await fetchNearby({ lat: lat.value, lng: lng.value, radius: radius.value }, force);
+	await fetchNearby(
+		{
+			lat: lat.value,
+			lng: lng.value,
+			radius: radius.value,
+			...(sharedOnly.value ? { shared: true } : {})
+		},
+		force
+	);
 }
 
 function locate() {
@@ -210,6 +254,7 @@ function onCreated() {
 
 watch([lat, lng], () => void load());
 watch(radius, () => void load(true));
+watch(sharedOnly, () => void load(true));
 
 // granting in the browser flips the permission live; grab a fix automatically once allowed
 watch(permState, (s) => {

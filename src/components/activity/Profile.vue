@@ -92,6 +92,11 @@
 			class="min-w-75 w-3/5 mt-4"
 			@update:open="dismissNoveltyHint"
 		/>
+		<ActivityExpeditions
+			v-if="user"
+			:activity="activity"
+		/>
+
 		<!-- Icon Islands -->
 		<UIcon
 			v-for="island in islands"

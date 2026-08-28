@@ -18,6 +18,10 @@ export interface Trailmark {
 	thanks_for_author?: number;
 	// set when this note was left as an answer to a daily prompt (surfaces on the prompt)
 	prompt_id?: string;
+	// the activity the author was doing here
+	activity_id?: string;
+	// true when the viewer's own activities include activity_id (server-computed, per viewer)
+	shared_activity?: boolean;
 }
 
 export interface TrailmarkCreateInput {
@@ -25,6 +29,8 @@ export interface TrailmarkCreateInput {
 	note: string;
 	// optional: also surface this note under today's prompt as a 'from outside' response
 	prompt_id?: string;
+	// optional: the activity this note came out of
+	activity_id?: string;
 }
 
 export interface TrailmarkQuery {
@@ -32,6 +38,10 @@ export interface TrailmarkQuery {
 	lng: number;
 	// search radius in meters (default ~500, capped)
 	radius?: number;
+	// only notes left while doing this activity
+	activity?: string;
+	// only notes whose activity the viewer also does
+	shared?: boolean;
 }
 
 export interface TrailmarkResult<T = unknown> {
