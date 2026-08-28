@@ -106,7 +106,7 @@
 									class="size-2.5 text-inverted"
 								/>
 							</template>
-							<LazyUBadge
+							<UBadge
 								:key="altIndex"
 								:id="`tile-${index}:${altIndex}`"
 								:icon="altStep.icon"
@@ -126,8 +126,9 @@
 										? 'opacity-40 hover:cursor-not-allowed'
 										: 'hover:cursor-pointer'
 								"
+								:title="stepTooltip(altStep)"
+								:aria-label="stepTooltip(altStep)"
 								@click="selectStep(altStep, index)"
-								hydrate-on-visible
 							/>
 						</UChip>
 						<span
@@ -217,7 +218,7 @@
 									class="size-2.5 text-inverted"
 								/>
 							</template>
-							<LazyUBadge
+							<UBadge
 								:id="`tile-${index}:0`"
 								:icon="item.icon"
 								:color="
@@ -236,8 +237,9 @@
 										? 'opacity-40 hover:cursor-not-allowed'
 										: 'hover:cursor-pointer'
 								"
+								:title="stepTooltip(item)"
+								:aria-label="stepTooltip(item)"
 								@click="selectStep(item, index)"
-								hydrate-on-visible
 							/>
 						</UChip>
 
@@ -312,23 +314,21 @@
 					</template>
 				</UPopover>
 			</div>
-			<LazyUProgress
+			<UProgress
 				:model-value="Number(Array.isArray(item) ? item.some((s) => s.completed) : item.completed)"
 				:max="1"
 				orientation="vertical"
 				class="min-h-16"
-				hydrate-on-visible
 			/>
 		</div>
 		<div class="flex flex-col items-center my-4 min-h-36 gap-1">
-			<LazyUBadge
+			<UBadge
 				id="tile-end"
 				icon="mdi:medal-outline"
 				color="warning"
 				variant="solid"
 				size="xl"
 				class="self-center"
-				hydrate-on-visible
 			/>
 			<span class="text-xs opacity-70">+{{ props.quest.reward }}</span>
 		</div>
@@ -459,6 +459,23 @@ type TimelineStep = QuestStep & {
 // Alternatives are normally provided so desktop users can still progress.
 function isStepMobileOnly(step: { mobile_only?: boolean }) {
 	return step.mobile_only === true || mobileOnly.value;
+}
+
+// the popover is hover-only, and a locked tile swallows its click - so the same copy has to reach
+// touch and screen readers through the tile itself
+function stepTooltip(step: TimelineStep): string {
+	const parts = [trimString(step.description, 150)];
+	if (isStepMobileOnly(step)) parts.push('Mobile Only');
+	if (step.reward) parts.push(`+${step.reward} Bonus Points`);
+	if (step.completed) parts.push(`Completed ${formatRelative(step.completedAt)}`);
+	else if (step.delay) {
+		parts.push(
+			step.effectiveDelay === 0
+				? 'Available immediately'
+				: `Available ${formatTime(step.effectiveDelay)} after the previous step`
+		);
+	}
+	return parts.filter(Boolean).join(' - ');
 }
 
 function selectStep(step: TimelineStep, index: number) {
