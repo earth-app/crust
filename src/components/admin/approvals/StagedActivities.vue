@@ -531,8 +531,23 @@ const confirmCopy: Record<'approve' | 'deny', (staged: StagedActivity) => string
 		`Deny "${staged.activity.name}"? It will not be published, and automated discovery will not propose it again.`
 };
 
+/**
+ * Whether a single-row action needs a confirm.
+ *
+ * Skipped where the reviewer scan already agrees with the reviewer: denying something it flagged
+ * suspicious, or approving something it rates `looks_safe`/`safe`. Those are the two cases where the
+ * prompt only adds a keystroke to the outcome you were going to pick anyway. Everything in between
+ * still confirms, and **bulk always confirms** regardless of tier - see `bulkAct`.
+ */
+function needsConfirm(staged: StagedActivity, action: 'approve' | 'deny'): boolean {
+	const tier = risks.value.get(staged.id)?.tier;
+	if (!tier) return true;
+	if (action === 'deny') return !isSuspiciousTier(tier);
+	return tier !== 'looks_safe' && tier !== 'safe';
+}
+
 async function act(staged: StagedActivity, action: 'approve' | 'deny') {
-	if (!confirm(confirmCopy[action](staged))) return;
+	if (needsConfirm(staged, action) && !confirm(confirmCopy[action](staged))) return;
 
 	busy[staged.id] = action;
 	try {
@@ -563,6 +578,9 @@ async function act(staged: StagedActivity, action: 'approve' | 'deny') {
  * Sequential on purpose: every approve creates a node on the mantle2 side, and a serial
  * loop gives an exact per-item outcome instead of an all-or-nothing failure. Targets come
  * from the selection rather than the page, so a queue built across several pages runs whole.
+ *
+ * **Always confirms**, whatever the tiers say. `needsConfirm` deliberately does not apply here: a
+ * bulk run is irreversible across many rows at once, and the reviewer cannot have looked at each.
  */
 async function bulkAct(action: 'approve' | 'deny') {
 	const targets = [...selection.value.values()];

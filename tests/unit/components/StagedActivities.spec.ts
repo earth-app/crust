@@ -468,6 +468,109 @@ describe('admin staged activities', () => {
 			expect(wrapper.find('[data-testid="bulk-flagged"]').text()).toBe('1 Flagged');
 		});
 
+		describe('single-row confirm rules', () => {
+			// the tier is computed client-side per render, so these follow the assessor rather than any
+			// stored flag. a name that reads like a personal note is what pushes a row suspicious.
+			function suspiciousRow(id: number) {
+				return makeStaged(id, 'remember to call mum about the thing', 'pending', {
+					description: 'x',
+					types: []
+				});
+			}
+
+			it('skips the confirm when denying a row the scan already flagged', async () => {
+				pages = [[suspiciousRow(1)]];
+				total = 1;
+				const confirmMock = vi.fn(() => true);
+				vi.stubGlobal('confirm', confirmMock);
+
+				const wrapper = await mountLoaded();
+				await buttonNamed(wrapper, 'Deny').trigger('click');
+
+				await vi.waitFor(() => expect(denyMock).toHaveBeenCalledTimes(1));
+				expect(confirmMock).not.toHaveBeenCalled();
+			});
+
+			it('still confirms when approving that same flagged row', async () => {
+				pages = [[suspiciousRow(1)]];
+				total = 1;
+				const confirmMock = vi.fn(() => true);
+				vi.stubGlobal('confirm', confirmMock);
+
+				const wrapper = await mountLoaded();
+				await buttonNamed(wrapper, 'Approve').trigger('click');
+
+				await vi.waitFor(() => expect(approveMock).toHaveBeenCalledTimes(1));
+				expect(confirmMock).toHaveBeenCalledTimes(1);
+			});
+
+			// clean_name(2) + activity_shaped(1.5) + rich_description(2.5) + prose(1) + typed(1.5) = 8.5,
+			// which clears the looks_safe threshold of 6
+			function looksSafeRow(id: number) {
+				return makeStaged(id, 'Sea Kayaking', 'pending', {
+					description:
+						'Sea kayaking is a paddling discipline done on open water, usually along a coast. ' +
+						'Paddlers learn to read swell and wind before setting out for the day.',
+					types: ['SPORT']
+				});
+			}
+
+			it('skips the confirm when approving a looks_safe row', async () => {
+				pages = [[looksSafeRow(1)]];
+				total = 1;
+				const confirmMock = vi.fn(() => true);
+				vi.stubGlobal('confirm', confirmMock);
+
+				const wrapper = await mountLoaded();
+				await buttonNamed(wrapper, 'Approve').trigger('click');
+
+				await vi.waitFor(() => expect(approveMock).toHaveBeenCalledTimes(1));
+				expect(confirmMock).not.toHaveBeenCalled();
+			});
+
+			it('still confirms when denying that same looks_safe row', async () => {
+				pages = [[looksSafeRow(1)]];
+				total = 1;
+				const confirmMock = vi.fn(() => true);
+				vi.stubGlobal('confirm', confirmMock);
+
+				const wrapper = await mountLoaded();
+				await buttonNamed(wrapper, 'Deny').trigger('click');
+
+				await vi.waitFor(() => expect(denyMock).toHaveBeenCalledTimes(1));
+				expect(confirmMock).toHaveBeenCalledTimes(1);
+			});
+
+			// the middle of the range keeps both prompts: the scan is not confident either way
+			it('confirms both actions on a middling row', async () => {
+				pages = [[makeStaged(1, 'Bouldering', 'pending', { description: 'x', types: [] })]];
+				total = 1;
+				const confirmMock = vi.fn(() => true);
+				vi.stubGlobal('confirm', confirmMock);
+
+				const wrapper = await mountLoaded();
+				await buttonNamed(wrapper, 'Approve').trigger('click');
+				await vi.waitFor(() => expect(approveMock).toHaveBeenCalledTimes(1));
+				expect(confirmMock).toHaveBeenCalledTimes(1);
+			});
+
+			it('bulk confirms regardless of tier', async () => {
+				pages = [[suspiciousRow(1), suspiciousRow(2)]];
+				total = 2;
+				const confirmMock = vi.fn(() => true);
+				vi.stubGlobal('confirm', confirmMock);
+
+				const wrapper = await mountLoaded();
+				await checkbox(wrapper, 0).trigger('click');
+				await wrapper.vm.$nextTick();
+				await buttonNamed(wrapper, 'Deny Selected (2)').trigger('click');
+
+				await vi.waitFor(() => expect(denyMock).toHaveBeenCalled());
+				// the single-row path would have skipped this; the bulk path never does
+				expect(confirmMock).toHaveBeenCalledTimes(1);
+			});
+		});
+
 		it('warns in the approve confirm when the selection is flagged', async () => {
 			const confirmMock = vi.fn(() => true);
 			vi.stubGlobal('confirm', confirmMock);
