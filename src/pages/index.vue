@@ -118,6 +118,7 @@
 					<OnboardingPersonaPicker v-model="personaOpen" />
 
 					<UserJourneyHero :user="user" />
+					<UserMemoryCard />
 					<UserInviteFriend />
 				</div>
 			</LazyClientOnly>
