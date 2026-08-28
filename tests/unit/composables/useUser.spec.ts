@@ -193,6 +193,80 @@ describe('useAuth().fetchCurrentJourney missing-id guard', () => {
 	});
 });
 
+describe('useQuests().fetchActivityQuests', () => {
+	beforeEach(() => {
+		setActivePinia(createPinia());
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it('asks for one activity_quest_<id> per activity', async () => {
+		const store = useUserStore();
+		const spy = vi
+			.spyOn(store, 'fetchQuest')
+			.mockImplementation(async (id: string) => ({ id, title: id }) as any);
+
+		const { fetchActivityQuests } = useQuests();
+		const found = await fetchActivityQuests([{ id: 'a1' }, { id: 'a2' }]);
+
+		expect(spy.mock.calls.map((call) => call[0])).toEqual([
+			'activity_quest_a1',
+			'activity_quest_a2'
+		]);
+		expect(found.map((q) => q.id)).toEqual(['activity_quest_a1', 'activity_quest_a2']);
+	});
+
+	it('never fetches for an empty, null or id-less activity list', async () => {
+		const store = useUserStore();
+		const spy = vi.spyOn(store, 'fetchQuest');
+
+		const { fetchActivityQuests } = useQuests();
+		expect(await fetchActivityQuests([])).toEqual([]);
+		expect(await fetchActivityQuests(null)).toEqual([]);
+		expect(await fetchActivityQuests(undefined)).toEqual([]);
+		expect(await fetchActivityQuests([{}, { id: '' }])).toEqual([]);
+		expect(spy).not.toHaveBeenCalled();
+	});
+
+	it('drops the misses instead of returning holes', async () => {
+		const store = useUserStore();
+		vi.spyOn(store, 'fetchQuest').mockImplementation(async (id: string) =>
+			id.endsWith('a2') ? null : ({ id } as any)
+		);
+
+		const { fetchActivityQuests } = useQuests();
+		const found = await fetchActivityQuests([{ id: 'a1' }, { id: 'a2' }, { id: 'a3' }]);
+		expect(found.map((q) => q.id)).toEqual(['activity_quest_a1', 'activity_quest_a3']);
+	});
+
+	it('passes force through so a refresh bypasses the cache', async () => {
+		const store = useUserStore();
+		const spy = vi.spyOn(store, 'fetchQuest').mockResolvedValue(null);
+
+		const { fetchActivityQuests } = useQuests();
+		await fetchActivityQuests([{ id: 'a1' }], true);
+		expect(spy).toHaveBeenCalledWith('activity_quest_a1', true);
+	});
+
+	// the browse list is derived from questsList, which fetchQuest adds to; that is the whole
+	// mechanism by which an activity quest becomes reachable outside the activity page
+	it('makes the fetched quests visible in the browse list', async () => {
+		const store = useUserStore();
+		vi.spyOn(store, 'fetchQuest').mockImplementation(async (id: string) => {
+			store.questsCache.set(id, { id, title: id } as any);
+			if (store.questsList) store.questsList.add(id);
+			else store.questsList = new Set([id]);
+			return { id, title: id } as any;
+		});
+
+		const { quests, fetchActivityQuests } = useQuests();
+		await fetchActivityQuests([{ id: 'a1' }]);
+		expect(quests.value?.map((q) => q.id)).toContain('activity_quest_a1');
+	});
+});
+
 describe('useQuests().getStepIcon', () => {
 	beforeEach(() => setActivePinia(createPinia()));
 

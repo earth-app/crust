@@ -5,6 +5,7 @@ import { useAvatarStore } from 'stores/avatar';
 import { useFriendsStore } from 'stores/friends';
 import { useNotificationStore } from 'stores/notification';
 import { useUserStore } from 'stores/user';
+import type { PlanFormed, PlanMenu, PlanStatus } from 'types/plans';
 import type { ModerationStatus } from 'types/report';
 import {
 	BadgeMasteryGenerationError,
@@ -229,7 +230,7 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 	const fetchCurrentJourney = async (identifier: string, id: string) => {
 		if (!id) return { success: false as const, message: 'Missing id for fetchCurrentJourney' };
 
-		return await serverRequest<{ count: number; lastWrite?: number }>(
+		return await serverRequest<{ count: number; lastWrite?: number; best?: number }>(
 			`journey-${identifier}`,
 			`/api/user/journey?type=${encodeURIComponent(identifier)}&id=${encodeURIComponent(id)}`,
 			authStore.sessionToken
@@ -381,6 +382,27 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 		return res;
 	};
 
+	/**
+	 * One activity the user would probably never have picked.
+	 *
+	 * Uncached on purpose - a re-roll has to land somewhere else, which is the whole mechanic.
+	 */
+	const drawSurpriseActivity = async (poolLimit: number = 100) => {
+		const res = await makeClientAPIRequest<{
+			activity: Activity;
+			unrelated: boolean;
+			pool: number;
+		}>(`/v2/users/current/activities/surprise?pool_limit=${poolLimit}`, authStore.sessionToken, {
+			method: 'GET'
+		});
+
+		if (valid(res)) {
+			useState<Activity | null>(`activity-${res.data.activity.id}`, () => res.data.activity);
+		}
+
+		return res;
+	};
+
 	return {
 		user,
 		fetchUser,
@@ -406,7 +428,8 @@ export function useAuth(serverRequest: typeof makeServerRequest = makeServerRequ
 		updateFieldPrivacy,
 		regenerateAvatar,
 		setUserActivities,
-		fetchRecommendedActivities
+		fetchRecommendedActivities,
+		drawSurpriseActivity
 	};
 }
 
@@ -821,6 +844,27 @@ export function useQuests() {
 		await userStore.fetchQuest(questId, force);
 	const fetchQuests = async (force: boolean = false) => await userStore.fetchQuestsList(force);
 
+	// cloud builds an activity quest lazily from `activity_quest_<activityId>` and never enumerates
+	// them in the quest list, so without asking by id they are only reachable from the activity page
+	const fetchActivityQuests = async (
+		activities: { id?: string }[] | undefined | null,
+		force: boolean = false
+	): Promise<Quest[]> => {
+		const ids = (activities ?? [])
+			.map((activity) => activity?.id)
+			.filter((id): id is string => !!id)
+			.map((id) => `activity_quest_${id}`);
+		if (ids.length === 0) return [];
+
+		// fetchQuest folds each hit into questsList, so the browse surfaces pick them up for free.
+		// a miss must never reject: callers fire this without awaiting, so one bad id would surface
+		// as an unhandled rejection and fail a page rather than just omitting a quest
+		const fetched = await Promise.all(
+			ids.map((id) => userStore.fetchQuest(id, force).catch(() => null))
+		);
+		return fetched.filter((quest): quest is Quest => !!quest);
+	};
+
 	const getStepIcon = (step: string) => {
 		switch (step) {
 			case 'take_photo_location':
@@ -874,6 +918,7 @@ export function useQuests() {
 		quests,
 		fetchQuest,
 		fetchQuests,
+		fetchActivityQuests,
 		getStepIcon
 	};
 }
@@ -2097,7 +2142,7 @@ export function buildBadgeMasteryTour(opts: BadgeMasteryTourOptions) {
 
 export function useDailyQuest() {
 	const { user } = useAuth();
-	const { quests, fetchQuests } = useQuests();
+	const { quests, fetchQuests, fetchActivityQuests } = useQuests();
 
 	// UTC YYYY-MM-DD so the quest flips at the same instant globally
 	const dateKey = computed(() => {
@@ -2158,6 +2203,9 @@ export function useDailyQuest() {
 		refreshTapped();
 		// kick a fetch if the quests list hasn't been hydrated yet
 		if (quests.value === null) void fetchQuests(true);
+		// interestPool matches `activity_quest_<id>` ids, which the list never contains until they
+		// are fetched by id; without this the interest match is dead and every draw is general
+		void fetchActivityQuests(user.value?.activities);
 	});
 
 	// re-check the flag when the date rolls over mid-session
@@ -2595,6 +2643,45 @@ export function useFeedWidgets() {
 		seed
 	};
 }
+
+// #region if-then plans
+
+/**
+ * One if-then plan, and only one.
+ *
+ * The sentence comes back from `form` once and is never persisted anywhere it can be re-read: a
+ * recorded plan measures weaker than an unrecorded one, so the caller shows it, takes the single
+ * rehearsal tap, and lets it go.
+ */
+export function usePlan() {
+	const authStore = useAuthStore();
+
+	const menu = async (places: string[] = []) =>
+		makeClientAPIRequest<PlanMenu>('/v2/users/current/plan/menu', authStore.sessionToken, {
+			method: 'POST',
+			body: { places }
+		});
+
+	const form = async (cueId: string, responseId: string) =>
+		makeClientAPIRequest<PlanFormed>('/v2/users/current/plan', authStore.sessionToken, {
+			method: 'POST',
+			body: { cue_id: cueId, response_id: responseId }
+		});
+
+	const status = async () =>
+		makeClientAPIRequest<PlanStatus>('/v2/users/current/plan/status', authStore.sessionToken);
+
+	const rehearsed = async () =>
+		makeClientAPIRequest<{ rehearsed: boolean }>(
+			'/v2/users/current/plan/rehearsed',
+			authStore.sessionToken,
+			{ method: 'POST' }
+		);
+
+	return { menu, form, status, rehearsed };
+}
+
+// #endregion
 
 // #region verified publisher
 

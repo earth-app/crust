@@ -136,6 +136,28 @@
 			</div>
 
 			<div
+				v-if="activityQuests.length > 0"
+				id="activity-quests"
+				class="flex flex-col items-center mt-8"
+			>
+				<h2 class="text-xl">From Your Activities</h2>
+				<span class="text-base opacity-80"
+					>{{ activityQuests.length }} Built Around What You Picked</span
+				>
+				<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+					<LazyUserQuestThumbnail
+						v-for="(q, i) in activityQuests"
+						:id="`activity-quest-${i}`"
+						:key="q.id"
+						:quest="q"
+						:progress="questHistory.get(q.id)?.progress"
+						:completedAt="questHistory.get(q.id)?.completedAt"
+						hydrate-on-visible
+					/>
+				</div>
+			</div>
+
+			<div
 				v-if="byRarity.size > 0"
 				class="flex flex-col items-center mt-8"
 			>
@@ -147,7 +169,7 @@
 					class="flex flex-col items-center"
 				>
 					<h3 class="text-lg font-semibold mt-4">{{ capitalizeFully(rarity) }}</h3>
-					<span class="text-base opacity-80">{{ quests.length }} Total</span>
+					<span class="text-base opacity-80">{{ quests.length }} Shown</span>
 
 					<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
 						<LazyUserQuestThumbnail
@@ -246,7 +268,7 @@ definePageMeta({
 });
 
 const { user } = useAuth();
-const { quests, fetchQuests } = useQuests();
+const { quests, fetchQuests, fetchActivityQuests } = useQuests();
 const userId = computed(() => user.value?.id);
 const { quest, fetchUserQuest, questHistory, fetchQuestHistory } = useUser(userId);
 const { setTitleSuffix } = useTitleSuffix();
@@ -268,6 +290,7 @@ async function refresh() {
 	try {
 		await Promise.all([
 			fetchQuests(true),
+			fetchActivityQuests(user.value?.activities, true),
 			fetchUserQuest(true),
 			fetchQuestHistory({
 				force: true,
@@ -304,6 +327,7 @@ watch(
 			deferIdle(() => {
 				if (!wantsOpen) void fetchUserQuest();
 				void fetchQuestHistory({ limit: HISTORY_PAGE_LIMIT });
+				void fetchActivityQuests(newUser.activities);
 			});
 		} else if (newUser === null) {
 			navigateTo(`/login?redirect=${encodeURIComponent(useRoute().fullPath)}`);
@@ -323,16 +347,25 @@ const allQuests = computed<Quest[]>(() => {
 	return Array.from(merged.values());
 });
 
+// surfaced in their own section, so they are not repeated in the rarity groups below
+const activityQuests = computed<Quest[]>(() =>
+	allQuests.value.filter((q) => q.id.startsWith('activity_quest_') && !q.mobile_only)
+);
+
+// each group is a filtered view (no mobile-only, no activity quests, not the active one), so the
+// per-group label says "Shown" rather than claiming a total it does not hold
 const byRarity = computed(() => {
 	const map = new Map<string, Quest[]>();
-	for (const quest of allQuests.value) {
-		if (quest.mobile_only) continue;
+	const activeId = quest.value?.quest?.id;
+	for (const q of allQuests.value) {
+		if (q.mobile_only || q.id.startsWith('activity_quest_')) continue;
+		if (activeId && q.id === activeId) continue;
 
-		const rarity = quest.rarity || 'normal';
+		const rarity = q.rarity || 'normal';
 		if (!map.has(rarity)) {
 			map.set(rarity, []);
 		}
-		map.get(rarity)?.push(quest);
+		map.get(rarity)?.push(q);
 	}
 	return map;
 });
@@ -375,6 +408,16 @@ const questTour = computed<SiteTourStep[]>(() => [
 		icon: 'mdi:shield-sword',
 		highlightPadding: 8,
 		condition: () => !!quest.value?.quest
+	},
+	{
+		id: 'activity-quests',
+		title: 'From Your Activities',
+		description:
+			'Every activity you picked has its own quest, built around that activity rather than drawn from the shared catalog. Change your activities and this list changes with them.',
+		footer: 'Add activities on your profile to grow this list.',
+		icon: 'mdi:map-marker-path',
+		highlightPadding: 8,
+		condition: () => activityQuests.value.length > 0
 	},
 	{
 		id: 'quest-0',
