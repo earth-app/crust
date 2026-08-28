@@ -48,6 +48,7 @@
 				v-for="article in recommended.items"
 				:key="article.id"
 				:article="article"
+				source="recommended"
 				class="motion-preset-fade-md"
 				hydrate-on-visible
 			/>

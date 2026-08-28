@@ -204,7 +204,8 @@ async function loadSimilar(article?: Article) {
 
 const { startTimer, stopTimer } = useTimeOnPage('articles_read_time', {
 	article: article.value,
-	user: user.value
+	user: user.value,
+	ref: typeof route.query.ref === 'string' ? route.query.ref : undefined
 });
 
 onMounted(() => {

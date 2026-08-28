@@ -5,7 +5,7 @@
 				:title="article.title"
 				:description="trimString(article.description, 100)"
 				:content="trimString(article.content, 300)"
-				:link="noLink ? undefined : `/articles/${article.id}`"
+				:link="link"
 				:footer="footer"
 				:color="article.color"
 				:avatar="{
@@ -39,7 +39,15 @@ import { trimString } from 'utils';
 const props = defineProps<{
 	article: Article;
 	noLink?: boolean;
+	// where the card was surfaced; carried to the article page and on to analytics
+	source?: 'recommended';
 }>();
+
+const link = computed(() => {
+	if (props.noLink) return undefined;
+	const base = `/articles/${props.article.id}`;
+	return props.source ? `${base}?ref=${props.source}` : base;
+});
 
 const footer = computed(() => `@${props.article.author.username} - ${time.value}`);
 
