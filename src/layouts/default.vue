@@ -131,7 +131,7 @@ const welcomeTour = computed<SiteTourStep[]>(() => [
 		id: 'title',
 		title: 'Welcome to The Earth App',
 		description:
-			'A new kind of social experience: discover hobbies, dive into articles, answer thoughtful prompts, and meet people with similar interests.\n\nThis short tour will walk you through the highlights - feel free to skip it at any time with Esc or the X button.',
+			'Quests are the heart of it: step-by-step adventures that get you outside and into new hobbies. Along the way you grow a Shared Garden, leave Trailmarks where you have been, and challenge friends to the quests you finish.\n\nThis short tour will walk you through the highlights - feel free to skip it at any time with Esc or the X button.',
 		footer: 'Press Next, or use ← / → on your keyboard to step through.',
 		icon: 'mdi:earth',
 		placement: 'center',
@@ -303,7 +303,7 @@ const welcomeTour = computed<SiteTourStep[]>(() => [
 		id: 'points-history',
 		title: 'Impact Points',
 		description:
-			'Impact Points reward you for engaging with the Earth App and the world around you - reading, writing, completing quests, helping others. Spend them on cosmetics, or watch them climb the leaderboard.',
+			'Impact Points are a running record of what you have done - reading, writing, completing quests, helping others. They buy avatar cosmetics and nothing else: they cannot be bought, sold, or given away.',
 		footer: 'Click "Points History" on your profile to see exactly how you earned them.',
 		anonymous: false,
 		icon: 'mdi:chart-line'
