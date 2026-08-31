@@ -38,8 +38,9 @@ export async function traceAvatars(page: Page, avatarSelector?: string): Promise
 		const push = (id: string, src: string) => {
 			const trace = w.__avatarTrace!;
 			for (let i = trace.length - 1; i >= 0; i--) {
-				if (trace[i].id === id) {
-					if (trace[i].src === src) return;
+				const entry = trace[i];
+				if (entry && entry.id === id) {
+					if (entry.src === src) return;
 					break;
 				}
 			}
