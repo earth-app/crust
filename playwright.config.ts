@@ -28,6 +28,15 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3002';
 const prodServer = process.env.PLAYWRIGHT_PROD === '1';
 const includeWebkit = process.env.PLAYWRIGHT_WEBKIT === '1';
 
+// existence alone is not freshness: a bundle built before the change under test satisfies the
+// provenance check and the whole suite silently runs against the old code. rebuild when any
+// source is newer than the artifact
+const E2E_ENTRY = '.output-e2e/server/index.mjs';
+const buildIfStale =
+	`test -f ${E2E_ENTRY} ` +
+	`&& test -z "$(find src nuxt.config.ts package.json -newer ${E2E_ENTRY} -print -quit)" ` +
+	`|| bun run build:test`;
+
 const reporters: any[] = [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]];
 
 if (isCI) {
@@ -54,16 +63,14 @@ export default defineConfig<ConfigOptions>({
 	// failure screenshots / traces and produce a CI warning. Two distinct dirs.
 	outputDir: 'playwright-results',
 	webServer: {
-		// the guard is existence-only, so the build it checks for must be one ONLY build:test can
-		// produce. `.output` is shared with `bun run build`, and a leftover production bundle
-		// satisfied this check and ran the whole suite against the wrong artifact; `.output-e2e`
-		// is written by nothing else, which makes existence a real provenance check
-		command: prodServer
-			? 'test -f .output-e2e/server/index.mjs || bun run build:test && bun run start:test'
-			: 'bun run dev:test',
+		// the artifact must be one ONLY build:test can produce. `.output` is shared with
+		// `bun run build`, and a leftover production bundle satisfied this check and ran the whole
+		// suite against the wrong artifact; `.output-e2e` is written by nothing else
+		command: prodServer ? `${buildIfStale} && bun run start:test` : 'bun run dev:test',
 		url: BASE_URL,
 		reuseExistingServer: !isCI,
-		timeout: prodServer ? 360_000 : 240_000,
+		// the guard can now trigger a cold build:test, which runs past six minutes on its own
+		timeout: prodServer ? 900_000 : 240_000,
 		stdout: 'pipe',
 		stderr: 'pipe'
 	},
