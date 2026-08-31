@@ -568,7 +568,7 @@ export function useUser(
 			if (cached) return cached;
 		}
 
-		return await avatarStore.fetchAvatarBlobs(url);
+		return await avatarStore.fetchAvatarBlobs(url, force);
 	};
 
 	const cosmetics = computed(() => {

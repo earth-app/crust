@@ -103,7 +103,7 @@ export const useAvatarStore = defineStore('avatar', () => {
 		return failedAt === undefined || Date.now() - failedAt >= TRANSIENT_RETRY_MS;
 	};
 
-	const fetchAvatarBlobs = async (url: string): Promise<AvatarSizes> => {
+	const fetchAvatarBlobs = async (url: string, force = false): Promise<AvatarSizes> => {
 		// shape-validate before doing anything else — `[]` / undefined from partial serialization
 		// would otherwise get appended ?size= and dispatched as a doomed network request
 		if (!isValidAvatarUrl(url)) {
@@ -121,9 +121,15 @@ export const useAvatarStore = defineStore('avatar', () => {
 			return existing;
 		}
 
+		if (!force && !canRetry(url)) {
+			return { ...(cached ?? FALLBACK_AVATAR) };
+		}
+
+		// the failure flags are NOT cleared here. clearing on entry published "we don't know yet"
+		// to every consumer for the length of the request, and the mount handlers that call this
+		// directly re-triggered it on every card - so the avatar swung placeholder -> untested
+		// remote url -> placeholder on a loop. the flags now change only once there is a result
 		loadingUrls.add(url);
-		failedUrls.delete(url);
-		transientFailures.delete(url);
 
 		const fetchPromise = (async () => {
 			try {
@@ -174,6 +180,7 @@ export const useAvatarStore = defineStore('avatar', () => {
 
 				if (outcomes.includes('ok')) {
 					cache.set(url, result);
+					failedUrls.delete(url);
 					// a partial fill leaves a placeholder in the missing slot; keep it retryable
 					// so a later render repairs it instead of serving that placeholder forever
 					if (isComplete(result)) transientFailures.delete(url);
