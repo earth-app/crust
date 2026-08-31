@@ -294,4 +294,218 @@ describe('avatar store', () => {
 			expect(store.userCosmetics.get('u3')).toEqual({ current: 'glow', unlocked: ['glow'] });
 		});
 	});
+
+	// a transient blip used to land in failedUrls permanently, so one bad request on a cold
+	// launch blanked the avatar to the static placeholder for the rest of the session
+	describe('transient vs permanent failure', () => {
+		const URL_A = 'https://cdn.test/u1/profile_photo';
+		let origCreateObjectURL: typeof URL.createObjectURL;
+		let blobCounter = 0;
+
+		const png = () =>
+			({ ok: true, status: 200, blob: async () => ({ size: 68 }) }) as unknown as Response;
+		const status = (code: number) => ({ ok: false, status: code }) as Response;
+
+		beforeEach(() => {
+			vi.useFakeTimers();
+			blobCounter = 0;
+			origCreateObjectURL = URL.createObjectURL;
+			URL.createObjectURL = vi.fn(() => `blob:avatar-${++blobCounter}`) as any;
+		});
+
+		afterEach(() => {
+			vi.useRealTimers();
+			URL.createObjectURL = origCreateObjectURL;
+		});
+
+		// the retry sleeps RETRY_DELAY_MS between attempts; drain both the timers and the
+		// microtasks the three parallel size fetches are sitting on
+		const settle = async (promise: Promise<unknown>) => {
+			await vi.advanceTimersByTimeAsync(2_000);
+			return promise;
+		};
+
+		it('retries a failed size once before giving up', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(status(500));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+
+			// 3 sizes x 2 attempts
+			expect(fetchSpy).toHaveBeenCalledTimes(6);
+		});
+
+		it('a first-attempt blip that succeeds on retry fills every size', async () => {
+			const store = useAvatarStore();
+			const seen = new Set<string>();
+			fetchSpy.mockImplementation(async (input: any) => {
+				const key = String(input);
+				if (!seen.has(key)) {
+					seen.add(key);
+					throw new Error('network down');
+				}
+				return png();
+			});
+
+			const sizes = (await settle(store.fetchAvatarBlobs(URL_A))) as any;
+
+			expect(sizes.avatar).toMatch(/^blob:/);
+			expect(sizes.avatar32).toMatch(/^blob:/);
+			expect(sizes.avatar128).toMatch(/^blob:/);
+			expect(store.hasFailed(URL_A)).toBe(false);
+		});
+
+		it('a 5xx on every size stays retryable and never becomes a permanent failure', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(status(503));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+
+			expect(store.hasFailed(URL_A)).toBe(false);
+			expect(store.failedUrls.has(URL_A)).toBe(false);
+			expect(store.transientFailures.has(URL_A)).toBe(true);
+		});
+
+		it('a network throw on every size stays retryable', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockRejectedValue(new Error('offline'));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+
+			expect(store.hasFailed(URL_A)).toBe(false);
+			expect(store.transientFailures.has(URL_A)).toBe(true);
+		});
+
+		it('a 200 with an empty body is transient, not a missing photo', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue({
+				ok: true,
+				status: 200,
+				blob: async () => ({ size: 0 })
+			} as unknown as Response);
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+
+			expect(store.hasFailed(URL_A)).toBe(false);
+			expect(store.transientFailures.has(URL_A)).toBe(true);
+		});
+
+		it.each([408, 429])('treats %i as transient rather than "no photo"', async (code) => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(status(code));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+
+			expect(store.hasFailed(URL_A)).toBe(false);
+			expect(store.transientFailures.has(URL_A)).toBe(true);
+		});
+
+		// the onboarding checklist and the profile editor's regenerate ring both read
+		// failedUrls as "this user has no custom photo", so a 404 must still land there
+		it('a 404 on every size is permanent and serves the static fallback', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(status(404));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+
+			expect(store.hasFailed(URL_A)).toBe(true);
+			expect(store.safeUrl(URL_A, 'avatar128')).toBe(FALLBACK.avatar128);
+			// 404 needs no retry
+			expect(fetchSpy).toHaveBeenCalledTimes(3);
+		});
+
+		it('a mixed 404 + 5xx is NOT permanent (one size erroring cannot mean "no photo")', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockImplementation(async (input: any) =>
+				String(input).includes('size=32') ? status(500) : status(404)
+			);
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+
+			expect(store.hasFailed(URL_A)).toBe(false);
+			expect(store.transientFailures.has(URL_A)).toBe(true);
+		});
+
+		it('safeUrl falls through to the remote url after a transient failure, never the placeholder', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(status(500));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+
+			expect(store.safeUrl(URL_A, 'avatar128')).toBe(`${URL_A}?size=128`);
+			expect(store.safeUrl(URL_A, 'avatar')).toBe(URL_A);
+		});
+
+		it('does not re-request inside the retry window, and does after it', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(status(500));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+			const afterFirst = fetchSpy.mock.calls.length;
+
+			store.safeUrl(URL_A, 'avatar128');
+			store.preloadAvatar(URL_A);
+			await vi.advanceTimersByTimeAsync(0);
+			expect(fetchSpy.mock.calls.length).toBe(afterFirst);
+
+			vi.advanceTimersByTime(15_000);
+			store.safeUrl(URL_A, 'avatar128');
+			await vi.advanceTimersByTimeAsync(2_000);
+			expect(fetchSpy.mock.calls.length).toBeGreaterThan(afterFirst);
+		});
+
+		it('a partial fill is cached, stays repairable, and only refetches the missing size', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockImplementation(async (input: any) =>
+				String(input).includes('size=128') ? status(500) : png()
+			);
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+
+			// the sizes that did load are served from cache straight away
+			expect(store.safeUrl(URL_A, 'avatar32')).toMatch(/^blob:/);
+			// the missing one falls through to the remote instead of the placeholder
+			expect(store.safeUrl(URL_A, 'avatar128')).toBe(`${URL_A}?size=128`);
+			expect(store.transientFailures.has(URL_A)).toBe(true);
+
+			fetchSpy.mockClear();
+			fetchSpy.mockResolvedValue(png());
+			vi.advanceTimersByTime(15_000);
+			await settle(store.fetchAvatarBlobs(URL_A));
+
+			expect(store.safeUrl(URL_A, 'avatar128')).toMatch(/^blob:/);
+			// only the missing size is re-requested; the two good blobs are left alone
+			expect(fetchSpy).toHaveBeenCalledTimes(1);
+			expect(String(fetchSpy.mock.calls[0][0])).toContain('size=128');
+		});
+
+		it('a complete fetch clears the transient record and stops further requests', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(png());
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+
+			expect(store.transientFailures.has(URL_A)).toBe(false);
+			expect(store.hasAllSizes(URL_A)).toBe(true);
+
+			fetchSpy.mockClear();
+			store.safeUrl(URL_A, 'avatar128');
+			store.preloadAvatar(URL_A);
+			await vi.advanceTimersByTimeAsync(0);
+			expect(fetchSpy).not.toHaveBeenCalled();
+		});
+
+		it('clear(url) drops the transient record so the next render retries immediately', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(status(500));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+			expect(store.canRetry(URL_A)).toBe(false);
+
+			store.clear(URL_A);
+
+			expect(store.transientFailures.has(URL_A)).toBe(false);
+			expect(store.canRetry(URL_A)).toBe(true);
+		});
+	});
 });

@@ -32,12 +32,33 @@ const appendSize = (url: string, size: keyof AvatarSizes): string => {
 	return `${url}${url.includes('?') ? '&' : '?'}size=${param}`;
 };
 
+// a 4xx other than 408/429 is the server saying there is no photo here; everything else
+// (network error, 5xx, empty body) is transient and must never be recorded as permanent
+const isPermanentStatus = (status: number): boolean =>
+	status >= 400 && status < 500 && status !== 408 && status !== 429;
+
+// a slot still holding a FALLBACK_AVATAR value never counts as fetched
+const isFilled = (value: string | undefined): boolean => !!value && !value.startsWith('/');
+
+const isComplete = (sizes: AvatarSizes | undefined): boolean =>
+	!!sizes && isFilled(sizes.avatar) && isFilled(sizes.avatar32) && isFilled(sizes.avatar128);
+
+const RETRY_ATTEMPTS = 1;
+const RETRY_DELAY_MS = 400;
+const TRANSIENT_RETRY_MS = 15_000;
+
+type SizeOutcome = 'ok' | 'permanent' | 'transient';
+
 export const useAvatarStore = defineStore('avatar', () => {
 	const authStore = useAuthStore();
 
 	const cache = reactive(new Map<string, AvatarSizes>());
 	const loadingUrls = reactive(new Set<string>());
+	// permanent: the server answered 4xx, so this user has no custom photo. consumers read
+	// this as the "no custom avatar" signal, so a network blip must not land in here
 	const failedUrls = reactive(new Set<string>());
+	// url -> timestamp of the last transient failure, retried after TRANSIENT_RETRY_MS
+	const transientFailures = reactive(new Map<string, number>());
 
 	const allCosmetics = reactive<AvatarCosmetic[]>([]);
 	const userCosmetics = reactive(
@@ -73,6 +94,15 @@ export const useAvatarStore = defineStore('avatar', () => {
 		return failedUrls.has(url);
 	};
 
+	const hasAllSizes = (url: string | undefined | null): boolean =>
+		!!url && isComplete(cache.get(url));
+
+	const canRetry = (url: string): boolean => {
+		if (failedUrls.has(url)) return false;
+		const failedAt = transientFailures.get(url);
+		return failedAt === undefined || Date.now() - failedAt >= TRANSIENT_RETRY_MS;
+	};
+
 	const fetchAvatarBlobs = async (url: string): Promise<AvatarSizes> => {
 		// shape-validate before doing anything else — `[]` / undefined from partial serialization
 		// would otherwise get appended ?size= and dispatched as a doomed network request
@@ -80,9 +110,10 @@ export const useAvatarStore = defineStore('avatar', () => {
 			return { ...FALLBACK_AVATAR };
 		}
 
+		// only a fully-filled entry is final; a partial one still has a placeholder slot to repair
 		const cached = cache.get(url);
-		if (cached) {
-			return cached;
+		if (isComplete(cached)) {
+			return cached!;
 		}
 
 		const existing = fetchQueue.get(url);
@@ -92,6 +123,7 @@ export const useAvatarStore = defineStore('avatar', () => {
 
 		loadingUrls.add(url);
 		failedUrls.delete(url);
+		transientFailures.delete(url);
 
 		const fetchPromise = (async () => {
 			try {
@@ -100,47 +132,64 @@ export const useAvatarStore = defineStore('avatar', () => {
 					headers['Authorization'] = `Bearer ${authStore.sessionToken}`;
 				}
 
-				const result: AvatarSizes = { ...FALLBACK_AVATAR };
-				let anySucceeded = false;
+				const result: AvatarSizes = { ...(cached ?? FALLBACK_AVATAR) };
 
-				const fetchAndUpdate = async (size: keyof AvatarSizes, sizeParam?: string) => {
-					try {
-						// safe ?/& separator — naked ?size= breaks urls that already carry a query
-						const fetchUrl = sizeParam
-							? `${url}${url.includes('?') ? '&' : '?'}size=${sizeParam}`
-							: url;
-						const response = await fetch(fetchUrl, { headers });
-						if (response.ok) {
-							const blob = await response.blob();
-							if (blob.size > 0) {
-								result[size] = URL.createObjectURL(blob);
-								anySucceeded = true;
+				const fetchSize = async (
+					size: keyof AvatarSizes,
+					sizeParam?: string
+				): Promise<SizeOutcome> => {
+					if (isFilled(result[size])) return 'ok';
+
+					// safe ?/& separator — naked ?size= breaks urls that already carry a query
+					const fetchUrl = sizeParam
+						? `${url}${url.includes('?') ? '&' : '?'}size=${sizeParam}`
+						: url;
+
+					for (let attempt = 0; ; attempt++) {
+						try {
+							const response = await fetch(fetchUrl, { headers });
+							if (response.ok) {
+								const blob = await response.blob();
+								if (blob.size > 0) {
+									result[size] = URL.createObjectURL(blob);
+									return 'ok';
+								}
+							} else if (isPermanentStatus(response.status)) {
+								return 'permanent';
 							}
+						} catch (error) {
+							console.warn(`Failed to fetch ${size} for ${url}:`, error);
 						}
-					} catch (error) {
-						console.warn(`Failed to fetch ${size} for ${url}:`, error);
+
+						if (attempt >= RETRY_ATTEMPTS) return 'transient';
+						await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
 					}
 				};
 
-				await Promise.all([
-					fetchAndUpdate('avatar'),
-					fetchAndUpdate('avatar32', '32'),
-					fetchAndUpdate('avatar128', '128')
+				const outcomes = await Promise.all([
+					fetchSize('avatar'),
+					fetchSize('avatar32', '32'),
+					fetchSize('avatar128', '128')
 				]);
 
-				if (anySucceeded) {
+				if (outcomes.includes('ok')) {
 					cache.set(url, result);
+					// a partial fill leaves a placeholder in the missing slot; keep it retryable
+					// so a later render repairs it instead of serving that placeholder forever
+					if (isComplete(result)) transientFailures.delete(url);
+					else transientFailures.set(url, Date.now());
 					return result;
 				}
 
-				// All sizes failed - mark URL as failed so consumers can show fallback
-				// without retrying repeatedly. Don't cache the fallback object
-				// (so future force-fetches still try the network).
-				failedUrls.add(url);
+				// only a unanimous 4xx means "this user has no photo"; a mixed or transient
+				// result stays retryable so one blip cannot blank the avatar for the session
+				if (outcomes.every((outcome) => outcome === 'permanent')) failedUrls.add(url);
+				else transientFailures.set(url, Date.now());
+
 				return { ...FALLBACK_AVATAR };
 			} catch (error) {
 				console.warn(`Failed to fetch avatars for ${url}:`, error);
-				failedUrls.add(url);
+				transientFailures.set(url, Date.now());
 				return { ...FALLBACK_AVATAR };
 			} finally {
 				loadingUrls.delete(url);
@@ -154,7 +203,8 @@ export const useAvatarStore = defineStore('avatar', () => {
 
 	const preloadAvatar = (url: string | undefined | null) => {
 		if (!isValidAvatarUrl(url)) return;
-		if (cache.has(url) || fetchQueue.has(url)) return;
+		if (hasAllSizes(url) || fetchQueue.has(url)) return;
+		if (!canRetry(url)) return;
 		void fetchAvatarBlobs(url);
 	};
 
@@ -176,9 +226,11 @@ export const useAvatarStore = defineStore('avatar', () => {
 			if (candidate && !candidate.startsWith('/')) return candidate;
 		}
 		if (failedUrls.has(url)) return FALLBACK_AVATAR[size];
-		if (!cache.has(url) && !fetchQueue.has(url)) {
+		if (!hasAllSizes(url) && !fetchQueue.has(url) && canRetry(url)) {
 			void fetchAvatarBlobs(url);
 		}
+		// a transient failure falls through to the remote url on purpose: the browser's own
+		// image loader is a separate transport from this fetch and usually still succeeds
 		return appendSize(url, size);
 	};
 
@@ -192,6 +244,7 @@ export const useAvatarStore = defineStore('avatar', () => {
 			}
 			cache.delete(url);
 			failedUrls.delete(url);
+			transientFailures.delete(url);
 		} else {
 			for (const [, avatars] of cache) {
 				if (isBlobUrl(avatars.avatar)) URL.revokeObjectURL(avatars.avatar);
@@ -200,6 +253,7 @@ export const useAvatarStore = defineStore('avatar', () => {
 			}
 			cache.clear();
 			failedUrls.clear();
+			transientFailures.clear();
 
 			for (const previewUrl of previewCache.values()) {
 				if (isBlobUrl(previewUrl)) URL.revokeObjectURL(previewUrl);
@@ -442,10 +496,13 @@ export const useAvatarStore = defineStore('avatar', () => {
 		cache,
 		loadingUrls,
 		failedUrls,
+		transientFailures,
 		get,
 		has,
 		isLoading,
 		hasFailed,
+		hasAllSizes,
+		canRetry,
 		fetchAvatarBlobs,
 		preloadAvatar,
 		safeUrl,
