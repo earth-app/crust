@@ -495,6 +495,69 @@ describe('avatar store', () => {
 			expect(fetchSpy).not.toHaveBeenCalled();
 		});
 
+		// six mount handlers call fetchAvatarBlobs directly, bypassing safeUrl/preloadAvatar.
+		// while the entry path cleared the failure flags, each of those mounts republished
+		// "we don't know yet" and safeUrl swung placeholder -> untested remote url -> placeholder
+		it('a settled "no photo" verdict never wobbles while a mount handler re-probes', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(status(404));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+			expect(store.safeUrl(URL_A, 'avatar')).toBe(FALLBACK.avatar);
+
+			// record what every consumer would render across a burst of direct re-probes
+			const rendered: string[] = [];
+			for (let mount = 0; mount < 5; mount++) {
+				const probe = store.fetchAvatarBlobs(URL_A);
+				rendered.push(store.safeUrl(URL_A, 'avatar'));
+				await settle(probe);
+				rendered.push(store.safeUrl(URL_A, 'avatar'));
+			}
+
+			expect(new Set(rendered)).toEqual(new Set([FALLBACK.avatar]));
+		});
+
+		it('a direct fetchAvatarBlobs respects the retry window its callers do not check', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(status(500));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+			const afterFirst = fetchSpy.mock.calls.length;
+
+			for (let mount = 0; mount < 5; mount++) await settle(store.fetchAvatarBlobs(URL_A));
+
+			expect(fetchSpy.mock.calls.length).toBe(afterFirst);
+		});
+
+		it('force re-probes inside the window, for an explicit refresh', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(status(500));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+			const afterFirst = fetchSpy.mock.calls.length;
+
+			fetchSpy.mockResolvedValue(png());
+			await settle(store.fetchAvatarBlobs(URL_A, true));
+
+			expect(fetchSpy.mock.calls.length).toBeGreaterThan(afterFirst);
+			expect(store.safeUrl(URL_A, 'avatar128')).toMatch(/^blob:/);
+		});
+
+		it('a successful re-probe clears an earlier permanent verdict', async () => {
+			const store = useAvatarStore();
+			fetchSpy.mockResolvedValue(status(404));
+
+			await settle(store.fetchAvatarBlobs(URL_A));
+			expect(store.hasFailed(URL_A)).toBe(true);
+
+			// the user generates a photo, so the same url starts answering
+			fetchSpy.mockResolvedValue(png());
+			await settle(store.fetchAvatarBlobs(URL_A, true));
+
+			expect(store.hasFailed(URL_A)).toBe(false);
+			expect(store.safeUrl(URL_A, 'avatar')).toMatch(/^blob:/);
+		});
+
 		it('clear(url) drops the transient record so the next render retries immediately', async () => {
 			const store = useAvatarStore();
 			fetchSpy.mockResolvedValue(status(500));
