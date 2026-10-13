@@ -76,7 +76,7 @@
     "nsfwjs": "^4.4.0",
     "nuxt": "~4.5.2",
     "nuxt-api-shield": "^1.0.0",
-    "nuxt-schema-org": "^6.2.8",
+    "nuxt-schema-org": "^7.0.0",
     "nuxt-viewport": "^2.6.0",
     "obscenity": "^0.4.6",
     "piexifjs": "^1.0.6",
