@@ -42,7 +42,7 @@ const props = defineProps<{
 	editor?: boolean;
 }>();
 
-const { setAccountType } = useUser(props.user.id);
+const { setAccountType } = useUser(() => props.user.id);
 
 const attrs = useAttrs();
 

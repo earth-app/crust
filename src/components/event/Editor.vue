@@ -35,7 +35,7 @@ const props = defineProps<{
 }>();
 
 const { user } = useAuth();
-const { avatar128 } = useUser(props.event?.hostId || user.value?.id || '');
+const { avatar128 } = useUser(() => props.event?.hostId || user.value?.id);
 
 const isOpen = ref(false);
 </script>

@@ -32,7 +32,7 @@ const props = defineProps<{
 }>();
 
 const { user } = useAuth();
-const { avatar32 } = useUser(props.article?.author_id || user.value?.id || '');
+const { avatar32 } = useUser(() => props.article?.author_id || user.value?.id);
 
 const isOpen = ref(false);
 </script>
