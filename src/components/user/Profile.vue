@@ -52,12 +52,7 @@
 							{
 								accessorKey: 'timestamp',
 								header: 'Date',
-								cell: ({ row }) =>
-									row.original.timestamp
-										? DateTime.fromMillis(row.original.timestamp).toRelative({
-												locale: i18n.locale.value
-											})
-										: 'sometime'
+								cell: ({ row }) => relativeTime(row.original.timestamp)
 							},
 							{
 								accessorKey: 'difference',
@@ -393,6 +388,12 @@ const props = defineProps<{
 const { user } = useAuth();
 const i18n = useI18n();
 const toast = useToast();
+
+function relativeTime(timestamp?: number) {
+	if (!timestamp) return 'sometime';
+	return DateTime.fromMillis(timestamp).toRelative({ locale: i18n.locale.value }) || 'sometime';
+}
+
 const { name: displayName, handle, hasFullName } = useDisplayName(() => props.user);
 const canChallenge = computed(() => !!props.user.is_friend && user.value?.id !== props.user.id);
 const canReport = computed(() => user.value?.id !== props.user.id);
