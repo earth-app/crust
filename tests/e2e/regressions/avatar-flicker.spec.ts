@@ -210,17 +210,26 @@ test.describe('Avatar against the real backend', () => {
 		});
 
 		const photos: string[] = [];
-		page.on('response', (res) => {
-			if (PHOTO_ROUTE.test(res.url())) photos.push(`${res.status()} ${res.url()}`);
+		page.on('response', async (res) => {
+			if (!PHOTO_ROUTE.test(res.url())) return;
+			const headers = await res.request().allHeaders();
+			photos.push(`${res.status()} ${headers.authorization ? 'auth' : 'anon'} ${res.url()}`);
 		});
 
 		await gotoHydrated('/');
 		await settle(page);
 
-		await expect.poll(() => photos.length, { timeout: 15_000 }).toBeGreaterThan(0);
-		// a 404 here means the url the API publishes does not match the route it points at, or the
+		// only the store's authenticated fetches count: a bare <img> request carries no token, and the
+		// api hides a non-public profile from it on purpose
+		await expect
+			.poll(() => photos.filter((photo) => /^2\d\d auth /.test(photo)).length, { timeout: 15_000 })
+			.toBeGreaterThan(0)
+			.catch((error: Error) => {
+				throw new Error(`${error.message}\nphoto requests:\n${photos.join('\n')}`);
+			});
+		// a 4xx here means the url the API publishes does not match the route it points at, or the
 		// backend cannot reach cloud for the bytes
-		expect(photos.filter((photo) => /^[45]/.test(photo))).toEqual([]);
+		expect(photos.filter((photo) => /^[45]\d\d auth /.test(photo))).toEqual([]);
 		expectNoPlaceholderWobble(await readAvatarTrace(page));
 	});
 });
