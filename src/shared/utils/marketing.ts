@@ -639,15 +639,6 @@ export const NOTIFICATION_TYPES: UserNotification['type'][] = [
 	'error'
 ];
 
-// the union the notification card special-cases; '@username' mentions are free-form
-export const NOTIFICATION_SOURCES = [
-	'quest',
-	'badge',
-	'friend_request',
-	'event',
-	'system'
-] as const;
-
 export const RARITIES: Rarity[] = ['normal', 'rare', 'amazing', 'green'];
 
 export type MockActivityInput = { name: string; icon?: string };
@@ -1122,8 +1113,6 @@ export const PREVIEW_QUEST_ID = 'marketing_preview_quest';
 export const MASTERY_PREVIEW_QUEST_ID = 'badge_mastery_marketing_preview';
 
 export const QUEST_RARITIES: Rarity[] = ['normal', 'rare', 'amazing', 'green'];
-
-export const QUEST_PERMISSIONS: QuestPermission[] = ['camera', 'location', 'record'];
 
 export const QUEST_STEP_TYPES: QuestStepType[] = [
 	'take_photo_location',

@@ -1214,32 +1214,6 @@ export function useLeaderboard(
 	};
 }
 
-// back-compat shim — existing journey callers expect { id, streak, user } entries.
-// delegates to useLeaderboard(type, 'global') and adapts value -> streak.
-export function useJourneyLeaderboard(
-	type: 'article' | 'prompt' | 'event',
-	serverRequest: typeof makeServerRequest = makeServerRequest
-) {
-	const { leaderboard: scopedLeaderboard, fetchLeaderboard } = useLeaderboard(
-		type,
-		'global',
-		serverRequest
-	);
-
-	const leaderboard = computed<UserLeaderboardEntry[]>(() =>
-		scopedLeaderboard.value.map((entry) => ({
-			id: entry.id,
-			streak: entry.value,
-			user: entry.user
-		}))
-	);
-
-	return {
-		leaderboard,
-		fetchLeaderboard
-	};
-}
-
 // #region referral / invite
 
 export function useReferral() {

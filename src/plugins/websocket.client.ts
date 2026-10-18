@@ -127,7 +127,6 @@ export default defineNuxtPlugin((nuxtApp) => {
 				ws = new WebSocket(wsUrl);
 
 				ws.onopen = () => {
-					console.log(`WebSocket connection established to users:${userId}`);
 					reconnectAttempts = 0;
 					clearReconnectTimer();
 
@@ -279,7 +278,6 @@ export default defineNuxtPlugin((nuxtApp) => {
 				};
 
 				ws.onclose = (event: CloseEvent) => {
-					console.log('WebSocket connection closed', event.code, event.reason);
 					ws = null;
 					clearHeartbeat();
 					// 1000 = normal close (we initiated). anything else is unexpected -> retry.

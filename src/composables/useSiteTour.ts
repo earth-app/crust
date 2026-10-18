@@ -124,9 +124,6 @@ export const useSiteTour = () => {
 
 		activeStepIndex.value = Math.max(0, Math.min(startStep, tour.steps.length - 1));
 		activeTourId.value = tourId;
-
-		const name = tour.name || 'Unknown Tour';
-		console.log(`Starting tour: ${name}`);
 	};
 
 	const startTourIfNew = (tourId: string, startStep = 0) => {
