@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
 import type { Event } from 'types/event';
-import { computeContentExpiry } from 'utils';
+import { computeContentExpiry, serializeJsonLd, toIsoOrUndefined } from 'utils';
 
 const toast = useToast();
 const route = useRoute();
@@ -107,13 +107,13 @@ useSeoMeta({
 const eventJsonLd = computed(() => {
 	const e = event.value;
 	if (!e) return null;
-	return JSON.stringify({
+	return serializeJsonLd({
 		'@context': 'https://schema.org',
 		'@type': 'Event',
 		name: e.name,
 		description: e.description,
-		startDate: new Date(e.date).toISOString(),
-		...(e.end_date ? { endDate: new Date(e.end_date).toISOString() } : {})
+		startDate: toIsoOrUndefined(e.date),
+		endDate: e.end_date ? toIsoOrUndefined(e.end_date) : undefined
 	});
 });
 useHead({

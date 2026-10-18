@@ -22,7 +22,9 @@ import {
 	paginatedAPIRequest,
 	parseLooseDate,
 	realFullName,
+	serializeJsonLd,
 	shuffle,
+	toIsoOrUndefined,
 	toTitleCase,
 	trimString,
 	ttlDays,
@@ -151,6 +153,23 @@ describe('comma', () => {
 
 	it('handles negatives', () => {
 		expect(comma(-1234)).toBe('-1,234');
+	});
+});
+
+describe('serializeJsonLd', () => {
+	it('escapes < so user text cannot close the script tag', () => {
+		const out = serializeJsonLd({ name: '</script><img src=x onerror=alert(1)>' });
+		expect(out).not.toContain('<');
+		expect(JSON.parse(out).name).toBe('</script><img src=x onerror=alert(1)>');
+	});
+});
+
+describe('toIsoOrUndefined', () => {
+	it('formats valid dates and returns undefined for invalid ones instead of throwing', () => {
+		expect(toIsoOrUndefined(Date.UTC(2026, 0, 2))).toBe('2026-01-02T00:00:00.000Z');
+		expect(toIsoOrUndefined('2026-01-02T00:00:00Z')).toBe('2026-01-02T00:00:00.000Z');
+		expect(toIsoOrUndefined('not a date')).toBeUndefined();
+		expect(toIsoOrUndefined(Number.NaN)).toBeUndefined();
 	});
 });
 

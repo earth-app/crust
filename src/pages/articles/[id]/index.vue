@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { computeContentExpiry } from 'utils';
+import { computeContentExpiry, serializeJsonLd } from 'utils';
 
 const toast = useToast();
 const route = useRoute();
@@ -158,7 +158,7 @@ useSeoMeta({
 const articleJsonLd = computed(() => {
 	const a = article.value;
 	if (!a || 'error' in (a as any) || !('title' in a)) return null;
-	return JSON.stringify({
+	return serializeJsonLd({
 		'@context': 'https://schema.org',
 		'@type': 'Article',
 		headline: a.title,

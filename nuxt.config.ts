@@ -292,6 +292,7 @@ export default defineNuxtConfig({
 			'/subscription/**',
 			'/articles/new',
 			'/prompts/new',
+			/^\/events\/[^/]+\/manage$/,
 			'/__test__/**'
 		]
 	},

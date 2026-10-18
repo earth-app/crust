@@ -495,6 +495,15 @@ export function comma(num?: number): string {
 	return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+export function serializeJsonLd(data: unknown): string {
+	return JSON.stringify(data).replace(/</g, '\\u003c');
+}
+
+export function toIsoOrUndefined(value: string | number): string | undefined {
+	const date = new Date(value);
+	return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 export function parseLooseDate(input?: string): DateTime | string {
 	if (!input) return '';
 
