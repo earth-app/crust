@@ -194,6 +194,14 @@ test.describe('Avatar against the real backend', () => {
 		await traceAvatars(page);
 		await asUser();
 
+		// the api publishes an absolute production url; send it to the backend under test, or a
+		// user that only exists here gets a 404 from production
+		const apiBase = process.env.NUXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787';
+		await page.route('https://api.earth-app.com/**', (route) => {
+			const { pathname, search } = new URL(route.request().url());
+			return route.continue({ url: `${apiBase}${pathname}${search}` });
+		});
+
 		const statuses: number[] = [];
 		page.on('response', (res) => {
 			if (PHOTO_ROUTE.test(res.url())) statuses.push(res.status());

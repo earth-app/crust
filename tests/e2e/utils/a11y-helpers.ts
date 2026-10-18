@@ -49,6 +49,17 @@ export async function settle(page: Page): Promise<void> {
 		undefined,
 		{ timeout: 15_000 }
 	);
+	// skeletons carry hidden focus targets; measure the loaded surface, but a surface that never
+	// loads is still measured as it stands
+	await page
+		.waitForFunction(
+			() => !document.querySelector('[role="alert"][aria-label="loading"]'),
+			undefined,
+			{
+				timeout: 20_000
+			}
+		)
+		.catch(() => undefined);
 	await page.evaluate(() => document.fonts.ready.then(() => undefined));
 }
 
