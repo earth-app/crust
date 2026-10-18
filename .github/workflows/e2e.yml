@@ -96,6 +96,7 @@ jobs:
         run: |
           cd cloud
           bun install --frozen-lockfile
+          printf 'ADMIN_API_KEY=test-admin-key\nMANTLE_URL=http://127.0.0.1:8787\n' > .dev.vars
           bun run dev --ip 0.0.0.0 > /tmp/cloud.log 2>&1 &
           echo $! > /tmp/cloud.pid
           for i in $(seq 1 30); do
