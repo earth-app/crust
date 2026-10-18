@@ -131,7 +131,8 @@ export const useAvatarStore = defineStore('avatar', () => {
 		// remote url -> placeholder on a loop. the flags now change only once there is a result
 		loadingUrls.add(url);
 
-		const fetchPromise = (async () => {
+		let fetchPromise: Promise<AvatarSizes> | undefined;
+		fetchPromise = (async () => {
 			try {
 				const headers: HeadersInit = {};
 				if (authStore.sessionToken) {
@@ -178,6 +179,14 @@ export const useAvatarStore = defineStore('avatar', () => {
 					fetchSize('avatar128', '128')
 				]);
 
+				// clear() ran while this was in flight; drop the result instead of resurrecting it
+				if (fetchQueue.get(url) !== fetchPromise) {
+					for (const blob of [result.avatar, result.avatar32, result.avatar128]) {
+						if (isBlobUrl(blob)) URL.revokeObjectURL(blob);
+					}
+					return { ...FALLBACK_AVATAR };
+				}
+
 				if (outcomes.includes('ok')) {
 					cache.set(url, result);
 					failedUrls.delete(url);
@@ -199,8 +208,10 @@ export const useAvatarStore = defineStore('avatar', () => {
 				transientFailures.set(url, Date.now());
 				return { ...FALLBACK_AVATAR };
 			} finally {
-				loadingUrls.delete(url);
-				fetchQueue.delete(url);
+				if (fetchQueue.get(url) === fetchPromise) {
+					loadingUrls.delete(url);
+					fetchQueue.delete(url);
+				}
 			}
 		})();
 
@@ -252,6 +263,8 @@ export const useAvatarStore = defineStore('avatar', () => {
 			cache.delete(url);
 			failedUrls.delete(url);
 			transientFailures.delete(url);
+			fetchQueue.delete(url);
+			loadingUrls.delete(url);
 		} else {
 			for (const [, avatars] of cache) {
 				if (isBlobUrl(avatars.avatar)) URL.revokeObjectURL(avatars.avatar);
@@ -261,6 +274,8 @@ export const useAvatarStore = defineStore('avatar', () => {
 			cache.clear();
 			failedUrls.clear();
 			transientFailures.clear();
+			fetchQueue.clear();
+			loadingUrls.clear();
 
 			for (const previewUrl of previewCache.values()) {
 				if (isBlobUrl(previewUrl)) URL.revokeObjectURL(previewUrl);

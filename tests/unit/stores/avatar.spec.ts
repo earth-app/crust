@@ -355,6 +355,29 @@ describe('avatar store', () => {
 			expect(store.hasFailed(URL_A)).toBe(false);
 		});
 
+		it('clear() during an in-flight fetch keeps the old bytes out of the cache', async () => {
+			const store = useAvatarStore();
+			const revoke = vi.fn();
+			const origRevoke = URL.revokeObjectURL;
+			URL.revokeObjectURL = revoke as any;
+			let release!: () => void;
+			const gate = new Promise<void>((resolve) => (release = resolve));
+			fetchSpy.mockImplementation(async () => {
+				await gate;
+				return png();
+			});
+
+			const pending = store.fetchAvatarBlobs(URL_A);
+			store.clear(URL_A);
+			release();
+			await settle(pending);
+
+			expect(store.hasAllSizes(URL_A)).toBe(false);
+			expect(store.cache.has(URL_A)).toBe(false);
+			expect(revoke).toHaveBeenCalledTimes(3);
+			URL.revokeObjectURL = origRevoke;
+		});
+
 		it('a 5xx on every size stays retryable and never becomes a permanent failure', async () => {
 			const store = useAvatarStore();
 			fetchSpy.mockResolvedValue(status(503));
