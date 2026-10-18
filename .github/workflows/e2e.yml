@@ -96,7 +96,7 @@ jobs:
         run: |
           cd cloud
           bun install --frozen-lockfile
-          bun run dev > /tmp/cloud.log 2>&1 &
+          bun run dev --ip 0.0.0.0 > /tmp/cloud.log 2>&1 &
           echo $! > /tmp/cloud.pid
           for i in $(seq 1 30); do
             if curl -sf http://127.0.0.1:9898/; then
@@ -112,6 +112,14 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           ADMIN_API_KEY: test-admin-key
           MANTLE_URL: http://127.0.0.1:8787
+      - name: Connect mantle2 to cloud
+        run: |
+          cd /tmp/drupal-mantle2
+          chmod u+w web/sites/default web/sites/default/settings.php
+          echo "\$settings['mantle2.cloud_endpoint'] = 'http://host.docker.internal:9898';" >> web/sites/default/settings.php
+          ddev drush php:eval "\\Drupal::entityTypeManager()->getStorage('key')->create(['id' => 'mantle2_api_key', 'label' => 'Mantle2 API Key', 'key_type' => 'authentication', 'key_provider' => 'config', 'key_provider_settings' => ['key_value' => 'test-admin-key']])->save();"
+          ddev drush cr
+          ddev exec curl -sf http://host.docker.internal:9898/ > /dev/null
       - name: Install Crust dependencies
         run: |
           cd crust

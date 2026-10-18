@@ -209,17 +209,18 @@ test.describe('Avatar against the real backend', () => {
 			await route.fulfill({ response });
 		});
 
-		const statuses: number[] = [];
+		const photos: string[] = [];
 		page.on('response', (res) => {
-			if (PHOTO_ROUTE.test(res.url())) statuses.push(res.status());
+			if (PHOTO_ROUTE.test(res.url())) photos.push(`${res.status()} ${res.url()}`);
 		});
 
 		await gotoHydrated('/');
 		await settle(page);
 
-		await expect.poll(() => statuses.length, { timeout: 15_000 }).toBeGreaterThan(0);
-		// a 404 here means the url the API publishes does not match the route it points at
-		expect(statuses.filter((status) => status >= 400)).toEqual([]);
+		await expect.poll(() => photos.length, { timeout: 15_000 }).toBeGreaterThan(0);
+		// a 404 here means the url the API publishes does not match the route it points at, or the
+		// backend cannot reach cloud for the bytes
+		expect(photos.filter((photo) => /^[45]/.test(photo))).toEqual([]);
 		expectNoPlaceholderWobble(await readAvatarTrace(page));
 	});
 });
