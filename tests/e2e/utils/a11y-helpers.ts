@@ -101,8 +101,11 @@ export async function collectLayout(page: Page): Promise<LayoutReport> {
 			// the skip link is 1x1 until it takes focus, which is the whole point of it
 			if (el.closest('.sr-only')) continue;
 
-			counted++;
 			const cs = getComputedStyle(el);
+			// reka's toast viewport focus proxies are clipped to 1x1 on purpose
+			if (r.width <= 1 && r.height <= 1 && cs.clipPath === 'inset(50%)') continue;
+
+			counted++;
 			const disabled = el.hasAttribute('disabled') || el.getAttribute('aria-disabled') === 'true';
 			// SC 2.5.8 (AA) is 24x24 css px and exempts links that flow inline in text. computed
 			// display is the real distinction: an inline <a> flows in a sentence, while a block or
