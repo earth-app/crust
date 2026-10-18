@@ -58,7 +58,8 @@ export async function openQuiz(page: Page): Promise<void> {
 	const btn = page.locator('#quiz-button');
 	await expect(btn).toBeVisible({ timeout: 12_000 });
 	await btn.click();
-	await expect(page.getByRole('heading', { level: 2 }).first()).toBeVisible({ timeout: 8_000 });
+	const question = page.getByRole('heading', { level: 2 }).filter({ hasText: /\S/ });
+	await expect(question.first()).toBeVisible({ timeout: 8_000 });
 }
 
 /** Pick a single-choice (multiple_choice / true_false) option by visible label. */

@@ -60,7 +60,7 @@ test.describe('Article quiz (mobile)', () => {
 
 		// the modal fills the viewport on mobile (min-w-full); the question heading
 		// and the radios must be reachable within the narrow layout
-		const question = page.getByRole('heading', { level: 2 }).first();
+		const question = page.getByRole('heading', { level: 2 }).filter({ hasText: /\S/ }).first();
 		await expect(question).toBeVisible();
 
 		await pickRadio(page, '4');
